@@ -3,6 +3,9 @@ FROM ${BASE} AS base
 
 WORKDIR /app
 
+# Install Python (Debian-based)
+RUN apt-get update && apt-get install -y python3 python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies (this step is cached as long as the dependencies don't change)
 COPY package.json pnpm-lock.yaml ./
 
