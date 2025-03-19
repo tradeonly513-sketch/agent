@@ -14,6 +14,7 @@ import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import { useLoaderData } from '@remix-run/react';
 
 const menuVariants = {
   closed: {
@@ -69,6 +70,8 @@ export const Menu = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const profile = useStore(profileStore);
 
+  const { shouldHideUserSettingsMenu } = useLoaderData<{ shouldHideUserSettingsMenu: boolean }>();
+
   const { filteredItems: filteredList, handleSearchChange } = useSearchFilter({
     items: list,
     searchFields: ['description'],
@@ -118,7 +121,7 @@ export const Menu = () => {
     const exitThreshold = 40;
 
     function onMouseMove(event: MouseEvent) {
-      if (isSettingsOpen) {
+      if (isSettingsOpen || shouldHideUserSettingsMenu) {
         return;
       }
 

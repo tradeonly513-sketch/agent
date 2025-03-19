@@ -36,11 +36,18 @@ export async function loader(args: LoaderFunctionArgs) {
 
   const showChat = process.env.SHOW_CHAT?.toLowerCase() === 'true';
   const shouldHideHeader = process.env.HIDE_APP_HEADER?.toLowerCase() === 'true';
+  const shouldHideUserSettingsMenu = process.env.HIDE_USER_SETTINGS_MENU?.toLowerCase() === 'true';
 
   /* ToDo: Remove hide workbench setting once dataApp chat option is introduced */
   const shouldHideWorkbenchCloseIcon = process.env.HIDE_WORKBENCH_CLOSE?.toLowerCase() === 'true';
 
-  return json({ id: args.params.id, showChat, shouldHideWorkbenchCloseIcon, shouldHideHeader });
+  return json({
+    id: args.params.id,
+    showChat,
+    shouldHideWorkbenchCloseIcon,
+    shouldHideHeader,
+    shouldHideUserSettingsMenu,
+  });
 }
 
 export default IndexRoute;

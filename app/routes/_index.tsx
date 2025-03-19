@@ -4,7 +4,7 @@ import { ClientOnly } from 'remix-utils/client-only';
 import { BaseChat } from '~/components/chat/BaseChat';
 import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
-import BackgroundRays from '~/components/ui/BackgroundRays';
+import BackgroundRays from '~/components/ui/BackgroundRays/BackgroundRaysV2';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Bolt' }, { name: 'description', content: 'Talk with Bolt, an AI assistant from StackBlitz' }];
