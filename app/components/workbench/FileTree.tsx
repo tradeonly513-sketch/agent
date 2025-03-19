@@ -23,6 +23,8 @@ interface Props {
   unsavedFiles?: Set<string>;
   fileHistory?: Record<string, FileHistory>;
   className?: string;
+  canRevertSelectedFile?: boolean;
+  onRevert?: () => void;
 }
 
 export const FileTree = memo(
@@ -38,6 +40,8 @@ export const FileTree = memo(
     className,
     unsavedFiles,
     fileHistory = {},
+    canRevertSelectedFile = false,
+    onRevert,
   }: Props) => {
     renderLogger.trace('FileTree');
 
@@ -152,6 +156,13 @@ export const FileTree = memo(
                   onClick={() => {
                     onFileSelect?.(fileOrFolder.fullPath);
                   }}
+                  onRevert={
+                    canRevertSelectedFile
+                      ? () => {
+                          onRevert?.();
+                        }
+                      : undefined
+                  }
                 />
               );
             }
@@ -199,6 +210,7 @@ interface FolderContextMenuProps {
   onCopyPath?: () => void;
   onCopyRelativePath?: () => void;
   children: ReactNode;
+  onRevert?: () => void;
 }
 
 function ContextMenuItem({ onSelect, children }: { onSelect?: () => void; children: ReactNode }) {
@@ -213,7 +225,7 @@ function ContextMenuItem({ onSelect, children }: { onSelect?: () => void; childr
   );
 }
 
-function FileContextMenu({ onCopyPath, onCopyRelativePath, children }: FolderContextMenuProps) {
+function FileContextMenu({ onCopyPath, onCopyRelativePath, children, onRevert }: FolderContextMenuProps) {
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>{children}</ContextMenu.Trigger>
@@ -225,6 +237,7 @@ function FileContextMenu({ onCopyPath, onCopyRelativePath, children }: FolderCon
           <ContextMenu.Group className="p-1 border-b-px border-solid border-bolt-elements-borderColor">
             <ContextMenuItem onSelect={onCopyPath}>Copy path</ContextMenuItem>
             <ContextMenuItem onSelect={onCopyRelativePath}>Copy relative path</ContextMenuItem>
+            {onRevert && <ContextMenuItem onSelect={onRevert}>Revert Changes</ContextMenuItem>}
           </ContextMenu.Group>
         </ContextMenu.Content>
       </ContextMenu.Portal>
@@ -262,6 +275,7 @@ interface FileProps {
   onCopyPath: () => void;
   onCopyRelativePath: () => void;
   onClick: () => void;
+  onRevert?: () => void;
 }
 
 function File({
@@ -272,6 +286,7 @@ function File({
   selected,
   unsavedChanges = false,
   fileHistory = {},
+  onRevert,
 }: FileProps) {
   const fileModifications = fileHistory[fullPath];
 
@@ -317,7 +332,7 @@ function File({
   const showStats = additions > 0 || deletions > 0;
 
   return (
-    <FileContextMenu onCopyPath={onCopyPath} onCopyRelativePath={onCopyRelativePath}>
+    <FileContextMenu onCopyPath={onCopyPath} onCopyRelativePath={onCopyRelativePath} onRevert={onRevert}>
       <NodeButton
         className={classNames('group', {
           'bg-transparent hover:bg-bolt-elements-item-backgroundActive text-bolt-elements-item-contentDefault':

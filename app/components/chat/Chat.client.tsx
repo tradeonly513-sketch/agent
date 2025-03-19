@@ -118,7 +118,7 @@ export const ChatImpl = memo(
   ({ description, initialMessages, storeMessageHistory, importChat, exportChat }: ChatProps) => {
     useShortcuts();
 
-    const { id: mixedId } = useLoaderData<{ id?: string }>();
+    const { id: mixedId, showChat } = useLoaderData<{ id?: string; showChat: boolean }>();
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
@@ -139,13 +139,11 @@ export const ChatImpl = memo(
       return (PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER) as ProviderInfo;
     });
 
-    const { showChat } = useStore(chatStore);
+    const token = searchParams.get('token');
 
     const [animationScope, animate] = useAnimate();
 
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
-
-    const token = searchParams.get('token');
 
     useEffect(() => {
       if (!mixedId || !token) {
@@ -154,9 +152,6 @@ export const ChatImpl = memo(
 
       loadFilesFromDataApp(mixedId, token, importChat);
     }, [importChat]);
-
-    console.log(workbenchStore.files.get());
-    console.log(workbenchStore.artifacts.get());
 
     const {
       messages,

@@ -24,6 +24,7 @@ import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
+import { useLoaderData } from '@remix-run/react';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -291,9 +292,13 @@ export const Workbench = memo(
     const currentDocument = useStore(workbenchStore.currentDocument);
     const unsavedFiles = useStore(workbenchStore.unsavedFiles);
     const files = useStore(workbenchStore.files);
+    const modifiedFiles = workbenchStore.modifiedFiles;
     const selectedView = useStore(workbenchStore.currentView);
 
+    console.log({ files, currentDocument, modifiedFiles });
+
     const isSmallViewport = useViewport(1024);
+    const { shouldHideWorkbenchCloseIcon } = useLoaderData<{ shouldHideWorkbenchCloseIcon: boolean }>();
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
@@ -408,14 +413,16 @@ export const Workbench = memo(
                   {selectedView === 'diff' && (
                     <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
                   )}
-                  <IconButton
-                    icon="i-ph:x-circle"
-                    className="-mr-1"
-                    size="xl"
-                    onClick={() => {
-                      workbenchStore.showWorkbench.set(false);
-                    }}
-                  />
+                  {!shouldHideWorkbenchCloseIcon && (
+                    <IconButton
+                      icon="i-ph:x-circle"
+                      className="-mr-1"
+                      size="xl"
+                      onClick={() => {
+                        workbenchStore.showWorkbench.set(false);
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="relative flex-1 overflow-hidden">
                   <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
