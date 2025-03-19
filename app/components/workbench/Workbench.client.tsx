@@ -298,7 +298,10 @@ export const Workbench = memo(
     console.log({ files, currentDocument, modifiedFiles });
 
     const isSmallViewport = useViewport(1024);
-    const { shouldHideWorkbenchCloseIcon } = useLoaderData<{ shouldHideWorkbenchCloseIcon: boolean }>();
+    const { shouldHideWorkbenchCloseIcon, shouldHideGithubOptions } = useLoaderData<{
+      shouldHideWorkbenchCloseIcon: boolean;
+      shouldHideGithubOptions: boolean;
+    }>();
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
@@ -404,10 +407,12 @@ export const Workbench = memo(
                         <div className="i-ph:terminal" />
                         Toggle Terminal
                       </PanelHeaderButton>
-                      <PanelHeaderButton className="mr-1 text-sm" onClick={() => setIsPushDialogOpen(true)}>
-                        <div className="i-ph:git-branch" />
-                        Push to GitHub
-                      </PanelHeaderButton>
+                      {!shouldHideGithubOptions && (
+                        <PanelHeaderButton className="mr-1 text-sm" onClick={() => setIsPushDialogOpen(true)}>
+                          <div className="i-ph:git-branch" />
+                          Push to GitHub
+                        </PanelHeaderButton>
+                      )}
                     </div>
                   )}
                   {selectedView === 'diff' && (
