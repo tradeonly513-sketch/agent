@@ -20,12 +20,15 @@ import Cookies from 'js-cookie';
 import { debounce } from '~/utils/debounce';
 import { useSettings } from '~/lib/hooks/useSettings';
 import type { ProviderInfo } from '~/types/model';
-import { useSearchParams } from '@remix-run/react';
+import { useLoaderData, useSearchParams } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
+import type { MapStore } from 'nanostores';
+import type { FileMap } from '~/lib/stores/files';
+import { loadFilesFromDataApp } from './Chat.helper';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -115,13 +118,15 @@ export const ChatImpl = memo(
   ({ description, initialMessages, storeMessageHistory, importChat, exportChat }: ChatProps) => {
     useShortcuts();
 
+    const { id: mixedId } = useLoaderData<{ id?: string }>();
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const [fakeLoading, setFakeLoading] = useState(false);
-    const files = useStore(workbenchStore.files);
+    const [files] = useState<MapStore<FileMap>>();
     const actionAlert = useStore(workbenchStore.alert);
     const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled } = useSettings();
 
@@ -139,6 +144,19 @@ export const ChatImpl = memo(
     const [animationScope, animate] = useAnimate();
 
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
+
+    const token = searchParams.get('token');
+
+    useEffect(() => {
+      if (!mixedId || !token) {
+        return;
+      }
+
+      loadFilesFromDataApp(mixedId, token, importChat);
+    }, [importChat]);
+
+    console.log(workbenchStore.files.get());
+    console.log(workbenchStore.artifacts.get());
 
     const {
       messages,

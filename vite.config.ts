@@ -73,6 +73,17 @@ const gitInfo = getGitInfo();
 
 export default defineConfig((config) => {
   return {
+    server: {
+      port: 8080,
+      proxy: {
+        '/api2': {
+          target: 'https://test.dev.rapidcanvas.net',
+          secure: false,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api2/, ''),
+        },
+      },
+    },
     define: {
       __COMMIT_HASH: JSON.stringify(gitInfo.commitHash),
       __GIT_BRANCH: JSON.stringify(gitInfo.branch),
