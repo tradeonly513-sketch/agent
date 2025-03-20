@@ -75,11 +75,11 @@ export default defineConfig((config) => {
   return {
     base: '/code-editor/',
     server: {
-      host: '0.0.0.0',
+      host: '0.0.0.0', 
       allowedHosts: [
-        'localhost',
-        'rapidcanvas.net',
-        'dev.rapidcanvas.net',
+        'localhost',  
+        'rapidcanvas.net',     
+        'dev.rapidcanvas.net',   
         'test.dev.rapidcanvas.net',
         'qa.dev.rapidcanvas.net',
       ],
