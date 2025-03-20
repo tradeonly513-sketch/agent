@@ -74,8 +74,9 @@ const gitInfo = getGitInfo();
 export default defineConfig((config) => {
   return {
     cacheDir: '/tmp/vite-cache',
+    base: '/code-editor/',
     server: {
-      host: '0.0.0.0', // Listen on all IPs (LAN and public)
+      host: '0.0.0.0', 
       allowedHosts: [
         'localhost',  
         'rapidcanvas.net',     
