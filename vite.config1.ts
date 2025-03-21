@@ -8,8 +8,8 @@ import * as dotenv from 'dotenv';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { flatRoutes } from 'remix-flat-routes';
+import { mountRoutes } from 'remix-mount-routes';
+import flatRoutes from 'remix-flat-routes';
 
 dotenv.config();
 
@@ -74,12 +74,14 @@ const pkg = getPackageJson();
 const gitInfo = getGitInfo();
 
 // Set your base path to the subdirectory you want to serve your app from.
-const basePath = '/code-editor';
+const basePath = '/code-editor/';
 
 export default defineConfig((config) => {
   return {
     base: basePath,
-    publicPath: '/code-editor/build/',
+    routes: async (defineRoutes: any) => {
+      return flatRoutes('routes', defineRoutes, { basePath: '/code-editor/' });
+    },
     server: {
       host: '0.0.0.0',
       allowedHosts: [
@@ -157,7 +159,7 @@ export default defineConfig((config) => {
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
       remixVitePlugin({
-        buildDirectory: 'build/client',
+        buildDirectory: basePath,
         basename: basePath,
         future: {
           v3_fetcherPersist: true,
