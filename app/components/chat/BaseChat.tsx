@@ -180,7 +180,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         }
 
         setIsModelLoading('all');
-        fetch('/api/models')
+        fetch(`/code-editor/api/models`)
           .then((response) => response.json())
           .then((data) => {
             const typedData = data as { modelList: ModelInfo[] };
@@ -205,7 +205,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       let providerModels: ModelInfo[] = [];
 
       try {
-        const response = await fetch(`/api/models/${encodeURIComponent(providerName)}`);
+        const response = await fetch(`/code-editor/api/models/${encodeURIComponent(providerName)}`);
         const data = await response.json();
         providerModels = (data as { modelList: ModelInfo[] }).modelList;
       } catch (error) {
