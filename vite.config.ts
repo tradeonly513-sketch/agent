@@ -9,8 +9,6 @@ import * as dotenv from 'dotenv';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { flatRoutes } from 'remix-flat-routes';
 
 dotenv.config();
 
