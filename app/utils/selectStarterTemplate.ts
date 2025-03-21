@@ -89,7 +89,7 @@ export const selectStarterTemplate = async (options: { message: string; model: s
     provider,
     system: starterTemplateSelectionPrompt(templates),
   };
-  const response = await fetch('/api/llmcall', {
+  const response = await fetch('/code-editor/api/llmcall', {
     method: 'POST',
     body: JSON.stringify(requestBody),
   });

@@ -70,7 +70,7 @@ export function useGit() {
           url,
           depth: 1,
           singleBranch: true,
-          corsProxy: '/api/git-proxy',
+          corsProxy: '/code-editor/api/git-proxy',
           headers,
 
           onAuth: (url) => {

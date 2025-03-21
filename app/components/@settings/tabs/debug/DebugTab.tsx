@@ -307,7 +307,7 @@ export default function DebugTab() {
     // Initial fetch
     const fetchGitInfo = async () => {
       try {
-        const response = await fetch('/api/system/git-info');
+        const response = await fetch('/code-editor/api/system/git-info');
         const updatedGitInfo = (await response.json()) as GitInfo;
 
         setWebAppInfo((prev) => {
@@ -488,8 +488,8 @@ export default function DebugTab() {
       setLoading((prev) => ({ ...prev, webAppInfo: true }));
 
       const [appResponse, gitResponse] = await Promise.all([
-        fetch('/api/system/app-info'),
-        fetch('/api/system/git-info'),
+        fetch('/code-editor/api/system/app-info'),
+        fetch('/code-editor/api/system/git-info'),
       ]);
 
       if (!appResponse.ok || !gitResponse.ok) {
