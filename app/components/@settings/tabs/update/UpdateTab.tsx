@@ -149,7 +149,7 @@ const UpdateTab = () => {
       const branchToCheck = isLatestBranch ? 'main' : 'stable';
 
       // Start the update check with streaming progress
-      const response = await fetch('/api/update', {
+      const response = await fetch('/code-editor/api/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ const UpdateTab = () => {
       const branchToCheck = isLatestBranch ? 'main' : 'stable';
 
       // Start the update with autoUpdate set to true to force the update
-      const response = await fetch('/api/update', {
+      const response = await fetch('/code-editor/api/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -154,7 +154,7 @@ export const ChatImpl = memo(
       data: chatData,
       setData,
     } = useChat({
-      api: '/api/chat',
+      api: '/code-editor/api/chat',
       body: {
         apiKeys,
         files,

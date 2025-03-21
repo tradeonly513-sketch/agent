@@ -56,7 +56,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
     }
 
     try {
-      const response = await fetch(`/api/check-env-key?provider=${encodeURIComponent(provider.name)}`);
+      const response = await fetch(`/code-editor/api/check-env-key?provider=${encodeURIComponent(provider.name)}`);
       const data = await response.json();
       const isSet = (data as { isSet: boolean }).isSet;
 

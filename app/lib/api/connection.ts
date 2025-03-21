@@ -19,9 +19,9 @@ export const checkConnection = async (): Promise<ConnectionStatus> => {
 
     // Try multiple endpoints in case one fails
     const endpoints = [
-      '/api/health',
-      '/', // Fallback to root route
-      '/favicon.ico', // Another common fallback
+      '/code-editor/api/health',
+      '/code-editor/', // Fallback to root route
+      '/code-editor/favicon.ico', // Another common fallback
     ];
 
     let latency = 0;

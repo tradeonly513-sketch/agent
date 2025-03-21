@@ -90,12 +90,6 @@ export default defineConfig((config) => {
         'test.dev.rapidcanvas.net',
         'qa.dev.rapidcanvas.net',
       ],
-      proxy: {
-        '/api/': {
-          target: 'http://localhost:5173',
-          rewrite: (path) => path.replace(/^\/$/, '/code-editor/api/'),
-        },
-      },
     },
     define: {
       __COMMIT_HASH: JSON.stringify(gitInfo.commitHash),
