@@ -8,7 +8,7 @@ export interface ProjectCommands {
   followupMessage: string;
 }
 
-interface FileContent {
+export interface FileContent {
   content: string;
   path: string;
 }

@@ -351,6 +351,13 @@ ${value.content}
       }
 
       try {
+        const currentId = mixedId || chatId.get();
+
+        if (currentId) {
+          await setMessages(db, currentId, messages, urlId, description, undefined, metadata);
+          return;
+        }
+
         const newId = await createChatFromMessages(db, description, messages, metadata);
         window.location.href = `/chat/${newId}`;
         toast.success('Chat imported successfully');

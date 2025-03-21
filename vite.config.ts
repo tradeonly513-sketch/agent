@@ -9,8 +9,6 @@ import * as dotenv from 'dotenv';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { flatRoutes } from 'remix-flat-routes';
 
 dotenv.config();
 
@@ -79,6 +77,7 @@ const basePath = '/code-editor';
 
 export default defineConfig((config) => {
   return {
+    cacheDir: '/tmp/vite-cache',
     base: basePath,
     publicPath: '/code-editor/build/',
     server: {
@@ -107,6 +106,7 @@ export default defineConfig((config) => {
       __PKG_DEV_DEPENDENCIES: JSON.stringify(pkg.devDependencies),
       __PKG_PEER_DEPENDENCIES: JSON.stringify(pkg.peerDependencies),
       __PKG_OPTIONAL_DEPENDENCIES: JSON.stringify(pkg.optionalDependencies),
+
       // Define global values
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
@@ -142,6 +142,7 @@ export default defineConfig((config) => {
           global: true,
         },
         protocolImports: true,
+
         // Exclude Node.js modules that shouldn't be polyfilled in Cloudflare
         exclude: ['child_process', 'fs', 'path'],
       }),

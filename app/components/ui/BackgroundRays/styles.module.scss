@@ -26,6 +26,16 @@
   }
 }
 
+.rayContainer_v2 {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  background-color: #F4F4F4;
+}
+
+
 .lightRay {
   position: absolute;
   border-radius: 100%;
