@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { cloudflareDevProxyVitePlugin as remixCloudflareDevProxy, vitePlugin as remixVitePlugin } from '@remix-run/dev';
 import UnoCSS from 'unocss/vite';
 import { defineConfig, type ViteDevServer } from 'vite';
@@ -89,6 +90,12 @@ export default defineConfig((config) => {
         'test.dev.rapidcanvas.net',
         'qa.dev.rapidcanvas.net',
       ],
+      proxy: {
+        '/api/': {
+          target: 'http://localhost:5173',
+          rewrite: (path) => path.replace(/^\/$/, '/code-editor/api/'),
+        },
+      },
     },
     define: {
       __COMMIT_HASH: JSON.stringify(gitInfo.commitHash),
