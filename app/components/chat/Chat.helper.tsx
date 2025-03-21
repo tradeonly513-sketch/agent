@@ -20,20 +20,22 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
+const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+
 async function fetchZipFromDataApp(dataAppId: string, token: string): Promise<JSZip> {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
 
-  const dataAppResponse = await fetch(`/api2/api/dataapps/by-id/${dataAppId}`, {
+  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}`, {
     method: 'GET',
     headers,
   });
   const dataAppJson: any = await dataAppResponse.json();
   const appTemplateId = dataAppJson.appTemplateId;
 
-  const appTemplateResponse = await fetch(`/api2/api/app-templates/${appTemplateId}`, {
+  const appTemplateResponse = await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
     method: 'GET',
     headers,
   });
@@ -45,7 +47,7 @@ async function fetchZipFromDataApp(dataAppId: string, token: string): Promise<JS
     metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
   };
 
-  const response = await fetch('/api2/api/signed-url/generate-file-download-url', {
+  const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-download-url`, {
     method: 'POST',
     body: JSON.stringify(payload),
     headers,
