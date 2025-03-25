@@ -46,6 +46,7 @@ export function useChatHistory() {
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState<boolean>(false);
   const [urlId, setUrlId] = useState<string | undefined>();
+  const token = searchParams.get('token');
 
   useEffect(() => {
     if (!db) {
@@ -359,7 +360,7 @@ ${value.content}
         }
 
         const newId = await createChatFromMessages(db, description, messages, metadata);
-        window.location.href = `/chat/${newId}`;
+        window.location.href = `/code-editor/chat/${newId}?token=${token}`;
         toast.success('Chat imported successfully');
       } catch (error) {
         if (error instanceof Error) {

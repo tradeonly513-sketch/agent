@@ -1,3 +1,4 @@
+/* eslint-disable multiline-comment-style */
 import { json, type MetaFunction } from '@remix-run/cloudflare';
 import { useLoaderData } from '@remix-run/react';
 import { ClientOnly } from 'remix-utils/client-only';
@@ -11,7 +12,9 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader = async () => {
-  return json({});
+  /* const hideBaseChat = process.env.HIDE_BASE_CHAT?.toLowerCase() === 'true';
+  const canImportChat = process.env.CAN_IMPORT_CHAT?.toLowerCase() === 'true'; */
+  return json({ hideBaseChat: true, canImportChat: false });
 };
 
 /**
