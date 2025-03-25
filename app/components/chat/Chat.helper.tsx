@@ -20,7 +20,7 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+const BASE_URL = '/api1';
 
 async function fetchZipFromDataApp(dataAppId: string, token: string): Promise<JSZip> {
   const headers = {
@@ -182,4 +182,45 @@ export async function loadFilesFromDataApp(
     console.error('Error loading files from API:', error);
     toast.error('Failed to load files from API: ' + error.message);
   }
+}
+
+export async function updateDataAppFiles(dataAppId: string, token: string, file: File): Promise<JSZip> {
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+
+  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
+    method: 'GET',
+    headers,
+  });
+  const dataAppJson: any = await dataAppResponse.json();
+
+  const payload = {
+    fileName: `${dataAppJson.appTemplate.name}.zip`,
+    signedUrlObjectType: 'APP_TEMPLATE_REACTJS',
+    metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
+  };
+
+  const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-upload-url`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers,
+  });
+  const result: any = await response.json();
+  const signedUrl = result.signedUrl;
+
+  if (!signedUrl) {
+    throw new Error('Signed upload URL not found.');
+  }
+
+  const zipResponse = await fetch(signedUrl, {
+    headers: result.headers,
+    method: 'POST',
+    body: file,
+  });
+  const blob = await zipResponse.blob();
+  const zipArrayBuffer = await blob.arrayBuffer();
+
+  return await JSZip.loadAsync(zipArrayBuffer);
 }

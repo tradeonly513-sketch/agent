@@ -2,6 +2,8 @@ import { json, type LoaderFunctionArgs } from '@remix-run/cloudflare';
 import { default as IndexRoute } from './_index';
 import { ErrorBoundary } from '~/components/ui/ErrorBoundary';
 
+const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+
 export async function loader(args: LoaderFunctionArgs) {
   const url = new URL(args.request.url);
   const token = url.searchParams.get('token');
@@ -15,11 +17,13 @@ export async function loader(args: LoaderFunctionArgs) {
     Authorization: `Bearer ${token}`,
   };
 
-  const dataAppResponse = await fetch('https://test.dev.rapidcanvas.net/api/token/validation', {
+  const dataAppResponse = await fetch(`${BASE_URL}api/token/validation`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ token }),
   });
+
+  console.log({ dataAppResponse });
 
   if (dataAppResponse.status === 401) {
     throw new Response('User authentication failed.', {

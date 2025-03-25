@@ -24,7 +24,7 @@ import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
-import { useLoaderData } from '@remix-run/react';
+import { useLoaderData, useSearchParams } from '@remix-run/react';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -281,6 +281,7 @@ export const Workbench = memo(
     renderLogger.trace('Workbench');
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
 
@@ -292,16 +293,20 @@ export const Workbench = memo(
     const currentDocument = useStore(workbenchStore.currentDocument);
     const unsavedFiles = useStore(workbenchStore.unsavedFiles);
     const files = useStore(workbenchStore.files);
-    const modifiedFiles = workbenchStore.modifiedFiles;
     const selectedView = useStore(workbenchStore.currentView);
 
-    console.log({ files, currentDocument, modifiedFiles });
-
     const isSmallViewport = useViewport(1024);
-    const { shouldHideWorkbenchCloseIcon, shouldHideGithubOptions } = useLoaderData<{
+    const {
+      id: mixedId,
+      shouldHideWorkbenchCloseIcon,
+      shouldHideGithubOptions,
+    } = useLoaderData<{
       shouldHideWorkbenchCloseIcon: boolean;
       shouldHideGithubOptions: boolean;
+      id?: string;
     }>();
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get('token');
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
@@ -351,6 +356,20 @@ export const Workbench = memo(
         toast.error('Failed to sync files');
       } finally {
         setIsSyncing(false);
+      }
+    }, []);
+
+    const handleSaveCode = useCallback(async () => {
+      setIsSaving(true);
+
+      try {
+        await workbenchStore.saveCode(mixedId!, token!);
+        toast.success('Files saved successfully');
+      } catch (error) {
+        console.error('Error saving files:', error);
+        toast.error('Failed to save files');
+      } finally {
+        setIsSaving(false);
       }
     }, []);
 
@@ -406,6 +425,10 @@ export const Workbench = memo(
                       >
                         <div className="i-ph:terminal" />
                         Toggle Terminal
+                      </PanelHeaderButton>
+                      <PanelHeaderButton className="mr-1 text-sm" onClick={handleSaveCode} disabled={isSaving}>
+                        {isSaving ? <div className="i-ph:spinner" /> : <div className="i-ph:save" />}
+                        {isSaving ? 'Saving...' : 'Save Code'}
                       </PanelHeaderButton>
                       {!shouldHideGithubOptions && (
                         <PanelHeaderButton className="mr-1 text-sm" onClick={() => setIsPushDialogOpen(true)}>
