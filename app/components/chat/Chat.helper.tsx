@@ -20,7 +20,7 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-const BASE_URL = '/api1';
+const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
 async function fetchZipFromDataApp(dataAppId: string, token: string): Promise<JSZip> {
   const headers = {
