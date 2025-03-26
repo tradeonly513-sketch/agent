@@ -22,27 +22,29 @@ function isBinaryFile(filePath: string): boolean {
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
-async function fetchZipFromDataApp(dataAppId: string, token: string): Promise<JSZip> {
+async function getAppTemplate(dataAppId: string, token: string): Promise<string> {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
 
-  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}`, {
+  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
     method: 'GET',
     headers,
   });
   const dataAppJson: any = await dataAppResponse.json();
-  const appTemplateId = dataAppJson.appTemplateId;
+  const appTemplateName = dataAppJson.appTemplate.name;
 
-  const appTemplateResponse = await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
-    method: 'GET',
-    headers,
-  });
-  const appTemplateResponseJson: any = await appTemplateResponse.json();
+  return appTemplateName;
+}
 
+async function fetchZipFromDataApp(appTemplateName: string, token: string): Promise<JSZip> {
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
   const payload = {
-    fileName: `${appTemplateResponseJson.name}.zip`,
+    fileName: `${appTemplateName}.zip`,
     signedUrlObjectType: 'APP_TEMPLATE_REACTJS',
     metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
   };
@@ -162,9 +164,9 @@ export async function loadFilesFromDataApp(
   importChat: (description: string, messages: Message[]) => Promise<void>,
 ): Promise<void> {
   try {
-    const zip = await fetchZipFromDataApp(dataAppId, token);
+    const folderName = await getAppTemplate(dataAppId, token);
+    const zip = await fetchZipFromDataApp(folderName, token);
 
-    const folderName = zip.files ? Object.keys(zip.files)[0].split('/')[0] : 'DataApp Files';
     const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);
 
     const commands = await detectProjectCommands(fileArtifacts);
@@ -216,7 +218,7 @@ export async function updateDataAppFiles(dataAppId: string, token: string, file:
 
   const zipResponse = await fetch(signedUrl, {
     headers: result.headers,
-    method: 'POST',
+    method: 'PUT',
     body: file,
   });
   const blob = await zipResponse.blob();
