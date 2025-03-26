@@ -20,7 +20,7 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+const BASE_URL = '/api1/';
 
 async function getAppTemplate(dataAppId: string, token: string): Promise<string> {
   const headers = {
@@ -158,6 +158,28 @@ export function normalizeRelativePath(relativePath: string, commonFolder?: strin
   return normalized;
 }
 
+async function saveFilesToServer(files: FileContent[], dataAppId: string, folderName: string): Promise<void> {
+  try {
+    const response = await fetch('/code-editor/api/files', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files,
+        dataAppId,
+        folderName,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save files: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Failed to save files to server:', error);
+  }
+}
+
 export async function loadFilesFromDataApp(
   dataAppId: string,
   token: string,
@@ -166,8 +188,10 @@ export async function loadFilesFromDataApp(
   try {
     const folderName = await getAppTemplate(dataAppId, token);
     const zip = await fetchZipFromDataApp(folderName, token);
-
     const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);
+
+    // Save files to server
+    await saveFilesToServer(fileArtifacts, dataAppId, folderName);
 
     const commands = await detectProjectCommands(fileArtifacts);
     const commandsMessage = createCommandsMessage(commands);

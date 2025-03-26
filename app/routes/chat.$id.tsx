@@ -23,8 +23,6 @@ export async function loader(args: LoaderFunctionArgs) {
     body: JSON.stringify({ token }),
   });
 
-  console.log({ dataAppResponse });
-
   if (dataAppResponse.status === 401) {
     throw new Response('User authentication failed.', {
       status: 401,
