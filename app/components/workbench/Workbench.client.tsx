@@ -26,6 +26,9 @@ import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
 import { useLoaderData, useSearchParams } from '@remix-run/react';
 
+import type { Message } from 'ai';
+import { importChatFromFiles } from '~/components/chat/Chat.helper';
+
 interface WorkspaceProps {
   chatStarted?: boolean;
   isStreaming?: boolean;
@@ -34,6 +37,7 @@ interface WorkspaceProps {
     gitUrl?: string;
   };
   updateChatMestaData?: (metadata: any) => void;
+  importChat: ((description: string, messages: Message[]) => Promise<void>) | undefined;
 }
 
 const viewTransition = { ease: cubicEasingFn };
@@ -277,13 +281,14 @@ const FileModifiedDropdown = memo(
 );
 
 export const Workbench = memo(
-  ({ chatStarted, isStreaming, actionRunner, metadata, updateChatMestaData }: WorkspaceProps) => {
+  ({ chatStarted, isStreaming, actionRunner, metadata, updateChatMestaData, importChat }: WorkspaceProps) => {
     renderLogger.trace('Workbench');
 
     const [isSyncing, setIsSyncing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
+    const [isResetting, setIsResetting] = useState(false);
 
     // const modifiedFiles = Array.from(useStore(workbenchStore.unsavedFiles).keys());
 
@@ -378,6 +383,31 @@ export const Workbench = memo(
       workbenchStore.currentView.set('diff');
     }, []);
 
+    const handleResetCode = async () => {
+      if (!mixedId || !importChat) {
+        return;
+      }
+
+      setIsResetting(true);
+
+      try {
+        const response = await fetch(`/code-editor/api/files/${mixedId}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to load saved files');
+        }
+
+        const data: any = await response.json();
+
+        await importChatFromFiles({ importChat, fileArtifacts: data.files, folderName: data.folderName });
+      } catch (error) {
+        console.error('Error resetting code:', error);
+        toast.error('Failed to reset code');
+      } finally {
+        setIsResetting(false);
+      }
+    };
+
     return (
       chatStarted && (
         <motion.div
@@ -430,6 +460,16 @@ export const Workbench = memo(
                         {isSaving ? <div className="i-ph:spinner" /> : <div className="i-ph:save" />}
                         {isSaving ? 'Saving...' : 'Save Code'}
                       </PanelHeaderButton>
+                      {importChat && (
+                        <PanelHeaderButton className="mr-1 text-sm" onClick={handleResetCode} disabled={isResetting}>
+                          {isResetting ? (
+                            <div className="i-ph:spinner" />
+                          ) : (
+                            <div className="i-ph:arrow-counter-clockwise" />
+                          )}
+                          {isResetting ? 'Loading...' : 'Reset Code'}
+                        </PanelHeaderButton>
+                      )}
                       {!shouldHideGithubOptions && (
                         <PanelHeaderButton className="mr-1 text-sm" onClick={() => setIsPushDialogOpen(true)}>
                           <div className="i-ph:git-branch" />

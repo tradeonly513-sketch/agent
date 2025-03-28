@@ -626,6 +626,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 actionRunner={actionRunner ?? ({} as ActionRunner)}
                 chatStarted={chatStarted}
                 isStreaming={isStreaming}
+                importChat={importChat}
               />
             )}
           </ClientOnly>

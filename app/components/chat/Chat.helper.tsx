@@ -20,7 +20,7 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+const BASE_URL = '/api1/';
 
 async function getAppTemplate(dataAppId: string, token: string): Promise<string> {
   const headers = {
@@ -192,22 +192,37 @@ export async function loadFilesFromDataApp(
 
     // Save files to server
     await saveFilesToServer(fileArtifacts, dataAppId, folderName);
-
-    const commands = await detectProjectCommands(fileArtifacts);
-    const commandsMessage = createCommandsMessage(commands);
-
-    const filesMessage = buildChatMessage(fileArtifacts, skippedFiles, folderName);
-    const messages: Message[] = [filesMessage];
-
-    if (commandsMessage) {
-      messages.push(commandsMessage);
-    }
-
-    await importChat(folderName, messages);
+    await importChatFromFiles({ importChat, fileArtifacts, skippedFiles, folderName });
   } catch (error: any) {
     console.error('Error loading files from API:', error);
     toast.error('Failed to load files from API: ' + error.message);
   }
+}
+
+export async function importChatFromFiles({
+  importChat,
+  fileArtifacts,
+  skippedFiles,
+  folderName,
+}: {
+  fileArtifacts: FileContent[];
+  importChat: (description: string, messages: Message[]) => Promise<void>;
+  folderName: string;
+  skippedFiles?: string[];
+}) {
+  console.log({ fileArtifacts });
+
+  const commands = await detectProjectCommands(fileArtifacts);
+  const commandsMessage = createCommandsMessage(commands);
+
+  const filesMessage = buildChatMessage(fileArtifacts, skippedFiles || [], folderName);
+  const messages: Message[] = [filesMessage];
+
+  if (commandsMessage) {
+    messages.push(commandsMessage);
+  }
+
+  await importChat(folderName, messages);
 }
 
 export async function updateDataAppFiles(dataAppId: string, token: string, file: File): Promise<JSZip> {
