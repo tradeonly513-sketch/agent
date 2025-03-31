@@ -37,7 +37,6 @@ import type { ProgressAnnotation } from '~/types/context';
 import type { ActionRunner } from '~/lib/runtime/action-runner';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import { useLoaderData } from '@remix-run/react';
-import type { loader } from '~/routes/_index';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -122,7 +121,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
 
-    const { hideBaseChat, canImportChat } = useLoaderData<typeof loader>();
+    const { hideBaseChat, canImportChat } = useLoaderData<{ hideBaseChat?: boolean; canImportChat?: boolean }>();
 
     useEffect(() => {
       if (data) {

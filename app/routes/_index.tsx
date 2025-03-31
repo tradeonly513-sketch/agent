@@ -6,16 +6,18 @@ import { BaseChat } from '~/components/chat/BaseChat';
 import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
 import BackgroundRays from '~/components/ui/BackgroundRays/BackgroundRaysV2';
+import { withAuth } from '~/utils/auth.server';
+import { ErrorBoundary } from '~/components/ui/ErrorBoundary/ErrorBoundary';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Bolt' }, { name: 'description', content: 'Talk with Bolt, an AI assistant from StackBlitz' }];
 };
 
-export const loader = async () => {
+export const loader = withAuth(async () => {
   /* const hideBaseChat = process.env.HIDE_BASE_CHAT?.toLowerCase() === 'true';
   const canImportChat = process.env.CAN_IMPORT_CHAT?.toLowerCase() === 'true'; */
   return json({ hideBaseChat: true, canImportChat: false });
-};
+});
 
 /**
  * Landing page component for Bolt
@@ -34,3 +36,5 @@ export default function Index() {
     </div>
   );
 }
+
+export { ErrorBoundary };

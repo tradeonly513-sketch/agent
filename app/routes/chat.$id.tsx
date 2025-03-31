@@ -1,41 +1,9 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/cloudflare';
 import { default as IndexRoute } from './_index';
-import { ErrorBoundary } from '~/components/ui/ErrorBoundary';
+import { withAuth } from '~/utils/auth.server';
+import { ErrorBoundary } from '~/components/ui/ErrorBoundary/ErrorBoundary';
 
-const BASE_URL = 'https://test.dev.rapidcanvas.net/';
-
-export async function loader(args: LoaderFunctionArgs) {
-  const url = new URL(args.request.url);
-  const token = url.searchParams.get('token');
-
-  if (!token) {
-    throw new Response('Unauthorized', { status: 401 });
-  }
-
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-
-  const dataAppResponse = await fetch(`${BASE_URL}api/token/validation`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ token }),
-  });
-
-  if (dataAppResponse.status === 401) {
-    throw new Response('User authentication failed.', {
-      status: 401,
-    });
-  }
-
-  if (dataAppResponse.status !== 200) {
-    throw new Response('Something went wrong', {
-      status: 500,
-      statusText: dataAppResponse.statusText,
-    });
-  }
-
+export const loader = withAuth(async (args: LoaderFunctionArgs) => {
   /*
    *   const showChat = process.env.SHOW_CHAT?.toLowerCase() === 'true';
    *   const shouldHideHeader = process.env.HIDE_APP_HEADER?.toLowerCase() === 'true';
@@ -54,7 +22,7 @@ export async function loader(args: LoaderFunctionArgs) {
     shouldHideUserSettingsMenu: true,
     shouldHideGithubOptions: true,
   });
-}
+});
 
 export default IndexRoute;
 

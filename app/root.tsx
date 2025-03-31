@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ClientOnly } from 'remix-utils/client-only';
-
+import { ErrorBoundary as ErrorBoundaryComponent } from '~/components/ui/ErrorBoundary/ErrorBoundary';
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
@@ -100,4 +100,8 @@ export default function App() {
       <Outlet />
     </Layout>
   );
+}
+
+export function ErrorBoundary() {
+  return <ErrorBoundaryComponent />;
 }

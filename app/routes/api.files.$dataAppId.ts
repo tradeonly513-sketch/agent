@@ -3,6 +3,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import fs from 'node:fs/promises';
 import { path } from '~/utils/path';
 import type { FileContent } from '~/utils/projectCommands';
+import { ErrorBoundary } from '~/components/ui/ErrorBoundary/ErrorBoundary';
 
 interface SaveFilesRequest {
   files: FileContent[];
@@ -99,3 +100,5 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return json({ error: 'Failed to save files' }, { status: 500 });
   }
 }
+
+export { ErrorBoundary };

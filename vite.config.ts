@@ -89,6 +89,15 @@ export default defineConfig((config) => {
         'test.dev.rapidcanvas.net',
         'qa.dev.rapidcanvas.net',
       ],
+      proxy: {
+        '/api1': {
+          target: 'https://test.dev.rapidcanvas.net/',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api1/, ''),
+        },
+      },
+      port: 8080
     },
     define: {
       __COMMIT_HASH: JSON.stringify(gitInfo.commitHash),
@@ -135,7 +144,7 @@ export default defineConfig((config) => {
     },
     plugins: [
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream'],
+        include: ['buffer', 'process', 'util', 'stream', 'fs'],
         globals: {
           Buffer: true,
           process: true,
@@ -144,7 +153,7 @@ export default defineConfig((config) => {
         protocolImports: true,
 
         // Exclude Node.js modules that shouldn't be polyfilled in Cloudflare
-        exclude: ['child_process', 'fs', 'path'],
+        exclude: ['child_process', 'path'],
       }),
       {
         name: 'buffer-polyfill',
@@ -155,6 +164,11 @@ export default defineConfig((config) => {
               map: null,
             };
           }
+
+          return {
+            code,
+            map: null,
+          };
         },
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
@@ -205,6 +219,7 @@ function chrome129IssuePlugin() {
             res.end(
               '<body><h1>Please use Chrome Canary for testing.</h1><p>Chrome 129 has an issue with JavaScript modules & Vite local development, see <a href="https://github.com/stackblitz/bolt.new/issues/86#issuecomment-2395519258">for more information.</a></p><p><b>Note:</b> This only impacts <u>local development</u>. `pnpm run build` and `pnpm run start` will work fine in this browser.</p></body>',
             );
+
             return;
           }
         }
