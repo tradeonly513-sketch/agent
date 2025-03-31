@@ -1,16 +1,17 @@
 // app/utils/withAuth.server.ts
 import type { LoaderFunction, ActionFunction } from '@remix-run/cloudflare';
+import { requireUserToken } from './session.server';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
+export function getToken(request: Request): string | null {
+  const url = new URL(request.url);
+  return url.searchParams.get('token');
+}
+
 export function withAuth(fn: LoaderFunction | ActionFunction): LoaderFunction | ActionFunction {
   return async (args) => {
-    const url = new URL(args.request.url);
-    const token = url.searchParams.get('token');
-
-    if (!token) {
-      throw new Response('Unauthorized', { status: 401 });
-    }
+    const token = await requireUserToken(args.request);
 
     const headers = {
       'Content-Type': 'application/json',

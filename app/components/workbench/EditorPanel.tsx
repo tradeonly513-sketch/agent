@@ -21,7 +21,6 @@ import { FileBreadcrumb } from './FileBreadcrumb';
 import { FileTree } from './FileTree';
 import { DEFAULT_TERMINAL_SIZE, TerminalTabs } from './terminal/TerminalTabs';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { isEqual } from 'lodash';
 
 interface EditorPanelProps {
   files?: FileMap;
@@ -72,15 +71,6 @@ export const EditorPanel = memo(
       return editorDocument !== undefined && unsavedFiles?.has(editorDocument.filePath);
     }, [editorDocument, unsavedFiles]);
 
-    const originalContent = selectedFile ? (files?.[selectedFile] as any)?.content : null;
-
-    const canRevert = selectedFile ? !isEqual(editorDocument?.value, originalContent) : false;
-
-    const onRevert = () => {
-      //@ts-ignore: the selection isn't being used
-      onEditorChange?.({ content: originalContent });
-    };
-
     return (
       <PanelGroup direction="vertical">
         <Panel defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100} minSize={20}>
@@ -100,8 +90,6 @@ export const EditorPanel = memo(
                   rootFolder={WORK_DIR}
                   selectedFile={selectedFile}
                   onFileSelect={onFileSelect}
-                  canRevertSelectedFile={canRevert}
-                  onRevert={onRevert}
                 />
               </div>
             </Panel>
