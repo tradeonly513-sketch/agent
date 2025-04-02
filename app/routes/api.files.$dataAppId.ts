@@ -67,6 +67,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
+  console.log('dataappid', params.dataAppId);
+
   const error = validateDataAppId(params.dataAppId);
 
   if (error) {

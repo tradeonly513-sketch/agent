@@ -28,6 +28,7 @@ import { useLoaderData, useSearchParams } from '@remix-run/react';
 
 import type { Message } from 'ai';
 import { importChatFromFiles } from '~/components/chat/Chat.helper';
+import { db, deleteById } from '~/lib/persistence';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -398,6 +399,10 @@ export const Workbench = memo(
         }
 
         const data: any = await response.json();
+
+        if (db && mixedId) {
+          await deleteById(db, mixedId!);
+        }
 
         await importChatFromFiles({ importChat, fileArtifacts: data.files, folderName: data.folderName });
       } catch (error) {
