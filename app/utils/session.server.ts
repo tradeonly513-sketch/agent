@@ -1,4 +1,4 @@
-import { createCookieSessionStorage, redirect } from '@remix-run/cloudflare';
+import { createCookieSessionStorage } from '@remix-run/cloudflare';
 
 const sessionSecret = process.env.SESSION_SECRET || 'default-secret-key';
 
@@ -31,29 +31,10 @@ export async function getUserToken(request: Request) {
   return session.get('token');
 }
 
-export async function requireUserToken(request: Request, redirectTo: string = new URL(request.url).pathname) {
+export async function requireUserToken(request: Request, _redirectTo: string = new URL(request.url).pathname) {
   const token = await getUserToken(request);
 
   if (!token) {
-    const url = new URL(request.url);
-    const tokenFromUrl = url.searchParams.get('token');
-
-    if (tokenFromUrl) {
-      const sessionCookie = await createUserSession(tokenFromUrl, redirectTo);
-
-      const newUrl = new URL(url);
-      newUrl.searchParams.delete('token');
-
-      const path = newUrl.pathname.replace(/^\/code-editor/, '');
-      newUrl.pathname = path;
-
-      return redirect(newUrl.pathname + newUrl.search, {
-        headers: {
-          'Set-Cookie': sessionCookie,
-        },
-      });
-    }
-
     throw new Response('Unauthorized', { status: 401 });
   }
 

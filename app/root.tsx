@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react';
-import type { LinksFunction, LoaderFunction } from '@remix-run/cloudflare';
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, json, redirect, useLoaderData } from '@remix-run/react';
+import type { LinksFunction, HeadersFunction } from '@remix-run/cloudflare';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
 import { themeStore } from './lib/stores/theme';
 import { stripIndents } from './utils/stripIndent';
@@ -9,11 +9,10 @@ import { useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ClientOnly } from 'remix-utils/client-only';
-import { ErrorBoundary as ErrorBoundaryComponent } from '~/components/ui/ErrorBoundary/ErrorBoundary';
+
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
-import { createUserSession } from './utils/session.server';
 
 import 'virtual:uno.css';
 
@@ -41,31 +40,6 @@ export const links: LinksFunction = () => [
     href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   },
 ];
-
-export const loader: LoaderFunction = async ({ request }) => {
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-
-  if (token) {
-    const sessionCookie = await createUserSession(token, url.pathname);
-
-    // Create a new URL without the token parameter
-    const newUrl = new URL(url);
-    newUrl.searchParams.delete('token');
-
-    // Remove code-editor from path
-    const path = newUrl.pathname.replace(/^\/code-editor/, '');
-    newUrl.pathname = path;
-
-    return redirect(newUrl.pathname + newUrl.search, {
-      headers: {
-        'Set-Cookie': sessionCookie,
-      },
-    });
-  }
-
-  return json({ message: 'No token provided' });
-};
 
 const inlineThemeCode = stripIndents`
   setTutorialKitTheme();
@@ -109,12 +83,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 import { logStore } from './lib/stores/logs';
 
-type LoaderData = {
-  message: string;
+export const headers: HeadersFunction = () => {
+  return {
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Resource-Policy': 'same-origin',
+  };
 };
 
 export default function App() {
-  const data = useLoaderData<typeof loader>() as LoaderData;
   const theme = useStore(themeStore);
 
   useEffect(() => {
@@ -127,26 +104,8 @@ export default function App() {
   }, []);
 
   return (
-    <html lang="en" data-theme={theme}>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta />
-        <Links />
-        <title>Code Editor</title>
-      </head>
-      <body>
-        <div>{data.message}</div>
-        <DndProvider backend={HTML5Backend}>
-          <ClientOnly fallback={<div>Loading...</div>}>{() => <Outlet />}</ClientOnly>
-        </DndProvider>
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
+    <Layout>
+      <Outlet />
+    </Layout>
   );
-}
-
-export function ErrorBoundary() {
-  return <ErrorBoundaryComponent />;
 }

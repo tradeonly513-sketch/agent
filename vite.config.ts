@@ -82,6 +82,10 @@ export default defineConfig((config) => {
     publicPath: '/code-editor/build/',
     server: {
       host: '0.0.0.0',
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
+      },
       allowedHosts: [
         'localhost',
         'rapidcanvas.net',
