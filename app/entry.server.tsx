@@ -16,13 +16,7 @@ export default async function handleRequest(
 ) {
   // await initializeModelList({});
 
-  const authResult = await authenticate(request);
-
-  // Stop request if authentication fails
-  if (authResult instanceof Response) {
-    console.log('authResult', authResult);
-    return authResult;
-  }
+  await authenticate(request);
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
     signal: request.signal,

@@ -9,110 +9,7 @@ import {
 import { generateId } from '~/utils/fileUtils';
 import JSZip from 'jszip';
 
-function shouldIncludeFile(filePath: string): boolean {
-  return !filePath.startsWith('.');
-}
-
-function isBinaryFile(filePath: string): boolean {
-  const binaryExtensions = ['png', 'jpg', 'jpeg', 'gif', 'ico', 'pdf', 'pyc', 'exe', 'bin'];
-  const ext = filePath.split('.').pop()?.toLowerCase() || '';
-
-  return binaryExtensions.includes(ext);
-}
-
 const BASE_URL = '/api1/';
-
-async function getAppTemplate(dataAppId: string, token: string): Promise<string> {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-
-  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
-    method: 'GET',
-    headers,
-  });
-  const dataAppJson: any = await dataAppResponse.json();
-  const appTemplateName = dataAppJson.appTemplate.name;
-
-  return appTemplateName;
-}
-
-async function fetchZipFromDataApp(appTemplateName: string, token: string): Promise<JSZip> {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-  const payload = {
-    fileName: `${appTemplateName}.zip`,
-    signedUrlObjectType: 'APP_TEMPLATE_REACTJS',
-    metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
-  };
-
-  const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-download-url`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-    headers,
-  });
-  const result: any = await response.json();
-  const signedUrl = result.signedUrl;
-
-  if (!signedUrl) {
-    throw new Error('Signed download URL not found.');
-  }
-
-  const zipResponse = await fetch(signedUrl, {
-    headers: result.headers,
-  });
-  const blob = await zipResponse.blob();
-  const zipArrayBuffer = await blob.arrayBuffer();
-
-  return await JSZip.loadAsync(zipArrayBuffer);
-}
-
-async function processZipEntries(
-  zip: JSZip,
-  folderName: string,
-): Promise<{
-  fileArtifacts: FileContent[];
-  skippedFiles: string[];
-}> {
-  const textDecoder = new TextDecoder('utf-8');
-
-  const skippedFiles: string[] = [];
-  const fileArtifacts: Array<{ path: string; content: string }> = [];
-
-  const entries = Object.values(zip.files);
-
-  for (const entry of entries) {
-    const relativePath = entry.name;
-
-    const normalizedPath = normalizeRelativePath(relativePath, folderName);
-
-    if (!normalizedPath || !shouldIncludeFile(relativePath) || entry.dir) {
-      continue;
-    }
-
-    if (isBinaryFile(relativePath)) {
-      skippedFiles.push(relativePath);
-      continue;
-    }
-
-    let content: string;
-
-    try {
-      content = await entry.async('string');
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
-      const uint8Content = await entry.async('uint8array');
-      content = textDecoder.decode(uint8Content);
-    }
-
-    fileArtifacts.push({ path: normalizedPath, content });
-  }
-
-  return { fileArtifacts, skippedFiles };
-}
 
 function buildChatMessage(
   fileArtifacts: Array<{ path: string; content: string }>,
@@ -180,15 +77,32 @@ async function saveFilesToServer(files: FileContent[], dataAppId: string, folder
   }
 }
 
+interface ApiResponse {
+  fileArtifacts: FileContent[];
+  skippedFiles: string[];
+  folderName: string;
+}
+
 export async function loadFilesFromDataApp(
   dataAppId: string,
   token: string,
   importChat: (description: string, messages: Message[]) => Promise<void>,
 ): Promise<void> {
   try {
-    const folderName = await getAppTemplate(dataAppId, token);
-    const zip = await fetchZipFromDataApp(folderName, token);
-    const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);
+    const response = await fetch('/code-editor/api/get-files', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ dataAppId, token }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to process files: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as ApiResponse;
+    const { fileArtifacts, skippedFiles, folderName } = data;
 
     // Save files to server
     await saveFilesToServer(fileArtifacts, dataAppId, folderName);
@@ -210,8 +124,6 @@ export async function importChatFromFiles({
   folderName: string;
   skippedFiles?: string[];
 }) {
-  console.log({ fileArtifacts });
-
   const commands = await detectProjectCommands(fileArtifacts);
   const commandsMessage = createCommandsMessage(commands);
 

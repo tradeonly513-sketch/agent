@@ -190,7 +190,7 @@ ${value.content}
             chatId.set(storedMessages.id);
             chatMetadata.set(storedMessages.metadata);
           } else {
-            navigate('/', { replace: true });
+            //navigate('/', { replace: true });
           }
 
           setReady(true);

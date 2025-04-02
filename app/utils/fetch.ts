@@ -2,13 +2,15 @@
 const originalFetch = typeof window !== 'undefined' ? window.fetch : fetch;
 
 function getTokenFromUrl(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
+  const url = new URL(window.location.href);
+  const localToken = localStorage.getItem('token');
+  const urlToken = url.searchParams.get('token');
+
+  if (!localToken && urlToken) {
+    localStorage.setItem('token', urlToken);
   }
 
-  const url = new URL(window.location.href);
-
-  return url.searchParams.get('token');
+  return url.searchParams.get('token') || localToken;
 }
 
 const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {

@@ -11,7 +11,7 @@ export async function authenticate(request: Request) {
   }
 
   if (!token) {
-    return new Response('No token provided', { status: 401 });
+    throw new Response('No token provided', { status: 401 });
   }
 
   try {
@@ -25,12 +25,12 @@ export async function authenticate(request: Request) {
     });
 
     if (dataAppResponse.status !== 200) {
-      return new Response('User authentication failed', { status: 401 });
+      throw new Response('User authentication failed', { status: 401 });
     }
 
     return true;
   } catch (error) {
     console.error('Authentication error:', error);
-    return new Response('Authentication failed', { status: 401 });
+    throw new Response('Authentication failed', { status: 401 });
   }
 }
