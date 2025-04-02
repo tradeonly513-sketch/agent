@@ -5,6 +5,7 @@ import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
+import { authenticate } from './middleware';
 
 export default async function handleRequest(
   request: Request,
@@ -14,6 +15,14 @@ export default async function handleRequest(
   _loadContext: AppLoadContext,
 ) {
   // await initializeModelList({});
+
+  const authResult = await authenticate(request);
+
+  // Stop request if authentication fails
+  if (authResult instanceof Response) {
+    console.log('authResult', authResult);
+    return authResult;
+  }
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
     signal: request.signal,
