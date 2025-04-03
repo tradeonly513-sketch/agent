@@ -8,8 +8,10 @@ import {
 } from '~/utils/projectCommands';
 import { generateId } from '~/utils/fileUtils';
 import JSZip from 'jszip';
+import { workbenchStore } from '~/lib/stores/workbench';
 
-const BASE_URL = '/api1/';
+const isLocal = window.location.hostname === 'localhost';
+const BASE_URL = isLocal ? '/api1/' : 'https://test.dev.rapidcanvas.net/';
 
 function buildChatMessage(
   fileArtifacts: Array<{ path: string; content: string }>,
@@ -55,13 +57,10 @@ export function normalizeRelativePath(relativePath: string, commonFolder?: strin
   return normalized;
 }
 
-async function saveFilesToServer(files: FileContent[], dataAppId: string, folderName: string): Promise<void> {
+export async function saveFilesToServer(files: FileContent[], dataAppId: string, folderName: string): Promise<void> {
   try {
     const response = await fetch('/code-editor/api/files', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         files,
         dataAppId,
@@ -74,6 +73,28 @@ async function saveFilesToServer(files: FileContent[], dataAppId: string, folder
     }
   } catch (error) {
     console.error('Failed to save files to server:', error);
+  }
+}
+
+export async function saveFileToServer(filePath: string, content: string, dataAppId: string): Promise<void> {
+  try {
+    const response = await fetch('/code-editor/api/file', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        filePath,
+        dataAppId,
+        content,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save file: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Failed to save file to server:', error);
   }
 }
 
@@ -135,6 +156,17 @@ export async function importChatFromFiles({
   }
 
   await importChat(folderName, messages);
+}
+
+export async function saveFilesToWorkbench({ fileArtifacts }: { fileArtifacts: FileContent[] }) {
+  const fileMaps = fileArtifacts.map((file) => ({
+    [`/home/project/${file.path}`]: {
+      type: 'file',
+      content: file.content,
+    },
+  }));
+
+  workbenchStore.setDocuments(Object.assign({}, ...fileMaps));
 }
 
 export async function updateDataAppFiles(dataAppId: string, token: string, file: File): Promise<JSZip> {

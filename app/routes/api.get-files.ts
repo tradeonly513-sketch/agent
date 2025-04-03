@@ -19,7 +19,6 @@ async function getAppTemplate(dataAppId: string, token: string): Promise<string>
     method: 'GET',
     headers,
   });
-  console.log(dataAppResponse);
 
   const dataAppJson: any = await dataAppResponse.json();
 
@@ -125,20 +124,15 @@ function normalizeRelativePath(relativePath: string, commonFolder?: string): str
 
 export const action: ActionFunction = async ({ request }) => {
   try {
-    console.log('get-files');
-
     const body = (await request.json()) as RequestBody;
     const { dataAppId } = body;
     const token = request.headers.get('token');
-
-    console.log(dataAppId, token);
 
     if (!dataAppId || !token) {
       return json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
     const folderName = await getAppTemplate(dataAppId, token);
-    console.log(folderName);
 
     const zip = await fetchZipFromDataApp(folderName, token);
     const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);

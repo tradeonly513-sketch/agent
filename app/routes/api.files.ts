@@ -1,9 +1,8 @@
-import { json } from '@remix-run/node';
-import type { ActionFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/cloudflare';
+import type { ActionFunction } from '@remix-run/cloudflare';
 import fs from 'node:fs/promises';
 import { path } from '~/utils/path';
 import type { FileContent } from '~/utils/projectCommands';
-import { ErrorBoundary } from '~/components/ui/ErrorBoundary/ErrorBoundary';
 
 interface SaveFilesRequest {
   files: FileContent[];
@@ -11,11 +10,7 @@ interface SaveFilesRequest {
   folderName: string;
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  if (request.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, { status: 405 });
-  }
-
+export const action: ActionFunction = async ({ request }) => {
   try {
     const body = (await request.json()) as SaveFilesRequest;
     const { files, dataAppId, folderName } = body;
@@ -41,5 +36,3 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ error: 'Failed to save files' }, { status: 500 });
   }
 };
-
-export { ErrorBoundary };

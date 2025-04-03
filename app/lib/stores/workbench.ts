@@ -18,7 +18,7 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert } from '~/types/actions';
-import { updateDataAppFiles } from '~/components/chat/Chat.helper';
+import { saveFileToServer, updateDataAppFiles } from '~/components/chat/Chat.helper';
 
 const { saveAs } = fileSaver;
 
@@ -121,6 +121,7 @@ export class WorkbenchStore {
   }
 
   setDocuments(files: FileMap) {
+    console.log({ files });
     this.#editorStore.setDocuments(files);
 
     if (this.#filesStore.filesCount > 0 && this.currentDocument.get() === undefined) {
@@ -187,7 +188,7 @@ export class WorkbenchStore {
     this.#editorStore.setSelectedFile(filePath);
   }
 
-  async saveFile(filePath: string) {
+  async saveFile(filePath: string, mixedId?: string) {
     const documents = this.#editorStore.documents.get();
     const document = documents[filePath];
 
@@ -197,20 +198,24 @@ export class WorkbenchStore {
 
     await this.#filesStore.saveFile(filePath, document.value);
 
+    if (mixedId) {
+      await saveFileToServer(filePath, document.value, mixedId!);
+    }
+
     const newUnsavedFiles = new Set(this.unsavedFiles.get());
     newUnsavedFiles.delete(filePath);
 
     this.unsavedFiles.set(newUnsavedFiles);
   }
 
-  async saveCurrentDocument() {
+  async saveCurrentDocument(mixedId?: string) {
     const currentDocument = this.currentDocument.get();
 
     if (currentDocument === undefined) {
       return;
     }
 
-    await this.saveFile(currentDocument.filePath);
+    await this.saveFile(currentDocument.filePath, mixedId);
   }
 
   resetCurrentDocument() {

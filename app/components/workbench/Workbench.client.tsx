@@ -27,8 +27,7 @@ import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/comp
 import { useLoaderData, useSearchParams } from '@remix-run/react';
 
 import type { Message } from 'ai';
-import { importChatFromFiles } from '~/components/chat/Chat.helper';
-import { db, deleteById } from '~/lib/persistence';
+import { saveFilesToWorkbench } from '~/components/chat/Chat.helper';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -341,7 +340,7 @@ export const Workbench = memo(
     }, []);
 
     const onFileSave = useCallback(() => {
-      workbenchStore.saveCurrentDocument().catch(() => {
+      workbenchStore.saveCurrentDocument(mixedId!).catch(() => {
         toast.error('Failed to update file content');
       });
     }, []);
@@ -400,11 +399,7 @@ export const Workbench = memo(
 
         const data: any = await response.json();
 
-        if (db && mixedId) {
-          await deleteById(db, mixedId!);
-        }
-
-        await importChatFromFiles({ importChat, fileArtifacts: data.files, folderName: data.folderName });
+        await saveFilesToWorkbench({ fileArtifacts: data.files });
       } catch (error) {
         console.error('Error resetting code:', error);
         toast.error('Failed to reset code');
