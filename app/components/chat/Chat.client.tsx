@@ -28,7 +28,7 @@ import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
 import type { MapStore } from 'nanostores';
 import type { FileMap } from '~/lib/stores/files';
-import { loadFilesFromDataApp } from './Chat.helper';
+import { loadFilesFromDataApp, saveFilesToWorkbench } from './Chat.helper';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -40,11 +40,42 @@ const logger = createScopedLogger('Chat');
 export function Chat() {
   renderLogger.trace('Chat');
 
+  const [isLoading, setIsLoading] = useState(true);
+
   const { ready, initialMessages, storeMessageHistory, importChat, exportChat } = useChatHistory();
+
   const title = useStore(description);
   useEffect(() => {
     workbenchStore.setReloadedMessages(initialMessages.map((m) => m.id));
   }, [initialMessages]);
+
+  const { id: mixedId } = useLoaderData<{ id?: string }>();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+
+  useEffect(() => {
+    if (!mixedId || !token) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    loadFilesFromDataApp(mixedId, token)
+      .then(async (data) => {
+        await importChat(data.folderName, data.messages);
+        saveFilesToWorkbench({ fileArtifacts: data.updatedArtifacts.files });
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error loading files from data app:', error);
+        setIsLoading(false);
+      });
+  }, [mixedId, token]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -118,7 +149,7 @@ export const ChatImpl = memo(
   ({ description, initialMessages, storeMessageHistory, importChat, exportChat }: ChatProps) => {
     useShortcuts();
 
-    const { id: mixedId, showChat } = useLoaderData<{ id?: string; showChat: boolean }>();
+    const { showChat } = useLoaderData<{ showChat: boolean }>();
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
@@ -139,19 +170,9 @@ export const ChatImpl = memo(
       return (PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER) as ProviderInfo;
     });
 
-    const token = searchParams.get('token');
-
     const [animationScope, animate] = useAnimate();
 
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
-
-    useEffect(() => {
-      if (!mixedId || !token) {
-        return;
-      }
-
-      loadFilesFromDataApp(mixedId, token, importChat);
-    }, [importChat]);
 
     const {
       messages,

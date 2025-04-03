@@ -121,7 +121,6 @@ export class WorkbenchStore {
   }
 
   setDocuments(files: FileMap) {
-    console.log({ files });
     this.#editorStore.setDocuments(files);
 
     if (this.#filesStore.filesCount > 0 && this.currentDocument.get() === undefined) {

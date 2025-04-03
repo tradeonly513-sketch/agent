@@ -1,5 +1,4 @@
 import type { Message } from 'ai';
-import { toast } from 'react-toastify';
 import {
   detectProjectCommands,
   createCommandsMessage,
@@ -64,23 +63,23 @@ export function normalizeRelativePath(relativePath: string, commonFolder?: strin
   return normalized;
 }
 
-export async function saveFilesToServer(files: FileContent[], dataAppId: string, folderName: string): Promise<void> {
-  try {
-    const response = await fetch('/code-editor/api/files', {
-      method: 'POST',
-      body: JSON.stringify({
-        files,
-        dataAppId,
-        folderName,
-      }),
-    });
+export async function saveFilesToServer(files: FileContent[], dataAppId: string, folderName: string) {
+  const response = await fetch('/code-editor/api/files', {
+    method: 'POST',
+    body: JSON.stringify({
+      files,
+      dataAppId,
+      folderName,
+    }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Failed to save files: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error('Failed to save files to server:', error);
+  if (!response.ok) {
+    throw new Error(`Failed to save files: ${response.statusText}`);
   }
+
+  const data: { files: FileContent[]; isLatest: boolean } = await response.json();
+
+  return data;
 }
 
 export async function saveFileToServer(filePath: string, content: string, dataAppId: string): Promise<void> {
@@ -111,44 +110,39 @@ interface ApiResponse {
   folderName: string;
 }
 
-export async function loadFilesFromDataApp(
-  dataAppId: string,
-  token: string,
-  importChat: (description: string, messages: Message[]) => Promise<void>,
-): Promise<void> {
-  try {
-    const response = await fetch('/code-editor/api/get-files', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ dataAppId, token }),
-    });
+export async function loadFilesFromDataApp(dataAppId: string, token: string) {
+  const response = await fetch('/code-editor/api/get-files', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ dataAppId, token }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Failed to process files: ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as ApiResponse;
-    const { fileArtifacts, skippedFiles, folderName } = data;
-
-    // Save files to server
-    await saveFilesToServer(fileArtifacts, dataAppId, folderName);
-    await importChatFromFiles({ importChat, fileArtifacts, skippedFiles, folderName });
-  } catch (error: any) {
-    console.error('Error loading files from API:', error);
-    toast.error('Failed to load files from API: ' + error.message);
+  if (!response.ok) {
+    throw new Error(`Failed to process files: ${response.statusText}`);
   }
+
+  const data = (await response.json()) as ApiResponse;
+  const { fileArtifacts, skippedFiles, folderName } = data;
+
+  // Save files to server
+  const updatedArtifacts = await saveFilesToServer(fileArtifacts, dataAppId, folderName);
+  const messages = await importChatFromFiles({
+    fileArtifacts,
+    skippedFiles,
+    folderName,
+  });
+
+  return { messages, folderName, updatedArtifacts };
 }
 
 export async function importChatFromFiles({
-  importChat,
   fileArtifacts,
   skippedFiles,
   folderName,
 }: {
   fileArtifacts: FileContent[];
-  importChat: (description: string, messages: Message[]) => Promise<void>;
   folderName: string;
   skippedFiles?: string[];
 }) {
@@ -162,7 +156,7 @@ export async function importChatFromFiles({
     messages.push(commandsMessage);
   }
 
-  await importChat(folderName, messages);
+  return messages;
 }
 
 export async function saveFilesToWorkbench({ fileArtifacts }: { fileArtifacts: FileContent[] }) {

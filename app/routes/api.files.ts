@@ -30,7 +30,20 @@ export const action: ActionFunction = async ({ request }) => {
 
     await fs.writeFile(path.join(rootDir, 'app-data.json'), JSON.stringify(data, null, 2), 'utf8');
 
-    return json({ success: true });
+    // Read latest-data.json to get the most recent files
+    const latestDataPath = path.join(rootDir, 'latest-data.json');
+    let latestFiles = files;
+
+    try {
+      const latestDataContent = await fs.readFile(latestDataPath, 'utf8');
+      const latestData = JSON.parse(latestDataContent);
+      latestFiles = latestData.files;
+    } catch (error) {
+      console.error('Error reading latest-data.json:', error);
+      return json({ success: true, files, isLatest: false });
+    }
+
+    return json({ success: true, files: latestFiles, isLatest: true });
   } catch (error) {
     console.error('Error saving files:', error);
     return json({ error: 'Failed to save files' }, { status: 500 });

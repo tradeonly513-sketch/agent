@@ -180,6 +180,7 @@ ${value.content}
                   : []),
                 ...filteredMessages,
               ];
+
               restoreSnapshot(mixedId);
             }
 
@@ -256,7 +257,12 @@ ${value.content}
     // workbenchStore.files.setKey(snapshot?.files)
   }, []);
 
+  const resetMessages = useCallback(() => {
+    setInitialMessages([]);
+  }, []);
+
   return {
+    resetMessages,
     ready: !mixedId || ready,
     initialMessages,
     updateChatMestaData: async (metadata: IChatMetadata) => {
@@ -356,6 +362,9 @@ ${value.content}
 
         if (currentId) {
           await setMessages(db, currentId, messages, urlId, description, undefined, metadata);
+          setInitialMessages(messages);
+          setArchivedMessages([]);
+
           return;
         }
 
