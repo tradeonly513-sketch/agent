@@ -1,7 +1,7 @@
 // Store the original fetch function
 const originalFetch = typeof window !== 'undefined' ? window.fetch : fetch;
 
-function getTokenFromUrl(): string | null {
+export function getToken(): string | null {
   const url = new URL(window.location.href);
   const localToken = localStorage.getItem('token');
   const urlToken = url.searchParams.get('token');
@@ -14,7 +14,7 @@ function getTokenFromUrl(): string | null {
 }
 
 const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-  const token = getTokenFromUrl();
+  const token = getToken();
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -40,4 +40,10 @@ const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit):
 
 if (typeof window !== 'undefined') {
   window.fetch = authenticatedFetch;
+}
+
+export function removeTokenFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('token');
+  window.history.replaceState({}, '', url.toString());
 }

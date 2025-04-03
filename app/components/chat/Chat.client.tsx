@@ -29,6 +29,8 @@ import { filesToArtifacts } from '~/utils/fileUtils';
 import type { MapStore } from 'nanostores';
 import type { FileMap } from '~/lib/stores/files';
 import { loadFilesFromDataApp, saveFilesToWorkbench } from './Chat.helper';
+import { getToken, removeTokenFromUrl } from '~/utils/fetch';
+import { ErrorPage } from '~/components/ui/ErrorBoundary/ErrorPage';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -41,6 +43,7 @@ export function Chat() {
   renderLogger.trace('Chat');
 
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const { ready, initialMessages, resetMessages, storeMessageHistory, importChat, exportChat } = useChatHistory();
 
@@ -50,8 +53,7 @@ export function Chat() {
   }, [initialMessages]);
 
   const { id: mixedId } = useLoaderData<{ id?: string }>();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = getToken();
 
   useEffect(() => {
     if (initialMessages.length > 0) {
@@ -61,7 +63,9 @@ export function Chat() {
 
   useEffect(() => {
     if (!mixedId || !token) {
+      setError(new Error('No dataApp ID or token'));
       setIsLoading(false);
+
       return;
     }
 
@@ -71,16 +75,21 @@ export function Chat() {
       .then(async (data) => {
         await importChat(data.folderName, data.messages);
         saveFilesToWorkbench({ fileArtifacts: data.updatedArtifacts.files });
+        removeTokenFromUrl();
         setIsLoading(false);
       })
       .catch((error) => {
-        console.error('Error loading files from data app:', error);
+        setError(error);
         setIsLoading(false);
       });
   }, [mixedId, token]);
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <ErrorPage error={error} />;
   }
 
   return (
