@@ -4,6 +4,12 @@ import JSZip from 'jszip';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
+interface AppTemplateResponse {
+  appTemplate: {
+    name: string;
+  };
+}
+
 async function getAppTemplate(dataAppId: string, token: string): Promise<string> {
   const headers = {
     'Content-Type': 'application/json',
@@ -15,7 +21,15 @@ async function getAppTemplate(dataAppId: string, token: string): Promise<string>
     headers,
   });
 
-  const dataAppJson: any = await dataAppResponse.json();
+  if (!dataAppResponse.ok) {
+    throw new Error(`Failed to fetch app template: ${dataAppResponse.statusText}`);
+  }
+
+  const dataAppJson = (await dataAppResponse.json()) as AppTemplateResponse;
+
+  if (!dataAppJson?.appTemplate?.name) {
+    throw new Error('Invalid app template response');
+  }
 
   return dataAppJson.appTemplate.name;
 }
