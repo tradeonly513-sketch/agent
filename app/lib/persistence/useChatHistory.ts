@@ -259,6 +259,7 @@ ${value.content}
 
   const resetMessages = useCallback(() => {
     setInitialMessages([]);
+    setArchivedMessages([]);
   }, []);
 
   return {

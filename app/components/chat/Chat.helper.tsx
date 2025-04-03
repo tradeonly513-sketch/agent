@@ -129,7 +129,7 @@ export async function loadFilesFromDataApp(dataAppId: string, token: string) {
   // Save files to server
   const updatedArtifacts = await saveFilesToServer(fileArtifacts, dataAppId, folderName);
   const messages = await importChatFromFiles({
-    fileArtifacts,
+    fileArtifacts: updatedArtifacts.files,
     skippedFiles,
     folderName,
   });

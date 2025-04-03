@@ -42,7 +42,7 @@ export function Chat() {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const { ready, initialMessages, storeMessageHistory, importChat, exportChat } = useChatHistory();
+  const { ready, initialMessages, resetMessages, storeMessageHistory, importChat, exportChat } = useChatHistory();
 
   const title = useStore(description);
   useEffect(() => {
@@ -52,6 +52,12 @@ export function Chat() {
   const { id: mixedId } = useLoaderData<{ id?: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+
+  useEffect(() => {
+    if (initialMessages.length > 0) {
+      resetMessages();
+    }
+  }, [initialMessages]);
 
   useEffect(() => {
     if (!mixedId || !token) {
