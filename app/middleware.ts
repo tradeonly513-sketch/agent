@@ -1,3 +1,5 @@
+import { json } from '@remix-run/cloudflare';
+
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
 export async function authenticate(request: Request) {
@@ -11,7 +13,7 @@ export async function authenticate(request: Request) {
   }
 
   if (!token) {
-    throw new Response('No token provided', { status: 401 });
+    return json({ error: 'No token provided', status: 401 });
   }
 
   try {
@@ -25,12 +27,12 @@ export async function authenticate(request: Request) {
     });
 
     if (dataAppResponse.status !== 200) {
-      throw new Response('User authentication failed', { status: 401 });
+      return json({ error: 'User authentication failed', status: 401 });
     }
 
-    return true;
+    return json({ success: true });
   } catch (error) {
     console.error('Authentication error:', error);
-    throw new Response('Authentication failed', { status: 401 });
+    return json({ error: 'Authentication failed', status: 401 });
   }
 }

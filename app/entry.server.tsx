@@ -16,7 +16,18 @@ export default async function handleRequest(
 ) {
   // await initializeModelList({});
 
-  await authenticate(request);
+  const response = await authenticate(request);
+
+  if (response instanceof Response) {
+    const clonedResponse = response.clone();
+    const data = (await clonedResponse.json()) as { error?: string };
+
+    console.log(data);
+
+    if (data.error) {
+      return response;
+    }
+  }
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
     signal: request.signal,
