@@ -10,8 +10,15 @@ import { generateId } from '~/utils/fileUtils';
 import JSZip from 'jszip';
 import { workbenchStore } from '~/lib/stores/workbench';
 
-const isLocal = window.location.hostname === 'localhost';
-const BASE_URL = isLocal ? '/api1/' : 'https://test.dev.rapidcanvas.net/';
+const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+
+function getBaseUrl() {
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return '/api1/';
+  }
+
+  return BASE_URL;
+}
 
 function buildChatMessage(
   fileArtifacts: Array<{ path: string; content: string }>,
@@ -175,7 +182,7 @@ export async function updateDataAppFiles(dataAppId: string, token: string, file:
     Authorization: `Bearer ${token}`,
   };
 
-  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
+  const dataAppResponse = await fetch(`${getBaseUrl()}/api/dataapps/by-id/${dataAppId}/detailed`, {
     method: 'GET',
     headers,
   });
@@ -187,7 +194,7 @@ export async function updateDataAppFiles(dataAppId: string, token: string, file:
     metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
   };
 
-  const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-upload-url`, {
+  const response = await fetch(`${getBaseUrl()}/api/signed-url/generate-file-upload-url`, {
     method: 'POST',
     body: JSON.stringify(payload),
     headers,
