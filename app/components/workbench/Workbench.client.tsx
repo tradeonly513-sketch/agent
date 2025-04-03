@@ -400,6 +400,8 @@ export const Workbench = memo(
         const data: any = await response.json();
 
         await saveFilesToWorkbench({ fileArtifacts: data.files });
+        onFileSave();
+        toast.success('Files reset successfully');
       } catch (error) {
         console.error('Error resetting code:', error);
         toast.error('Failed to reset code');
