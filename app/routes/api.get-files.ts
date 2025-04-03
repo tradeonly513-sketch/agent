@@ -1,11 +1,6 @@
 import { json } from '@remix-run/cloudflare';
-import type { ActionFunction } from '@remix-run/cloudflare';
+import type { LoaderFunction } from '@remix-run/cloudflare';
 import JSZip from 'jszip';
-
-interface RequestBody {
-  dataAppId: string;
-  token: string;
-}
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
@@ -30,7 +25,6 @@ async function fetchZipFromDataApp(appTemplateName: string, token: string): Prom
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
-  console.log(appTemplateName);
 
   const payload = {
     fileName: `${appTemplateName}.zip`,
@@ -45,7 +39,6 @@ async function fetchZipFromDataApp(appTemplateName: string, token: string): Prom
   });
   const result: any = await response.json();
   const signedUrl = result.signedUrl;
-  console.log(signedUrl);
 
   if (!signedUrl) {
     throw new Error('Signed download URL not found.');
@@ -95,8 +88,7 @@ async function processZipEntries(zip: JSZip, folderName: string) {
 
     try {
       content = await entry.async('string');
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
+    } catch {
       const uint8Content = await entry.async('uint8array');
       content = textDecoder.decode(uint8Content);
     }
@@ -122,10 +114,10 @@ function normalizeRelativePath(relativePath: string, commonFolder?: string): str
   return normalized;
 }
 
-export const action: ActionFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({ request }) => {
   try {
-    const body = (await request.json()) as RequestBody;
-    const { dataAppId } = body;
+    const url = new URL(request.url);
+    const dataAppId = url.searchParams.get('dataAppId');
     const token = request.headers.get('token');
 
     if (!dataAppId || !token) {
@@ -133,7 +125,6 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     const folderName = await getAppTemplate(dataAppId, token);
-
     const zip = await fetchZipFromDataApp(folderName, token);
     const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);
 

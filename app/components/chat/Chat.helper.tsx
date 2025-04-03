@@ -111,12 +111,12 @@ interface ApiResponse {
 }
 
 export async function loadFilesFromDataApp(dataAppId: string, token: string) {
-  const response = await fetch('/code-editor/api/get-files', {
-    method: 'POST',
+  const response = await fetch(`/code-editor/api/get-files?dataAppId=${dataAppId}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
+      token,
     },
-    body: JSON.stringify({ dataAppId, token }),
   });
 
   if (!response.ok) {
