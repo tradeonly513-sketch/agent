@@ -6,7 +6,7 @@ export function getToken(): string | null {
   const localToken = localStorage.getItem('token');
   const urlToken = url.searchParams.get('token');
 
-  if (!localToken && urlToken) {
+  if (urlToken && urlToken !== localToken) {
     localStorage.setItem('token', urlToken);
   }
 
