@@ -15,9 +15,7 @@ export function getToken(): string | null {
 
 const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   const token = getToken();
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders: Record<string, string> = {};
 
   if (token) {
     defaultHeaders.token = token;

@@ -169,7 +169,6 @@ export async function saveFilesToWorkbench({ fileArtifacts }: { fileArtifacts: F
 
   workbenchStore.setDocuments(Object.assign({}, ...fileMaps));
 }
-
 export async function updateDataAppFiles(dataAppId: string, token: string, file: File): Promise<JSZip> {
   const headers = {
     'Content-Type': 'application/json',

@@ -24,7 +24,7 @@ import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
-import { useLoaderData, useSearchParams } from '@remix-run/react';
+import { useLoaderData } from '@remix-run/react';
 
 import type { Message } from 'ai';
 import { saveFilesToWorkbench } from '~/components/chat/Chat.helper';
@@ -285,7 +285,7 @@ export const Workbench = memo(
     renderLogger.trace('Workbench');
 
     const [isSyncing, setIsSyncing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
     const [isResetting, setIsResetting] = useState(false);
@@ -310,8 +310,6 @@ export const Workbench = memo(
       shouldHideGithubOptions: boolean;
       id?: string;
     }>();
-    const [searchParams] = useSearchParams();
-    const token = searchParams.get('token');
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
@@ -364,17 +362,17 @@ export const Workbench = memo(
       }
     }, []);
 
-    const handleSaveCode = useCallback(async () => {
-      setIsSaving(true);
+    const handlePublishCode = useCallback(async () => {
+      setIsPublishing(true);
 
       try {
-        await workbenchStore.saveCode(mixedId!, token!);
-        toast.success('Files saved successfully');
+        await workbenchStore.publishCode(mixedId!);
+        toast.success('DataApp published successfully');
       } catch (error) {
-        console.error('Error saving files:', error);
-        toast.error('Failed to save files');
+        console.error('Error publishing DataApp:', error);
+        toast.error('Failed to publish DataApp');
       } finally {
-        setIsSaving(false);
+        setIsPublishing(false);
       }
     }, []);
 
@@ -458,9 +456,9 @@ export const Workbench = memo(
                         <div className="i-ph:terminal" />
                         Toggle Terminal
                       </PanelHeaderButton>
-                      <PanelHeaderButton className="mr-1 text-sm" onClick={handleSaveCode} disabled={isSaving}>
-                        {isSaving ? <div className="i-ph:spinner" /> : <div className="i-ph:save" />}
-                        {isSaving ? 'Saving...' : 'Save Code'}
+                      <PanelHeaderButton className="mr-1 text-sm" onClick={handlePublishCode} disabled={isPublishing}>
+                        {isPublishing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-up" />}
+                        {isPublishing ? 'Publishing...' : 'Publish'}
                       </PanelHeaderButton>
                       {importChat && (
                         <PanelHeaderButton className="mr-1 text-sm" onClick={handleResetCode} disabled={isResetting}>

@@ -18,7 +18,7 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert } from '~/types/actions';
-import { saveFileToServer, updateDataAppFiles } from '~/components/chat/Chat.helper';
+import { saveFileToServer } from '~/components/chat/Chat.helper';
 
 const { saveAs } = fileSaver;
 
@@ -413,7 +413,7 @@ export class WorkbenchStore {
     saveAs(content, `${uniqueProjectName}.zip`);
   }
 
-  async saveCode(dataAppId: string, token: string) {
+  async publishCode(dataAppId: string) {
     const zip = new JSZip();
     const files = this.files.get();
 
@@ -450,7 +450,26 @@ export class WorkbenchStore {
     const content = await zip.generateAsync({ type: 'blob' });
 
     const file = new File([content], `${uniqueProjectName}.zip`, { type: 'application/zip' });
-    updateDataAppFiles(dataAppId, token, file);
+
+    // Use the API endpoint instead of calling updateDataAppFiles directly
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('dataAppId', dataAppId);
+    formData.append('projectName', projectName);
+
+    const response = await fetch('/code-editor/api/publish-code', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = (await response.json()) as { error?: string };
+      throw new Error(errorData.error || 'Failed to publish code');
+    }
+
+    const result = await response.json();
+
+    return result;
   }
 
   async syncFiles(targetHandle: FileSystemDirectoryHandle) {
