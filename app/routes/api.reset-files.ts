@@ -14,7 +14,7 @@ export const loader = withAuthLoader(async ({ request }: LoaderFunctionArgs) => 
 
   try {
     const data = await readFileArtifacts(dataAppId!, 'app');
-    await deleteDataFile(dataAppId);
+    await deleteDataFile(dataAppId, 'latest');
 
     if (!data) {
       return json({ error: 'No saved data found' }, { status: 404 });

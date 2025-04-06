@@ -369,9 +369,15 @@ export const Workbench = memo(
       setIsPublishing(true);
 
       try {
-        await workbenchStore.saveCurrentDocument(mixedId!);
-        await workbenchStore.publishCode(mixedId!);
-        toast.success('DataApp published successfully');
+        workbenchStore
+          .saveCurrentDocument(mixedId!)
+          .then(async () => {
+            await workbenchStore.publishCode(mixedId!);
+            toast.success('DataApp published successfully');
+          })
+          .catch(() => {
+            toast.error('Failed to update file content');
+          });
       } catch (error) {
         console.error('Error publishing DataApp:', error);
         toast.error('Failed to publish DataApp');
@@ -401,7 +407,9 @@ export const Workbench = memo(
 
         const data: any = await response.json();
 
+        console.log(workbenchStore.files.get());
         await saveFilesToWorkbench({ fileArtifacts: data.files });
+        console.log(workbenchStore.files.get());
         onFileSave();
         toast.success('Files reset successfully');
       } catch (error) {
@@ -443,11 +451,17 @@ export const Workbench = memo(
                         onClick={() => {
                           workbenchStore.downloadZip();
                         }}
+                        title="Downloads the DataApp code as a zip file"
                       >
                         <div className="i-ph:code" />
                         Download Code
                       </PanelHeaderButton>
-                      <PanelHeaderButton className="mr-1 text-sm" onClick={handleSyncFiles} disabled={isSyncing}>
+                      <PanelHeaderButton
+                        className="mr-1 text-sm"
+                        onClick={handleSyncFiles}
+                        disabled={isSyncing}
+                        title="Sync the files from the local directory to the DataApp"
+                      >
                         {isSyncing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-down" />}
                         {isSyncing ? 'Syncing...' : 'Sync Files'}
                       </PanelHeaderButton>
@@ -456,6 +470,7 @@ export const Workbench = memo(
                         onClick={() => {
                           workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
                         }}
+                        title="Toggle the terminal visibility"
                       >
                         <div className="i-ph:terminal" />
                         Toggle Terminal

@@ -116,17 +116,23 @@ export async function updateFileInArtifacts(
 export async function deleteDataFile(dataAppId: string, fileType: 'app' | 'latest' = 'app'): Promise<boolean> {
   try {
     const dataPath = await getDataPath(dataAppId, fileType);
-    await fs.unlink(dataPath);
+    console.log('Deleting data file:', dataPath);
+
+    // Check if file exists before trying to delete it
+    try {
+      await fs.access(dataPath);
+
+      // File exists, so delete it
+      await fs.unlink(dataPath);
+      console.log('File successfully deleted:', dataPath);
+    } catch {
+      // File doesn't exist, which is fine
+      console.log('File does not exist, nothing to delete:', dataPath);
+    }
 
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      // File doesn't exist, which is fine
-      return true;
-    }
-
-    console.error('Error deleting latest data file:', error);
-
+    console.error('Error deleting data file:', error);
     return false;
   }
 }
