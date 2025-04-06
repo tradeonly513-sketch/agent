@@ -316,9 +316,12 @@ export const Workbench = memo(
     };
 
     useEffect(() => {
-      if (hasPreview) {
-        setSelectedView('preview');
-      }
+      /*
+       * if (hasPreview) {
+       * setSelectedView('preview');
+       * }
+       */
+      console.log('hasPreview', hasPreview);
     }, [hasPreview]);
 
     useEffect(() => {
