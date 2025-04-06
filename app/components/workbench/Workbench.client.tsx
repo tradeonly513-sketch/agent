@@ -389,7 +389,7 @@ export const Workbench = memo(
       setIsResetting(true);
 
       try {
-        const response = await fetch(`/code-editor/api/files/${mixedId}`);
+        const response = await fetch(`/code-editor/api/${mixedId}/reset-files`);
 
         if (!response.ok) {
           throw new Error('Failed to load saved files');

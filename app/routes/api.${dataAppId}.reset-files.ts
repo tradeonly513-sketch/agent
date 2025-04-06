@@ -1,0 +1,24 @@
+import { json } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+
+import { deleteDataFile, readFileArtifacts } from '~/utils/fileOperations';
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  if (!params.dataAppId) {
+    return json({ error: 'Data app ID is required' }, { status: 400 });
+  }
+
+  try {
+    const data = await readFileArtifacts(params.dataAppId!, 'app');
+    await deleteDataFile(params.dataAppId!);
+
+    if (!data) {
+      return json({ error: 'No saved data found' }, { status: 404 });
+    }
+
+    return json(data);
+  } catch (error) {
+    console.error('Error loading files:', error);
+    return json({ error: 'Failed to load files' }, { status: 500 });
+  }
+}

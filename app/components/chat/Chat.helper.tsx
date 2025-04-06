@@ -6,18 +6,7 @@ import {
   type FileContent,
 } from '~/utils/projectCommands';
 import { generateId } from '~/utils/fileUtils';
-import JSZip from 'jszip';
 import { workbenchStore } from '~/lib/stores/workbench';
-
-const BASE_URL = 'https://test.dev.rapidcanvas.net/';
-
-function getBaseUrl() {
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return '/api1/';
-  }
-
-  return BASE_URL;
-}
 
 function buildChatMessage(
   fileArtifacts: Array<{ path: string; content: string }>,
@@ -64,7 +53,7 @@ export function normalizeRelativePath(relativePath: string, commonFolder?: strin
 }
 
 export async function saveFilesToServer(files: FileContent[], dataAppId: string, folderName: string) {
-  const response = await fetch('/code-editor/api/files', {
+  const response = await fetch('/code-editor/api/save-files', {
     method: 'POST',
     body: JSON.stringify({
       files,
@@ -84,7 +73,7 @@ export async function saveFilesToServer(files: FileContent[], dataAppId: string,
 
 export async function saveFileToServer(filePath: string, content: string, dataAppId: string): Promise<void> {
   try {
-    const response = await fetch('/code-editor/api/file', {
+    const response = await fetch('/code-editor/api/save-file', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -169,43 +158,28 @@ export async function saveFilesToWorkbench({ fileArtifacts }: { fileArtifacts: F
 
   workbenchStore.setDocuments(Object.assign({}, ...fileMaps));
 }
-export async function updateDataAppFiles(dataAppId: string, token: string, file: File): Promise<JSZip> {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
 
-  const dataAppResponse = await fetch(`${getBaseUrl()}/api/dataapps/by-id/${dataAppId}/detailed`, {
-    method: 'GET',
-    headers,
-  });
-  const dataAppJson: any = await dataAppResponse.json();
+export async function publishCodeToServer(
+  file: File,
+  dataAppId: string,
+  projectName: string,
+  fileArtifacts: FileContent[],
+) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('dataAppId', dataAppId);
+  formData.append('projectName', projectName);
+  formData.append('fileArtifacts', JSON.stringify(fileArtifacts));
 
-  const payload = {
-    fileName: `${dataAppJson.appTemplate.name}.zip`,
-    signedUrlObjectType: 'APP_TEMPLATE_REACTJS',
-    metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
-  };
-
-  const response = await fetch(`${getBaseUrl()}/api/signed-url/generate-file-upload-url`, {
+  const response = await fetch('/code-editor/api/publish-code', {
     method: 'POST',
-    body: JSON.stringify(payload),
-    headers,
+    body: formData,
   });
-  const result: any = await response.json();
-  const signedUrl = result.signedUrl;
 
-  if (!signedUrl) {
-    throw new Error('Signed upload URL not found.');
+  if (!response.ok) {
+    const errorData = (await response.json()) as { error?: string };
+    throw new Error(errorData.error || 'Failed to publish code');
   }
 
-  const zipResponse = await fetch(signedUrl, {
-    headers: result.headers,
-    method: 'PUT',
-    body: file,
-  });
-  const blob = await zipResponse.blob();
-  const zipArrayBuffer = await blob.arrayBuffer();
-
-  return await JSZip.loadAsync(zipArrayBuffer);
+  return await response.json();
 }

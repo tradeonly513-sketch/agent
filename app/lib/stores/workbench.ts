@@ -18,7 +18,8 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert } from '~/types/actions';
-import { saveFileToServer } from '~/components/chat/Chat.helper';
+import type { FileContent } from '~/utils/projectCommands';
+import { publishCodeToServer, saveFileToServer } from '~/components/chat/Chat.helper';
 
 const { saveAs } = fileSaver;
 
@@ -417,21 +418,26 @@ export class WorkbenchStore {
     const zip = new JSZip();
     const files = this.files.get();
 
-    // Get the project name from the description input, or use a default name
     const projectName = (description.value ?? 'project').toLocaleLowerCase().split(' ').join('_');
 
-    // Generate a simple 6-character hash based on the current timestamp
     const timestampHash = Date.now().toString(36).slice(-6);
     const uniqueProjectName = `${projectName}_${timestampHash}`;
+
+    // Create file artifacts for saving to server
+    const fileArtifacts: FileContent[] = [];
 
     for (const [filePath, dirent] of Object.entries(files)) {
       if (dirent?.type === 'file' && !dirent.isBinary) {
         const relativePath = extractRelativePath(filePath);
 
-        // split the path into segments
+        // Add to file artifacts for server
+        fileArtifacts.push({
+          path: relativePath,
+          content: dirent.content,
+        });
+
         const pathSegments = relativePath.split('/');
 
-        // if there's more than one segment, we need to create folders
         if (pathSegments.length > 1) {
           let currentFolder = zip;
 
@@ -440,36 +446,16 @@ export class WorkbenchStore {
           }
           currentFolder.file(pathSegments[pathSegments.length - 1], dirent.content);
         } else {
-          // if there's only one segment, it's a file in the root
           zip.file(relativePath, dirent.content);
         }
       }
     }
 
-    // Generate the zip file and save it
     const content = await zip.generateAsync({ type: 'blob' });
 
     const file = new File([content], `${uniqueProjectName}.zip`, { type: 'application/zip' });
 
-    // Use the API endpoint instead of calling updateDataAppFiles directly
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('dataAppId', dataAppId);
-    formData.append('projectName', projectName);
-
-    const response = await fetch('/code-editor/api/publish-code', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = (await response.json()) as { error?: string };
-      throw new Error(errorData.error || 'Failed to publish code');
-    }
-
-    const result = await response.json();
-
-    return result;
+    return await publishCodeToServer(file, dataAppId, projectName, fileArtifacts);
   }
 
   async syncFiles(targetHandle: FileSystemDirectoryHandle) {

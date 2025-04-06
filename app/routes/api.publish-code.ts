@@ -1,5 +1,7 @@
 import { json } from '@remix-run/cloudflare';
 import type { ActionFunction } from '@remix-run/cloudflare';
+import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
+import type { FileContent } from '~/utils/projectCommands';
 
 const getBaseUrl = () => {
   return 'https://test.dev.rapidcanvas.net/';
@@ -14,10 +16,23 @@ export const action: ActionFunction = async ({ request }) => {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const dataAppId = formData.get('dataAppId') as string;
+    const projectName = formData.get('projectName') as string;
+    const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Parse file artifacts if provided
+    let fileArtifacts: FileContent[] = [];
+
+    if (fileArtifactsJson) {
+      try {
+        fileArtifacts = JSON.parse(fileArtifactsJson);
+      } catch (error) {
+        console.error('Error parsing file artifacts:', error);
+      }
     }
 
     const headers = {
@@ -35,7 +50,7 @@ export const action: ActionFunction = async ({ request }) => {
       throw new Error(`Failed to get data app details: ${dataAppResponse.statusText}`);
     }
 
-    const dataAppJson = (await dataAppResponse.json()) as { appTemplate: { name: string } };
+    const dataAppJson = (await dataAppResponse.json()) as { appTemplate?: { name: string } };
     const appName = dataAppJson?.appTemplate?.name || 'app';
 
     // Generate signed URL for upload
@@ -55,11 +70,9 @@ export const action: ActionFunction = async ({ request }) => {
       throw new Error(`Failed to generate signed URL: ${response.statusText}`);
     }
 
-    const result = (await response.json()) as { signedUrl: string; headers: Record<string, string> };
+    const result = (await response.json()) as { signedUrl: string; headers?: Record<string, string> };
     const signedUrl = result.signedUrl;
     const resultHeaders = result.headers || {};
-
-    console.log(signedUrl);
 
     if (!signedUrl) {
       throw new Error('Signed upload URL not found.');
@@ -79,7 +92,12 @@ export const action: ActionFunction = async ({ request }) => {
       throw new Error('Failed to upload file');
     }
 
-    // Return success without trying to load the zip file
+    if (fileArtifacts.length > 0 && projectName) {
+      // Save file artifacts to disk and remove latest app data
+      await saveFileArtifacts(fileArtifacts, dataAppId, projectName);
+      await deleteDataFile(dataAppId, 'latest');
+    }
+
     return json({ success: true });
   } catch (error: any) {
     console.error('Error publishing code:', error);
