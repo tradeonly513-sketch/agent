@@ -456,12 +456,22 @@ export const Workbench = memo(
                         <div className="i-ph:terminal" />
                         Toggle Terminal
                       </PanelHeaderButton>
-                      <PanelHeaderButton className="mr-1 text-sm" onClick={handlePublishCode} disabled={isPublishing}>
+                      <PanelHeaderButton
+                        className="mr-1 text-sm"
+                        onClick={handlePublishCode}
+                        disabled={isPublishing}
+                        title="Publishes the DataApp code with the latest saved version"
+                      >
                         {isPublishing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-up" />}
                         {isPublishing ? 'Publishing...' : 'Publish'}
                       </PanelHeaderButton>
                       {importChat && (
-                        <PanelHeaderButton className="mr-1 text-sm" onClick={handleResetCode} disabled={isResetting}>
+                        <PanelHeaderButton
+                          className="mr-1 text-sm"
+                          onClick={handleResetCode}
+                          disabled={isResetting}
+                          title="Restores the DataApp code to the latest deployed version, discarding any unpublished changes"
+                        >
                           {isResetting ? (
                             <div className="i-ph:spinner" />
                           ) : (

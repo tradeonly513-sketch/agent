@@ -1,13 +1,12 @@
 import { json } from '@remix-run/cloudflare';
 import type { ActionFunction } from '@remix-run/cloudflare';
+import { withAuth } from '~/middleware';
 import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
 import type { FileContent } from '~/utils/projectCommands';
 
-const getBaseUrl = () => {
-  return 'https://test.dev.rapidcanvas.net/';
-};
+const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
-export const action: ActionFunction = async ({ request }) => {
+export const action: ActionFunction = withAuth(async ({ request }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -24,7 +23,6 @@ export const action: ActionFunction = async ({ request }) => {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Parse file artifacts if provided
     let fileArtifacts: FileContent[] = [];
 
     if (fileArtifactsJson) {
@@ -41,7 +39,7 @@ export const action: ActionFunction = async ({ request }) => {
     };
 
     // Get data app details
-    const dataAppResponse = await fetch(`${getBaseUrl()}/api/dataapps/by-id/${dataAppId}/detailed`, {
+    const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
       method: 'GET',
       headers,
     });
@@ -60,7 +58,7 @@ export const action: ActionFunction = async ({ request }) => {
       metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
     };
 
-    const response = await fetch(`${getBaseUrl()}/api/signed-url/generate-file-upload-url`, {
+    const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-upload-url`, {
       method: 'POST',
       body: JSON.stringify(payload),
       headers,
@@ -103,4 +101,4 @@ export const action: ActionFunction = async ({ request }) => {
     console.error('Error publishing code:', error);
     return json({ error: 'Failed to publish code', details: error.message }, { status: 500 });
   }
-};
+});

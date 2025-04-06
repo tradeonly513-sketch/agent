@@ -1,5 +1,6 @@
 import { json } from '@remix-run/cloudflare';
 import type { ActionFunctionArgs } from '@remix-run/cloudflare';
+import { withAuth } from '~/middleware';
 import { updateFileInArtifacts } from '~/utils/fileOperations';
 
 interface UpdateFileRequest {
@@ -8,7 +9,7 @@ interface UpdateFileRequest {
   dataAppId: string;
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = withAuth(async ({ request }: ActionFunctionArgs) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -28,4 +29,4 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.error('Error updating file:', error);
     return json({ error: 'Failed to update file' }, { status: 500 });
   }
-};
+});

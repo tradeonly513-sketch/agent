@@ -2,6 +2,7 @@ import { json } from '@remix-run/cloudflare';
 import type { ActionFunction } from '@remix-run/cloudflare';
 import type { FileContent } from '~/utils/projectCommands';
 import { saveFileArtifacts, readFileArtifacts } from '~/utils/fileOperations';
+import { withAuth } from '~/middleware';
 
 interface SaveFilesRequest {
   files: FileContent[];
@@ -9,7 +10,7 @@ interface SaveFilesRequest {
   folderName: string;
 }
 
-export const action: ActionFunction = async ({ request }) => {
+export const action: ActionFunction = withAuth(async ({ request }) => {
   try {
     const body = (await request.json()) as SaveFilesRequest;
     const { files, dataAppId, folderName } = body;
@@ -31,4 +32,4 @@ export const action: ActionFunction = async ({ request }) => {
     console.error('Error saving files:', error);
     return json({ error: 'Failed to save files' }, { status: 500 });
   }
-};
+});

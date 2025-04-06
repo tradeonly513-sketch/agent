@@ -1,4 +1,5 @@
 import { json } from '@remix-run/cloudflare';
+import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
@@ -9,11 +10,11 @@ export async function authenticate(request: Request) {
 
   // Skip authentication for non-API routes
   if (!path.startsWith('/code-editor/api/')) {
-    return true;
+    return { authenticated: true };
   }
 
   if (!token) {
-    return json({ error: 'No token provided', status: 401 });
+    return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
   }
 
   try {
@@ -27,12 +28,49 @@ export async function authenticate(request: Request) {
     });
 
     if (dataAppResponse.status !== 200) {
-      return json({ error: 'User authentication failed', status: 401 });
+      return { authenticated: false, response: json({ error: 'User authentication failed', status: 401 }) };
     }
 
-    return json({ success: true });
+    return { authenticated: true };
   } catch (error) {
     console.error('Authentication error:', error);
-    return json({ error: 'Authentication failed', status: 401 });
+    return { authenticated: false, response: json({ error: 'Authentication failed', status: 401 }) };
   }
+}
+
+/**
+ * Higher-order function to wrap API routes with authentication
+ *
+ * @param handler The original API route handler
+ * @returns A new handler that first authenticates the request
+ */
+export function withAuth(handler: ActionFunction): ActionFunction {
+  return async (args) => {
+    const authResult = await authenticate(args.request);
+    console.log('authResult', authResult);
+
+    if (!authResult.authenticated) {
+      return authResult.response;
+    }
+
+    return handler(args);
+  };
+}
+
+/**
+ * Higher-order function to wrap API loader routes with authentication
+ *
+ * @param handler The original API loader route handler
+ * @returns A new handler that first authenticates the request
+ */
+export function withAuthLoader(handler: LoaderFunction): LoaderFunction {
+  return async (args) => {
+    const authResult = await authenticate(args.request);
+
+    if (!authResult.authenticated) {
+      return authResult.response;
+    }
+
+    return handler(args);
+  };
 }

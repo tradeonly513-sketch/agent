@@ -18,11 +18,9 @@ export default async function handleRequest(
 
   const response = await authenticate(request);
 
-  if (response instanceof Response) {
-    const clonedResponse = response.clone();
+  if (!response.authenticated && response.response instanceof Response) {
+    const clonedResponse = response.response.clone();
     const data = (await clonedResponse.json()) as { error?: string };
-
-    console.log(data);
 
     if (data.error) {
       return response;

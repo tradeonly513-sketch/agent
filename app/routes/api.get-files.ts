@@ -1,6 +1,7 @@
 import { json } from '@remix-run/cloudflare';
 import type { LoaderFunction } from '@remix-run/cloudflare';
 import JSZip from 'jszip';
+import { withAuthLoader } from '~/middleware';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
@@ -128,7 +129,7 @@ function normalizeRelativePath(relativePath: string, commonFolder?: string): str
   return normalized;
 }
 
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
   try {
     const url = new URL(request.url);
     const dataAppId = url.searchParams.get('dataAppId');
@@ -147,4 +148,4 @@ export const loader: LoaderFunction = async ({ request }) => {
     console.error('Error processing files:', error);
     return json({ error: error.message }, { status: 500 });
   }
-};
+});

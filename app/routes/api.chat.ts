@@ -11,10 +11,11 @@ import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
 import { WORK_DIR } from '~/utils/constants';
 import { createSummary } from '~/lib/.server/llm/create-summary';
 import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
+import { withAuth } from '~/middleware';
 
-export async function action(args: ActionFunctionArgs) {
+export const action = withAuth(async (args: ActionFunctionArgs) => {
   return chatAction(args);
-}
+});
 
 const logger = createScopedLogger('api.chat');
 

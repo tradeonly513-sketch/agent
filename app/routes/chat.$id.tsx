@@ -1,8 +1,9 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/cloudflare';
 import { default as IndexRoute } from './_index';
 import { ErrorBoundary } from '~/components/ui/ErrorBoundary/ErrorBoundary';
+import { withAuthLoader } from '~/middleware';
 
-export const loader = async (args: LoaderFunctionArgs) => {
+export const loader = withAuthLoader(async (args: LoaderFunctionArgs) => {
   /*
    *   const showChat = process.env.SHOW_CHAT?.toLowerCase() === 'true';
    *   const shouldHideHeader = process.env.HIDE_APP_HEADER?.toLowerCase() === 'true';
@@ -21,7 +22,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     shouldHideUserSettingsMenu: true,
     shouldHideGithubOptions: true,
   });
-};
+});
 
 export default IndexRoute;
 

@@ -2,8 +2,9 @@ import { json } from '@remix-run/node';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 
 import { deleteDataFile, readFileArtifacts } from '~/utils/fileOperations';
+import { withAuthLoader } from '~/middleware';
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export const loader = withAuthLoader(async ({ params }: LoaderFunctionArgs) => {
   if (!params.dataAppId) {
     return json({ error: 'Data app ID is required' }, { status: 400 });
   }
@@ -21,4 +22,4 @@ export async function loader({ params }: LoaderFunctionArgs) {
     console.error('Error loading files:', error);
     return json({ error: 'Failed to load files' }, { status: 500 });
   }
-}
+});

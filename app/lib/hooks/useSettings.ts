@@ -84,7 +84,7 @@ export function useSettings(): UseSettingsReturn {
   const [settings, setSettings] = useState<Settings>(() => {
     const storedSettings = getLocalStorage('settings');
     return {
-      theme: storedSettings?.theme || 'system',
+      theme: 'light',
       language: storedSettings?.language || 'en',
       notifications: storedSettings?.notifications ?? true,
       eventLogs: storedSettings?.eventLogs ?? true,
