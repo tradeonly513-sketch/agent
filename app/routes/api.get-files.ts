@@ -59,17 +59,15 @@ async function fetchZipFromDataApp(appTemplateName: string, token: string): Prom
     throw new Error('Signed download URL not found.');
   }
 
-  const zipResponse = await fetch(signedUrl, {
-    headers: result.headers,
-  });
+  const zipResponse = await fetch(signedUrl, { headers: result.headers });
   const blob = await zipResponse.blob();
   const zipArrayBuffer = await blob.arrayBuffer();
 
-  return await JSZip.loadAsync(zipArrayBuffer);
+  return JSZip.loadAsync(zipArrayBuffer);
 }
 
 function shouldIncludeFile(filePath: string): boolean {
-  return !filePath.startsWith('.');
+  return !filePath.startsWith('.') && !filePath.includes('__MACOSX');
 }
 
 function isBinaryFile(filePath: string): boolean {
@@ -79,23 +77,42 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-async function processZipEntries(zip: JSZip, folderName: string) {
+/**
+ * Normalize by dropping the first folder segment (the ZIP's root folder)
+ */
+function normalizeRelativePath(relativePath: string): string | null {
+  if (relativePath.startsWith('__MACOSX') || /\/\._/.test(relativePath)) {
+    return null;
+  }
+
+  const parts = relativePath.split('/');
+
+  if (parts.length <= 1) {
+    return parts[0];
+  }
+
+  return parts.slice(1).join('/');
+}
+
+async function processZipEntries(zip: JSZip) {
   const textDecoder = new TextDecoder('utf-8');
   const skippedFiles: string[] = [];
   const fileArtifacts: Array<{ path: string; content: string }> = [];
 
-  const entries = Object.values(zip.files);
-
-  for (const entry of entries) {
-    const relativePath = entry.name;
-    const normalizedPath = normalizeRelativePath(relativePath, folderName);
-
-    if (!normalizedPath || !shouldIncludeFile(relativePath) || entry.dir) {
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) {
       continue;
     }
 
-    if (isBinaryFile(relativePath)) {
-      skippedFiles.push(relativePath);
+    const rel = entry.name;
+    const normalizedPath = normalizeRelativePath(rel);
+
+    if (!normalizedPath || !shouldIncludeFile(rel)) {
+      continue;
+    }
+
+    if (isBinaryFile(rel)) {
+      skippedFiles.push(rel);
       continue;
     }
 
@@ -104,29 +121,13 @@ async function processZipEntries(zip: JSZip, folderName: string) {
     try {
       content = await entry.async('string');
     } catch {
-      const uint8Content = await entry.async('uint8array');
-      content = textDecoder.decode(uint8Content);
+      const bytes = await entry.async('uint8array');
+      content = textDecoder.decode(bytes);
     }
-
     fileArtifacts.push({ path: normalizedPath, content });
   }
 
   return { fileArtifacts, skippedFiles };
-}
-
-function normalizeRelativePath(relativePath: string, commonFolder?: string): string | null {
-  if (relativePath.startsWith('__MACOSX') || /\/\._/.test(relativePath)) {
-    return null;
-  }
-
-  let normalized = relativePath;
-
-  if (commonFolder && normalized.startsWith(commonFolder)) {
-    normalized = normalized.slice(commonFolder.length);
-    normalized = normalized.replace(/^\/+/, '');
-  }
-
-  return normalized;
 }
 
 export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
@@ -141,7 +142,7 @@ export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
 
     const folderName = await getAppTemplate(dataAppId, token);
     const zip = await fetchZipFromDataApp(folderName, token);
-    const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);
+    const { fileArtifacts, skippedFiles } = await processZipEntries(zip);
 
     return json({ fileArtifacts, skippedFiles, folderName });
   } catch (error: any) {

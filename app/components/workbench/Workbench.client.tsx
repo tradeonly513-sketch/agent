@@ -366,6 +366,7 @@ export const Workbench = memo(
       setIsPublishing(true);
 
       try {
+        await workbenchStore.saveCurrentDocument(mixedId!);
         await workbenchStore.publishCode(mixedId!);
         toast.success('DataApp published successfully');
       } catch (error) {
@@ -389,7 +390,7 @@ export const Workbench = memo(
       setIsResetting(true);
 
       try {
-        const response = await fetch(`/code-editor/api/${mixedId}/reset-files`);
+        const response = await fetch(`/code-editor/api/reset-files?dataAppId=${mixedId}`);
 
         if (!response.ok) {
           throw new Error('Failed to load saved files');

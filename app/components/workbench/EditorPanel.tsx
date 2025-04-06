@@ -101,13 +101,19 @@ export const EditorPanel = memo(
                     <FileBreadcrumb pathSegments={activeFileSegments} files={files} onFileSelect={onFileSelect} />
                     {activeFileUnsaved && (
                       <div className="flex gap-1 ml-auto -mr-1.5">
-                        <PanelHeaderButton onClick={onFileSave}>
+                        <PanelHeaderButton
+                          onClick={onFileSave}
+                          title="Stores the code changes without affecting the code linked to DataApp"
+                        >
                           <div className="i-ph:floppy-disk-duotone" />
                           Save
                         </PanelHeaderButton>
-                        <PanelHeaderButton onClick={onFileReset}>
+                        <PanelHeaderButton
+                          onClick={onFileReset}
+                          title="Undo the code changes without affecting the code linked to DataApp"
+                        >
                           <div className="i-ph:clock-counter-clockwise-duotone" />
-                          Reset
+                          Undo
                         </PanelHeaderButton>
                       </div>
                     )}

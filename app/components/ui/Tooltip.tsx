@@ -28,6 +28,10 @@ const WithTooltip = forwardRef(
     }: TooltipProps,
     _ref: ForwardedRef<HTMLElement>,
   ) => {
+    if (!tooltip) {
+      return children;
+    }
+
     return (
       <Tooltip.Root delayDuration={delay}>
         <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
