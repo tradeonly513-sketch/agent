@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {
   CodeMirrorEditor,
@@ -70,6 +70,26 @@ export const EditorPanel = memo(
     const activeFileUnsaved = useMemo(() => {
       return editorDocument !== undefined && unsavedFiles?.has(editorDocument.filePath);
     }, [editorDocument, unsavedFiles]);
+
+    useEffect(() => {
+      // Add event listener for browser close/refresh
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        if (activeFileUnsaved) {
+          // Modern approach - just prevent default and return a string
+          e.preventDefault();
+          return 'You have unsaved changes. Are you sure you want to leave?';
+        }
+
+        return undefined;
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      // Clean up the event listener when component unmounts
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }, [activeFileUnsaved]);
 
     return (
       <PanelGroup direction="vertical">
