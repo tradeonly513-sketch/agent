@@ -19,10 +19,13 @@ export default function WebContainerPreview() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const broadcastChannelRef = useRef<BroadcastChannel>();
   const [previewUrl, setPreviewUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Handle preview refresh
   const handleRefresh = useCallback(() => {
     if (iframeRef.current && previewUrl) {
+      setIsLoading(true);
+
       // Force a clean reload
       iframeRef.current.src = '';
       requestAnimationFrame(() => {
@@ -44,6 +47,12 @@ export default function WebContainerPreview() {
       });
     }
   }, [previewId, previewUrl]);
+
+  // Handle iframe load event
+  const handleIframeLoad = useCallback(() => {
+    setIsLoading(false);
+    notifyPreviewReady();
+  }, [notifyPreviewReady]);
 
   useEffect(() => {
     // Initialize broadcast channel
@@ -67,17 +76,22 @@ export default function WebContainerPreview() {
       iframeRef.current.src = url;
     }
 
-    // Notify other tabs that this preview is ready
-    notifyPreviewReady();
-
     // Cleanup
     return () => {
       broadcastChannelRef.current?.close();
     };
-  }, [previewId, handleRefresh, notifyPreviewReady]);
+  }, [previewId, handleRefresh]);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75 z-10">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="mt-4 text-gray-600">Loading preview...</p>
+          </div>
+        </div>
+      )}
       <iframe
         ref={iframeRef}
         title="WebContainer Preview"
@@ -85,7 +99,7 @@ export default function WebContainerPreview() {
         sandbox="allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation allow-same-origin"
         allow="cross-origin-isolated"
         loading="eager"
-        onLoad={notifyPreviewReady}
+        onLoad={handleIframeLoad}
       />
     </div>
   );
