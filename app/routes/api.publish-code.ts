@@ -48,8 +48,10 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       throw new Error(`Failed to get data app details: ${dataAppResponse.statusText}`);
     }
 
-    const dataAppJson = (await dataAppResponse.json()) as { appTemplate?: { name: string } };
-    const appName = dataAppJson?.appTemplate?.name || 'app';
+    const dataAppJson = (await dataAppResponse.json()) as { appTemplate?: { name: string; id: string } };
+    const appTemplate = dataAppJson?.appTemplate;
+    const appTemplateId = appTemplate?.id;
+    const appName = appTemplate?.name || 'app';
 
     // Generate signed URL for upload
     const payload = {
@@ -89,6 +91,12 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     if (!zipResponse.ok) {
       throw new Error('Failed to upload file');
     }
+
+    await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(appTemplate),
+      headers,
+    });
 
     if (fileArtifacts.length > 0 && projectName) {
       // Save file artifacts to disk and remove latest app data
