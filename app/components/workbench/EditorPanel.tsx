@@ -108,10 +108,7 @@ export const EditorPanel = memo(
                           <div className="i-ph:floppy-disk-duotone" />
                           Save
                         </PanelHeaderButton>
-                        <PanelHeaderButton
-                          onClick={onFileReset}
-                          title="Undo the code changes without affecting the code linked to DataApp"
-                        >
+                        <PanelHeaderButton onClick={onFileReset} title="Revert the recent code changes">
                           <div className="i-ph:clock-counter-clockwise-duotone" />
                           Undo
                         </PanelHeaderButton>

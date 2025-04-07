@@ -66,11 +66,10 @@ export const Head = createHead(() => (
 ));
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const theme = useStore(themeStore);
-
+  // Always use light theme
   useEffect(() => {
-    document.querySelector('html')?.setAttribute('data-theme', theme);
-  }, [theme]);
+    document.querySelector('html')?.setAttribute('data-theme', 'light');
+  }, []);
 
   return (
     <>
