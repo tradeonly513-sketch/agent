@@ -86,6 +86,7 @@ export default defineConfig((config) => {
         'Cross-Origin-Opener-Policy': 'same-origin',
         'Cross-Origin-Embedder-Policy': 'require-corp'
       },
+      // to allow CORS requests from localhost and other rc domains
       allowedHosts: [
         'localhost',
         'rapidcanvas.net',
