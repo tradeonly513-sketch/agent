@@ -19,13 +19,10 @@ export default function WebContainerPreview() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const broadcastChannelRef = useRef<BroadcastChannel>();
   const [previewUrl, setPreviewUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
 
   // Handle preview refresh
   const handleRefresh = useCallback(() => {
     if (iframeRef.current && previewUrl) {
-      setIsLoading(true);
-
       // Force a clean reload
       iframeRef.current.src = '';
       requestAnimationFrame(() => {
@@ -48,12 +45,6 @@ export default function WebContainerPreview() {
     }
   }, [previewId, previewUrl]);
 
-  // When the iframe has fully loaded, update the loading state and notify
-  const handleIframeLoad = useCallback(() => {
-    setIsLoading(false);
-    notifyPreviewReady();
-  }, [notifyPreviewReady]);
-
   useEffect(() => {
     // Initialize broadcast channel
     broadcastChannelRef.current = new BroadcastChannel(PREVIEW_CHANNEL);
@@ -62,7 +53,6 @@ export default function WebContainerPreview() {
     broadcastChannelRef.current.onmessage = (event) => {
       if (event.data.previewId === previewId) {
         if (event.data.type === 'refresh-preview' || event.data.type === 'file-change') {
-          setIsLoading(true);
           handleRefresh();
         }
       }
@@ -72,25 +62,22 @@ export default function WebContainerPreview() {
     const url = `https://${previewId}.local-credentialless.webcontainer-api.io`;
     setPreviewUrl(url);
 
-    // Set the iframe src if it's available
+    // Set the iframe src
     if (iframeRef.current) {
       iframeRef.current.src = url;
     }
 
-    // Cleanup broadcast channel on unmount
+    // Notify other tabs that this preview is ready
+    notifyPreviewReady();
+
+    // Cleanup
     return () => {
       broadcastChannelRef.current?.close();
     };
-  }, [previewId, handleRefresh]);
+  }, [previewId, handleRefresh, notifyPreviewReady]);
 
   return (
-    <div className="w-full h-full relative">
-      {/* Loader shown while the iframe content is not yet loaded */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <span>Loading...</span>
-        </div>
-      )}
+    <div className="w-full h-full">
       <iframe
         ref={iframeRef}
         title="WebContainer Preview"
@@ -98,7 +85,7 @@ export default function WebContainerPreview() {
         sandbox="allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation allow-same-origin"
         allow="cross-origin-isolated"
         loading="eager"
-        onLoad={handleIframeLoad}
+        onLoad={notifyPreviewReady}
       />
     </div>
   );

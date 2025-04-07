@@ -32,6 +32,7 @@ export const Preview = memo(() => {
   const [isPortDropdownOpen, setIsPortDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPreviewOnly, setIsPreviewOnly] = useState(false);
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
   const hasSelectedPreview = useRef(false);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
@@ -63,6 +64,7 @@ export const Preview = memo(() => {
     if (!activePreview) {
       setUrl('');
       setIframeUrl(undefined);
+      setIsIframeLoading(true);
 
       return;
     }
@@ -70,6 +72,7 @@ export const Preview = memo(() => {
     const { baseUrl } = activePreview;
     setUrl(baseUrl);
     setIframeUrl(baseUrl);
+    setIsIframeLoading(true);
   }, [activePreview]);
 
   const validateUrl = useCallback(
@@ -244,6 +247,10 @@ export const Preview = memo(() => {
     }
   };
 
+  const handleIframeLoad = () => {
+    setIsIframeLoading(false);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -378,6 +385,14 @@ export const Preview = memo(() => {
         >
           {activePreview ? (
             <>
+              {isIframeLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-bolt-elements-background-depth-1">
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 border-4 border-bolt-elements-borderColor border-t-bolt-elements-accent rounded-full animate-spin"></div>
+                    <div className="mt-2 text-sm text-bolt-elements-textSecondary">Loading preview...</div>
+                  </div>
+                </div>
+              )}
               <iframe
                 ref={iframeRef}
                 title="preview"
@@ -385,6 +400,7 @@ export const Preview = memo(() => {
                 src={iframeUrl}
                 sandbox="allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation allow-same-origin"
                 allow="cross-origin-isolated"
+                onLoad={handleIframeLoad}
               />
               <ScreenshotSelector
                 isSelectionMode={isSelectionMode}
