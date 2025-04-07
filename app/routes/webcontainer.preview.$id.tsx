@@ -48,7 +48,7 @@ export default function WebContainerPreview() {
     }
   }, [previewId, previewUrl]);
 
-  // Handle iframe load event
+  // When the iframe has fully loaded, update the loading state and notify
   const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
     notifyPreviewReady();
@@ -62,6 +62,7 @@ export default function WebContainerPreview() {
     broadcastChannelRef.current.onmessage = (event) => {
       if (event.data.previewId === previewId) {
         if (event.data.type === 'refresh-preview' || event.data.type === 'file-change') {
+          setIsLoading(true);
           handleRefresh();
         }
       }
@@ -71,12 +72,12 @@ export default function WebContainerPreview() {
     const url = `https://${previewId}.local-credentialless.webcontainer-api.io`;
     setPreviewUrl(url);
 
-    // Set the iframe src
+    // Set the iframe src if it's available
     if (iframeRef.current) {
       iframeRef.current.src = url;
     }
 
-    // Cleanup
+    // Cleanup broadcast channel on unmount
     return () => {
       broadcastChannelRef.current?.close();
     };
@@ -84,12 +85,10 @@ export default function WebContainerPreview() {
 
   return (
     <div className="w-full h-full relative">
+      {/* Loader shown while the iframe content is not yet loaded */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75 z-10">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">Loading preview...</p>
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+          <span>Loading...</span>
         </div>
       )}
       <iframe
