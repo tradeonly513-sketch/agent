@@ -181,5 +181,17 @@ export async function publishCodeToServer(
     throw new Error(errorData.error || 'Failed to publish code');
   }
 
+  // Broadcast a message to all tabs on the same domain to refresh
+  if (typeof window !== 'undefined') {
+    const publishChannel = new BroadcastChannel('code-publish-channel');
+    publishChannel.postMessage({
+      type: 'code-publish',
+      dataAppId,
+      projectName,
+      timestamp: Date.now(),
+    });
+    publishChannel.close();
+  }
+
   return await response.json();
 }
