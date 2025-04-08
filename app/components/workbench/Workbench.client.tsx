@@ -373,7 +373,7 @@ export const Workbench = memo(
           .saveCurrentDocument(mixedId!)
           .then(async () => {
             await workbenchStore.publishCode(mixedId!);
-            toast.success('DataApp published successfully');
+            toast.success('DataApp published successfully. Refresh the dataApp page to see the updated changes.');
           })
           .catch(() => {
             toast.error('Failed to update file content');
