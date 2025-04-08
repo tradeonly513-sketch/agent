@@ -10,6 +10,14 @@ export async function authenticate(request: Request) {
     return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
   }
 
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  // Skip authentication for non-API routes
+  if (!path.startsWith('/code-editor/api/')) {
+    return { authenticated: true };
+  }
+
   try {
     const dataAppResponse = await fetch(`${BASE_URL}api/token/validation`, {
       method: 'POST',
