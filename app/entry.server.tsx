@@ -18,8 +18,13 @@ export default async function handleRequest(
 
   const response = await authenticate(request);
 
-  if (!response.authenticated) {
-    return response.response;
+  if (!response.authenticated && response.response instanceof Response) {
+    const clonedResponse = response.response.clone();
+    const data = (await clonedResponse.json()) as { error?: string };
+
+    if (data.error) {
+      return response;
+    }
   }
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
