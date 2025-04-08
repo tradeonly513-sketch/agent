@@ -98,6 +98,11 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       headers,
     });
 
+    fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
+      method: 'POST',
+      headers,
+    });
+
     if (fileArtifacts.length > 0 && projectName) {
       // Save file artifacts to disk and remove latest app data
       await saveFileArtifacts(fileArtifacts, dataAppId, projectName);
