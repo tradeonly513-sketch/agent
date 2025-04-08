@@ -1,20 +1,23 @@
-import { json } from '@remix-run/cloudflare';
+import { redirect } from '@remix-run/cloudflare';
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+const AUTH_PATH = 'auth/sign-in';
+
+function createAuthRedirectUrl(currentUrl: string): string {
+  return `${BASE_URL}${AUTH_PATH}?redirectUrl=${encodeURIComponent(currentUrl)}`;
+}
 
 export async function authenticate(request: Request) {
-  const url = new URL(request.url);
   const token = request.headers.get('token');
-  const path = url.pathname;
-
-  // Skip authentication for non-API routes
-  if (!path.startsWith('/code-editor/api/')) {
-    return { authenticated: true };
-  }
+  const currentUrl = request.url;
+  const redirectUrl = createAuthRedirectUrl(currentUrl);
 
   if (!token) {
-    return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
+    return {
+      authenticated: false,
+      response: redirect(redirectUrl),
+    };
   }
 
   try {
@@ -28,13 +31,19 @@ export async function authenticate(request: Request) {
     });
 
     if (dataAppResponse.status !== 200) {
-      return { authenticated: false, response: json({ error: 'User authentication failed', status: 401 }) };
+      return {
+        authenticated: false,
+        response: redirect(redirectUrl),
+      };
     }
 
     return { authenticated: true };
   } catch (error) {
     console.error('Authentication error:', error);
-    return { authenticated: false, response: json({ error: 'Authentication failed', status: 401 }) };
+    return {
+      authenticated: false,
+      response: redirect(redirectUrl),
+    };
   }
 }
 
