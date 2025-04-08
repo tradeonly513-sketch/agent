@@ -460,7 +460,7 @@ export const Workbench = memo(
                         className="mr-1 text-sm"
                         onClick={handleSyncFiles}
                         disabled={isSyncing}
-                        title="Sync the files from the local directory to the DataApp"
+                        title="Sync the files from the DataApp to the local directory"
                       >
                         {isSyncing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-down" />}
                         {isSyncing ? 'Syncing...' : 'Sync Files'}
