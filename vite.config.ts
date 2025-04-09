@@ -77,7 +77,6 @@ const basePath = '/code-editor';
 
 export default defineConfig((config) => {
   return {
-    cacheDir: '/tmp/vite-cache',
     base: basePath,
     publicPath: '/code-editor/build/',
     server: {
