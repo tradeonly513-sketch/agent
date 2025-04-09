@@ -6,12 +6,12 @@ const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 export async function authenticate(request: Request) {
   const token = request.headers.get('token');
 
-  if (!token) {
-    return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
-  }
-
   if (!request.url.includes('code-editor/api/')) {
     return { authenticated: true };
+  }
+
+  if (!token) {
+    return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
   }
 
   try {
