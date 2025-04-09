@@ -62,8 +62,8 @@ export function Chat() {
   }, [initialMessages]);
 
   useEffect(() => {
-    if (!mixedId || !token) {
-      setError(new Error('No dataApp ID or token'));
+    if (!mixedId) {
+      setError(new Error('No dataApp ID'));
       setIsLoading(false);
 
       return;
@@ -71,7 +71,7 @@ export function Chat() {
 
     setIsLoading(true);
 
-    loadFilesFromDataApp(mixedId, token)
+    loadFilesFromDataApp(mixedId, token!)
       .then(async (data) => {
         await importChat(data.folderName, data.messages);
         saveFilesToWorkbench({ fileArtifacts: data.updatedArtifacts.files });
