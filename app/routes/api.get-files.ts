@@ -79,15 +79,20 @@ function isBinaryFile(filePath: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-async function processZipEntries(zip: JSZip, folderName: string) {
+async function processZipEntries(zip: JSZip) {
   const textDecoder = new TextDecoder('utf-8');
   const skippedFiles: string[] = [];
   const fileArtifacts: Array<{ path: string; content: string }> = [];
 
   const entries = Object.values(zip.files);
 
+  console.log('entries', entries);
+
+  const folderName = extractCommonFolder(zip);
+
   for (const entry of entries) {
     const relativePath = entry.name;
+
     const normalizedPath = normalizeRelativePath(relativePath, folderName);
 
     if (!normalizedPath || !shouldIncludeFile(relativePath) || entry.dir) {
@@ -114,7 +119,40 @@ async function processZipEntries(zip: JSZip, folderName: string) {
   return { fileArtifacts, skippedFiles };
 }
 
-function normalizeRelativePath(relativePath: string, commonFolder?: string): string | null {
+function extractCommonFolder(zip: JSZip): string | null {
+  const paths = Object.values(zip.files)
+    .filter((entry) => !entry.dir && !entry.name.startsWith('__MACOSX'))
+    .map((entry) => entry.name);
+
+  if (paths.length === 0) {
+    return null;
+  }
+
+  // Split each path into segments.
+  const splitPaths = paths.map((path) => path.split('/'));
+
+  // Find the common folder parts.
+  let commonParts: string[] = splitPaths[0];
+
+  for (let i = 1; i < splitPaths.length; i++) {
+    const parts = splitPaths[i];
+    const newCommonParts: string[] = [];
+
+    for (let j = 0; j < commonParts.length && j < parts.length; j++) {
+      if (commonParts[j] === parts[j]) {
+        newCommonParts.push(commonParts[j]);
+      } else {
+        break;
+      }
+    }
+    commonParts = newCommonParts;
+  }
+
+  // We consider it a common folder only if there is at least one folder.
+  return commonParts.length > 0 ? commonParts[0] : null;
+}
+
+function normalizeRelativePath(relativePath: string, commonFolder?: string | null): string | null {
   if (relativePath.startsWith('__MACOSX') || /\/\._/.test(relativePath)) {
     return null;
   }
@@ -139,11 +177,11 @@ export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
       return json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const folderName = await getAppTemplate(dataAppId, token);
-    const zip = await fetchZipFromDataApp(folderName, token);
-    const { fileArtifacts, skippedFiles } = await processZipEntries(zip, folderName);
+    const appTemplateName = await getAppTemplate(dataAppId, token);
+    const zip = await fetchZipFromDataApp(appTemplateName, token);
+    const { fileArtifacts, skippedFiles } = await processZipEntries(zip);
 
-    return json({ fileArtifacts, skippedFiles, folderName });
+    return json({ fileArtifacts, skippedFiles, folderName: appTemplateName });
   } catch (error: any) {
     console.error('Error processing files:', error);
     return json({ error: error.message }, { status: 500 });
