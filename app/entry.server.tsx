@@ -19,14 +19,12 @@ export default async function handleRequest(
   const response = await authenticate(request);
 
   if (!response.authenticated && response.response instanceof Response) {
-    const currentUrl = new URL(request.url);
-    const redirectUrlInPath = currentUrl.pathname + currentUrl.search;
-    const redirectUrl = `https://test.dev.rapidcanvas.net/auth/sign-in?redirectUrl=${redirectUrlInPath}`;
+    const clonedResponse = response.response.clone();
+    const data = (await clonedResponse.json()) as { error?: string };
 
-    return new Response(null, {
-      status: 302,
-      headers: { Location: redirectUrl },
-    });
+    if (data.error) {
+      return response;
+    }
   }
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {

@@ -4,7 +4,14 @@ import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
 export async function authenticate(request: Request) {
+  const url = new URL(request.url);
   const token = request.headers.get('token');
+  const path = url.pathname;
+
+  // Skip authentication for non-API routes
+  if (!path.startsWith('/code-editor/api/')) {
+    return { authenticated: true };
+  }
 
   if (!token) {
     return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
