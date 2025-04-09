@@ -1,9 +1,9 @@
 ARG BASE=node:20.18.0
 FROM ${BASE} AS base
 
-WORKDIR /app
+ADD https://www.random.org/integers/?num=1&min=1&max=1000000&col=1&base=10&format=plain&rnd=new /tmp/cachebust
 
-RUN echo "CACHEBUST=$(date +%s%N)" > /dev/null
+WORKDIR /app
 
 # Install dependencies (this step is cached as long as the dependencies don't change)
 COPY package.json pnpm-lock.yaml ./
