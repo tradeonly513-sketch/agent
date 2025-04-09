@@ -86,8 +86,6 @@ async function processZipEntries(zip: JSZip) {
 
   const entries = Object.values(zip.files);
 
-  console.log('entries', entries);
-
   const folderName = extractCommonFolder(zip);
 
   for (const entry of entries) {
