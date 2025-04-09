@@ -353,9 +353,19 @@ export const Workbench = memo(
     const handleSyncFiles = useCallback(async () => {
       setIsSyncing(true);
 
+      let directoryHandle = null;
+
       try {
-        const directoryHandle = await window.showDirectoryPicker();
-        await workbenchStore.syncFiles(directoryHandle);
+        directoryHandle = await window.showDirectoryPicker();
+      } catch (error) {
+        console.error('Error syncing files:', error);
+        setIsSyncing(false);
+
+        return;
+      }
+
+      try {
+        await workbenchStore.syncFiles(directoryHandle!);
         toast.success('Files synced successfully');
       } catch (error) {
         console.error('Error syncing files:', error);
@@ -377,11 +387,13 @@ export const Workbench = memo(
           })
           .catch(() => {
             toast.error('Failed to update file content');
+          })
+          .finally(() => {
+            setIsPublishing(false);
           });
       } catch (error) {
         console.error('Error publishing DataApp:', error);
         toast.error('Failed to publish DataApp');
-      } finally {
         setIsPublishing(false);
       }
     }, []);
