@@ -92,10 +92,23 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       throw new Error('Failed to upload file');
     }
 
-    await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
+    const templateResponse = await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
       method: 'PUT',
-      body: JSON.stringify(appTemplate),
+      body: JSON.stringify({ ...appTemplate, name: appName }),
       headers,
+    });
+
+    const templateJson = (await templateResponse.json()) as { templateId: string };
+
+    const appTemplateIdUpdated = templateJson.templateId;
+
+    await fetch(`${BASE_URL}/api/dataapps/${dataAppId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        ...dataAppJson,
+        templateId: appTemplateIdUpdated,
+      }),
     });
 
     fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
