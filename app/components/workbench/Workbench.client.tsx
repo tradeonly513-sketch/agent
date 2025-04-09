@@ -25,6 +25,7 @@ import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
 import { useLoaderData } from '@remix-run/react';
+import { PublishDataAppDialog } from './PublishDataAppDialog';
 
 import type { Message } from 'ai';
 import { saveFilesToWorkbench } from '~/components/chat/Chat.helper';
@@ -287,6 +288,7 @@ export const Workbench = memo(
     const [isSyncing, setIsSyncing] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
+    const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
     const [isResetting, setIsResetting] = useState(false);
 
@@ -376,6 +378,10 @@ export const Workbench = memo(
     }, []);
 
     const handlePublishCode = useCallback(async () => {
+      setIsPublishDialogOpen(true);
+    }, []);
+
+    const handlePublishConfirm = useCallback(async () => {
       setIsPublishing(true);
 
       try {
@@ -390,11 +396,13 @@ export const Workbench = memo(
           })
           .finally(() => {
             setIsPublishing(false);
+            setIsPublishDialogOpen(false);
           });
       } catch (error) {
         console.error('Error publishing DataApp:', error);
         toast.error('Failed to publish DataApp');
         setIsPublishing(false);
+        setIsPublishDialogOpen(false);
       }
     }, []);
 
@@ -562,6 +570,12 @@ export const Workbench = memo(
               </div>
             </div>
           </div>
+          <PublishDataAppDialog
+            isOpen={isPublishDialogOpen}
+            onClose={() => setIsPublishDialogOpen(false)}
+            onConfirm={handlePublishConfirm}
+            isPublishing={isPublishing}
+          />
           <PushToGitHubDialog
             isOpen={isPushDialogOpen}
             onClose={() => setIsPushDialogOpen(false)}
