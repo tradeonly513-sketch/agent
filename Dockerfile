@@ -3,7 +3,7 @@ FROM ${BASE} AS base
 
 WORKDIR /app
 
-RUN echo "CACHEBUST=$(uuidgen)" > /dev/null
+RUN echo "CACHEBUST=$(date +%s%N)" > /dev/null
 
 # Install dependencies (this step is cached as long as the dependencies don't change)
 COPY package.json pnpm-lock.yaml ./
