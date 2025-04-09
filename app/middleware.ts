@@ -50,7 +50,14 @@ export function withAuth(handler: ActionFunction): ActionFunction {
     console.log('authResult', authResult);
 
     if (!authResult.authenticated) {
-      return authResult.response;
+      const currentUrl = new URL(args.request.url);
+      const redirectUrlInPath = currentUrl.pathname + currentUrl.search;
+      const redirectUrl = `https://test.dev.rapidcanvas.net/auth/sign-in?redirectUrl=${redirectUrlInPath}`;
+
+      return new Response(null, {
+        status: 302,
+        headers: { Location: redirectUrl },
+      });
     }
 
     return handler(args);
