@@ -5,7 +5,6 @@ import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
-import { authenticate } from './middleware';
 
 export default async function handleRequest(
   request: Request,
@@ -15,19 +14,6 @@ export default async function handleRequest(
   _loadContext: AppLoadContext,
 ) {
   // await initializeModelList({});
-
-  const response = await authenticate(request);
-
-  if (!response.authenticated && response.response instanceof Response) {
-    const currentUrl = new URL(request.url);
-    const redirectUrlInPath = currentUrl.pathname + currentUrl.search;
-    const redirectUrl = `https://test.dev.rapidcanvas.net/auth/sign-in?redirectUrl=${redirectUrlInPath}`;
-
-    return new Response(null, {
-      status: 302,
-      headers: { Location: redirectUrl },
-    });
-  }
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
     signal: request.signal,

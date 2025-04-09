@@ -10,11 +10,7 @@ export async function authenticate(request: Request) {
     return { authenticated: false, response: json({ error: 'No token provided', status: 401 }) };
   }
 
-  const url = new URL(request.url);
-  const path = url.pathname;
-
-  // Skip authentication for non-API routes
-  if (!path.startsWith('/code-editor/api/')) {
+  if (!request.url.includes('code-editor/api/')) {
     return { authenticated: true };
   }
 
@@ -48,7 +44,6 @@ export async function authenticate(request: Request) {
 export function withAuth(handler: ActionFunction): ActionFunction {
   return async (args) => {
     const authResult = await authenticate(args.request);
-    console.log('authResult', authResult);
 
     if (!authResult.authenticated) {
       return authResult.response;
@@ -69,7 +64,14 @@ export function withAuthLoader(handler: LoaderFunction): LoaderFunction {
     const authResult = await authenticate(args.request);
 
     if (!authResult.authenticated) {
-      return authResult.response;
+      const currentUrl = new URL(args.request.url);
+      const redirectUrlInPath = currentUrl.pathname + currentUrl.search;
+      const redirectUrl = `https://test.dev.rapidcanvas.net/auth/sign-in?redirectUrl=${redirectUrlInPath}`;
+
+      return new Response(null, {
+        status: 302,
+        headers: { Location: redirectUrl },
+      });
     }
 
     return handler(args);

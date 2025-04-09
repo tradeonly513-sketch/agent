@@ -116,7 +116,6 @@ export async function updateFileInArtifacts(
 export async function deleteDataFile(dataAppId: string, fileType: 'app' | 'latest' = 'app'): Promise<boolean> {
   try {
     const dataPath = await getDataPath(dataAppId, fileType);
-    console.log('Deleting data file:', dataPath);
 
     // Check if file exists before trying to delete it
     try {
@@ -124,10 +123,8 @@ export async function deleteDataFile(dataAppId: string, fileType: 'app' | 'lates
 
       // File exists, so delete it
       await fs.unlink(dataPath);
-      console.log('File successfully deleted:', dataPath);
     } catch {
       // File doesn't exist, which is fine
-      console.log('File does not exist, nothing to delete:', dataPath);
     }
 
     return true;
