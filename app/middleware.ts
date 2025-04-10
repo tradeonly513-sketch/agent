@@ -1,4 +1,6 @@
 import { json } from '@remix-run/cloudflare';
+import { redirect } from '@remix-run/node';
+
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
@@ -22,7 +24,7 @@ export async function authenticate(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-AUTH-TOKEN': token,
+        Authentication: 'Bearer ' + token,
       },
       body: JSON.stringify({ token }),
     });
@@ -47,17 +49,15 @@ export async function authenticate(request: Request) {
 export function withAuth(handler: ActionFunction): ActionFunction {
   return async (args) => {
     const authResult = await authenticate(args.request);
-    console.log('authResult', authResult);
 
     if (!authResult.authenticated) {
       const currentUrl = new URL(args.request.url);
       const redirectUrlInPath = currentUrl.pathname + currentUrl.search;
       const redirectUrl = `https://test.dev.rapidcanvas.net/auth/sign-in?redirectUrl=${redirectUrlInPath}`;
 
-      return new Response(null, {
-        status: 302,
-        headers: { Location: redirectUrl },
-      });
+      console.log('redirectUrl', redirectUrl);
+
+      return redirect(redirectUrl);
     }
 
     return handler(args);
