@@ -1,5 +1,4 @@
 import { json } from '@remix-run/cloudflare';
-import { redirect } from '@remix-run/node';
 
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
@@ -51,13 +50,7 @@ export function withAuth(handler: ActionFunction): ActionFunction {
     const authResult = await authenticate(args.request);
 
     if (!authResult.authenticated) {
-      const currentUrl = new URL(args.request.url);
-      const redirectUrlInPath = currentUrl.pathname + currentUrl.search;
-      const redirectUrl = `https://test.dev.rapidcanvas.net/auth/sign-in?redirectUrl=${redirectUrlInPath}`;
-
-      console.log('redirectUrl', redirectUrl);
-
-      return redirect(redirectUrl);
+      return authResult.response;
     }
 
     return handler(args);
