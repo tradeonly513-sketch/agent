@@ -6,6 +6,36 @@ import type { FileContent } from '~/utils/projectCommands';
 
 const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
+interface DataAppStatus {
+  launchStatus: string;
+}
+
+async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers: HeadersInit): Promise<void> {
+  const maxAttempts = 60; // 60 attempts with 5 second delay = 5 minutes timeout
+  const delayMs = 5000; // 5 seconds between attempts
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const statusResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!statusResponse.ok) {
+      throw new Error(`Failed to get dataApp status: ${statusResponse.statusText}`);
+    }
+
+    const dataAppStatus = (await statusResponse.json()) as DataAppStatus;
+
+    if (dataAppStatus.launchStatus === pollStatus) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error('Timeout waiting for dataApp to update status');
+}
+
 export const action: ActionFunction = withAuth(async ({ request }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
@@ -111,10 +141,19 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       }),
     });
 
-    fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
+    await fetch(`${BASE_URL}/api/dataapps/${dataAppId}/stop`, {
       method: 'POST',
       headers,
     });
+
+    await pollDataAppStatus(dataAppId, 'STOPPED', headers);
+
+    await fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
+      method: 'POST',
+      headers,
+    });
+
+    await pollDataAppStatus(dataAppId, 'RUNNING', headers);
 
     if (fileArtifacts.length > 0 && projectName) {
       // Save file artifacts to disk and remove latest app data
