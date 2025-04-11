@@ -395,6 +395,8 @@ export const Workbench = memo(
           .saveCurrentDocument(mixedId!)
           .then(async () => {
             await workbenchStore.publishCode(mixedId!);
+            workbenchStore.resetAllFileModifications();
+            setFileHistory({});
             toast.success('DataApp published successfully. Refresh the dataApp page to see the updated changes.');
           })
           .catch(() => {
