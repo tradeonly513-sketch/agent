@@ -28,7 +28,7 @@ import { useLoaderData } from '@remix-run/react';
 import { PublishDataAppDialog } from './PublishDataAppDialog';
 
 import type { Message } from 'ai';
-import { saveFilesToWorkbench } from '~/components/chat/Chat.helper';
+import { saveAllFilesToWorkbench } from '~/components/chat/Chat.helper';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -427,14 +427,11 @@ export const Workbench = memo(
 
         const data: any = await response.json();
 
-        console.log(workbenchStore.files.get());
-        await saveFilesToWorkbench({ fileArtifacts: data.files });
-        console.log(workbenchStore.files.get());
-        onFileSave();
-        toast.success('Files reset successfully');
+        await saveAllFilesToWorkbench({ fileArtifacts: data.files });
+        toast.success('DataApp Code reset successfully');
       } catch (error) {
         console.error('Error resetting code:', error);
-        toast.error('Failed to reset code');
+        toast.error('Failed to reset dataApp Code');
       } finally {
         setIsResetting(false);
       }
@@ -498,8 +495,12 @@ export const Workbench = memo(
                       <PanelHeaderButton
                         className="mr-1 text-sm"
                         onClick={handlePublishCode}
-                        disabled={isPublishing}
-                        title="Publishes the DataApp code with the latest saved version"
+                        disabled={isPublishing || isResetting}
+                        title={
+                          isResetting
+                            ? 'Please wait until reset action succeeds'
+                            : 'Publishes the DataApp code with the latest saved version'
+                        }
                       >
                         {isPublishing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-up" />}
                         {isPublishing ? 'Publishing...' : 'Publish'}
@@ -508,8 +509,12 @@ export const Workbench = memo(
                         <PanelHeaderButton
                           className="mr-1 text-sm"
                           onClick={handleResetCode}
-                          disabled={isResetting}
-                          title="Restores the DataApp code to the latest deployed version, discarding any unpublished changes"
+                          disabled={isResetting || isPublishing}
+                          title={
+                            isPublishing
+                              ? 'Please wait until publish action succeeds'
+                              : 'Restores the DataApp code to the latest deployed version, discarding any unpublished changes'
+                          }
                         >
                           {isResetting ? (
                             <div className="i-ph:spinner" />

@@ -159,6 +159,22 @@ export async function saveFilesToWorkbench({ fileArtifacts }: { fileArtifacts: F
   workbenchStore.setDocuments(Object.assign({}, ...fileMaps));
 }
 
+export async function saveAllFilesToWorkbench({ fileArtifacts }: { fileArtifacts: FileContent[] }) {
+  const fileMap = fileArtifacts.reduce(
+    (acc, file) => ({
+      ...acc,
+      [`/home/project/${file.path}`]: {
+        type: 'file',
+        content: file.content,
+      },
+    }),
+    {},
+  );
+
+  workbenchStore.setDocuments(fileMap);
+  workbenchStore.files.set(fileMap);
+}
+
 export async function publishCodeToServer(
   file: File,
   dataAppId: string,
