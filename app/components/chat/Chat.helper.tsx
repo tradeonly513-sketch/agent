@@ -159,7 +159,13 @@ export async function saveFilesToWorkbench({ fileArtifacts }: { fileArtifacts: F
   workbenchStore.setDocuments(Object.assign({}, ...fileMaps));
 }
 
-export async function saveAllFilesToWorkbench({ fileArtifacts }: { fileArtifacts: FileContent[] }) {
+export async function saveAllFilesToWorkbench({
+  mixedId,
+  fileArtifacts,
+}: {
+  mixedId: string;
+  fileArtifacts: FileContent[];
+}) {
   const fileMap = fileArtifacts.reduce(
     (acc, file) => ({
       ...acc,
@@ -173,6 +179,9 @@ export async function saveAllFilesToWorkbench({ fileArtifacts }: { fileArtifacts
 
   workbenchStore.setDocuments(fileMap);
   workbenchStore.files.set(fileMap);
+
+  // Save all files to server
+  await Promise.all(fileArtifacts.map((file) => workbenchStore.saveFile(`/home/project/${file.path}`, mixedId)));
 }
 
 export async function publishCodeToServer(

@@ -427,7 +427,8 @@ export const Workbench = memo(
 
         const data: any = await response.json();
 
-        await saveAllFilesToWorkbench({ fileArtifacts: data.files });
+        await saveAllFilesToWorkbench({ fileArtifacts: data.files, mixedId });
+        onFileSave();
         toast.success('DataApp Code reset successfully');
       } catch (error) {
         console.error('Error resetting code:', error);
