@@ -179,6 +179,7 @@ export async function saveAllFilesToWorkbench({
 
   workbenchStore.setDocuments(fileMap);
   workbenchStore.files.set(fileMap);
+  workbenchStore.resetAllFileModifications();
 
   // Save all files to server
   await Promise.all(fileArtifacts.map((file) => workbenchStore.saveFile(`/home/project/${file.path}`, mixedId)));

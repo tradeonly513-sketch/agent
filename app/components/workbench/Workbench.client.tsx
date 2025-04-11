@@ -202,19 +202,25 @@ const FileModifiedDropdown = memo(
                                         }
 
                                         const changes = diffLines(normalizedOriginal, normalizedCurrent, {
-                                          newlineIsToken: false,
-                                          ignoreWhitespace: true,
+                                          newlineIsToken: true,
+                                          ignoreWhitespace: false,
                                           ignoreCase: false,
                                         });
 
                                         return changes.reduce(
                                           (acc: { additions: number; deletions: number }, change: Change) => {
+                                            const lines = change.value.split('\n');
+
+                                            // Don't count the last empty line that comes from splitting
+                                            const lineCount =
+                                              lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+
                                             if (change.added) {
-                                              acc.additions += change.value.split('\n').length;
+                                              acc.additions += lineCount;
                                             }
 
                                             if (change.removed) {
-                                              acc.deletions += change.value.split('\n').length;
+                                              acc.deletions += lineCount;
                                             }
 
                                             return acc;
@@ -430,6 +436,7 @@ export const Workbench = memo(
         await saveAllFilesToWorkbench({ fileArtifacts: data.files, mixedId });
         onFileSave();
         toast.success('DataApp Code reset successfully');
+        setFileHistory({});
       } catch (error) {
         console.error('Error resetting code:', error);
         toast.error('Failed to reset dataApp Code');

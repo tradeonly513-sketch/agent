@@ -293,19 +293,25 @@ function File({
     }
 
     const changes = diffLines(normalizedOriginal, normalizedCurrent, {
-      newlineIsToken: false,
-      ignoreWhitespace: true,
+      newlineIsToken: true,
+      ignoreWhitespace: false,
       ignoreCase: false,
     });
 
+    // Count each line in the changes separately
     return changes.reduce(
       (acc: { additions: number; deletions: number }, change: Change) => {
+        const lines = change.value.split('\n');
+
+        // Don't count the last empty line that comes from splitting
+        const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+
         if (change.added) {
-          acc.additions += change.value.split('\n').length;
+          acc.additions += lineCount;
         }
 
         if (change.removed) {
-          acc.deletions += change.value.split('\n').length;
+          acc.deletions += lineCount;
         }
 
         return acc;

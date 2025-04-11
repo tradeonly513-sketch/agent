@@ -493,19 +493,24 @@ const FileInfo = memo(
       }
 
       const changes = diffLines(beforeCode, afterCode, {
-        newlineIsToken: false,
-        ignoreWhitespace: true,
+        newlineIsToken: true,
+        ignoreWhitespace: false,
         ignoreCase: false,
       });
 
       return changes.reduce(
         (acc: { additions: number; deletions: number }, change: Change) => {
+          const lines = change.value.split('\n');
+
+          // Don't count the last empty line that comes from splitting
+          const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+
           if (change.added) {
-            acc.additions += change.value.split('\n').length;
+            acc.additions += lineCount;
           }
 
           if (change.removed) {
-            acc.deletions += change.value.split('\n').length;
+            acc.deletions += lineCount;
           }
 
           return acc;
@@ -646,6 +651,20 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
       const normalizedOriginalContent = (existingHistory?.originalContent || file.content)
         .replace(/\r\n/g, '\n')
         .trim();
+
+      // If content matches original, remove from history
+      if (normalizedCurrentContent === normalizedOriginalContent) {
+        if (existingHistory) {
+          setFileHistory((prev) => {
+            const next = { ...prev };
+            delete next[selectedFile];
+
+            return next;
+          });
+        }
+
+        return;
+      }
 
       // Se não há histórico existente, criar um novo apenas se houver diferenças
       if (!existingHistory) {
