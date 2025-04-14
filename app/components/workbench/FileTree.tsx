@@ -284,9 +284,8 @@ function File({
     }
 
     // Usar a mesma lógica do DiffView para processar as mudanças
-    const normalizedOriginal = fileModifications.originalContent.replace(/\r\n/g, '\n');
-    const normalizedCurrent =
-      fileModifications.versions[fileModifications.versions.length - 1]?.content.replace(/\r\n/g, '\n') || '';
+    const normalizedOriginal = fileModifications.originalContent;
+    const normalizedCurrent = fileModifications.versions[fileModifications.versions.length - 1]?.content || '';
 
     if (normalizedOriginal === normalizedCurrent) {
       return { additions: 0, deletions: 0 };
