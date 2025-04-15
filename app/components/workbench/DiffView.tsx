@@ -492,7 +492,7 @@ const FileInfo = memo(
       }
 
       const changes = diffLines(beforeCode, afterCode, {
-        newlineIsToken: true,
+        newlineIsToken: false,
         ignoreWhitespace: false,
         ignoreCase: false,
       });

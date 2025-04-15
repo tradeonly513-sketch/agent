@@ -292,7 +292,7 @@ function File({
     }
 
     const changes = diffLines(normalizedOriginal, normalizedCurrent, {
-      newlineIsToken: true,
+      newlineIsToken: false,
       ignoreWhitespace: false,
       ignoreCase: false,
     });
