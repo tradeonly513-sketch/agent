@@ -4,7 +4,7 @@ import { withAuth } from '~/middleware';
 import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
 import type { FileContent } from '~/utils/projectCommands';
 
-const BASE_URL = 'https://test.dev.rapidcanvas.net/';
+const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
 
 interface DataAppStatus {
   launchStatus: string;
