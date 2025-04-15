@@ -85,14 +85,14 @@ const processChanges = (beforeCode: string, afterCode: string) => {
       return content
         .replace(/\r\n/g, '\n')
         .split('\n')
-        .map((line) => line.trimEnd());
+        .map((line) => line);
     };
 
     const beforeLines = normalizeContent(beforeCode);
     const afterLines = normalizeContent(afterCode);
 
-    // Early return if files are identical
-    if (beforeLines.join('\n') === afterLines.join('\n')) {
+    // Compare exact content including whitespace
+    if (beforeCode === afterCode) {
       return {
         beforeLines,
         afterLines,
