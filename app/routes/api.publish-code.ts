@@ -129,6 +129,10 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
       headers,
     });
 
+    if (!templateResponse.ok) {
+      throw new Error('Failed to update app template');
+    }
+
     const templateJson = (await templateResponse.json()) as { templateId: string };
 
     const appTemplateIdUpdated = templateJson.templateId;
