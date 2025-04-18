@@ -2,10 +2,9 @@ import { json } from '@remix-run/cloudflare';
 
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
-
 export async function authenticate(request: Request) {
   const url = new URL(request.url);
+  const baseUrl = url.origin;
   const token = request.headers.get('token');
   const path = url.pathname;
 
@@ -19,7 +18,7 @@ export async function authenticate(request: Request) {
   }
 
   try {
-    const dataAppResponse = await fetch(`${BASE_URL}api/token/validation`, {
+    const dataAppResponse = await fetch(`${baseUrl}/api/token/validation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

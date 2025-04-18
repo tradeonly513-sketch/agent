@@ -8,14 +8,17 @@ interface DataAppStatus {
   launchStatus: string;
 }
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
-
-async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers: HeadersInit): Promise<void> {
+async function pollDataAppStatus(
+  dataAppId: string,
+  pollStatus: string,
+  headers: HeadersInit,
+  baseUrl: string,
+): Promise<void> {
   const maxAttempts = 60; // 60 attempts with 5 second delay = 5 minutes timeout
   const delayMs = 5000; // 5 seconds between attempts
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const statusResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}`, {
+    const statusResponse = await fetch(`${baseUrl}/api/dataapps/by-id/${dataAppId}`, {
       method: 'GET',
       headers,
     });
@@ -49,7 +52,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
     const requestUrl = new URL(request.url);
-    const origin = requestUrl.origin;
+    const BASE_URL = requestUrl.origin;
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -155,14 +158,14 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       headers,
     });
 
-    await pollDataAppStatus(dataAppId, 'STOPPED', headers);
+    await pollDataAppStatus(dataAppId, 'STOPPED', headers, BASE_URL);
 
     await fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
       method: 'POST',
       headers,
     });
 
-    await pollDataAppStatus(dataAppId, 'RUNNING', headers);
+    await pollDataAppStatus(dataAppId, 'RUNNING', headers, BASE_URL);
 
     if (fileArtifacts.length > 0 && projectName) {
       // Save file artifacts to disk and remove latest app data
