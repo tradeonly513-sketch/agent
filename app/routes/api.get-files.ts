@@ -168,7 +168,7 @@ export const loader: LoaderFunction = withAuthLoader(async ({ request, context }
     const url = new URL(request.url);
     const dataAppId = url.searchParams.get('dataAppId');
     const token = request.headers.get('token');
-    const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
+    const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://qa.dev.rapidcanvas.net/';
 
     if (!dataAppId || !token) {
       return json({ error: 'Missing required parameters' }, { status: 400 });
