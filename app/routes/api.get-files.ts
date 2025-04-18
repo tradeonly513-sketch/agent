@@ -164,9 +164,10 @@ function normalizeRelativePath(relativePath: string, commonFolder?: string | nul
 }
 
 export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
+  const url = new URL(request.url);
+  const BASE_URL = url.origin;
+
   try {
-    const url = new URL(request.url);
-    const BASE_URL = url.origin;
     const dataAppId = url.searchParams.get('dataAppId');
     const token = request.headers.get('token');
 
@@ -181,6 +182,6 @@ export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
     return json({ fileArtifacts, skippedFiles, folderName: appTemplateName });
   } catch (error: any) {
     console.error('Error processing files:', error);
-    return json({ error: error.message }, { status: 500 });
+    return json({ error: error.message, baseUrl: BASE_URL }, { status: 500 });
   }
 });

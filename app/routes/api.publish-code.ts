@@ -44,6 +44,9 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
+  const requestUrl = new URL(request.url);
+  const BASE_URL = requestUrl.origin;
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -51,8 +54,6 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     const projectName = formData.get('projectName') as string;
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
-    const requestUrl = new URL(request.url);
-    const BASE_URL = requestUrl.origin;
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -183,6 +184,6 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     });
   } catch (error: any) {
     console.error('Error publishing code:', error);
-    return json({ error: 'Failed to publish code', details: error.message }, { status: 500 });
+    return json({ error: 'Failed to publish code', details: error.message, baseUrl: BASE_URL }, { status: 500 });
   }
 });
