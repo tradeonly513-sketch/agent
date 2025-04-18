@@ -48,6 +48,7 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
     const projectName = formData.get('projectName') as string;
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
+    const env = context?.cloudflare?.env;
     const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
 
     if (!file || !dataAppId || !token) {
@@ -79,7 +80,10 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
       throw new Error(`Failed to get data app details: ${dataAppResponse.statusText}`);
     }
 
-    const dataAppJson = (await dataAppResponse.json()) as { appTemplate?: { name: string; id: string } };
+    const dataAppJson = (await dataAppResponse.json()) as {
+      tenantId: string;
+      appTemplate?: { name: string; id: string };
+    };
     const appTemplate = dataAppJson?.appTemplate;
     const appTemplateId = appTemplate?.id;
     const appName = appTemplate?.name || 'app';
@@ -125,7 +129,7 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
 
     const templateResponse = await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...appTemplate, name: appName }),
+      body: JSON.stringify({ ...appTemplate, name: appName, tenantId: dataAppJson.tenantId }),
       headers,
     });
 
@@ -171,6 +175,7 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
       appTemplateId,
       templateResponse,
       baseUrl,
+      env,
       templateBody: JSON.stringify({ ...appTemplate, name: appName }),
     });
   } catch (error: any) {
