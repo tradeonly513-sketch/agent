@@ -16,7 +16,7 @@ export default async function handleRequest(
 ) {
   // await initializeModelList({});
 
-  const response = await authenticate(request);
+  const response = await authenticate(request, _loadContext);
 
   if (!response.authenticated && response.response instanceof Response) {
     const clonedResponse = response.response.clone();

@@ -4,18 +4,21 @@ import { withAuth } from '~/middleware';
 import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
 import type { FileContent } from '~/utils/projectCommands';
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
-
 interface DataAppStatus {
   launchStatus: string;
 }
 
-async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers: HeadersInit): Promise<void> {
+async function pollDataAppStatus(
+  dataAppId: string,
+  pollStatus: string,
+  headers: HeadersInit,
+  baseUrl: string,
+): Promise<void> {
   const maxAttempts = 60; // 60 attempts with 5 second delay = 5 minutes timeout
   const delayMs = 5000; // 5 seconds between attempts
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const statusResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}`, {
+    const statusResponse = await fetch(`${baseUrl}/api/dataapps/by-id/${dataAppId}`, {
       method: 'GET',
       headers,
     });
@@ -36,7 +39,7 @@ async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers:
   throw new Error('Timeout waiting for dataApp to update status');
 }
 
-export const action: ActionFunction = withAuth(async ({ request }) => {
+export const action: ActionFunction = withAuth(async ({ request, context }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -48,6 +51,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     const projectName = formData.get('projectName') as string;
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
+    const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://qa.dev.rapidcanvas.net/';
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -69,7 +73,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     };
 
     // Get data app details
-    const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
+    const dataAppResponse = await fetch(`${baseUrl}/api/dataapps/by-id/${dataAppId}/detailed`, {
       method: 'GET',
       headers,
     });
@@ -90,7 +94,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
     };
 
-    const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-upload-url`, {
+    const response = await fetch(`${baseUrl}/api/signed-url/generate-file-upload-url`, {
       method: 'POST',
       body: JSON.stringify(payload),
       headers,
@@ -122,7 +126,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       throw new Error('Failed to upload file');
     }
 
-    const templateResponse = await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
+    const templateResponse = await fetch(`${baseUrl}/api/app-templates/${appTemplateId}`, {
       method: 'PUT',
       body: JSON.stringify({ ...appTemplate, name: appName }),
       headers,
@@ -132,7 +136,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
 
     const appTemplateIdUpdated = templateJson.templateId;
 
-    await fetch(`${BASE_URL}/api/dataapps/${dataAppId}`, {
+    await fetch(`${baseUrl}/api/dataapps/${dataAppId}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
@@ -141,19 +145,19 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       }),
     });
 
-    await fetch(`${BASE_URL}/api/dataapps/${dataAppId}/stop`, {
+    await fetch(`${baseUrl}/api/dataapps/${dataAppId}/stop`, {
       method: 'POST',
       headers,
     });
 
-    await pollDataAppStatus(dataAppId, 'STOPPED', headers);
+    await pollDataAppStatus(dataAppId, 'STOPPED', headers, baseUrl);
 
-    await fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
+    await fetch(`${baseUrl}/api/dataapps/${dataAppId}/launch`, {
       method: 'POST',
       headers,
     });
 
-    await pollDataAppStatus(dataAppId, 'RUNNING', headers);
+    await pollDataAppStatus(dataAppId, 'RUNNING', headers, baseUrl);
 
     if (fileArtifacts.length > 0 && projectName) {
       // Save file artifacts to disk and remove latest app data

@@ -2,12 +2,11 @@ import { json } from '@remix-run/cloudflare';
 
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
-
-export async function authenticate(request: Request) {
+export async function authenticate(request: Request, context: any) {
   const url = new URL(request.url);
   const token = request.headers.get('token');
   const path = url.pathname;
+  const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
 
   // Skip authentication for non-API routes
   if (!path.startsWith('/code-editor/api/')) {
@@ -19,7 +18,7 @@ export async function authenticate(request: Request) {
   }
 
   try {
-    const dataAppResponse = await fetch(`${BASE_URL}api/token/validation`, {
+    const dataAppResponse = await fetch(`${baseUrl}api/token/validation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +46,7 @@ export async function authenticate(request: Request) {
  */
 export function withAuth(handler: ActionFunction): ActionFunction {
   return async (args) => {
-    const authResult = await authenticate(args.request);
+    const authResult = await authenticate(args.request, args.context);
 
     if (!authResult.authenticated) {
       return authResult.response;
@@ -65,7 +64,7 @@ export function withAuth(handler: ActionFunction): ActionFunction {
  */
 export function withAuthLoader(handler: LoaderFunction): LoaderFunction {
   return async (args) => {
-    const authResult = await authenticate(args.request);
+    const authResult = await authenticate(args.request, args.context);
 
     if (!authResult.authenticated) {
       return authResult.response;
