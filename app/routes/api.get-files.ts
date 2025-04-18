@@ -21,7 +21,7 @@ async function getAppTemplate(dataAppId: string, token: string, baseUrl: string)
   });
 
   if (!dataAppResponse.ok) {
-    throw new Error(`Failed to fetch app template: ${dataAppResponse.statusText}`);
+    throw new Error(`Failed to fetch app template: ${dataAppResponse.statusText} baseUrl: ${baseUrl}`);
   }
 
   const dataAppJson = (await dataAppResponse.json()) as AppTemplateResponse;

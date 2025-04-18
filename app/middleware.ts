@@ -28,7 +28,7 @@ export async function authenticate(request: Request) {
     });
 
     if (dataAppResponse.status !== 200) {
-      return { authenticated: false, response: json({ error: 'User authentication failed', status: 401 }) };
+      return { authenticated: false, response: json({ baseUrl, error: 'User authentication failed', status: 401 }) };
     }
 
     return { authenticated: true };
