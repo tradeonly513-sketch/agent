@@ -2,10 +2,9 @@ import { json } from '@remix-run/cloudflare';
 
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
-const BASE_URL = process.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
-
 export async function authenticate(request: Request) {
   const url = new URL(request.url);
+  const baseUrl = url.origin.replace('http://', 'https://');
   const token = request.headers.get('token');
   const path = url.pathname;
 
@@ -19,7 +18,7 @@ export async function authenticate(request: Request) {
   }
 
   try {
-    const dataAppResponse = await fetch(`${BASE_URL}api/token/validation`, {
+    const dataAppResponse = await fetch(`${baseUrl}/api/token/validation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -29,7 +28,7 @@ export async function authenticate(request: Request) {
     });
 
     if (dataAppResponse.status !== 200) {
-      return { authenticated: false, response: json({ error: 'User authentication failed', status: 401 }) };
+      return { authenticated: false, response: json({ baseUrl, error: 'User authentication failed', status: 401 }) };
     }
 
     return { authenticated: true };

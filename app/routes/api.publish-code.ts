@@ -4,18 +4,21 @@ import { withAuth } from '~/middleware';
 import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
 import type { FileContent } from '~/utils/projectCommands';
 
-const BASE_URL = process.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
-
 interface DataAppStatus {
   launchStatus: string;
 }
 
-async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers: HeadersInit): Promise<void> {
+async function pollDataAppStatus(
+  dataAppId: string,
+  pollStatus: string,
+  headers: HeadersInit,
+  baseUrl: string,
+): Promise<void> {
   const maxAttempts = 60; // 60 attempts with 5 second delay = 5 minutes timeout
   const delayMs = 5000; // 5 seconds between attempts
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const statusResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}`, {
+    const statusResponse = await fetch(`${baseUrl}/api/dataapps/by-id/${dataAppId}`, {
       method: 'GET',
       headers,
     });
@@ -40,6 +43,9 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
+
+  const url = new URL(request.url);
+  const BASE_URL = url.origin.replace('http://', 'https://');
 
   try {
     const formData = await request.formData();
@@ -78,7 +84,10 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       throw new Error(`Failed to get data app details: ${dataAppResponse.statusText}`);
     }
 
-    const dataAppJson = (await dataAppResponse.json()) as { appTemplate?: { name: string; id: string } };
+    const dataAppJson = (await dataAppResponse.json()) as {
+      tenantId: string;
+      appTemplate?: { name: string; id: string };
+    };
     const appTemplate = dataAppJson?.appTemplate;
     const appTemplateId = appTemplate?.id;
     const appName = appTemplate?.name || 'app';
@@ -124,9 +133,13 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
 
     const templateResponse = await fetch(`${BASE_URL}/api/app-templates/${appTemplateId}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...appTemplate, name: appName }),
+      body: JSON.stringify({ ...appTemplate, name: appName, tenantId: dataAppJson.tenantId }),
       headers,
     });
+
+    if (!templateResponse.ok) {
+      throw new Error('Failed to update app template');
+    }
 
     const templateJson = (await templateResponse.json()) as { templateId: string };
 
@@ -146,14 +159,14 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       headers,
     });
 
-    await pollDataAppStatus(dataAppId, 'STOPPED', headers);
+    await pollDataAppStatus(dataAppId, 'STOPPED', headers, BASE_URL);
 
     await fetch(`${BASE_URL}/api/dataapps/${dataAppId}/launch`, {
       method: 'POST',
       headers,
     });
 
-    await pollDataAppStatus(dataAppId, 'RUNNING', headers);
+    await pollDataAppStatus(dataAppId, 'RUNNING', headers, BASE_URL);
 
     if (fileArtifacts.length > 0 && projectName) {
       // Save file artifacts to disk and remove latest app data
@@ -161,9 +174,16 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       await deleteDataFile(dataAppId, 'latest');
     }
 
-    return json({ success: true });
+    return json({
+      success: true,
+      appTemplateId,
+      templateResponse,
+      requestUrl: url,
+      origin: url.origin,
+      templateBody: JSON.stringify({ ...appTemplate, name: appName }),
+    });
   } catch (error: any) {
     console.error('Error publishing code:', error);
-    return json({ error: 'Failed to publish code', details: error.message }, { status: 500 });
+    return json({ error: 'Failed to publish code', details: error.message, baseUrl: BASE_URL }, { status: 500 });
   }
 });
