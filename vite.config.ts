@@ -144,21 +144,21 @@ export default defineConfig((config) => {
     },
     resolve: {
       alias: {
-        buffer: 'vite-plugin-node-polyfills/polyfills/buffer',
+        buffer: 'buffer/',
+        process: 'process/browser',
+        util: 'util/',
+        stream: 'stream-browserify',
       },
     },
     plugins: [
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream', 'fs'],
+        include: ['buffer', 'process', 'util', 'stream'],
         globals: {
           Buffer: true,
           process: true,
           global: true,
         },
         protocolImports: true,
-
-        // Exclude Node.js modules that shouldn't be polyfilled in Cloudflare
-        exclude: ['child_process', 'path'],
       }),
       {
         name: 'buffer-polyfill',
@@ -198,6 +198,7 @@ export default defineConfig((config) => {
       'OLLAMA_API_BASE_URL',
       'LMSTUDIO_API_BASE_URL',
       'TOGETHER_API_BASE_URL',
+      'RC_BASE_URL',
     ],
     css: {
       preprocessorOptions: {

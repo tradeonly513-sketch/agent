@@ -2,7 +2,7 @@ import { json } from '@remix-run/cloudflare';
 
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
-const BASE_URL = import.meta.env.RC_BASE_URL;
+const BASE_URL = import.meta.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
 
 export async function authenticate(request: Request) {
   const url = new URL(request.url);
