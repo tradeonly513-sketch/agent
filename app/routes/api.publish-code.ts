@@ -48,8 +48,7 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
     const projectName = formData.get('projectName') as string;
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
-    const env = context?.cloudflare?.env;
-    const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
+    const env = context?.env;
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -174,7 +173,6 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
       success: true,
       appTemplateId,
       templateResponse,
-      baseUrl,
       env,
       templateBody: JSON.stringify({ ...appTemplate, name: appName }),
     });
