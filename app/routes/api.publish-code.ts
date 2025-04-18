@@ -4,11 +4,11 @@ import { withAuth } from '~/middleware';
 import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
 import type { FileContent } from '~/utils/projectCommands';
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
-
 interface DataAppStatus {
   launchStatus: string;
 }
+
+const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
 
 async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers: HeadersInit): Promise<void> {
   const maxAttempts = 60; // 60 attempts with 5 second delay = 5 minutes timeout
@@ -36,7 +36,7 @@ async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers:
   throw new Error('Timeout waiting for dataApp to update status');
 }
 
-export const action: ActionFunction = withAuth(async ({ request }) => {
+export const action: ActionFunction = withAuth(async ({ request, context }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -48,6 +48,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     const projectName = formData.get('projectName') as string;
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
+    const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -161,7 +162,13 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       await deleteDataFile(dataAppId, 'latest');
     }
 
-    return json({ success: true });
+    return json({
+      success: true,
+      appTemplateId,
+      templateResponse,
+      baseUrl,
+      templateBody: JSON.stringify({ ...appTemplate, name: appName }),
+    });
   } catch (error: any) {
     console.error('Error publishing code:', error);
     return json({ error: 'Failed to publish code', details: error.message }, { status: 500 });
