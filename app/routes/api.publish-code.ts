@@ -49,7 +49,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
     const requestUrl = new URL(request.url);
-    const BASE_URL = `${requestUrl.protocol}//${requestUrl.host}`;
+    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -175,7 +175,7 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       appTemplateId,
       templateResponse,
       requestUrl,
-      baseUrl: BASE_URL,
+      baseUrl,
       templateBody: JSON.stringify({ ...appTemplate, name: appName }),
     });
   } catch (error: any) {
