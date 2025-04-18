@@ -2,7 +2,7 @@ import { json } from '@remix-run/cloudflare';
 
 import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
+const BASE_URL = 'https://test.dev.rapidcanvas.net/';
 
 export async function authenticate(request: Request) {
   const url = new URL(request.url);
