@@ -4,7 +4,7 @@ import type { ActionFunction, LoaderFunction } from '@remix-run/cloudflare';
 
 export async function authenticate(request: Request) {
   const url = new URL(request.url);
-  const baseUrl = url.origin;
+  const baseUrl = url.origin.replace('http://', 'https://');
   const token = request.headers.get('token');
   const path = url.pathname;
 

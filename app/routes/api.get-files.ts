@@ -165,7 +165,7 @@ function normalizeRelativePath(relativePath: string, commonFolder?: string | nul
 
 export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
   const url = new URL(request.url);
-  const BASE_URL = url.origin;
+  const BASE_URL = url.origin.replace('http://', 'https://');
 
   try {
     const dataAppId = url.searchParams.get('dataAppId');

@@ -44,8 +44,8 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  const requestUrl = new URL(request.url);
-  const BASE_URL = requestUrl.origin;
+  const url = new URL(request.url);
+  const BASE_URL = url.origin.replace('http://', 'https://');
 
   try {
     const formData = await request.formData();
@@ -178,8 +178,8 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
       success: true,
       appTemplateId,
       templateResponse,
-      requestUrl,
-      origin,
+      requestUrl: url,
+      origin: url.origin,
       templateBody: JSON.stringify({ ...appTemplate, name: appName }),
     });
   } catch (error: any) {
