@@ -36,7 +36,7 @@ async function pollDataAppStatus(dataAppId: string, pollStatus: string, headers:
   throw new Error('Timeout waiting for dataApp to update status');
 }
 
-export const action: ActionFunction = withAuth(async ({ request, context }) => {
+export const action: ActionFunction = withAuth(async ({ request }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -48,7 +48,8 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
     const projectName = formData.get('projectName') as string;
     const fileArtifactsJson = formData.get('fileArtifacts') as string;
     const token = request.headers.get('token');
-    const env = context?.env;
+    const requestUrl = new URL(request.url);
+    const BASE_URL = `${requestUrl.protocol}//${requestUrl.host}`;
 
     if (!file || !dataAppId || !token) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -173,7 +174,8 @@ export const action: ActionFunction = withAuth(async ({ request, context }) => {
       success: true,
       appTemplateId,
       templateResponse,
-      env,
+      requestUrl,
+      baseUrl: BASE_URL,
       templateBody: JSON.stringify({ ...appTemplate, name: appName }),
     });
   } catch (error: any) {
