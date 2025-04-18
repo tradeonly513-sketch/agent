@@ -3,21 +3,19 @@ import type { LoaderFunction } from '@remix-run/cloudflare';
 import JSZip from 'jszip';
 import { withAuthLoader } from '~/middleware';
 
-const BASE_URL = 'https://qa.dev.rapidcanvas.net/';
-
 interface AppTemplateResponse {
   appTemplate: {
     name: string;
   };
 }
 
-async function getAppTemplate(dataAppId: string, token: string): Promise<string> {
+async function getAppTemplate(dataAppId: string, token: string, baseUrl: string): Promise<string> {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
 
-  const dataAppResponse = await fetch(`${BASE_URL}/api/dataapps/by-id/${dataAppId}/detailed`, {
+  const dataAppResponse = await fetch(`${baseUrl}/api/dataapps/by-id/${dataAppId}/detailed`, {
     method: 'GET',
     headers,
   });
@@ -35,7 +33,7 @@ async function getAppTemplate(dataAppId: string, token: string): Promise<string>
   return dataAppJson.appTemplate.name;
 }
 
-async function fetchZipFromDataApp(appTemplateName: string, token: string): Promise<JSZip> {
+async function fetchZipFromDataApp(appTemplateName: string, token: string, baseUrl: string): Promise<JSZip> {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
@@ -47,7 +45,7 @@ async function fetchZipFromDataApp(appTemplateName: string, token: string): Prom
     metadata: { appType: 'reactjs', SOURCE: 'TENANT' },
   };
 
-  const response = await fetch(`${BASE_URL}/api/signed-url/generate-file-download-url`, {
+  const response = await fetch(`${baseUrl}/api/signed-url/generate-file-download-url`, {
     method: 'POST',
     body: JSON.stringify(payload),
     headers,
@@ -165,18 +163,19 @@ function normalizeRelativePath(relativePath: string, commonFolder?: string | nul
   return normalized;
 }
 
-export const loader: LoaderFunction = withAuthLoader(async ({ request }) => {
+export const loader: LoaderFunction = withAuthLoader(async ({ request, context }) => {
   try {
     const url = new URL(request.url);
     const dataAppId = url.searchParams.get('dataAppId');
     const token = request.headers.get('token');
+    const baseUrl = context?.cloudflare?.env?.RC_BASE_URL || 'https://qa.dev.rapidcanvas.net/';
 
     if (!dataAppId || !token) {
       return json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const appTemplateName = await getAppTemplate(dataAppId, token);
-    const zip = await fetchZipFromDataApp(appTemplateName, token);
+    const appTemplateName = await getAppTemplate(dataAppId, token, baseUrl);
+    const zip = await fetchZipFromDataApp(appTemplateName, token, baseUrl);
     const { fileArtifacts, skippedFiles } = await processZipEntries(zip);
 
     return json({ fileArtifacts, skippedFiles, folderName: appTemplateName });
