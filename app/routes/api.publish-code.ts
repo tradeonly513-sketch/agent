@@ -4,7 +4,7 @@ import { withAuth } from '~/middleware';
 import { deleteDataFile, saveFileArtifacts } from '~/utils/fileOperations';
 import type { FileContent } from '~/utils/projectCommands';
 
-const BASE_URL = import.meta.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
+const BASE_URL = process.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
 
 interface DataAppStatus {
   launchStatus: string;

@@ -3,7 +3,7 @@ import type { LoaderFunction } from '@remix-run/cloudflare';
 import JSZip from 'jszip';
 import { withAuthLoader } from '~/middleware';
 
-const BASE_URL = import.meta.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
+const BASE_URL = process.env.RC_BASE_URL || 'https://staging.dev.rapidcanvas.net/';
 
 interface AppTemplateResponse {
   appTemplate: {
