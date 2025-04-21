@@ -24,6 +24,11 @@ import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
+import { useLoaderData } from '@remix-run/react';
+import { PublishDataAppDialog } from './PublishDataAppDialog';
+
+import type { Message } from 'ai';
+import { saveAllFilesToWorkbench } from '~/components/chat/Chat.helper';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -33,6 +38,7 @@ interface WorkspaceProps {
     gitUrl?: string;
   };
   updateChatMestaData?: (metadata: any) => void;
+  importChat: ((description: string, messages: Message[]) => Promise<void>) | undefined;
 }
 
 const viewTransition = { ease: cubicEasingFn };
@@ -197,18 +203,24 @@ const FileModifiedDropdown = memo(
 
                                         const changes = diffLines(normalizedOriginal, normalizedCurrent, {
                                           newlineIsToken: false,
-                                          ignoreWhitespace: true,
+                                          ignoreWhitespace: false,
                                           ignoreCase: false,
                                         });
 
                                         return changes.reduce(
                                           (acc: { additions: number; deletions: number }, change: Change) => {
+                                            const lines = change.value.split('\n');
+
+                                            // Don't count the last empty line that comes from splitting
+                                            const lineCount =
+                                              lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+
                                             if (change.added) {
-                                              acc.additions += change.value.split('\n').length;
+                                              acc.additions += lineCount;
                                             }
 
                                             if (change.removed) {
-                                              acc.deletions += change.value.split('\n').length;
+                                              acc.deletions += lineCount;
                                             }
 
                                             return acc;
@@ -276,12 +288,15 @@ const FileModifiedDropdown = memo(
 );
 
 export const Workbench = memo(
-  ({ chatStarted, isStreaming, actionRunner, metadata, updateChatMestaData }: WorkspaceProps) => {
+  ({ chatStarted, isStreaming, actionRunner, metadata, updateChatMestaData, importChat }: WorkspaceProps) => {
     renderLogger.trace('Workbench');
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
+    const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
+    const [isResetting, setIsResetting] = useState(false);
 
     // const modifiedFiles = Array.from(useStore(workbenchStore.unsavedFiles).keys());
 
@@ -294,15 +309,27 @@ export const Workbench = memo(
     const selectedView = useStore(workbenchStore.currentView);
 
     const isSmallViewport = useViewport(1024);
+    const {
+      id: mixedId,
+      shouldHideWorkbenchCloseIcon,
+      shouldHideGithubOptions,
+    } = useLoaderData<{
+      shouldHideWorkbenchCloseIcon: boolean;
+      shouldHideGithubOptions: boolean;
+      id?: string;
+    }>();
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
     };
 
     useEffect(() => {
-      if (hasPreview) {
-        setSelectedView('preview');
-      }
+      /*
+       * if (hasPreview) {
+       * setSelectedView('preview');
+       * }
+       */
+      console.log('hasPreview', hasPreview);
     }, [hasPreview]);
 
     useEffect(() => {
@@ -322,7 +349,7 @@ export const Workbench = memo(
     }, []);
 
     const onFileSave = useCallback(() => {
-      workbenchStore.saveCurrentDocument().catch(() => {
+      workbenchStore.saveCurrentDocument(mixedId!).catch(() => {
         toast.error('Failed to update file content');
       });
     }, []);
@@ -334,9 +361,19 @@ export const Workbench = memo(
     const handleSyncFiles = useCallback(async () => {
       setIsSyncing(true);
 
+      let directoryHandle = null;
+
       try {
-        const directoryHandle = await window.showDirectoryPicker();
-        await workbenchStore.syncFiles(directoryHandle);
+        directoryHandle = await window.showDirectoryPicker();
+      } catch (error) {
+        console.error('Error syncing files:', error);
+        setIsSyncing(false);
+
+        return;
+      }
+
+      try {
+        await workbenchStore.syncFiles(directoryHandle!);
         toast.success('Files synced successfully');
       } catch (error) {
         console.error('Error syncing files:', error);
@@ -346,10 +383,69 @@ export const Workbench = memo(
       }
     }, []);
 
+    const handlePublishCode = useCallback(async () => {
+      setIsPublishDialogOpen(true);
+    }, []);
+
+    const handlePublishConfirm = useCallback(async () => {
+      setIsPublishing(true);
+
+      try {
+        workbenchStore
+          .saveCurrentDocument(mixedId!)
+          .then(async () => {
+            await workbenchStore.publishCode(mixedId!);
+            workbenchStore.resetAllFileModifications();
+            setFileHistory({});
+            toast.success('DataApp published successfully. Refresh the dataApp page to see the updated changes.');
+          })
+          .catch(() => {
+            toast.error('Failed to update file content');
+          })
+          .finally(() => {
+            setIsPublishing(false);
+            setIsPublishDialogOpen(false);
+          });
+      } catch (error) {
+        console.error('Error publishing DataApp:', error);
+        toast.error('Failed to publish DataApp');
+        setIsPublishing(false);
+        setIsPublishDialogOpen(false);
+      }
+    }, []);
+
     const handleSelectFile = useCallback((filePath: string) => {
       workbenchStore.setSelectedFile(filePath);
       workbenchStore.currentView.set('diff');
     }, []);
+
+    const handleResetCode = async () => {
+      if (!mixedId || !importChat) {
+        return;
+      }
+
+      setIsResetting(true);
+
+      try {
+        const response = await fetch(`/code-editor/api/reset-files?dataAppId=${mixedId}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to load saved files');
+        }
+
+        const data: any = await response.json();
+
+        await saveAllFilesToWorkbench({ fileArtifacts: data.files, mixedId });
+        onFileSave();
+        toast.success('DataApp Code reset successfully');
+        setFileHistory({});
+      } catch (error) {
+        console.error('Error resetting code:', error);
+        toast.error('Failed to reset dataApp Code');
+      } finally {
+        setIsResetting(false);
+      }
+    };
 
     return (
       chatStarted && (
@@ -382,11 +478,17 @@ export const Workbench = memo(
                         onClick={() => {
                           workbenchStore.downloadZip();
                         }}
+                        title="Downloads the DataApp code as a zip file"
                       >
                         <div className="i-ph:code" />
                         Download Code
                       </PanelHeaderButton>
-                      <PanelHeaderButton className="mr-1 text-sm" onClick={handleSyncFiles} disabled={isSyncing}>
+                      <PanelHeaderButton
+                        className="mr-1 text-sm"
+                        onClick={handleSyncFiles}
+                        disabled={isSyncing}
+                        title="Sync the files from the DataApp to the local directory"
+                      >
                         {isSyncing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-down" />}
                         {isSyncing ? 'Syncing...' : 'Sync Files'}
                       </PanelHeaderButton>
@@ -395,27 +497,64 @@ export const Workbench = memo(
                         onClick={() => {
                           workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
                         }}
+                        title="Toggle the terminal visibility"
                       >
                         <div className="i-ph:terminal" />
                         Toggle Terminal
                       </PanelHeaderButton>
-                      <PanelHeaderButton className="mr-1 text-sm" onClick={() => setIsPushDialogOpen(true)}>
-                        <div className="i-ph:git-branch" />
-                        Push to GitHub
+                      <PanelHeaderButton
+                        className="mr-1 text-sm"
+                        onClick={handlePublishCode}
+                        disabled={isPublishing || isResetting}
+                        title={
+                          isResetting
+                            ? 'Please wait until reset action succeeds'
+                            : 'Publishes the DataApp code with the latest saved version'
+                        }
+                      >
+                        {isPublishing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-up" />}
+                        {isPublishing ? 'Publishing...' : 'Publish'}
                       </PanelHeaderButton>
+                      {importChat && (
+                        <PanelHeaderButton
+                          className="mr-1 text-sm"
+                          onClick={handleResetCode}
+                          disabled={isResetting || isPublishing}
+                          title={
+                            isPublishing
+                              ? 'Please wait until publish action succeeds'
+                              : 'Restores the DataApp code to the latest deployed version, discarding any unpublished changes'
+                          }
+                        >
+                          {isResetting ? (
+                            <div className="i-ph:spinner" />
+                          ) : (
+                            <div className="i-ph:arrow-counter-clockwise" />
+                          )}
+                          {isResetting ? 'Loading...' : 'Reset Code'}
+                        </PanelHeaderButton>
+                      )}
+                      {!shouldHideGithubOptions && (
+                        <PanelHeaderButton className="mr-1 text-sm" onClick={() => setIsPushDialogOpen(true)}>
+                          <div className="i-ph:git-branch" />
+                          Push to GitHub
+                        </PanelHeaderButton>
+                      )}
                     </div>
                   )}
                   {selectedView === 'diff' && (
                     <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
                   )}
-                  <IconButton
-                    icon="i-ph:x-circle"
-                    className="-mr-1"
-                    size="xl"
-                    onClick={() => {
-                      workbenchStore.showWorkbench.set(false);
-                    }}
-                  />
+                  {!shouldHideWorkbenchCloseIcon && (
+                    <IconButton
+                      icon="i-ph:x-circle"
+                      className="-mr-1"
+                      size="xl"
+                      onClick={() => {
+                        workbenchStore.showWorkbench.set(false);
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="relative flex-1 overflow-hidden">
                   <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
@@ -446,6 +585,12 @@ export const Workbench = memo(
               </div>
             </div>
           </div>
+          <PublishDataAppDialog
+            isOpen={isPublishDialogOpen}
+            onClose={() => setIsPublishDialogOpen(false)}
+            onConfirm={handlePublishConfirm}
+            isPublishing={isPublishing}
+          />
           <PushToGitHubDialog
             isOpen={isPushDialogOpen}
             onClose={() => setIsPushDialogOpen(false)}

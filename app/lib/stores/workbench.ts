@@ -18,6 +18,8 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert } from '~/types/actions';
+import type { FileContent } from '~/utils/projectCommands';
+import { publishCodeToServer, saveFileToServer } from '~/components/chat/Chat.helper';
 
 const { saveAs } = fileSaver;
 
@@ -186,7 +188,7 @@ export class WorkbenchStore {
     this.#editorStore.setSelectedFile(filePath);
   }
 
-  async saveFile(filePath: string) {
+  async saveFile(filePath: string, mixedId?: string) {
     const documents = this.#editorStore.documents.get();
     const document = documents[filePath];
 
@@ -196,20 +198,24 @@ export class WorkbenchStore {
 
     await this.#filesStore.saveFile(filePath, document.value);
 
+    if (mixedId) {
+      await saveFileToServer(filePath, document.value, mixedId!);
+    }
+
     const newUnsavedFiles = new Set(this.unsavedFiles.get());
     newUnsavedFiles.delete(filePath);
 
     this.unsavedFiles.set(newUnsavedFiles);
   }
 
-  async saveCurrentDocument() {
+  async saveCurrentDocument(mixedId?: string) {
     const currentDocument = this.currentDocument.get();
 
     if (currentDocument === undefined) {
       return;
     }
 
-    await this.saveFile(currentDocument.filePath);
+    await this.saveFile(currentDocument.filePath, mixedId);
   }
 
   resetCurrentDocument() {
@@ -406,6 +412,50 @@ export class WorkbenchStore {
     // Generate the zip file and save it
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, `${uniqueProjectName}.zip`);
+  }
+
+  async publishCode(dataAppId: string) {
+    const zip = new JSZip();
+    const files = this.files.get();
+
+    const projectName = (description.value ?? 'project').toLocaleLowerCase().split(' ').join('_');
+
+    const timestampHash = Date.now().toString(36).slice(-6);
+    const uniqueProjectName = `${projectName}_${timestampHash}`;
+
+    // Create file artifacts for saving to server
+    const fileArtifacts: FileContent[] = [];
+
+    for (const [filePath, dirent] of Object.entries(files)) {
+      if (dirent?.type === 'file' && !dirent.isBinary) {
+        const relativePath = extractRelativePath(filePath);
+
+        // Add to file artifacts for server
+        fileArtifacts.push({
+          path: relativePath,
+          content: dirent.content,
+        });
+
+        const pathSegments = relativePath.split('/');
+
+        if (pathSegments.length > 1) {
+          let currentFolder = zip;
+
+          for (let i = 0; i < pathSegments.length - 1; i++) {
+            currentFolder = currentFolder.folder(pathSegments[i])!;
+          }
+          currentFolder.file(pathSegments[pathSegments.length - 1], dirent.content);
+        } else {
+          zip.file(relativePath, dirent.content);
+        }
+      }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+
+    const file = new File([content], `${uniqueProjectName}.zip`, { type: 'application/zip' });
+
+    return await publishCodeToServer(file, dataAppId, projectName, fileArtifacts);
   }
 
   async syncFiles(targetHandle: FileSystemDirectoryHandle) {

@@ -5,6 +5,7 @@ import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
+import { authenticate } from './middleware';
 
 export default async function handleRequest(
   request: Request,
@@ -14,6 +15,17 @@ export default async function handleRequest(
   _loadContext: AppLoadContext,
 ) {
   // await initializeModelList({});
+
+  const response = await authenticate(request);
+
+  if (!response.authenticated && response.response instanceof Response) {
+    const clonedResponse = response.response.clone();
+    const data = (await clonedResponse.json()) as { error?: string };
+
+    if (data.error) {
+      return response;
+    }
+  }
 
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
     signal: request.signal,

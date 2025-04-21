@@ -36,6 +36,7 @@ import ProgressCompilation from './ProgressCompilation';
 import type { ProgressAnnotation } from '~/types/context';
 import type { ActionRunner } from '~/lib/runtime/action-runner';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
+import { useLoaderData } from '@remix-run/react';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -119,6 +120,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [transcript, setTranscript] = useState('');
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
+
+    const { hideBaseChat, canImportChat } = useLoaderData<{ hideBaseChat?: boolean; canImportChat?: boolean }>();
+
     useEffect(() => {
       if (data) {
         const progressList = data.filter(
@@ -180,7 +184,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         }
 
         setIsModelLoading('all');
-        fetch('/api/models')
+        fetch(`/code-editor/api/models`)
           .then((response) => response.json())
           .then((data) => {
             const typedData = data as { modelList: ModelInfo[] };
@@ -205,7 +209,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       let providerModels: ModelInfo[] = [];
 
       try {
-        const response = await fetch(`/api/models/${encodeURIComponent(providerName)}`);
+        const response = await fetch(`/code-editor/api/models/${encodeURIComponent(providerName)}`);
         const data = await response.json();
         providerModels = (data as { modelList: ModelInfo[] }).modelList;
       } catch (error) {
@@ -620,6 +624,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 actionRunner={actionRunner ?? ({} as ActionRunner)}
                 chatStarted={chatStarted}
                 isStreaming={isStreaming}
+                importChat={importChat}
               />
             )}
           </ClientOnly>
@@ -627,6 +632,20 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       </div>
     );
 
-    return <Tooltip.Provider delayDuration={200}>{baseChat}</Tooltip.Provider>;
+    return (
+      <Tooltip.Provider delayDuration={200}>
+        {!hideBaseChat ? (
+          baseChat
+        ) : (
+          <div ref={ref} className={classNames(styles.BaseChat, 'relative flex h-full w-full overflow-hidden')}>
+            <ClientOnly>{() => <Menu />}</ClientOnly>
+            <div className="flex justify-center gap-2 items-start mt-10% w-full">
+              {ImportButtons(importChat, canImportChat)}
+              <GitCloneButton importChat={importChat} />
+            </div>
+          </div>
+        )}
+      </Tooltip.Provider>
+    );
   },
 );

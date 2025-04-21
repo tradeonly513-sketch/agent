@@ -46,6 +46,7 @@ export function useChatHistory() {
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState<boolean>(false);
   const [urlId, setUrlId] = useState<string | undefined>();
+  const token = searchParams.get('token');
 
   useEffect(() => {
     if (!db) {
@@ -179,6 +180,7 @@ ${value.content}
                   : []),
                 ...filteredMessages,
               ];
+
               restoreSnapshot(mixedId);
             }
 
@@ -189,7 +191,7 @@ ${value.content}
             chatId.set(storedMessages.id);
             chatMetadata.set(storedMessages.metadata);
           } else {
-            navigate('/', { replace: true });
+            //navigate('/', { replace: true });
           }
 
           setReady(true);
@@ -255,7 +257,13 @@ ${value.content}
     // workbenchStore.files.setKey(snapshot?.files)
   }, []);
 
+  const resetMessages = useCallback(() => {
+    setInitialMessages([]);
+    setArchivedMessages([]);
+  }, []);
+
   return {
+    resetMessages,
     ready: !mixedId || ready,
     initialMessages,
     updateChatMestaData: async (metadata: IChatMetadata) => {
@@ -351,8 +359,18 @@ ${value.content}
       }
 
       try {
+        const currentId = mixedId || chatId.get();
+
+        if (currentId) {
+          await setMessages(db, currentId, messages, urlId, description, undefined, metadata);
+          setInitialMessages(messages);
+          setArchivedMessages([]);
+
+          return;
+        }
+
         const newId = await createChatFromMessages(db, description, messages, metadata);
-        window.location.href = `/chat/${newId}`;
+        window.location.href = `/code-editor/chat/${newId}?token=${token}`;
         toast.success('Chat imported successfully');
       } catch (error) {
         if (error instanceof Error) {

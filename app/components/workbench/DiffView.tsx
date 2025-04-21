@@ -6,11 +6,10 @@ import type { EditorDocument } from '~/components/editor/codemirror/CodeMirrorEd
 import { diffLines, type Change } from 'diff';
 import { getHighlighter } from 'shiki';
 import '~/styles/diff-view.css';
-import { diffFiles, extractRelativePath } from '~/utils/diff';
-import { ActionRunner } from '~/lib/runtime/action-runner';
-import type { FileHistory } from '~/types/actions';
 import { getLanguageFromExtension } from '~/utils/getLanguageFromExtension';
 import { themeStore } from '~/lib/stores/theme';
+import { ActionRunner } from '~/lib/runtime/action-runner';
+import type { FileHistory } from '~/types/actions';
 
 interface CodeComparisonProps {
   beforeCode: string;
@@ -86,14 +85,14 @@ const processChanges = (beforeCode: string, afterCode: string) => {
       return content
         .replace(/\r\n/g, '\n')
         .split('\n')
-        .map((line) => line.trimEnd());
+        .map((line) => line);
     };
 
     const beforeLines = normalizeContent(beforeCode);
     const afterLines = normalizeContent(afterCode);
 
-    // Early return if files are identical
-    if (beforeLines.join('\n') === afterLines.join('\n')) {
+    // Compare exact content including whitespace
+    if (beforeCode === afterCode) {
       return {
         beforeLines,
         afterLines,
@@ -494,18 +493,23 @@ const FileInfo = memo(
 
       const changes = diffLines(beforeCode, afterCode, {
         newlineIsToken: false,
-        ignoreWhitespace: true,
+        ignoreWhitespace: false,
         ignoreCase: false,
       });
 
       return changes.reduce(
         (acc: { additions: number; deletions: number }, change: Change) => {
+          const lines = change.value.split('\n');
+
+          // Don't count the last empty line that comes from splitting
+          const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+
           if (change.added) {
-            acc.additions += change.value.split('\n').length;
+            acc.additions += lineCount;
           }
 
           if (change.removed) {
-            acc.deletions += change.value.split('\n').length;
+            acc.deletions += lineCount;
           }
 
           return acc;
@@ -642,73 +646,70 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
       const currentContent = currentDocument.value;
 
       // Normalizar o conteúdo para comparação
-      const normalizedCurrentContent = currentContent.replace(/\r\n/g, '\n').trim();
-      const normalizedOriginalContent = (existingHistory?.originalContent || file.content)
-        .replace(/\r\n/g, '\n')
-        .trim();
+      const normalizedCurrentContent = currentContent.replace(/\r\n/g, '\n');
+      const normalizedOriginalContent = (existingHistory?.originalContent || file.content).replace(/\r\n/g, '\n');
+
+      // If content matches original, remove from history
+      if (normalizedCurrentContent === normalizedOriginalContent) {
+        if (existingHistory) {
+          setFileHistory((prev) => {
+            const next = { ...prev };
+            delete next[selectedFile];
+
+            return next;
+          });
+        }
+
+        return;
+      }
 
       // Se não há histórico existente, criar um novo apenas se houver diferenças
       if (!existingHistory) {
-        if (normalizedCurrentContent !== normalizedOriginalContent) {
-          const newChanges = diffLines(file.content, currentContent);
-          setFileHistory((prev) => ({
-            ...prev,
-            [selectedFile]: {
-              originalContent: file.content,
-              lastModified: Date.now(),
-              changes: newChanges,
-              versions: [
-                {
-                  timestamp: Date.now(),
-                  content: currentContent,
-                },
-              ],
-              changeSource: 'auto-save',
-            },
-          }));
-        }
+        const newChanges = diffLines(file.content, currentContent);
+        setFileHistory((prev) => ({
+          ...prev,
+          [selectedFile]: {
+            originalContent: file.content,
+            lastModified: Date.now(),
+            changes: newChanges,
+            versions: [
+              {
+                timestamp: Date.now(),
+                content: currentContent,
+              },
+            ],
+            changeSource: 'auto-save',
+          },
+        }));
 
         return;
       }
 
       // Se já existe histórico, verificar se há mudanças reais desde a última versão
       const lastVersion = existingHistory.versions[existingHistory.versions.length - 1];
-      const normalizedLastContent = lastVersion?.content.replace(/\r\n/g, '\n').trim();
+      const normalizedLastContent = lastVersion?.content.replace(/\r\n/g, '\n');
 
       if (normalizedCurrentContent === normalizedLastContent) {
         return; // Não criar novo histórico se o conteúdo é o mesmo
       }
 
       // Verificar se há mudanças significativas usando diffFiles
-      const relativePath = extractRelativePath(selectedFile);
-      const unifiedDiff = diffFiles(relativePath, existingHistory.originalContent, currentContent);
+      const newChanges = diffLines(existingHistory.originalContent, currentContent);
+      const newHistory: FileHistory = {
+        originalContent: existingHistory.originalContent,
+        lastModified: Date.now(),
+        changes: [...existingHistory.changes, ...newChanges].slice(-100), // Limitar histórico de mudanças
+        versions: [
+          ...existingHistory.versions,
+          {
+            timestamp: Date.now(),
+            content: currentContent,
+          },
+        ].slice(-10), // Manter apenas as 10 últimas versões
+        changeSource: 'auto-save',
+      };
 
-      if (unifiedDiff) {
-        const newChanges = diffLines(existingHistory.originalContent, currentContent);
-
-        // Verificar se as mudanças são significativas
-        const hasSignificantChanges = newChanges.some(
-          (change) => (change.added || change.removed) && change.value.trim().length > 0,
-        );
-
-        if (hasSignificantChanges) {
-          const newHistory: FileHistory = {
-            originalContent: existingHistory.originalContent,
-            lastModified: Date.now(),
-            changes: [...existingHistory.changes, ...newChanges].slice(-100), // Limitar histórico de mudanças
-            versions: [
-              ...existingHistory.versions,
-              {
-                timestamp: Date.now(),
-                content: currentContent,
-              },
-            ].slice(-10), // Manter apenas as 10 últimas versões
-            changeSource: 'auto-save',
-          };
-
-          setFileHistory((prev) => ({ ...prev, [selectedFile]: newHistory }));
-        }
-      }
+      setFileHistory((prev) => ({ ...prev, [selectedFile]: newHistory }));
     }
   }, [selectedFile, currentDocument?.value, files, setFileHistory, unsavedFiles]);
 

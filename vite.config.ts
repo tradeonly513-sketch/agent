@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { cloudflareDevProxyVitePlugin as remixCloudflareDevProxy, vitePlugin as remixVitePlugin } from '@remix-run/dev';
 import UnoCSS from 'unocss/vite';
 import { defineConfig, type ViteDevServer } from 'vite';
@@ -71,8 +72,38 @@ const getPackageJson = () => {
 const pkg = getPackageJson();
 const gitInfo = getGitInfo();
 
+// Set your base path to the subdirectory you want to serve your app from.
+const basePath = '/code-editor';
+
 export default defineConfig((config) => {
   return {
+    base: basePath,
+    publicPath: '/code-editor/build/',
+    server: {
+      host: '0.0.0.0',
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
+      },
+
+      // to allow CORS requests from localhost and other rc domains
+      allowedHosts: [
+        'localhost',
+        'rapidcanvas.net',
+        'dev.rapidcanvas.net',
+        'test.dev.rapidcanvas.net',
+        'qa.dev.rapidcanvas.net',
+      ],
+      proxy: {
+        '/api1': {
+          target: 'https://test.dev.rapidcanvas.net/',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api1/, ''),
+        },
+      },
+      port: 8080
+    },
     define: {
       __COMMIT_HASH: JSON.stringify(gitInfo.commitHash),
       __GIT_BRANCH: JSON.stringify(gitInfo.branch),
@@ -89,6 +120,7 @@ export default defineConfig((config) => {
       __PKG_DEV_DEPENDENCIES: JSON.stringify(pkg.devDependencies),
       __PKG_PEER_DEPENDENCIES: JSON.stringify(pkg.peerDependencies),
       __PKG_OPTIONAL_DEPENDENCIES: JSON.stringify(pkg.optionalDependencies),
+
       // Define global values
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
@@ -112,7 +144,10 @@ export default defineConfig((config) => {
     },
     resolve: {
       alias: {
-        buffer: 'vite-plugin-node-polyfills/polyfills/buffer',
+        buffer: 'buffer/',
+        process: 'process/browser',
+        util: 'util/',
+        stream: 'stream-browserify',
       },
     },
     plugins: [
@@ -124,8 +159,6 @@ export default defineConfig((config) => {
           global: true,
         },
         protocolImports: true,
-        // Exclude Node.js modules that shouldn't be polyfilled in Cloudflare
-        exclude: ['child_process', 'fs', 'path'],
       }),
       {
         name: 'buffer-polyfill',
@@ -136,10 +169,17 @@ export default defineConfig((config) => {
               map: null,
             };
           }
+
+          return {
+            code,
+            map: null,
+          };
         },
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
       remixVitePlugin({
+        buildDirectory: 'build/client',
+        basename: basePath,
         future: {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,
@@ -158,6 +198,7 @@ export default defineConfig((config) => {
       'OLLAMA_API_BASE_URL',
       'LMSTUDIO_API_BASE_URL',
       'TOGETHER_API_BASE_URL',
+      'RC_BASE_URL',
     ],
     css: {
       preprocessorOptions: {

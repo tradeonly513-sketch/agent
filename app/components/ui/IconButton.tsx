@@ -1,5 +1,6 @@
 import { memo, forwardRef, type ForwardedRef } from 'react';
 import { classNames } from '~/utils/classNames';
+import WithTooltip from './Tooltip';
 
 type IconSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
@@ -43,27 +44,28 @@ export const IconButton = memo(
       ref: ForwardedRef<HTMLButtonElement>,
     ) => {
       return (
-        <button
-          ref={ref}
-          className={classNames(
-            'flex items-center text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed',
-            {
-              [classNames('opacity-30', disabledClassName)]: disabled,
-            },
-            className,
-          )}
-          title={title}
-          disabled={disabled}
-          onClick={(event) => {
-            if (disabled) {
-              return;
-            }
+        <WithTooltip tooltip={title}>
+          <button
+            ref={ref}
+            className={classNames(
+              'flex items-center text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed',
+              {
+                [classNames('opacity-30', disabledClassName)]: disabled,
+              },
+              className,
+            )}
+            disabled={disabled}
+            onClick={(event) => {
+              if (disabled) {
+                return;
+              }
 
-            onClick?.(event);
-          }}
-        >
-          {children ? children : <div className={classNames(icon, getIconSize(size), iconClassName)}></div>}
-        </button>
+              onClick?.(event);
+            }}
+          >
+            {children ? children : <div className={classNames(icon, getIconSize(size), iconClassName)}></div>}
+          </button>
+        </WithTooltip>
       );
     },
   ),

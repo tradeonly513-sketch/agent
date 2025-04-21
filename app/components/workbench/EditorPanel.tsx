@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {
   CodeMirrorEditor,
@@ -71,6 +71,26 @@ export const EditorPanel = memo(
       return editorDocument !== undefined && unsavedFiles?.has(editorDocument.filePath);
     }, [editorDocument, unsavedFiles]);
 
+    useEffect(() => {
+      // Add event listener for browser close/refresh
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        if (activeFileUnsaved) {
+          // Modern approach - just prevent default and return a string
+          e.preventDefault();
+          return 'You have unsaved changes. Are you sure you want to leave?';
+        }
+
+        return undefined;
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      // Clean up the event listener when component unmounts
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }, [activeFileUnsaved]);
+
     return (
       <PanelGroup direction="vertical">
         <Panel defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100} minSize={20}>
@@ -101,13 +121,16 @@ export const EditorPanel = memo(
                     <FileBreadcrumb pathSegments={activeFileSegments} files={files} onFileSelect={onFileSelect} />
                     {activeFileUnsaved && (
                       <div className="flex gap-1 ml-auto -mr-1.5">
-                        <PanelHeaderButton onClick={onFileSave}>
+                        <PanelHeaderButton
+                          onClick={onFileSave}
+                          title="Stores the code changes without affecting the code linked to DataApp"
+                        >
                           <div className="i-ph:floppy-disk-duotone" />
                           Save
                         </PanelHeaderButton>
-                        <PanelHeaderButton onClick={onFileReset}>
+                        <PanelHeaderButton onClick={onFileReset} title="Revert the recent code changes">
                           <div className="i-ph:clock-counter-clockwise-duotone" />
-                          Reset
+                          Undo
                         </PanelHeaderButton>
                       </div>
                     )}

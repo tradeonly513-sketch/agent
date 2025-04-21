@@ -284,9 +284,8 @@ function File({
     }
 
     // Usar a mesma lógica do DiffView para processar as mudanças
-    const normalizedOriginal = fileModifications.originalContent.replace(/\r\n/g, '\n');
-    const normalizedCurrent =
-      fileModifications.versions[fileModifications.versions.length - 1]?.content.replace(/\r\n/g, '\n') || '';
+    const normalizedOriginal = fileModifications.originalContent;
+    const normalizedCurrent = fileModifications.versions[fileModifications.versions.length - 1]?.content || '';
 
     if (normalizedOriginal === normalizedCurrent) {
       return { additions: 0, deletions: 0 };
@@ -294,18 +293,24 @@ function File({
 
     const changes = diffLines(normalizedOriginal, normalizedCurrent, {
       newlineIsToken: false,
-      ignoreWhitespace: true,
+      ignoreWhitespace: false,
       ignoreCase: false,
     });
 
+    // Count each line in the changes separately
     return changes.reduce(
       (acc: { additions: number; deletions: number }, change: Change) => {
+        const lines = change.value.split('\n');
+
+        // Don't count the last empty line that comes from splitting
+        const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+
         if (change.added) {
-          acc.additions += change.value.split('\n').length;
+          acc.additions += lineCount;
         }
 
         if (change.removed) {
-          acc.deletions += change.value.split('\n').length;
+          acc.deletions += lineCount;
         }
 
         return acc;

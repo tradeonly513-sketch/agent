@@ -22,7 +22,7 @@ import type { TabType, TabVisibilityConfig, Profile } from './types';
 import { TAB_LABELS, DEFAULT_TAB_CONFIG } from './constants';
 import { DialogTitle } from '~/components/ui/Dialog';
 import { AvatarDropdown } from './AvatarDropdown';
-import BackgroundRays from '~/components/ui/BackgroundRays';
+import BackgroundRays from '~/components/ui/BackgroundRays/BackgroundRaysV2';
 
 // Import all tab components
 import ProfileTab from '~/components/@settings/tabs/profile/ProfileTab';

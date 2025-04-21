@@ -5,6 +5,8 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { PortDropdown } from './PortDropdown';
 import { ScreenshotSelector } from './ScreenshotSelector';
 
+import WithTooltip from '~/components/ui/Tooltip';
+
 type ResizeSide = 'left' | 'right' | null;
 
 interface WindowSize {
@@ -30,6 +32,7 @@ export const Preview = memo(() => {
   const [isPortDropdownOpen, setIsPortDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPreviewOnly, setIsPreviewOnly] = useState(false);
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
   const hasSelectedPreview = useRef(false);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
@@ -61,6 +64,7 @@ export const Preview = memo(() => {
     if (!activePreview) {
       setUrl('');
       setIframeUrl(undefined);
+      setIsIframeLoading(true);
 
       return;
     }
@@ -68,6 +72,7 @@ export const Preview = memo(() => {
     const { baseUrl } = activePreview;
     setUrl(baseUrl);
     setIframeUrl(baseUrl);
+    setIsIframeLoading(true);
   }, [activePreview]);
 
   const validateUrl = useCallback(
@@ -226,7 +231,7 @@ export const Preview = memo(() => {
 
       if (match) {
         const previewId = match[1];
-        const previewUrl = `/webcontainer/preview/${previewId}`;
+        const previewUrl = `/code-editor/webcontainer/preview/${previewId}`;
         const newWindow = window.open(
           previewUrl,
           '_blank',
@@ -242,6 +247,10 @@ export const Preview = memo(() => {
     }
   };
 
+  const handleIframeLoad = () => {
+    setIsIframeLoading(false);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -252,15 +261,17 @@ export const Preview = memo(() => {
       )}
       <div className="bg-bolt-elements-background-depth-2 p-2 flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <IconButton icon="i-ph:arrow-clockwise" onClick={reloadPreview} />
-          <IconButton
-            icon="i-ph:selection"
-            onClick={() => setIsSelectionMode(!isSelectionMode)}
-            className={isSelectionMode ? 'bg-bolt-elements-background-depth-3' : ''}
-          />
+          <IconButton icon="i-ph:arrow-clockwise" onClick={reloadPreview} title="Reload Preview" />
+          <div className="invisible">
+            <IconButton
+              icon="i-ph:selection"
+              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              className={isSelectionMode ? 'bg-bolt-elements-background-depth-3' : ''}
+            />
+          </div>
         </div>
 
-        <div className="flex-grow flex items-center gap-1 bg-bolt-elements-preview-addressBar-background border border-bolt-elements-borderColor text-bolt-elements-preview-addressBar-text rounded-full px-3 py-1 text-sm hover:bg-bolt-elements-preview-addressBar-backgroundHover hover:focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within-border-bolt-elements-borderColorActive focus-within:text-bolt-elements-preview-addressBar-textActive">
+        <div className="flex-grow flex items-center gap-1 bg-bolt-elements-preview-addressBar-background border border-bolt-elements-borderColor text-bolt-elements-preview-addressBar-text rounded-full px-3 py-1 text-sm hover:bg-bolt-elements-preview-addressBar-backgroundHover hover:focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within-border-bolt-elements-borderColorActive focus-within:text-bolt-elements-preview-addressBar-textActive invisible">
           <input
             title="URL"
             ref={inputRef}
@@ -313,11 +324,13 @@ export const Preview = memo(() => {
           />
 
           <div className="flex items-center relative">
-            <IconButton
-              icon="i-ph:arrow-square-out"
-              onClick={() => openInNewWindow(selectedWindowSize)}
-              title={`Open Preview in ${selectedWindowSize.name} Window`}
-            />
+            <WithTooltip tooltip={`Open Preview in ${selectedWindowSize.name} Window`}>
+              <IconButton
+                icon="i-ph:arrow-square-out"
+                onClick={() => openInNewWindow(selectedWindowSize)}
+                title={`Open Preview in ${selectedWindowSize.name} Window`}
+              />
+            </WithTooltip>
             <IconButton
               icon="i-ph:caret-down"
               onClick={() => setIsWindowSizeDropdownOpen(!isWindowSizeDropdownOpen)}
@@ -372,6 +385,14 @@ export const Preview = memo(() => {
         >
           {activePreview ? (
             <>
+              {isIframeLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-bolt-elements-background-depth-1">
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 border-4 border-bolt-elements-borderColor border-t-bolt-elements-accent rounded-full animate-spin"></div>
+                    <div className="mt-2 text-sm text-bolt-elements-textSecondary">Loading preview...</div>
+                  </div>
+                </div>
+              )}
               <iframe
                 ref={iframeRef}
                 title="preview"
@@ -379,6 +400,7 @@ export const Preview = memo(() => {
                 src={iframeUrl}
                 sandbox="allow-scripts allow-forms allow-popups allow-modals allow-storage-access-by-user-activation allow-same-origin"
                 allow="cross-origin-isolated"
+                onLoad={handleIframeLoad}
               />
               <ScreenshotSelector
                 isSelectionMode={isSelectionMode}
