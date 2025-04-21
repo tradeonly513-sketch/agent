@@ -26,7 +26,7 @@ env:
   DOCKER_BUILDKIT: 1
   REGISTRY_PREFIX: "us-central1-docker.pkg.dev/codilime-dev/rapidcanvas"
 jobs:
-  build_java_apps:
+  build_code_editor_apps:
     name: Build code-editor (bolt) apps
     permissions: write-all
     runs-on: ${{ vars.RUNNER_LABEL }}
@@ -54,7 +54,7 @@ jobs:
       - 
         name: get commit sha for vardhan repo
         id: component_versions
-        run:  echo "::set-output name=vardhan_sha::$(git -C . rev-parse --short HEAD)"
+        run:  echo "::set-output name=code_editor_sha::$(git -C . rev-parse --short HEAD)"
       - 
         name: check if input release version is available
         env:
@@ -158,6 +158,7 @@ jobs:
           sed -i "s/{IMAGE}/$image/g" tags.txt
           echo "DOCKER_TAGS=$(<tags.txt)" >> $GITHUB_ENV
           echo "DOCKER_TAGS=$DOCKER_TAGS"
+          cat tags.txt
           
       -
         name: Build and push code-editor Docker
