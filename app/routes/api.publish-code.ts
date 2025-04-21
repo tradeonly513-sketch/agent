@@ -119,15 +119,13 @@ export const action: ActionFunction = withAuth(async ({ request }) => {
 
     // Upload the file
     const zipResponse = await fetch(signedUrl, {
-      headers: {
-        ...resultHeaders,
-        'Content-Type': 'application/zip',
-      },
+      headers: resultHeaders,
       method: 'PUT',
       body: file,
     });
 
     if (!zipResponse.ok) {
+      console.log('Error uploading file:', zipResponse, signedUrl, resultHeaders);
       throw new Error('Failed to upload file');
     }
 
