@@ -1,0 +1,192 @@
+
+name: Create Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        type: boolean
+        required: true
+        description: Create github release
+        default: true
+      release_type:
+        description: Release type
+        type: choice
+        default: minor
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        type: string
+        required: false
+        description: Or Your release version
+
+env:
+  DOCKER_BUILDKIT: 1
+  REGISTRY_PREFIX: "us-central1-docker.pkg.dev/codilime-dev/rapidcanvas"
+jobs:
+  build_java_apps:
+    name: Build code-editor (bolt) apps
+    permissions: write-all
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    outputs:
+      vardhan_version: ${{ steps.component_versions.outputs.code_editor_sha }}
+    continue-on-error: false
+    steps:
+      - name: Notify job starting on Slack
+        id: slack_message
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel: build-status
+          status: STARTING
+          color: warning
+       
+      - name: clone code-editor (bolt) repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          path: .
+          ref: main
+      - 
+        name: get commit sha for vardhan repo
+        id: component_versions
+        run:  echo "::set-output name=vardhan_sha::$(git -C . rev-parse --short HEAD)"
+      - 
+        name: check if input release version is available
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version_to_check=''
+          if [ "$INPUT_VERSION" == '' ]; then
+              version_to_check="EMPTY_VERSION"
+          else
+              version_to_check="$INPUT_VERSION"
+          fi
+          echo "VERSION_TO_CHECK=$version_to_check" >> $GITHUB_ENV
+      - 
+        name : get last code-editor release based on input value
+        uses: cardinalby/git-get-release-action@v1
+        id: get-release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag: ${{ env.VERSION_TO_CHECK }}
+          doNotFailIfNotFound : true
+
+      - 
+        name: calculate next code-editor release
+        id: next_version
+        if: ${{ inputs.create_release && steps.get-release.outputs.tag_name == '' }}
+        uses: zwaldowski/semver-release-action@v3
+        with:
+          dry_run: true
+          bump: ${{ inputs.release_type }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      -          
+        name: get next code-editor release to create
+        if: ${{ inputs.create_release && steps.get-release.outputs.tag_name == '' }}
+        run: |
+          new_release_version=${{ steps.next_version.outputs.version }}
+          if [ "${{ inputs.version }}" != '' ]; then
+              new_release_version=${{ inputs.version }}
+          fi
+          echo "new_release_version=$new_release_version"
+          echo "NEW_RELEASE_VERSION=$new_release_version" >> $GITHUB_ENV
+
+      - 
+        name: calculate github tags
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          CREATE_RELEASE: ${{ inputs.create_release }}
+          SEM_VERSION: ${{ env.NEW_RELEASE_VERSION }}
+          FETCHED_RELEASE: ${{ steps.get-release.outputs.tag_name }}
+        run: |
+          gh_tags=''
+          deploy_version=''
+          if [ "$CREATE_RELEASE" == 'true' ]; then
+              if [ "$FETCHED_RELEASE" == '' ]; then
+                  gh_tags="$REGISTRY_PREFIX/{IMAGE}:v$SEM_VERSION,$REGISTRY_PREFIX/{IMAGE}:${{steps.component_versions.outputs.code_editor_sha }},$REGISTRY_PREFIX/{IMAGE}:latest"
+                  deploy_version=$SEM_VERSION
+              else
+                  deploy_version=$INPUT_VERSION
+              fi
+              
+          else
+              if [ "$FETCHED_RELEASE" != '' ]; then
+                  if [ "$INPUT_VERSION" != '' ]; then
+                      deploy_version=$INPUT_VERSION
+                  else
+                      deploy_version=latest
+                  fi                  
+              else
+                  if [ "$INPUT_VERSION" != '' ]; then
+                      gh_tags="$REGISTRY_PREFIX/{IMAGE}:${{steps.component_versions.outputs.code_editor_sha }},$REGISTRY_PREFIX/{IMAGE}:v$INPUT_VERSION,$REGISTRY_PREFIX/{IMAGE}:latest"
+                      deploy_version=$INPUT_VERSION
+                  else
+                      deploy_version=latest
+                  fi
+              fi
+          fi
+          echo "::add-mask::gh_tags=$gh_tags"
+          echo "deploy_version=$deploy_version"
+          echo "DOCKER_IMAGE_VER=$gh_tags" >> $GITHUB_ENV
+          echo "DEPLOY_VERSION=$deploy_version" >> $GITHUB_ENV
+      
+      - 
+        name: Set up Docker Buildx
+        if: env.DOCKER_IMAGE_VER != ''
+        uses: docker/setup-buildx-action@v3
+      
+      - name: authenticate to gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.gcp_serviceaccount }}
+
+      -
+        name: set up docker registry credentials
+        run: gcloud auth configure-docker $(echo $REGISTRY_PREFIX | cut -d '/' -f1)          
+
+      - 
+        name: calculate & print code-editor docker image tags
+        run: |
+          image=code-editor
+          echo "$DOCKER_IMAGE_VER" > tags.txt
+          sed -i "s/{IMAGE}/$image/g" tags.txt
+          echo "DOCKER_TAGS=$(<tags.txt)" >> $GITHUB_ENV
+          echo "DOCKER_TAGS=$DOCKER_TAGS"
+          
+      -
+        name: Build and push code-editor Docker
+        if:  env.DOCKER_TAGS != ''
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          file: Dockerfile
+          tags: ${{ env.DOCKER_TAGS }}
+
+      - name: Notify slack Success
+        if:  success()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel: build-status
+          message_id: ${{ steps.slack_message.outputs.message_id }}
+          status: SUCCESS
+          color: good
+
+      - name: Notify slack Failure
+        if:  failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel: build-status
+          message_id: ${{ steps.slack_message.outputs.message_id }}
+          status: FAILED
+          color: danger
