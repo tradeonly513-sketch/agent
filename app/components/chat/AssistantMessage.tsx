@@ -7,6 +7,8 @@ import { WORK_DIR } from '~/utils/constants';
 import WithTooltip from '~/components/ui/Tooltip';
 import type { Message } from 'ai';
 import type { ProviderInfo } from '~/types/model';
+import { ToolInvocation } from './ToolInvocation';
+import type { ToolInvocationAnnotation } from '~/types/context';
 
 interface AssistantMessageProps {
   content: string;
@@ -81,46 +83,50 @@ export const AssistantMessage = memo(
       totalTokens: number;
     } = filteredAnnotations.find((annotation) => annotation.type === 'usage')?.value;
 
+    // Extract tool invocations from annotations
+    const toolInvocations = filteredAnnotations.filter(
+      (annotation) => annotation.type === 'toolInvocation',
+    ) as ToolInvocationAnnotation[];
+
     return (
       <div className="overflow-hidden w-full">
         <>
           <div className=" flex gap-2 items-center text-sm text-bolt-elements-textSecondary mb-2">
             {(codeContext || chatSummary) && (
               <Popover side="right" align="start" trigger={<div className="i-ph:info" />}>
-                {chatSummary && (
-                  <div className="max-w-chat">
+                <div className="max-w-chat">
+                  {chatSummary && (
                     <div className="summary max-h-96 flex flex-col">
                       <h2 className="border border-bolt-elements-borderColor rounded-md p4">Summary</h2>
                       <div style={{ zoom: 0.7 }} className="overflow-y-auto m4">
                         <Markdown>{chatSummary}</Markdown>
                       </div>
                     </div>
-                    {codeContext && (
-                      <div className="code-context flex flex-col p4 border border-bolt-elements-borderColor rounded-md">
-                        <h2>Context</h2>
-                        <div className="flex gap-4 mt-4 bolt" style={{ zoom: 0.6 }}>
-                          {codeContext.map((x) => {
-                            const normalized = normalizedFilePath(x);
-                            return (
-                              <Fragment key={normalized}>
-                                <code
-                                  className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md text-bolt-elements-item-contentAccent hover:underline cursor-pointer"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    openArtifactInWorkbench(normalized);
-                                  }}
-                                >
-                                  {normalized}
-                                </code>
-                              </Fragment>
-                            );
-                          })}
-                        </div>
+                  )}
+                  {codeContext && (
+                    <div className="code-context flex flex-col p4 border border-bolt-elements-borderColor rounded-md">
+                      <h2>Context</h2>
+                      <div className="flex gap-4 mt-4 bolt" style={{ zoom: 0.6 }}>
+                        {codeContext.map((x) => {
+                          const normalized = normalizedFilePath(x);
+                          return (
+                            <Fragment key={normalized}>
+                              <code
+                                className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md text-bolt-elements-item-contentAccent hover:underline cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openArtifactInWorkbench(normalized);
+                                }}
+                              >
+                                {normalized}
+                              </code>
+                            </Fragment>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
                 <div className="context"></div>
               </Popover>
             )}
@@ -158,6 +164,9 @@ export const AssistantMessage = memo(
         <Markdown append={append} chatMode={chatMode} setChatMode={setChatMode} model={model} provider={provider} html>
           {content}
         </Markdown>
+
+        {/* Display tool invocations if present */}
+        {toolInvocations.length > 0 && <ToolInvocation toolInvocations={toolInvocations} />}
       </div>
     );
   },
