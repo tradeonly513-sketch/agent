@@ -7,7 +7,6 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { logStore } from '~/lib/stores/logs'; // Import logStore
 import {
   getMessages,
-  getNextId,
   getUrlId,
   openDatabase,
   setMessages,
@@ -84,7 +83,7 @@ export function useChatHistory() {
               startingIdx = -1;
             }
 
-            let filteredMessages = storedMessages.messages.slice(startingIdx + 1, endingIdx);
+            let filteredMessages = storedMessages.messages;
             let archivedMessages: Message[] = [];
 
             if (startingIdx >= 0) {
@@ -186,7 +185,7 @@ ${value.content}
 
             setInitialMessages(filteredMessages);
 
-            setUrlId(storedMessages.urlId);
+            setUrlId(mixedId!);
             description.set(storedMessages.description);
             chatId.set(storedMessages.id);
             chatMetadata.set(storedMessages.metadata);
@@ -319,16 +318,6 @@ ${value.content}
         description.set(firstArtifact?.title);
       }
 
-      if (initialMessages.length === 0 && !chatId.get()) {
-        const nextId = await getNextId(db);
-
-        chatId.set(nextId);
-
-        if (!urlId) {
-          navigateChat(nextId);
-        }
-      }
-
       await setMessages(
         db,
         chatId.get() as string,
@@ -362,8 +351,10 @@ ${value.content}
         const currentId = mixedId || chatId.get();
 
         if (currentId) {
-          await setMessages(db, currentId, messages, urlId, description, undefined, metadata);
-          setInitialMessages(messages);
+          const chat = await getMessages(db, currentId);
+          const chatMessages = chat.messages.length > 0 ? chat.messages : messages;
+          await setMessages(db, currentId, chatMessages, urlId, description, undefined, metadata);
+          setInitialMessages(chatMessages);
           setArchivedMessages([]);
 
           return;

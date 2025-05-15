@@ -12,7 +12,7 @@ import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
 import { Messages } from './Messages.client';
 import { SendButton } from './SendButton.client';
-import { APIKeyManager, getApiKeysFromCookies } from './APIKeyManager';
+import { getApiKeysFromCookies } from './APIKeyManager';
 import Cookies from 'js-cookie';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
@@ -35,8 +35,6 @@ import type { ModelInfo } from '~/lib/modules/llm/types';
 import ProgressCompilation from './ProgressCompilation';
 import type { ProgressAnnotation } from '~/types/context';
 import type { ActionRunner } from '~/lib/runtime/action-runner';
-import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
-import { useLoaderData } from '@remix-run/react';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -121,8 +119,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
 
-    const { hideBaseChat, canImportChat } = useLoaderData<{ hideBaseChat?: boolean; canImportChat?: boolean }>();
-
     useEffect(() => {
       if (data) {
         const progressList = data.filter(
@@ -199,30 +195,32 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     }, [providerList, provider]);
 
-    const onApiKeysChange = async (providerName: string, apiKey: string) => {
-      const newApiKeys = { ...apiKeys, [providerName]: apiKey };
-      setApiKeys(newApiKeys);
-      Cookies.set('apiKeys', JSON.stringify(newApiKeys));
-
-      setIsModelLoading(providerName);
-
-      let providerModels: ModelInfo[] = [];
-
-      try {
-        const response = await fetch(`/code-editor/api/models/${encodeURIComponent(providerName)}`);
-        const data = await response.json();
-        providerModels = (data as { modelList: ModelInfo[] }).modelList;
-      } catch (error) {
-        console.error('Error loading dynamic models for:', providerName, error);
-      }
-
-      // Only update models for the specific provider
-      setModelList((prevModels) => {
-        const otherModels = prevModels.filter((model) => model.provider !== providerName);
-        return [...otherModels, ...providerModels];
-      });
-      setIsModelLoading(undefined);
-    };
+    /*
+     *     const onApiKeysChange = async (providerName: string, apiKey: string) => {
+     *     const newApiKeys = { ...apiKeys, [providerName]: apiKey };
+     *     setApiKeys(newApiKeys);
+     *     Cookies.set('apiKeys', JSON.stringify(newApiKeys));
+     *
+     *     setIsModelLoading(providerName);
+     *
+     *     let providerModels: ModelInfo[] = [];
+     *
+     *     try {
+     *     const response = await fetch(`/code-editor/api/models/${encodeURIComponent(providerName)}`);
+     *     const data = await response.json();
+     *     providerModels = (data as { modelList: ModelInfo[] }).modelList;
+     *     } catch (error) {
+     *     console.error('Error loading dynamic models for:', providerName, error);
+     *     }
+     *
+     *     // Only update models for the specific provider
+     *     setModelList((prevModels) => {
+     *     const otherModels = prevModels.filter((model) => model.provider !== providerName);
+     *     return [...otherModels, ...providerModels];
+     *     });
+     *     setIsModelLoading(undefined);
+     *     };
+     */
 
     const startListening = () => {
       if (recognition) {
@@ -417,6 +415,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                             apiKeys={apiKeys}
                             modelLoading={isModelLoading}
                           />
+                          {/* 
                           {(providerList || []).length > 0 &&
                             provider &&
                             (!LOCAL_PROVIDERS.includes(provider.name) || 'OpenAILike') && (
@@ -427,7 +426,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                                   onApiKeysChange(provider.name, key);
                                 }}
                               />
-                            )}
+                            )} */}
                         </div>
                       )}
                     </ClientOnly>
@@ -522,7 +521,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                         minHeight: TEXTAREA_MIN_HEIGHT,
                         maxHeight: TEXTAREA_MAX_HEIGHT,
                       }}
-                      placeholder="How can Bolt help you today?"
+                      placeholder="How can RapidCanvas help you today?"
                       translate="no"
                     />
                     <ClientOnly>
@@ -632,20 +631,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       </div>
     );
 
-    return (
-      <Tooltip.Provider delayDuration={200}>
-        {!hideBaseChat ? (
-          baseChat
-        ) : (
-          <div ref={ref} className={classNames(styles.BaseChat, 'relative flex h-full w-full overflow-hidden')}>
-            <ClientOnly>{() => <Menu />}</ClientOnly>
-            <div className="flex justify-center gap-2 items-start mt-10% w-full">
-              {ImportButtons(importChat, canImportChat)}
-              <GitCloneButton importChat={importChat} />
-            </div>
-          </div>
-        )}
-      </Tooltip.Provider>
-    );
+    return <Tooltip.Provider delayDuration={200}>{baseChat}</Tooltip.Provider>;
   },
 );

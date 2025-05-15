@@ -19,24 +19,6 @@ export const action = withAuth(async (args: ActionFunctionArgs) => {
 
 const logger = createScopedLogger('api.chat');
 
-function parseCookies(cookieHeader: string): Record<string, string> {
-  const cookies: Record<string, string> = {};
-
-  const items = cookieHeader.split(';').map((cookie) => cookie.trim());
-
-  items.forEach((item) => {
-    const [name, ...rest] = item.split('=');
-
-    if (name && rest) {
-      const decodedName = decodeURIComponent(name.trim());
-      const decodedValue = decodeURIComponent(rest.join('=').trim());
-      cookies[decodedName] = decodedValue;
-    }
-  });
-
-  return cookies;
-}
-
 async function chatAction({ context, request }: ActionFunctionArgs) {
   const { messages, files, promptId, contextOptimization } = await request.json<{
     messages: Messages;
@@ -45,11 +27,15 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     contextOptimization: boolean;
   }>();
 
-  const cookieHeader = request.headers.get('Cookie');
-  const apiKeys = JSON.parse(parseCookies(cookieHeader || '').apiKeys || '{}');
-  const providerSettings: Record<string, IProviderSetting> = JSON.parse(
-    parseCookies(cookieHeader || '').providers || '{}',
-  );
+  const apiKeys = {
+    OpenAI: context.cloudflare?.env?.OPENAI_API_KEY || process.env.OPENAI_API_KEY || '',
+  };
+
+  if (!apiKeys.OpenAI) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment variables.');
+  }
+
+  const providerSettings: Record<string, IProviderSetting> = { OpenAI: { enabled: true } };
 
   const stream = new SwitchableStream();
 
@@ -224,6 +210,8 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
             const lastUserMessage = messages.filter((x) => x.role == 'user').slice(-1)[0];
             const { model, provider } = extractPropertiesFromMessage(lastUserMessage);
+            console.log('model', model);
+            console.log('provider', provider);
             messages.push({ id: generateId(), role: 'assistant', content });
             messages.push({
               id: generateId(),

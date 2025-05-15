@@ -168,6 +168,7 @@ export const ModelSelector = ({
     <div className="mb-2 flex gap-2 flex-col sm:flex-row">
       <select
         value={provider?.name ?? ''}
+        disabled
         onChange={(e) => {
           const newProvider = providerList.find((p: ProviderInfo) => p.name === e.target.value);
 
@@ -256,7 +257,7 @@ export const ModelSelector = ({
 
             <div
               className={classNames(
-                'max-h-60 overflow-y-auto',
+                'max-h-[60px] overflow-y-auto',
                 'sm:scrollbar-none',
                 '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2',
                 '[&::-webkit-scrollbar-thumb]:bg-bolt-elements-borderColor',
