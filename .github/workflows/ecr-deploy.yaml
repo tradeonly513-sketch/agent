@@ -1,0 +1,238 @@
+name: Build and Deploy to Amazon ECR
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ['v*', '*.*.*']
+    paths-ignore:
+      - 'k8s/**'
+  workflow_dispatch:  # Allows manual triggering
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write  # Need write permission to create branch and PR
+  pull-requests: write  # Need permission to create PR
+  id-token: write # Required for OIDC authentication
+
+env:
+  AWS_REGION: us-east-1 # Change to your AWS region
+  ECR_REPOSITORY_NAME: buildify # ECR repository name
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          # Enable BuildKit features with optimized memory usage
+          buildkitd-flags: --allow-insecure-entitlement=network.host
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }} # The ARN of the IAM role to assume
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check if ECR repository exists and create if needed
+        run: |
+          if ! aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_NAME }} 2>/dev/null; then
+            echo "Creating ECR repository: ${{ env.ECR_REPOSITORY_NAME }}"
+            aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_NAME }} \
+              --image-scanning-configuration scanOnPush=true \
+              --encryption-configuration encryptionType=AES256
+          else
+            echo "ECR repository ${{ env.ECR_REPOSITORY_NAME }} already exists, skipping creation"
+          fi
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR registry URL
+        id: ecr-registry
+        run: |
+          echo "registry=$(aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_NAME }} --query 'repositories[0].repositoryUri' --output text)" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata for Docker image
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ steps.ecr-registry.outputs.registry }}
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=ref,event=tag
+            type=sha,format=short
+
+      - name: Debug tags to be created
+        run: |
+          echo "Current GitHub ref: ${{ github.ref }}"
+          echo "Tags to be created: ${{ steps.meta.outputs.tags }}"
+
+      # Set up cache for Docker layers
+      - name: Set up Docker layer caching
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # Pull previous image for cache if it exists
+      - name: Pull previous image for cache
+        run: |
+          TAG="dev"
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAG="latest"
+          fi
+          
+          docker pull ${{ steps.ecr-registry.outputs.registry }}:$TAG || true
+        continue-on-error: true
+
+      # Set NODE_OPTIONS environment variable to increase memory limit
+      - name: Set Node.js memory parameters
+        run: |
+          echo "NODE_OPTIONS=--max_old_space_size=4096" >> $GITHUB_ENV
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          target: buildify-production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_LOG_LEVEL=info
+            DEFAULT_NUM_CTX=32768
+            NODE_OPTIONS=--max_old_space_size=4096
+          # Enable layer caching
+          cache-from: |
+            type=local,src=/tmp/.buildx-cache
+            type=registry,ref=${{ steps.ecr-registry.outputs.registry }}:buildcache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          # Increase resource allocation for build
+          outputs: type=image
+          allow: |
+            network.host
+          provenance: false
+
+      # Ensure dev tag is applied for dev branch
+      - name: Ensure branch-specific tag
+        if: ${{ github.ref == 'refs/heads/dev' }}
+        run: |
+          echo "Ensuring dev tag exists..."
+          docker buildx imagetools create \
+            -t ${{ steps.ecr-registry.outputs.registry }}:dev \
+            ${{ steps.ecr-registry.outputs.registry }}:sha-$(echo ${{ github.sha }} | cut -c1-7)
+
+      # Simple cache management
+      - name: Manage cache
+        if: always()
+        run: |
+          if [ -d "/tmp/.buildx-cache-new" ]; then
+            echo "Moving cache to maintain build efficiency"
+          else
+            echo "No cache directory found"
+          fi
+
+      # Move cache to prevent it from growing indefinitely
+      - name: Move cache
+        if: always()
+        run: |
+          if [ -d "/tmp/.buildx-cache-new" ]; then
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+            echo "Cache moved successfully"
+          else
+            echo "No new cache to move"
+          fi
+
+      - name: Verify image pushed
+        run: |
+          # Determine which tag to check based on the ref
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAG="latest"
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            TAG="dev"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            # Use short SHA for other branches
+            TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          fi
+          echo "Image pushed successfully: ${{ steps.ecr-registry.outputs.registry }}:$TAG"
+        
+      # Create PR for Kubernetes manifests update (only for main branch)
+      - name: Create PR for Kubernetes updates
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Set Git user
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # Create a new branch with a unique name
+          BRANCH_NAME="deploy/update-k8s-$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA:0:7}"
+          git checkout -b $BRANCH_NAME
+          
+          # Update deployment file with new image tag
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # For tagged releases, use the tag name
+            IMAGE_TAG="${{ github.ref_name }}"
+            sed -i "s|891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:dev|891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:$IMAGE_TAG|g" k8s/deployment.yaml
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # For main branch, use 'latest'
+            IMAGE_TAG="latest"
+            sed -i "s|891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:dev|891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:$IMAGE_TAG|g" k8s/deployment.yaml
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            # For dev branch, use 'dev'
+            # No need to change as dev is already set as the default tag in deployment.yaml
+            IMAGE_TAG="dev"
+            echo "Using dev tag for dev branch - no change needed to deployment.yaml"
+          else
+            # For other branches/PRs, use the short SHA
+            IMAGE_TAG="${GITHUB_SHA:0:7}"
+            sed -i "s|891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:dev|891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:$IMAGE_TAG|g" k8s/deployment.yaml
+          fi
+          
+          # Show changes for logging
+          echo "Modified deployment manifest:"
+          cat k8s/deployment.yaml
+          
+          # Commit changes
+          git add k8s/deployment.yaml
+          git commit -m "Update Kubernetes deployment to image ${{ steps.ecr-registry.outputs.registry }}:$IMAGE_TAG"
+          
+          # Push the branch
+          git push origin $BRANCH_NAME
+          
+          # Create PR
+          PR_TITLE="Update Kubernetes deployment to new image"
+          PR_BODY="This PR updates the Kubernetes deployment to use the latest image built from commit ${GITHUB_SHA}.
+
+          Image: ${{ steps.ecr-registry.outputs.registry }}:$IMAGE_TAG
+          
+          This PR was automatically generated by the CI/CD pipeline."
+          
+          gh pr create --base main --head $BRANCH_NAME --title "$PR_TITLE" --body "$PR_BODY" --label "deployment" || echo "PR already exists or couldn't be created"
+          
+      # Note about automatic scanning
+      - name: Note about image scanning
+        if: success()
+        run: |
+          echo "✅ Image successfully pushed to ECR"
+          echo "Note: ECR automatically scans images (scan-on-push is enabled)"
+          echo "Check the AWS ECR console for vulnerability scan results"

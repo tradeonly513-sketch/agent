@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: buildify-config
+  namespace: buildify
+data:
+  RUNNING_IN_DOCKER: "true"
+  VITE_LOG_LEVEL: "info"
+  # Add other non-sensitive configuration here

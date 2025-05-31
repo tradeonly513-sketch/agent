@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildify
+  labels:
+    app: buildify
+  annotations:
+    # Image versioning notes:
+    # The CI/CD pipeline will create a PR to update this deployment with specific image tags
+    # For tagged releases: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:v1.0.0
+    # For main branch: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:<short-sha>
+    # For dev branch: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:dev
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: buildify
+  template:
+    metadata:
+      labels:
+        app: buildify
+    spec:
+      serviceAccountName: ecr-service-account  # Service account with access to read ECR images
+      containers:
+        -
+          name: buildify
+          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:sha-451b7f5  # Using dev tag as the default for development
+          imagePullPolicy: Always
+          ports:
+            -
+              containerPort: 5173
+              name: http
+          resources:
+            requests:
+              cpu: "750m"
+              memory: "768Mi"
+            limits:
+              cpu: "1500m"
+              memory: "1.5Gi"
+          envFrom:
+            -
+              configMapRef:
+                name: buildify-config
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5173
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5173
+            initialDelaySeconds: 5
+            periodSeconds: 5

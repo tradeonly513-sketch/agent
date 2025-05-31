@@ -18,7 +18,7 @@ COPY . .
 EXPOSE 5173
 
 # Production image
-FROM base AS bolt-ai-production
+FROM base AS buildify-production
 
 # Define environment variables with default values or let them be overridden
 ARG GROQ_API_KEY
@@ -55,12 +55,15 @@ ENV WRANGLER_SEND_METRICS=false \
 RUN mkdir -p /root/.config/.wrangler && \
     echo '{"enabled":false}' > /root/.config/.wrangler/metrics.json
 
-RUN pnpm run build
+ENV NODE_OPTIONS="--max_old_space_size=4096"
+
+# Change your build command to be more memory efficient
+RUN NODE_OPTIONS="--max_old_space_size=4096" pnpm run build
 
 CMD [ "pnpm", "run", "dockerstart"]
 
 # Development image
-FROM base AS bolt-ai-development
+FROM base AS buildify-development
 
 # Define the same environment variables for development
 ARG GROQ_API_KEY

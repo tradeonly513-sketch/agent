@@ -1,18 +1,18 @@
-# bolt.diy
+# Buildify
 
-[![bolt.diy: AI-Powered Full-Stack Web Development in the Browser](./public/social_preview_index.jpg)](https://bolt.diy)
+[![Buildify: AI-Powered Full-Stack Web Development in the Browser](./public/social_preview_index.png)](https://bolt.diy)
 
-Welcome to bolt.diy, the official open source version of Bolt.new, which allows you to choose the LLM that you use for each prompt! Currently, you can use OpenAI, Anthropic, Ollama, OpenRouter, Gemini, LMStudio, Mistral, xAI, HuggingFace, DeepSeek, or Groq models - and it is easily extended to use any other model supported by the Vercel AI SDK! See the instructions below for running this locally and extending it to include more models.
-
------
-Check the [bolt.diy Docs](https://stackblitz-labs.github.io/bolt.diy/) for more offical installation instructions and more informations.
+Welcome to Buildify, the official open source version of Bolt.new, which allows you to choose the LLM that you use for each prompt! Currently, you can use OpenAI, Anthropic, Ollama, OpenRouter, Gemini, LMStudio, Mistral, xAI, HuggingFace, DeepSeek, or Groq models - and it is easily extended to use any other model supported by the Vercel AI SDK! See the instructions below for running this locally and extending it to include more models.
 
 -----
-Also [this pinned post in our community](https://thinktank.ottomator.ai/t/videos-tutorial-helpful-content/3243) has a bunch of incredible resources for running and deploying bolt.diy yourself!
+Check the [Buildify Docs](https://stackblitz-labs.github.io/bolt.diy/) for more offical installation instructions and more informations.
 
-We have also launched an experimental agent called the "bolt.diy Expert" that can answer common questions about bolt.diy. Find it here on the [oTTomator Live Agent Studio](https://studio.ottomator.ai/).
+-----
+Also [this pinned post in our community](https://thinktank.ottomator.ai/t/videos-tutorial-helpful-content/3243) has a bunch of incredible resources for running and deploying Buildify yourself!
 
-bolt.diy was originally started by [Cole Medin](https://www.youtube.com/@ColeMedin) but has quickly grown into a massive community effort to build the BEST open source AI coding assistant!
+We have also launched an experimental agent called the "Buildify Expert" that can answer common questions about Buildify. Find it here on the [oTTomator Live Agent Studio](https://studio.ottomator.ai/).
+
+Buildify was originally started by [Cole Medin](https://www.youtube.com/@ColeMedin) but has quickly grown into a massive community effort to build the BEST open source AI coding assistant!
 
 ## Table of Contents
 
@@ -84,11 +84,11 @@ project, please check the [project management guide](./PROJECT.md) to get starte
 - ⬜ **HIGH PRIORITY** - Better prompting for smaller LLMs (code window sometimes doesn't start)
 - ⬜ **HIGH PRIORITY** - Run agents in the backend as opposed to a single model call
 - ✅ Deploy directly to Netlify (@xKevIsDev)
-- ✅ Supabase Integration (@xKevIsDev)
+- ⬜ Supabase Integration
 - ⬜ Have LLM plan the project in a MD file for better results/transparency
 - ⬜ VSCode Integration with git-like confirmations
 - ⬜ Upload documents for knowledge - UI design templates, a code base to reference coding style, etc.
-- ✅ Voice prompting
+- ⬜ Voice prompting
 - ⬜ Azure Open AI API Integration
 - ⬜ Vertex AI Integration
 - ⬜ Granite Integration
@@ -191,6 +191,37 @@ This option requires some familiarity with Docker but provides a more isolated e
    ```bash
    docker compose --profile development up
    ```
+
+### Option 3: Deploying to Amazon ECR with GitHub Actions and Kubernetes
+
+This option allows you to build Docker images, deploy them to Amazon ECR using GitHub Actions, and deploy the application to Kubernetes using ArgoCD.
+
+#### Prerequisites
+
+- AWS account with GitHub OIDC integration
+- Kubernetes cluster with ArgoCD installed
+- GitHub repository with this codebase
+
+#### Steps:
+
+1. **Set up GitHub OIDC with AWS**:
+   - Create an IAM OIDC provider for GitHub Actions
+   - Create an IAM role with ECR permissions
+   - Add the role ARN as a GitHub variable: `AWS_ROLE_ARN`
+
+2. **Push to your repository**:
+   The GitHub Actions workflow will automatically:
+   - Build the Docker image
+   - Create an ECR repository if it doesn't exist
+   - Push the image to ECR
+   - Update Kubernetes manifests with the correct image URL
+
+3. **Deploy with ArgoCD**:
+   ArgoCD will detect changes to the Kubernetes manifests and automatically deploy the application to your cluster.
+
+For detailed instructions, see:
+- [ECR Deployment Guide](docs/ecr-deployment.md)
+- [Kubernetes Deployment Guide](k8s/README.md)
 
 ## Configuring API Keys and Providers
 
