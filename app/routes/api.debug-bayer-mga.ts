@@ -6,6 +6,65 @@ import { generateText } from 'ai';
 
 const logger = createScopedLogger('BayerMGADebug');
 
+// Define types for the API responses
+interface ModelsTest {
+  name: string;
+  url: string;
+  success: boolean;
+  status: number;
+  statusText: string;
+  duration: string;
+  headers: Record<string, string>;
+  responsePreview: string;
+  parsedModelsCount: number;
+  availableModels: Array<{
+    model: string;
+    name: string;
+    context_window: number;
+  }>;
+}
+
+interface CompletionsTest {
+  name: string;
+  url: string;
+  success: boolean;
+  status: number;
+  statusText: string;
+  duration: string;
+  headers: Record<string, string>;
+  responsePreview: string;
+  completionContent: string | null;
+}
+
+interface SdkTest {
+  name: string;
+  success: boolean;
+  duration?: string;
+  result?: any; // Changed from string to any to accommodate GenerateTextResult
+  error?: string;
+  stack?: string;
+}
+
+interface DebugResults {
+  success: boolean;
+  baseUrl?: string; // Made optional for error responses
+  model?: string; // Made optional for error responses
+  apiKeyProvided?: boolean; // Made optional for error responses
+  apiKeyPrefix?: string | null;
+  tests: Array<ModelsTest | CompletionsTest | SdkTest>;
+  error?: string;
+  errorStack?: string;
+}
+
+// Define type for the request body in the action function
+interface DebugRequestBody {
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+  messages?: Array<{ role: string; content: string }>;
+  system?: string;
+}
+
 // Add CORS headers to all responses
 function addCorsHeaders(response: Response): Response {
   response.headers.set('Access-Control-Allow-Origin', '*');
@@ -40,7 +99,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           success: false,
           error: 'No API key provided. Add ?apiKey=your_key to the URL or set it in the app settings.',
           tests: [],
-        },
+        } as DebugResults,
         { status: 400 },
       ),
     );
@@ -50,13 +109,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
   // Results container
-  const results = {
+  const results: DebugResults = {
     success: true,
     baseUrl: normalizedBaseUrl,
     model,
     apiKeyProvided: !!effectiveApiKey,
     apiKeyPrefix: effectiveApiKey ? `${effectiveApiKey.substring(0, 4)}...` : null,
-    tests: [] as any[],
+    tests: [],
   };
 
   // Test 1: Fetch models
@@ -74,7 +133,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const modelsResponseText = await modelsResponse.text();
     let modelsData;
-    let parsedModels = [];
+    let parsedModels: Array<{ model: string; name: string; context_window: number }> = [];
     
     try {
       modelsData = JSON.parse(modelsResponseText);
@@ -102,7 +161,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       responsePreview: modelsResponseText.substring(0, 500) + (modelsResponseText.length > 500 ? '...' : ''),
       parsedModelsCount: parsedModels.length,
       availableModels: parsedModels.slice(0, 5), // First 5 models only
-    });
+    } as ModelsTest);
 
     // If models test failed, don't attempt completions test
     if (!modelsResponse.ok) {
@@ -158,7 +217,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       headers: Object.fromEntries(completionsResponse.headers.entries()),
       responsePreview: completionsResponseText.substring(0, 500) + (completionsResponseText.length > 500 ? '...' : ''),
       completionContent,
-    });
+    } as CompletionsTest);
 
     // Test 3: Using the AI SDK (same as the app)
     try {
@@ -186,7 +245,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         success: true,
         duration: `${sdkEndTime - sdkStartTime}ms`,
         result: result,
-      });
+      } as SdkTest);
     } catch (error) {
       results.success = false;
       results.tests.push({
@@ -194,7 +253,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-      });
+      } as SdkTest);
     }
 
     return addCorsHeaders(json(results));
@@ -214,7 +273,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
   }
 
   try {
-    const { apiKey, baseUrl, model, messages, system } = await request.json();
+    // Parse request body with proper type checking
+    const requestData = await request.json() as DebugRequestBody;
+    const { apiKey, baseUrl, model, messages, system } = requestData;
     
     // Get API key from cookies if not provided in request body
     let effectiveApiKey = apiKey;
@@ -248,15 +309,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
     // Create OpenAI-like model instance (same as the provider)
     const openaiLike = getOpenAILikeModel(normalizedBaseUrl, effectiveApiKey, effectiveModel);
     
-    // Generate text using the AI SDK
+    // Generate text using the AI SDK - fixing the messages type
     const result = await generateText({
       system: system || undefined,
-      messages: messages || [
-        {
-          role: 'user',
-          content: 'Hello from Buildify custom test. Please respond with a very short greeting.',
-        },
-      ],
+      messages: messages ? 
+        messages.map(m => ({ role: m.role as any, content: m.content })) : 
+        [{ role: 'user' as const, content: 'Hello from Buildify custom test. Please respond with a very short greeting.' }],
       model: openaiLike,
       maxTokens: 500,
     });

@@ -54,7 +54,7 @@ function SafeAuthControls() {
 }
 
 // Simple error boundary wrapper
-function ErrorCatcher({ children, onError }) {
+function ErrorCatcher({ children, onError }: { children: React.ReactNode; onError: () => void }) {
   try {
     return children;
   } catch (error) {

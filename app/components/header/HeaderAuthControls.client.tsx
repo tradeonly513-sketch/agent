@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
  */
 export default function HeaderAuthControls() {
   // Error state for component-level error handling
-  const [renderError, setRenderError] = useState(null);
+  const [renderError, setRenderError] = useState<Error | null>(null);
 
   // Call useAuth at the top level of the component as required by React hooks rules
   let authState;
@@ -159,7 +159,7 @@ export default function HeaderAuthControls() {
   } catch (error) {
     // Catch any rendering errors
     console.error('Error rendering auth controls:', error);
-    setRenderError(error);
+    setRenderError(error instanceof Error ? error : new Error(String(error)));
     
     // Return fallback UI
     return (
