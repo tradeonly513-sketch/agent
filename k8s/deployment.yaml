@@ -41,6 +41,9 @@ spec:
             -
               configMapRef:
                 name: buildify-config
+            -
+              secretRef:
+                name: buildify-secrets
           livenessProbe:
             httpGet:
               path: /
