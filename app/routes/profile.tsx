@@ -35,7 +35,8 @@ export async function action({ request }: ActionFunctionArgs) {
   // Get form data
   const formData = await request.formData();
   const bio = formData.get('bio')?.toString() || '';
-  const displayName = formData.get('displayName')?.toString() || user.login;
+  // Fix TypeScript error by adding null check for user
+  const displayName = formData.get('displayName')?.toString() || (user ? user.login : '');
   const theme = formData.get('theme')?.toString() || 'system';
   
   // Here you would typically update the user data in your database
