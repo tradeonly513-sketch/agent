@@ -16,11 +16,13 @@ import { useToast } from '~/components/ui/use-toast';
 type ProviderName =
   | 'AmazonBedrock'
   | 'Anthropic'
+  | 'BayerMGA'
   | 'Cohere'
   | 'Deepseek'
   | 'Google'
   | 'Groq'
   | 'HuggingFace'
+  | 'Hyperbolic'
   | 'Mistral'
   | 'OpenAI'
   | 'OpenRouter'
@@ -81,6 +83,14 @@ const PROVIDER_STATUS_URLS: Record<ProviderName, ProviderConfig> = {
       'anthropic-version': '2024-02-29',
     },
     testModel: 'claude-3-sonnet-20240229',
+  },
+  BayerMGA: {
+    statusUrl: 'https://chat.int.bayer.com',
+    apiUrl: 'https://chat.int.bayer.com/api/v2/models?include_hidden_models=false&include_aliases=true',
+    headers: {
+      Authorization: 'Bearer $BAYER_MGA_API_KEY',
+    },
+    testModel: 'gpt-4o',
   },
   Cohere: {
     statusUrl: 'https://status.cohere.com/',
@@ -170,11 +180,20 @@ const PROVIDER_STATUS_URLS: Record<ProviderName, ProviderConfig> = {
     },
     testModel: 'deepseek-chat',
   },
+  Hyperbolic: {
+    statusUrl: 'https://status.hyperbolic.ai/',
+    apiUrl: 'https://api.hyperbolic.ai/v1/models',
+    headers: {
+      Authorization: 'Bearer $HYPERBOLIC_API_KEY',
+    },
+    testModel: 'claude-3-opus-20240229',
+  },
 };
 
 const PROVIDER_ICONS: Record<ProviderName, IconType> = {
   AmazonBedrock: SiAmazon,
   Anthropic: FaBrain,
+  BayerMGA: BsRobot,
   Cohere: BiChip,
   Google: SiGoogle,
   Groq: BsCloud,
@@ -186,6 +205,7 @@ const PROVIDER_ICONS: Record<ProviderName, IconType> = {
   Together: BsCloud,
   XAI: BsRobot,
   Deepseek: BiCodeBlock,
+  Hyperbolic: BsCloud,
 };
 
 const ServiceStatusTab = () => {
@@ -209,6 +229,7 @@ const ServiceStatusTab = () => {
       const envKeyMap: Record<ProviderName, string> = {
         OpenAI: 'OPENAI_API_KEY',
         Anthropic: 'ANTHROPIC_API_KEY',
+        BayerMGA: 'BAYER_MGA_API_KEY',
         Cohere: 'COHERE_API_KEY',
         Google: 'GOOGLE_GENERATIVE_AI_API_KEY',
         HuggingFace: 'HuggingFace_API_KEY',
@@ -220,6 +241,7 @@ const ServiceStatusTab = () => {
         OpenRouter: 'OPEN_ROUTER_API_KEY',
         XAI: 'XAI_API_KEY',
         Deepseek: 'DEEPSEEK_API_KEY',
+        Hyperbolic: 'HYPERBOLIC_API_KEY',
       };
 
       const envKey = envKeyMap[provider];
