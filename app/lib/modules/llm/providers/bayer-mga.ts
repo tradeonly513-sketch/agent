@@ -17,7 +17,12 @@ export default class BayerMGAProvider extends BaseProvider {
     apiTokenKey: 'BAYER_MGA_API_KEY',
   };
 
-  staticModels: ModelInfo[] = [];
+  staticModels: ModelInfo[] = [
+    // Temporary static models for testing inference flow
+    { name: 'claude-3-7-sonnet', label: 'Claude 3.7 Sonnet', provider: 'BayerMGA', maxTokenAllowed: 128000 },
+    { name: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'BayerMGA', maxTokenAllowed: 128000 },
+    // Add other common models if they appear in the UI for testing purposes
+  ];
 
   async getDynamicModels(
     apiKeys?: Record<string, string>,
