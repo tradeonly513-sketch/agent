@@ -1,4 +1,4 @@
-import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node';
+import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/cloudflare';
 import { Form, useLoaderData, useNavigation } from '@remix-run/react';
 import { useEffect } from 'react';
 import { logout, getUserFromSession } from '~/lib/auth/github-oauth.server';

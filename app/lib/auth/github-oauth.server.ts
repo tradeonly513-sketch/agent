@@ -1,5 +1,5 @@
 import { OAuthApp } from '@octokit/oauth-app';
-import { createCookieSessionStorage, redirect } from '@remix-run/node';
+import { createCookieSessionStorage, redirect } from '@remix-run/cloudflare';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define types for GitHub user data
