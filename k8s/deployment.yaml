@@ -38,12 +38,21 @@ spec:
               cpu: "1500m"
               memory: "1.5Gi"
           envFrom:
-            -
-              configMapRef:
+            # Non-sensitive configuration (public settings)
+            - configMapRef:
                 name: buildify-config
-            -
-              secretRef:
-                name: buildify-secrets
+            
+            # Authentication secrets from AWS Secrets Manager via ExternalSecret
+            # Contains: SESSION_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+            # These are infrastructure-level secrets managed by DevOps
+            - secretRef:
+                name: buildify-auth-secrets
+            
+            # User-configurable API keys for LLM providers
+            # These are set through the application UI and can vary per user
+            # Contains: OPENAI_API_KEY, ANTHROPIC_API_KEY, BAYER_MGA_API_KEY, etc.
+            - secretRef:
+                name: buildify-user-provider-secrets
           livenessProbe:
             httpGet:
               path: /
