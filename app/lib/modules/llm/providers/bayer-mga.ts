@@ -1,9 +1,9 @@
-import { BaseProvider, getOpenAILikeModel } from '~/lib/modules/llm/base-provider';
+import { BaseProvider } from '~/lib/modules/llm/base-provider';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { IProviderSetting } from '~/types/model';
 import type { LanguageModelV1 } from 'ai';
-import { createScopedLogger } from '~/utils/logger';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('BayerMGAProvider');
 
@@ -19,76 +19,30 @@ export default class BayerMGAProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [];
 
-  /**
-   * Normalizes a base URL by removing trailing slashes
-   * to prevent double-slash issues in path construction
-   */
-  private normalizeBaseUrl(url: string): string {
-    return url.endsWith('/') ? url.slice(0, -1) : url;
-  }
-
-  /**
-   * Validates API configuration and returns normalized values
-   * or throws descriptive errors for troubleshooting
-   */
-  private validateApiConfig(options: {
-    apiKeys?: Record<string, string>;
-    providerSettings?: IProviderSetting;
-    serverEnv: Record<string, string>;
-    operation: string;
-  }): { baseUrl: string; apiKey: string } {
-    const { apiKeys, providerSettings, serverEnv, operation } = options;
-
-    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
-      apiKeys,
-      providerSettings,
-      serverEnv,
-      defaultBaseUrlKey: 'BAYER_MGA_API_BASE_URL',
-      defaultApiTokenKey: 'BAYER_MGA_API_KEY',
-    });
-
-    if (!baseUrl) {
-      const error = `Missing base URL configuration for ${this.name} provider (${operation})`;
-      logger.error(error);
-      throw new Error(error);
-    }
-
-    if (!apiKey) {
-      const error = `Missing API key configuration for ${this.name} provider (${operation})`;
-      logger.error(error);
-      throw new Error(error);
-    }
-
-    return {
-      baseUrl: this.normalizeBaseUrl(baseUrl),
-      apiKey,
-    };
-  }
-
   async getDynamicModels(
     apiKeys?: Record<string, string>,
     settings?: IProviderSetting,
     serverEnv: Record<string, string> = {},
   ): Promise<ModelInfo[]> {
     try {
-      // Validate configuration
-      let baseUrl, apiKey;
-      try {
-        const config = this.validateApiConfig({
-          apiKeys,
-          providerSettings: settings,
-          serverEnv,
-          operation: 'getDynamicModels',
-        });
-        baseUrl = config.baseUrl;
-        apiKey = config.apiKey;
-      } catch (error) {
-        logger.warn(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
+        apiKeys,
+        providerSettings: settings,
+        serverEnv,
+        defaultBaseUrlKey: 'BAYER_MGA_API_BASE_URL',
+        defaultApiTokenKey: 'BAYER_MGA_API_KEY',
+      });
+
+      if (!baseUrl || !apiKey) {
+        logger.warn('Missing baseUrl or apiKey configuration for Bayer MGA provider');
         return [];
       }
 
+      // Normalize base URL (remove trailing slash)
+      const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      
       // Construct models URL with query parameters
-      const modelsUrl = `${baseUrl}/models?include_hidden_models=false&include_aliases=true`;
+      const modelsUrl = `${normalizedBaseUrl}/models?include_hidden_models=false&include_aliases=true`;
       logger.info(`Fetching models from ${modelsUrl}`);
 
       // Make API request with proper headers
@@ -138,7 +92,6 @@ export default class BayerMGAProvider extends BaseProvider {
       return models;
     } catch (error) {
       logger.error(`Error fetching Bayer MGA models: ${error instanceof Error ? error.message : String(error)}`);
-      logger.error(error instanceof Error && error.stack ? error.stack : 'No stack trace available');
       return [];
     }
   }
@@ -149,43 +102,34 @@ export default class BayerMGAProvider extends BaseProvider {
     apiKeys?: Record<string, string>;
     providerSettings?: Record<string, IProviderSetting>;
   }): LanguageModelV1 {
-    try {
-      const { model, serverEnv, apiKeys, providerSettings } = options;
+    const { model, serverEnv, apiKeys, providerSettings } = options;
 
-      // Validate configuration
-      const { baseUrl, apiKey } = this.validateApiConfig({
-        apiKeys,
-        providerSettings: providerSettings?.[this.name],
-        serverEnv: serverEnv as any,
-        operation: 'getModelInstance',
-      });
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
+      apiKeys,
+      providerSettings: providerSettings?.[this.name],
+      serverEnv: serverEnv as any,
+      defaultBaseUrlKey: 'BAYER_MGA_API_BASE_URL',
+      defaultApiTokenKey: 'BAYER_MGA_API_KEY',
+    });
 
-      // Log the model instance creation attempt
-      logger.info(`Creating model instance for ${model} using Bayer MGA API at ${baseUrl}`);
-
-      // Create the OpenAI-compatible client with the correct base URL
-      // The SDK will append /chat/completions to this URL
-      const openai = createOpenAI({
-        baseURL: baseUrl,
-        apiKey,
-        // Add custom headers if needed for this provider
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      // Return the model instance
-      return openai(model);
-    } catch (error) {
-      // Log detailed error information
-      logger.error(`Error creating Bayer MGA model instance: ${error instanceof Error ? error.message : String(error)}`);
-      logger.error(error instanceof Error && error.stack ? error.stack : 'No stack trace available');
-      
-      // Rethrow the error with a more descriptive message
-      if (error instanceof Error) {
-        throw new Error(`Bayer MGA provider error: ${error.message}`);
-      }
-      throw error;
+    if (!apiKey) {
+      throw new Error(`Missing API key for ${this.name} provider`);
     }
+
+    if (!baseUrl) {
+      throw new Error(`Missing base URL for ${this.name} provider`);
+    }
+
+    // Normalize base URL (remove trailing slash)
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    
+    logger.info(`Creating model instance for ${model} using Bayer MGA API at ${normalizedBaseUrl}`);
+
+    const openai = createOpenAI({
+      baseURL: normalizedBaseUrl,
+      apiKey,
+    });
+
+    return openai(model);
   }
 }
