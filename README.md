@@ -2,10 +2,10 @@
 
 [![bolt.diy: AI-Powered Full-Stack Web Development in the Browser](./public/social_preview_index.jpg)](https://bolt.diy)
 
-Welcome to bolt.diy, the official open source version of Bolt.new, which allows you to choose the LLM that you use for each prompt! Currently, you can use OpenAI, Anthropic, Ollama, OpenRouter, Gemini, LMStudio, Mistral, xAI, HuggingFace, DeepSeek, or Groq models - and it is easily extended to use any other model supported by the Vercel AI SDK! See the instructions below for running this locally and extending it to include more models.
+Welcome to bolt.diy, the official open source version of Bolt.new, which allows you to choose the LLM that you use for each prompt! Currently, you can use OpenAI, Anthropic, Ollama, OpenRouter, Gemini, LMStudio, Mistral, xAI, HuggingFace, DeepSeek, or Groq models - and it is easily extended to use any other model supported by the Vercel AI SDK! See the [instructions below](#setup) for running this locally and extending it to include more models.
 
 -----
-Check the [bolt.diy Docs](https://stackblitz-labs.github.io/bolt.diy/) for more offical installation instructions and more informations.
+Check the [bolt.diy Docs](https://stackblitz-labs.github.io/bolt.diy/) for more official installation instructions and more information.
 
 -----
 Also [this pinned post in our community](https://thinktank.ottomator.ai/t/videos-tutorial-helpful-content/3243) has a bunch of incredible resources for running and deploying bolt.diy yourself!
@@ -17,26 +17,28 @@ bolt.diy was originally started by [Cole Medin](https://www.youtube.com/@ColeMed
 ## Table of Contents
 
 - [Join the Community](#join-the-community)
+- [Project Management](#project-management)
 - [Requested Additions](#requested-additions)
 - [Features](#features)
 - [Setup](#setup)
-- [Run the Application](#run-the-application)
+- [Running the Application](#running-the-application)
 - [Available Scripts](#available-scripts)
 - [Contributing](#contributing)
 - [Roadmap](#roadmap)
 - [FAQ](#faq)
+- [Licensing](#licensing)
 
-## Join the community
+## Join the Community
 
 [Join the bolt.diy community here, in the oTTomator Think Tank!](https://thinktank.ottomator.ai)
 
-## Project management
+## Project Management
 
-Bolt.diy is a community effort! Still, the core team of contributors aims at organizing the project in way that allows
+Bolt.diy is a community effort! Still, the core team of contributors aims at organizing the project in a way that allows
 you to understand where the current areas of focus are.
 
 If you want to know what we are working on, what we are planning to work on, or if you want to contribute to the
-project, please check the [project management guide](./PROJECT.md) to get started easily.
+project, please check the [Project Management Guide](./PROJECT.md) to get started easily.
 
 ## Requested Additions
 
@@ -45,7 +47,7 @@ project, please check the [project management guide](./PROJECT.md) to get starte
 - ✅ Autogenerate Ollama models from what is downloaded (@yunatamos)
 - ✅ Filter models by provider (@jasonm23)
 - ✅ Download project as ZIP (@fabwaseem)
-- ✅ Improvements to the main bolt.new prompt in `app\lib\.server\llm\prompts.ts` (@kofi-bhr)
+- ✅ Improvements to the main bolt.new prompt in [`app/lib/.server/llm/prompts.ts`](./app/lib/.server/llm/prompts.ts) (@kofi-bhr)
 - ✅ DeepSeek API Integration (@zenith110)
 - ✅ Mistral API Integration (@ArulGandhi)
 - ✅ "Open AI Like" API Integration (@ZerxZ)
@@ -114,9 +116,9 @@ Let's get you up and running with the stable version of Bolt.DIY!
 
 ## Quick Download
 
-[![Download Latest Release](https://img.shields.io/github/v/release/stackblitz-labs/bolt.diy?label=Download%20Bolt&sort=semver)](https://github.com/stackblitz-labs/bolt.diy/releases/latest) ← Click here to go the the latest release version!
+[![Download Latest Release](https://img.shields.io/github/v/release/stackblitz-labs/bolt.diy?label=Download%20Bolt&sort=semver)](https://github.com/stackblitz-labs/bolt.diy/releases/latest) ← Click here to go to the latest release version!
 
-- Next **click source.zip**
+- Once on the release page, **click source.zip** to download the source code
 
 ## Prerequisites
 
@@ -269,13 +271,13 @@ This method is recommended for developers who want to:
    pnpm install
    pnpm run dev
    ```
-  Hint: Be aware that this can have beta-features and more likely got bugs than the stable release
+  Hint: Be aware that this can have beta-features and is more likely to have bugs than the stable release
 
->**Open the WebUI to test (Default: http://localhost:5173)**
->   - Beginngers: 
+>**Open the WebUI to test (Default: [http://localhost:5173](http://localhost:5173))**
+>   - Beginners: 
 >     - Try to use a sophisticated Provider/Model like Anthropic with Claude Sonnet 3.x Models to get best results
->     - Explanation: The System Prompt currently implemented in bolt.diy cant cover the best performance for all providers and models out there. So it works better with some models, then other, even if the models itself are perfect for >programming
->     - Future: Planned is a Plugin/Extentions-Library so there can be different System Prompts for different Models, which will help to get better results
+>     - Explanation: The System Prompt currently implemented in bolt.diy can't cover the best performance for all providers and models out there. So it works better with some models than others, even if the models themselves are perfect for programming
+>     - Future: Planned is a Plugin/Extensions-Library so there can be different System Prompts for different Models, which will help to get better results
 
 #### Staying Updated
 
@@ -347,7 +349,7 @@ Remember to always commit your local changes or stash them before pulling update
 
 ## Contributing
 
-We welcome contributions! Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
+We welcome contributions! Check out our [Contributing Guide](./CONTRIBUTING.md) to get started.
 
 ---
 
@@ -359,10 +361,11 @@ Explore upcoming features and priorities on our [Roadmap](https://roadmap.sh/r/o
 
 ## FAQ
 
-For answers to common questions, issues, and to see a list of recommended models, visit our [FAQ Page](FAQ.md).
+For answers to common questions, issues, and to see a list of recommended models, visit our [FAQ Page](./FAQ.md).
 
 
-# Licensing
+## Licensing
+
 **Who needs a commercial WebContainer API license?**
 
 bolt.diy source code is distributed as MIT, but it uses WebContainers API that [requires licensing](https://webcontainers.io/enterprise) for production usage in a commercial, for-profit setting. (Prototypes or POCs do not require a commercial license.) If you're using the API to meet the needs of your customers, prospective customers, and/or employees, you need a license to ensure compliance with our Terms of Service. Usage of the API in violation of these terms may result in your access being revoked.
