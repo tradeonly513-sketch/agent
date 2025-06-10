@@ -8,6 +8,12 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-production
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Ensure X-Forwarded-Proto header is set to propagate original protocol information
+    nginx.ingress.kubernetes.io/proxy-set-headers: "X-Forwarded-Proto https"
+    # Add additional configuration to ensure proper forwarding of the HTTPS protocol information
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_set_header X-Forwarded-Ssl on;
 spec:
   ingressClassName: nginx
   rules:

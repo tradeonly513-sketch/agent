@@ -1,21 +1,37 @@
-import { json, type MetaFunction } from '@remix-run/cloudflare';
+import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/cloudflare';
 import { ClientOnly } from 'remix-utils/client-only';
 import { BaseChat } from '~/components/chat/BaseChat';
 import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
 import BackgroundRays from '~/components/ui/BackgroundRays';
+import { isAuthenticated } from '~/lib/auth/github-oauth.server';
 
 export const meta: MetaFunction = () => {
-  return [{ title: 'Bolt' }, { name: 'description', content: 'Talk with Bolt, an AI assistant from StackBlitz' }];
+  return [{ title: 'Buildify' }, { name: 'description', content: 'AI-assisted development environment powered by Buildify' }];
 };
 
-export const loader = () => json({});
+/**
+ * Root loader that checks authentication status
+ * If user is not authenticated, redirect to the login page
+ */
+export async function loader({ request }: LoaderFunctionArgs) {
+  // Check if user is authenticated
+  const authenticated = await isAuthenticated(request);
+  
+  // If not authenticated, redirect to login page
+  if (!authenticated) {
+    // Redirect to the auth login page which serves as our landing page
+    return redirect('/auth/login');
+  }
+  
+  // User is authenticated, continue to the app
+  return json({});
+}
 
 /**
- * Landing page component for Bolt
- * Note: Settings functionality should ONLY be accessed through the sidebar menu.
- * Do not add settings button/panel to this landing page as it was intentionally removed
- * to keep the UI clean and consistent with the design system.
+ * Main app page component
+ * This is protected and only accessible for authenticated users
+ * Unauthenticated users will be redirected to the login page
  */
 export default function Index() {
   return (
