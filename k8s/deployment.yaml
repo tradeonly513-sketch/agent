@@ -51,8 +51,6 @@ spec:
             # User-configurable API keys for LLM providers
             # These are set through the application UI and can vary per user
             # Contains: OPENAI_API_KEY, ANTHROPIC_API_KEY, BAYER_MGA_API_KEY, etc.
-            - secretRef:
-                name: buildify-user-provider-secrets
           livenessProbe:
             httpGet:
               path: /
