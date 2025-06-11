@@ -11,7 +11,6 @@ import { join } from 'path';
 
 dotenv.config();
 
-// Get detailed git info with fallbacks
 const getGitInfo = () => {
   try {
     return {
@@ -40,7 +39,6 @@ const getGitInfo = () => {
   }
 };
 
-// Read package.json with detailed dependency info
 const getPackageJson = () => {
   try {
     const pkgPath = join(process.cwd(), 'package.json');
@@ -93,6 +91,10 @@ export default defineConfig((config) => {
     },
     build: {
       target: 'esnext',
+    },
+    server: {
+      allowedHosts: ['buildify.phexhub-np.int.bayer.com', 'localhost'],
+      host: true,
     },
     plugins: [
       nodePolyfills({
