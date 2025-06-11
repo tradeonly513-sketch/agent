@@ -24,7 +24,7 @@ spec:
       containers:
         -
           name: buildify
-          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:sha-bad6639  # Using dev tag as the default for development
+          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:sha-45cec6c  # Using dev tag as the default for development
           imagePullPolicy: Always
           ports:
             -
