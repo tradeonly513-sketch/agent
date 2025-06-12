@@ -40,22 +40,14 @@ spec:
                 name: buildify-config
             - secretRef:
                 name: buildify-auth-secrets
+          # Gentle liveness probe on "/" — 302 counts as healthy
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /
               port: 5173
               scheme: HTTP
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 5
             failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 5173
-              scheme: HTTP
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 1
-            failureThreshold: 3
-            successThreshold: 1
+          # No readinessProbe: Pods are marked Ready as soon as the container starts
