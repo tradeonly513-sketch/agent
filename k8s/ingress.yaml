@@ -8,24 +8,23 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-production
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # Ensure X-Forwarded-Proto header is set to propagate original protocol information
-    nginx.ingress.kubernetes.io/proxy-set-headers: "X-Forwarded-Proto https"
-    nginx.ingress.kubernetes.io/proxy-redirect-from: http
-    nginx.ingress.kubernetes.io/proxy-redirect-to: https
+    nginx.ingress.kubernetes.io/proxy-set-header: "X-Forwarded-Proto $scheme"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-name: BUILDIFYSESSION
 spec:
   ingressClassName: nginx
   rules:
-  - host: buildify.phexhub-np.int.bayer.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: buildify
-            port:
-              number: 80
+    - host: buildify.phexhub-np.int.bayer.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: buildify
+                port:
+                  number: 80
   tls:
-  - hosts:
-    - buildify.phexhub-np.int.bayer.com
-    secretName: buildify-phexhub-dev-cluster-tls
+    - hosts:
+        - buildify.phexhub-np.int.bayer.com
+      secretName: buildify-phexhub-dev-cluster-tls

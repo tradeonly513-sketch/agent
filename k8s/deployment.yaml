@@ -20,15 +20,13 @@ spec:
       labels:
         app: buildify
     spec:
-      serviceAccountName: ecr-service-account  # Service account with access to read ECR images
+      serviceAccountName: ecr-service-account
       containers:
-        -
-          name: buildify
-          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:development  # Using dev tag as the default for development
+        - name: buildify
+          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:development
           imagePullPolicy: Always
           ports:
-            -
-              containerPort: 5173
+            - containerPort: 5173
               name: http
           resources:
             requests:
@@ -38,28 +36,26 @@ spec:
               cpu: "1500m"
               memory: "1.5Gi"
           envFrom:
-            # Non-sensitive configuration (public settings)
             - configMapRef:
                 name: buildify-config
-            
-            # Authentication secrets from AWS Secrets Manager via ExternalSecret
-            # Contains: SESSION_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
-            # These are infrastructure-level secrets managed by DevOps
             - secretRef:
                 name: buildify-auth-secrets
-            
-            # User-configurable API keys for LLM providers
-            # These are set through the application UI and can vary per user
-            # Contains: OPENAI_API_KEY, ANTHROPIC_API_KEY, BAYER_MGA_API_KEY, etc.
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 5173
+              scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 5173
-            initialDelaySeconds: 5
+              scheme: HTTP
+            initialDelaySeconds: 10
             periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 3
+            successThreshold: 1
