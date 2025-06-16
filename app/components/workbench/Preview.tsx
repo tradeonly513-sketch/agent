@@ -4,6 +4,9 @@ import { IconButton } from '~/components/ui/IconButton';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { simulationReloaded } from '~/lib/replay/ChatManager';
 import { PointSelector } from './PointSelector';
+import { APP_SUMMARY_CATEGORY, parseAppSummaryMessage, type AppSummary } from '~/lib/persistence/messageAppSummary';
+import { classNames } from '~/utils/classNames';
+import type { Message } from '~/lib/persistence/message';
 
 type ResizeSide = 'left' | 'right' | null;
 
@@ -13,7 +16,12 @@ export function getCurrentIFrame() {
   return gCurrentIFrame;
 }
 
-export const Preview = memo(() => {
+interface PreviewProps {
+  activeTab: 'planning' | 'testing' | 'preview';
+  messages?: Message[];
+}
+
+export const Preview = memo(({ activeTab, messages }: PreviewProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +54,22 @@ export const Preview = memo(() => {
   const SCALING_FACTOR = 2; // Adjust this value to increase/decrease sensitivity
 
   gCurrentIFrame = iframeRef.current ?? undefined;
+
+  // Get the latest app summary from messages (use passed messages, not store)
+  const getLatestAppSummary = (): AppSummary | null => {
+    if (!messages) return null;
+    
+    // Find the last message with APP_SUMMARY_CATEGORY
+    const appSummaryMessage = messages
+      .slice()
+      .reverse()
+      .find(message => message.category === APP_SUMMARY_CATEGORY);
+    
+    if (!appSummaryMessage) return null;
+    return parseAppSummaryMessage(appSummaryMessage) || null;
+  };
+
+  const appSummary = getLatestAppSummary();
 
   useEffect(() => {
     if (!previewURL) {
@@ -165,7 +189,129 @@ export const Preview = memo(() => {
     };
   }, []);
 
-  // A small helper component for the handle's "grip" icon
+  // Component to render the planning view (description + features)
+  const renderPlanningView = () => {
+    if (!appSummary) {
+      return (
+        <div className="h-full overflow-auto bg-white p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 mb-6 bg-bolt-elements-background-depth-2 rounded-full flex items-center justify-center">
+                <div className="text-2xl">📋</div>
+              </div>
+              <div className="text-2xl font-bold mb-4 text-gray-900">Planning</div>
+              <div className="text-gray-600 mb-8 max-w-md">
+                Start planning your project by describing what you want to build. As you chat with the assistant, 
+                your project description and features will appear here.
+              </div>
+              <div className="text-sm text-gray-500">
+                💡 Try asking: "Help me build a todo app with React"
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full overflow-auto bg-white p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-2xl font-bold mb-6 text-gray-900">Planning</div>
+          
+          <div className="mb-8">
+            <div className="text-lg font-semibold mb-3 text-gray-900">Project Description</div>
+            <div className="text-gray-700 leading-relaxed">{appSummary.description}</div>
+          </div>
+
+          <div className="mb-8">
+            <div className="text-lg font-semibold mb-4 text-gray-900">Features</div>
+            <div className="space-y-6">
+              {appSummary.features.map((feature) => {
+                return (
+                  <div key={feature.id} className="space-y-3">
+                    {/* Feature */}
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                      <div
+                        className={classNames('w-4 h-4 rounded-full border-2', {
+                          'bg-gray-300 border-gray-400': !feature.done,
+                          'bg-green-500 border-green-500': feature.done,
+                        })}
+                      />
+                      <div className={classNames('flex-1', {
+                        'text-gray-600': !feature.done,
+                        'text-gray-900': feature.done,
+                      })}>
+                        {feature.description}
+                      </div>
+                      {feature.done && (
+                        <div className="text-green-600 text-sm font-medium">✓ Complete</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Component to render the testing view (tests only)
+  const renderTestingView = () => {
+    if (!appSummary) return null;
+
+    return (
+      <div className="h-full overflow-auto bg-white p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-2xl font-bold mb-6 text-gray-900">Testing</div>
+          
+          <div className="space-y-3">
+            <div className="text-lg font-semibold mb-4 text-gray-900">Tests</div>
+            <div className="space-y-2">
+              {appSummary.tests.map((test, testIdx) => (
+                <div key={testIdx} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                  <div
+                    className={classNames('w-4 h-4 rounded-full border-2', {
+                      'bg-green-500 border-green-500': test.status === 'Pass',
+                      'bg-red-500 border-red-500': test.status === 'Fail',
+                      'bg-gray-300 border-gray-400': test.status === 'NotRun',
+                    })}
+                  />
+                  <div className="flex-1">
+                    {test.recordingId ? (
+                      <a
+                        href={`https://app.replay.io/recording/${test.recordingId}`}
+                        className={classNames('hover:underline')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {test.title}
+                      </a>
+                    ) : (
+                      <span>
+                        {test.title}
+                      </span>
+                    )}
+                  </div>
+                  <div className={classNames('text-sm font-medium', {
+                    'text-green-600': test.status === 'Pass',
+                    'text-red-600': test.status === 'Fail',
+                    'text-gray-500': test.status === 'NotRun',
+                  })}>
+                    {test.status === 'Pass' && '✓ Pass'}
+                    {test.status === 'Fail' && '✗ Fail'}
+                    {test.status === 'NotRun' && '○ Not Run'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const GripIcon = () => (
     <div
       style={{
@@ -233,12 +379,14 @@ export const Preview = memo(() => {
           />
         </div>
 
-        {/* Device mode toggle button */}
-        <IconButton
-          icon="i-ph:devices"
-          onClick={toggleDeviceMode}
-          title={isDeviceModeOn ? 'Switch to Responsive Mode' : 'Switch to Device Mode'}
-        />
+        {/* Device mode toggle button - only show in preview tab */}
+        {activeTab === 'preview' && (
+          <IconButton
+            icon="i-ph:devices"
+            onClick={toggleDeviceMode}
+            title={isDeviceModeOn ? 'Switch to Responsive Mode' : 'Switch to Device Mode'}
+          />
+        )}
 
         {/* Fullscreen toggle button */}
         <IconButton
@@ -249,91 +397,97 @@ export const Preview = memo(() => {
       </div>
 
       <div className="flex-1 border-t border-bolt-elements-borderColor flex justify-center items-center overflow-auto">
-        <div
-          style={{
-            width: isDeviceModeOn ? `${widthPercent}%` : '100%',
-            height: '100%', // Always full height
-            overflow: 'visible',
-            background: '#fff',
-            position: 'relative',
-            display: 'flex',
-          }}
-        >
-          {previewURL ? (
-            <>
-              <iframe
-                ref={iframeRef}
-                title="preview"
-                className="border-none w-full h-full bg-white"
-                src={iframeUrl}
-                allowFullScreen
-              />
-              <PointSelector
-                isSelectionMode={isSelectionMode}
-                setIsSelectionMode={setIsSelectionMode}
-                selectionPoint={selectionPoint}
-                setSelectionPoint={setSelectionPoint}
-                containerRef={iframeRef}
-              />
-            </>
-          ) : (
-            <div className="flex w-full h-full justify-center items-center bg-white">Preview loading...</div>
-          )}
+        {activeTab === 'planning' ? (
+          renderPlanningView()
+        ) : activeTab === 'testing' ? (
+          renderTestingView()
+        ) : (
+          <div
+            style={{
+              width: isDeviceModeOn ? `${widthPercent}%` : '100%',
+              height: '100%', // Always full height
+              overflow: 'visible',
+              background: '#fff',
+              position: 'relative',
+              display: 'flex',
+            }}
+          >
+            {previewURL ? (
+              <>
+                <iframe
+                  ref={iframeRef}
+                  title="preview"
+                  className="border-none w-full h-full bg-white"
+                  src={iframeUrl}
+                  allowFullScreen
+                />
+                <PointSelector
+                  isSelectionMode={isSelectionMode}
+                  setIsSelectionMode={setIsSelectionMode}
+                  selectionPoint={selectionPoint}
+                  setSelectionPoint={setSelectionPoint}
+                  containerRef={iframeRef}
+                />
+              </>
+            ) : (
+              <div className="flex w-full h-full justify-center items-center bg-white">Preview loading...</div>
+            )}
 
-          {isDeviceModeOn && (
-            <>
-              {/* Left handle */}
-              <div
-                onMouseDown={(e) => startResizing(e, 'left')}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '15px',
-                  marginLeft: '-15px',
-                  height: '100%',
-                  cursor: 'ew-resize',
-                  background: 'rgba(255,255,255,.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background 0.2s',
-                  userSelect: 'none',
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.5)')}
-                onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.2)')}
-                title="Drag to resize width"
-              >
-                <GripIcon />
-              </div>
+            {isDeviceModeOn && activeTab === 'preview' && (
+              <>
+                {/* Left handle */}
+                <div
+                  onMouseDown={(e) => startResizing(e, 'left')}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '15px',
+                    marginLeft: '-15px',
+                    height: '100%',
+                    cursor: 'ew-resize',
+                    background: 'rgba(255,255,255,.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.2s',
+                    userSelect: 'none',
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.5)')}
+                  onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.2)')}
+                  title="Drag to resize width"
+                >
+                  <GripIcon />
+                </div>
 
-              {/* Right handle */}
-              <div
-                onMouseDown={(e) => startResizing(e, 'right')}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: '15px',
-                  marginRight: '-15px',
-                  height: '100%',
-                  cursor: 'ew-resize',
-                  background: 'rgba(255,255,255,.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background 0.2s',
-                  userSelect: 'none',
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.5)')}
-                onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.2)')}
-                title="Drag to resize width"
-              >
-                <GripIcon />
-              </div>
-            </>
-          )}
-        </div>
+                {/* Right handle */}
+                <div
+                  onMouseDown={(e) => startResizing(e, 'right')}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '15px',
+                    marginRight: '-15px',
+                    height: '100%',
+                    cursor: 'ew-resize',
+                    background: 'rgba(255,255,255,.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.2s',
+                    userSelect: 'none',
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.5)')}
+                  onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.2)')}
+                  title="Drag to resize width"
+                >
+                  <GripIcon />
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
