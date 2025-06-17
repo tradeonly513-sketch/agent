@@ -85,15 +85,29 @@ export default class BayerMGAProvider extends BaseProvider {
 
       // Filter for available models and map to ModelInfo format
       const models = res.data
-        .filter((model: any) => model.model_status === 'available')
+        .filter((model: any) => {
+          // Only include models with 'available' status and valid model names
+          return model.model_status === 'available' && 
+                 model.model && 
+                 typeof model.model === 'string' && 
+                 model.model.trim().length > 0;
+        })
         .map((model: any) => ({
-          name: model.model,
+          name: model.model.trim(),
           label: model.name || model.model,
           provider: this.name,
           maxTokenAllowed: model.context_window || 8000,
         }));
 
       logger.info(`Found ${models.length} available models from Bayer MGA`);
+      
+      // Log model names for debugging
+      if (models.length > 0) {
+        logger.debug(`Available Bayer MGA models: ${models.map(m => m.name).join(', ')}`);
+      } else {
+        logger.warn('No available models returned from Bayer MGA API');
+      }
+      
       return models;
     } catch (error) {
       logger.error(`Error fetching Bayer MGA models: ${error instanceof Error ? error.message : String(error)}`);
@@ -128,13 +142,37 @@ export default class BayerMGAProvider extends BaseProvider {
     // Normalize base URL (remove trailing slash)
     const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     
-    logger.info(`Creating model instance for ${model} using Bayer MGA API at ${normalizedBaseUrl}`);
+    // Get cached models to validate model availability
+    const cachedModels = this.getModelsFromCache({
+      apiKeys,
+      providerSettings: providerSettings?.[this.name],
+      serverEnv: serverEnv as any,
+    });
+
+    // Check if the requested model is available (either in cache or static models)
+    const availableModels = [...this.staticModels, ...(cachedModels || [])];
+    const modelExists = availableModels.some(m => m.name === model);
+    
+    let effectiveModel = model;
+    if (!modelExists) {
+      logger.warn(`Model ${model} not found in available models for Bayer MGA. Available models: ${availableModels.map(m => m.name).join(', ')}`);
+      // Fall back to first available model if the requested model is not found
+      const fallbackModel = availableModels[0];
+      if (fallbackModel) {
+        logger.info(`Using fallback model: ${fallbackModel.name}`);
+        effectiveModel = fallbackModel.name;
+      } else {
+        throw new Error(`No models available for ${this.name} provider. Please check your API key and try again.`);
+      }
+    }
+    
+    logger.info(`Creating model instance for ${effectiveModel} using Bayer MGA API at ${normalizedBaseUrl}`);
 
     const openai = createOpenAI({
       baseURL: normalizedBaseUrl,
       apiKey,
     });
 
-    return openai(model);
+    return openai(effectiveModel);
   }
 }
