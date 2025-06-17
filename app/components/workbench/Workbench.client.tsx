@@ -7,10 +7,10 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 import { renderLogger } from '~/utils/logger';
-import { Preview } from './Preview';
+import { Preview } from './Preview/Preview';
 import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
-import { APP_SUMMARY_CATEGORY, parseAppSummaryMessage } from '~/lib/persistence/messageAppSummary';
+import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 import type { Message } from '~/lib/persistence/message';
 
 interface WorkspaceProps {
@@ -51,37 +51,8 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
 
   const isSmallViewport = useViewport(1024);
 
-  // Get the latest app summary from messages (use passed messages, not store)
-  const getLatestAppSummary = () => {
-    if (!messages) {
-      console.log('No messages passed to Workbench');
-      return null;
-    }
-    
-    console.log('Total messages in Workbench:', messages.length);
-    console.log('Messages with categories:', messages.filter(m => m.category).map(m => ({ 
-      category: m.category, 
-      type: m.type,
-      id: m.id,
-      contentPreview: m.type === 'text' ? m.content.substring(0, 100) + '...' : '[image]'
-    })));
-    
-    const appSummaryMessage = messages
-      .slice()
-      .reverse()
-      .find(message => message.category === APP_SUMMARY_CATEGORY);
-    
-    console.log('Found AppSummary message:', !!appSummaryMessage);
-    
-    if (!appSummaryMessage) return null;
-    
-    const parsed = parseAppSummaryMessage(appSummaryMessage);
-    console.log('Parsed AppSummary:', parsed);
-    
-    return parsed || null;
-  };
 
-  const appSummary = getLatestAppSummary();
+  const appSummary = getLatestAppSummary(messages ?? []);
 
   // Check if testing is available (has tests)
   const hasTests = appSummary?.tests && appSummary.tests.length > 0;
@@ -173,7 +144,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
                 />
               </div>
               <div className="relative flex-1 overflow-hidden">
-                <Preview activeTab={activeTab} messages={messages} />
+                <Preview  activeTab={activeTab} appSummary={appSummary} messages={messages} />
               </div>
             </div>
           </div>
