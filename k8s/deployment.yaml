@@ -23,7 +23,7 @@ spec:
       serviceAccountName: ecr-service-account
       containers:
         - name: buildify
-          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:sha-placeholder
+          image: 891377135844.dkr.ecr.us-east-1.amazonaws.com/buildify:sha-544199a
           imagePullPolicy: Always
           ports:
             - containerPort: 5173
