@@ -12,13 +12,13 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, context }: LoaderFunctionArgs) {
   // Get URL parameters
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get('redirectTo') || '/';
   
   // Get user data to display in the confirmation page
-  const user = await getUserFromSession(request);
+  const user = await getUserFromSession(request, context);
   
   return json({
     redirectTo,
@@ -26,13 +26,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   });
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs) {
   // Get form data
   const formData = await request.formData();
   const redirectTo = formData.get('redirectTo')?.toString() || '/';
   
   // Perform logout and redirect
-  return logout(request, redirectTo);
+  return logout(request, redirectTo, context);
 }
 
 export default function Logout() {

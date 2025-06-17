@@ -16,7 +16,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, context }: LoaderFunctionArgs) {
   // Get URL parameters
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
@@ -39,35 +39,51 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   // Validate required parameters
   if (!code || !state) {
-    return json({
-      success: false,
-      error: 'invalid_request',
-      errorDescription: 'Missing required parameters',
-      redirectTo: '/login',
-    });
+    const errorParams = new URLSearchParams([
+      ['error', 'invalid_request'],
+      ['error_description', 'Missing required parameters']
+    ]);
+    return redirect(`/auth/login?${errorParams}`);
   }
 
   try {
+    console.log('=== CALLBACK FLOW DEBUG ===');
+    console.log('Step 1: Starting state verification...');
+    
     // Verify state parameter to prevent CSRF attacks
-    const cookieHeader = await verifyState(request, state);
+    const cookieHeader = await verifyState(request, state, context);
+    console.log('Step 1: ✅ State verification successful');
 
+    console.log('Step 2: Starting token exchange...');
     // Exchange authorization code for access token
-    const { accessToken } = await exchangeCodeForToken(code, state);
+    const { accessToken } = await exchangeCodeForToken(code, state, context);
+    console.log('Step 2: ✅ Token exchange successful');
 
+    console.log('Step 3: Starting user data fetch...');
     // Fetch user data from GitHub API
     const user = await fetchGitHubUser(accessToken);
+    console.log('Step 3: ✅ User data fetch successful');
 
+    console.log('Step 4: Creating user session...');
     // Create user session and redirect
-    return createUserSession(
+    const result = await createUserSession(
       request,
       {
         accessToken,
         user,
       },
-      redirectTo
+      redirectTo,
+      context
     );
+    console.log('Step 4: ✅ User session created successfully');
+    console.log('============================');
+    return result;
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('=== AUTHENTICATION FAILURE ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('===============================');
     
     let errorMessage = 'An unexpected error occurred during authentication';
     let errorCode = 'server_error';
@@ -77,12 +93,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       errorCode = 'auth_error';
     }
     
-    return json({
-      success: false,
-      error: errorCode,
-      errorDescription: errorMessage,
-      redirectTo: '/login',
-    });
+    // For authentication failures, redirect to login with error params
+    const errorParams = new URLSearchParams([
+      ['error', errorCode],
+      ['error_description', errorMessage]
+    ]);
+    
+    return redirect(`/auth/login?${errorParams}`);
   }
 }
 
