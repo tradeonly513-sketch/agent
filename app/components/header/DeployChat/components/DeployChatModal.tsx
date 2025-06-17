@@ -107,7 +107,15 @@ const DeployChatModal = ({
                     </label>
                     <div className="w-full mb-2">
                       <p className="text-xs text-bolt-elements-textSecondary whitespace-pre-wrap">
-                        Your authentication token from Netlify account settings. Used to authorize deployments.
+                        Your personal access token from{' '}
+                        <a
+                          href="https://app.netlify.com/user/applications#personal-access-tokens"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Netlify user settings
+                        </a>
+                        . Used to authorize deployments.
                       </p>
                     </div>
                     <input
@@ -159,11 +167,11 @@ const DeployChatModal = ({
 
                   <div>
                     <label className="block mb-2 text-sm font-medium text-bolt-elements-textPrimary">
-                      Netlify Account Slug (new site)
+                      Netlify Team Slug (new site)
                     </label>
                     <div className="w-full mb-2">
                       <p className="text-xs text-bolt-elements-textSecondary whitespace-pre-wrap">
-                        Your Netlify account name, required when creating a new site.
+                        Your Netlify team slug can be found in the "Team settings" section
                       </p>
                     </div>
                     <input
