@@ -78,7 +78,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
     // Get the callback URL
     const url = new URL(request.url);
-    const callbackUrl = `${url.origin}/auth/callback`;
+    
+    // In production with ingress/load balancer, force HTTPS for callback URL
+    let callbackUrl = `${url.origin}/auth/callback`;
+    if (url.hostname.includes('phexhub-np.int.bayer.com')) {
+      callbackUrl = `https://${url.hostname}/auth/callback`;
+    }
 
     // Generate authorization URL
     const { url: authorizationUrl } = getAuthorizationUrl(state, callbackUrl, context);
