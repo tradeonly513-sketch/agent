@@ -204,6 +204,20 @@ export const ModelSelector = ({
     }
   }, [providerList, provider, setProvider, modelList, setModel]);
 
+  // Handle case where selected model is no longer available after model list update
+  useEffect(() => {
+    if (model && provider && modelList.length > 0) {
+      const currentProviderModels = modelList.filter((m) => m.provider === provider.name);
+      const isModelStillAvailable = currentProviderModels.some((m) => m.name === model);
+      
+      if (!isModelStillAvailable && currentProviderModels.length > 0 && setModel) {
+        // Selected model is no longer available, switch to first available model for this provider
+        const fallbackModel = currentProviderModels[0];
+        setModel(fallbackModel.name);
+      }
+    }
+  }, [modelList, model, provider, setModel]);
+
   if (providerList.length === 0) {
     return (
       <div className="mb-2 p-4 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-prompt-background text-bolt-elements-textPrimary">

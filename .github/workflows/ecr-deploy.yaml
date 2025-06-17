@@ -6,6 +6,7 @@ on:
     tags: ['v*', '*.*.*']
     paths-ignore:
       - 'k8s/**'
+      - 'README.md'
   workflow_dispatch:  # Allows manual triggering
     inputs:
       create_deployment_pr:
