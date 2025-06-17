@@ -17,9 +17,9 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, context }: LoaderFunctionArgs) {
   // Check if user is already authenticated
-  const authenticated = await isAuthenticated(request);
+  const authenticated = await isAuthenticated(request, context);
   if (authenticated) {
     // Redirect to home page if already logged in
     return redirect('/');
@@ -28,25 +28,35 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // Get redirect URL from query params (if any)
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get('redirectTo') || '/';
+  
+  // Check for authentication error parameters
+  const authError = url.searchParams.get('error');
+  const authErrorDescription = url.searchParams.get('error_description');
 
-  // Check if GitHub OAuth is configured
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+  // Check if GitHub OAuth is configured using context
+  const clientId = (context?.cloudflare?.env?.GITHUB_CLIENT_ID) || (context?.env?.GITHUB_CLIENT_ID) || process.env.GITHUB_CLIENT_ID;
+  const clientSecret = (context?.cloudflare?.env?.GITHUB_CLIENT_SECRET) || (context?.env?.GITHUB_CLIENT_SECRET) || process.env.GITHUB_CLIENT_SECRET;
   const isConfigured = Boolean(clientId && clientSecret);
+  
+  // Determine the error message to display
+  let errorMessage = null;
+  if (authError) {
+    errorMessage = authErrorDescription || 'Authentication failed. Please try again.';
+  } else if (!isConfigured) {
+    errorMessage = 'GitHub OAuth is not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.';
+  }
 
   return json({
     redirectTo,
     isConfigured,
-    error: isConfigured
-      ? null
-      : 'GitHub OAuth is not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.',
+    error: errorMessage,
   });
 }
 
-export async function action({ request }: ActionFunctionArgs) {
-  // Check if GitHub OAuth is configured
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+export async function action({ request, context }: ActionFunctionArgs) {
+  // Check if GitHub OAuth is configured using context
+  const clientId = (context?.cloudflare?.env?.GITHUB_CLIENT_ID) || (context?.env?.GITHUB_CLIENT_ID) || process.env.GITHUB_CLIENT_ID;
+  const clientSecret = (context?.cloudflare?.env?.GITHUB_CLIENT_SECRET) || (context?.env?.GITHUB_CLIENT_SECRET) || process.env.GITHUB_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     return json(
@@ -71,10 +81,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const callbackUrl = `${url.origin}/auth/callback`;
 
     // Generate authorization URL
-    const { url: authorizationUrl } = getAuthorizationUrl(state, callbackUrl);
+    const { url: authorizationUrl } = getAuthorizationUrl(state, callbackUrl, context);
 
     // Store state in session
-    const cookie = await storeState(request, state);
+    const cookie = await storeState(request, state, context);
 
     // Redirect to GitHub authorization URL
     return redirect(authorizationUrl, {

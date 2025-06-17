@@ -14,9 +14,9 @@ export const meta: MetaFunction = () => {
  * Root loader that checks authentication status
  * If user is not authenticated, redirect to the login page
  */
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, context }: LoaderFunctionArgs) {
   // Check if user is authenticated
-  const authenticated = await isAuthenticated(request);
+  const authenticated = await isAuthenticated(request, context);
   
   // If not authenticated, redirect to login page
   if (!authenticated) {
