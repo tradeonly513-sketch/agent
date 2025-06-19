@@ -40,19 +40,6 @@ export function useShortcuts(): void {
         return;
       }
 
-      // Debug logging in development only
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Key pressed:', {
-          key: event.key,
-          code: event.code,
-          ctrlKey: event.ctrlKey,
-          shiftKey: event.shiftKey,
-          altKey: event.altKey,
-          metaKey: event.metaKey,
-          target: event.target,
-        });
-      }
-
       // Handle shortcuts
       for (const [name, shortcut] of Object.entries(shortcuts)) {
         const keyMatches =

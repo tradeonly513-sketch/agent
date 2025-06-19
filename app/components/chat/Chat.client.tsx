@@ -8,7 +8,7 @@ import { useChat } from 'ai/react';
 import { useAnimate } from 'framer-motion';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { cssTransition, toast, ToastContainer } from 'react-toastify';
-import { useMessageParser, usePromptEnhancer, useShortcuts, useSnapScroll } from '~/lib/hooks';
+import { useMessageParser, usePromptEnhancer, useShortcuts } from '~/lib/hooks';
 import { description, useChatHistory } from '~/lib/persistence';
 import { chatStore } from '~/lib/stores/chat';
 import { workbenchStore } from '~/lib/stores/workbench';
@@ -24,6 +24,11 @@ import { useSearchParams } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
+import { streamingState } from '~/lib/stores/streaming';
+import { filesToArtifacts } from '~/utils/fileUtils';
+import { supabaseConnection } from '~/lib/stores/supabase';
+import { defaultDesignScheme, type DesignScheme } from '~/types/design-scheme';
+import type { ElementInfo } from '~/components/workbench/Inspector';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -78,6 +83,7 @@ export function Chat() {
         position="bottom-right"
         pauseOnFocusLoss
         transition={toastAnimation}
+        autoClose={3000}
       />
     </>
   );
@@ -120,9 +126,15 @@ export const ChatImpl = memo(
     const [searchParams, setSearchParams] = useSearchParams();
     const [fakeLoading, setFakeLoading] = useState(false);
     const files = useStore(workbenchStore.files);
+    const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
+    const deployAlert = useStore(workbenchStore.deployAlert);
+    const supabaseConn = useStore(supabaseConnection); // Add this line to get Supabase connection
+    const selectedProject = supabaseConn.stats?.projects?.find(
+      (project) => project.id === supabaseConn.selectedProjectId,
+    );
+    const supabaseAlert = useStore(workbenchStore.supabaseAlert);
     const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled } = useSettings();
-
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
       return savedModel || DEFAULT_MODEL;
@@ -131,13 +143,11 @@ export const ChatImpl = memo(
       const savedProvider = Cookies.get('selectedProvider');
       return (PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER) as ProviderInfo;
     });
-
     const { showChat } = useStore(chatStore);
-
     const [animationScope, animate] = useAnimate();
-
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
-
+    const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
+    const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const {
       messages,
       isLoading,
@@ -158,6 +168,16 @@ export const ChatImpl = memo(
         files,
         promptId,
         contextOptimization: contextOptimizationEnabled,
+        chatMode,
+        designScheme,
+        supabase: {
+          isConnected: supabaseConn.isConnected,
+          hasSelectedProject: !!selectedProject,
+          credentials: {
+            supabaseUrl: supabaseConn?.credentials?.supabaseUrl,
+            anonKey: supabaseConn?.credentials?.anonKey,
+          },
+        },
       },
       sendExtraMessageFields: true,
       onError: (e) => {
@@ -292,6 +312,15 @@ export const ChatImpl = memo(
         return;
       }
 
+      let finalMessageContent = messageContent;
+
+      if (selectedElement) {
+        console.log('Selected Element:', selectedElement);
+
+        const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
+        finalMessageContent = messageContent + elementInfo;
+      }
+
       runAnimation();
 
       if (!chatStarted) {
@@ -299,7 +328,7 @@ export const ChatImpl = memo(
 
         if (autoSelectTemplate) {
           const { template, title } = await selectStarterTemplate({
-            message: messageContent,
+            message: finalMessageContent,
             model,
             provider,
           });
@@ -319,23 +348,41 @@ export const ChatImpl = memo(
               const { assistantMessage, userMessage } = temResp;
               setMessages([
                 {
-                  id: `${new Date().getTime()}`,
+                  id: `1-${new Date().getTime()}`,
                   role: 'user',
-                  content: messageContent,
+                  content: [
+                    {
+                      type: 'text',
+                      text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`,
+                    },
+                    ...imageDataList.map((imageData) => ({
+                      type: 'image',
+                      image: imageData,
+                    })),
+                  ] as any,
                 },
                 {
-                  id: `${new Date().getTime()}`,
+                  id: `2-${new Date().getTime()}`,
                   role: 'assistant',
                   content: assistantMessage,
                 },
                 {
-                  id: `${new Date().getTime()}`,
+                  id: `3-${new Date().getTime()}`,
                   role: 'user',
                   content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
                   annotations: ['hidden'],
                 },
               ]);
               reload();
+              setInput('');
+              Cookies.remove(PROMPT_COOKIE_KEY);
+
+              setUploadedFiles([]);
+              setImageDataList([]);
+
+              resetEnhancer();
+
+              textareaRef.current?.blur();
               setFakeLoading(false);
 
               return;
@@ -351,7 +398,7 @@ export const ChatImpl = memo(
             content: [
               {
                 type: 'text',
-                text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${messageContent}`,
+                text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`,
               },
               ...imageDataList.map((imageData) => ({
                 type: 'image',
@@ -362,6 +409,15 @@ export const ChatImpl = memo(
         ]);
         reload();
         setFakeLoading(false);
+        setInput('');
+        Cookies.remove(PROMPT_COOKIE_KEY);
+
+        setUploadedFiles([]);
+        setImageDataList([]);
+
+        resetEnhancer();
+
+        textareaRef.current?.blur();
 
         return;
       }
@@ -370,17 +426,18 @@ export const ChatImpl = memo(
         setMessages(messages.slice(0, -1));
       }
 
-      const fileModifications = workbenchStore.getFileModifcations();
+      const modifiedFiles = workbenchStore.getModifiedFiles();
 
       chatStore.setKey('aborted', false);
 
-      if (fileModifications !== undefined) {
+      if (modifiedFiles !== undefined) {
+        const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
         append({
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${messageContent}`,
+              text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`,
             },
             ...imageDataList.map((imageData) => ({
               type: 'image',
@@ -396,7 +453,7 @@ export const ChatImpl = memo(
           content: [
             {
               type: 'text',
-              text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${messageContent}`,
+              text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`,
             },
             ...imageDataList.map((imageData) => ({
               type: 'image',
@@ -437,8 +494,6 @@ export const ChatImpl = memo(
       [],
     );
 
-    const [messageRef, scrollRef] = useSnapScroll();
-
     useEffect(() => {
       const storedApiKeys = Cookies.get('apiKeys');
 
@@ -465,6 +520,9 @@ export const ChatImpl = memo(
         showChat={showChat}
         chatStarted={chatStarted}
         isStreaming={isLoading || fakeLoading}
+        onStreamingChange={(streaming) => {
+          streamingState.set(streaming);
+        }}
         enhancingPrompt={enhancingPrompt}
         promptEnhanced={promptEnhanced}
         sendMessage={sendMessage}
@@ -473,8 +531,6 @@ export const ChatImpl = memo(
         provider={provider}
         setProvider={handleProviderChange}
         providerList={activeProviders}
-        messageRef={messageRef}
-        scrollRef={scrollRef}
         handleInputChange={(e) => {
           onTextareaChange(e);
           debouncedCachePrompt(e);
@@ -511,7 +567,18 @@ export const ChatImpl = memo(
         setImageDataList={setImageDataList}
         actionAlert={actionAlert}
         clearAlert={() => workbenchStore.clearAlert()}
+        supabaseAlert={supabaseAlert}
+        clearSupabaseAlert={() => workbenchStore.clearSupabaseAlert()}
+        deployAlert={deployAlert}
+        clearDeployAlert={() => workbenchStore.clearDeployAlert()}
         data={chatData}
+        chatMode={chatMode}
+        setChatMode={setChatMode}
+        append={append}
+        designScheme={designScheme}
+        setDesignScheme={setDesignScheme}
+        selectedElement={selectedElement}
+        setSelectedElement={setSelectedElement}
       />
     );
   },

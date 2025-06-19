@@ -238,7 +238,7 @@ export default function DebugTab() {
     performance: false,
   });
 
-  const { isLocalModel, providers } = useSettings();
+  const { providers } = useSettings();
 
   // Subscribe to logStore updates
   const logs = useStore(logStore.logs);
@@ -342,24 +342,86 @@ export default function DebugTab() {
     try {
       setLoading((prev) => ({ ...prev, systemInfo: true }));
 
-      // Get browser info
-      const ua = navigator.userAgent;
-      const browserName = ua.includes('Firefox')
-        ? 'Firefox'
-        : ua.includes('Chrome')
-          ? 'Chrome'
-          : ua.includes('Safari')
-            ? 'Safari'
-            : ua.includes('Edge')
-              ? 'Edge'
-              : 'Unknown';
-      const browserVersion = ua.match(/(Firefox|Chrome|Safari|Edge)\/([0-9.]+)/)?.[2] || 'Unknown';
+      // Get better OS detection
+      const userAgent = navigator.userAgent;
+      let detectedOS = 'Unknown';
+      let detectedArch = 'unknown';
+
+      // Improved OS detection
+      if (userAgent.indexOf('Win') !== -1) {
+        detectedOS = 'Windows';
+      } else if (userAgent.indexOf('Mac') !== -1) {
+        detectedOS = 'macOS';
+      } else if (userAgent.indexOf('Linux') !== -1) {
+        detectedOS = 'Linux';
+      } else if (userAgent.indexOf('Android') !== -1) {
+        detectedOS = 'Android';
+      } else if (/iPhone|iPad|iPod/.test(userAgent)) {
+        detectedOS = 'iOS';
+      }
+
+      // Better architecture detection
+      if (userAgent.indexOf('x86_64') !== -1 || userAgent.indexOf('x64') !== -1 || userAgent.indexOf('WOW64') !== -1) {
+        detectedArch = 'x64';
+      } else if (userAgent.indexOf('x86') !== -1 || userAgent.indexOf('i686') !== -1) {
+        detectedArch = 'x86';
+      } else if (userAgent.indexOf('arm64') !== -1 || userAgent.indexOf('aarch64') !== -1) {
+        detectedArch = 'arm64';
+      } else if (userAgent.indexOf('arm') !== -1) {
+        detectedArch = 'arm';
+      }
+
+      // Get browser info with improved detection
+      const browserName = (() => {
+        if (userAgent.indexOf('Edge') !== -1 || userAgent.indexOf('Edg/') !== -1) {
+          return 'Edge';
+        }
+
+        if (userAgent.indexOf('Chrome') !== -1) {
+          return 'Chrome';
+        }
+
+        if (userAgent.indexOf('Firefox') !== -1) {
+          return 'Firefox';
+        }
+
+        if (userAgent.indexOf('Safari') !== -1) {
+          return 'Safari';
+        }
+
+        return 'Unknown';
+      })();
+
+      const browserVersionMatch = userAgent.match(/(Edge|Edg|Chrome|Firefox|Safari)[\s/](\d+(\.\d+)*)/);
+      const browserVersion = browserVersionMatch ? browserVersionMatch[2] : 'Unknown';
 
       // Get performance metrics
       const memory = (performance as any).memory || {};
       const timing = performance.timing;
       const navigation = performance.navigation;
-      const connection = (navigator as any).connection;
+      const connection = (navigator as any).connection || {};
+
+      // Try to use Navigation Timing API Level 2 when available
+      let loadTime = 0;
+      let domReadyTime = 0;
+
+      try {
+        const navEntries = performance.getEntriesByType('navigation');
+
+        if (navEntries.length > 0) {
+          const navTiming = navEntries[0] as PerformanceNavigationTiming;
+          loadTime = navTiming.loadEventEnd - navTiming.startTime;
+          domReadyTime = navTiming.domContentLoadedEventEnd - navTiming.startTime;
+        } else {
+          // Fall back to older API
+          loadTime = timing.loadEventEnd - timing.navigationStart;
+          domReadyTime = timing.domContentLoadedEventEnd - timing.navigationStart;
+        }
+      } catch {
+        // Fall back to older API if Navigation Timing API Level 2 is not available
+        loadTime = timing.loadEventEnd - timing.navigationStart;
+        domReadyTime = timing.domContentLoadedEventEnd - timing.navigationStart;
+      }
 
       // Get battery info
       let batteryInfo;
@@ -405,9 +467,9 @@ export default function DebugTab() {
       const memoryPercentage = totalMemory ? (usedMemory / totalMemory) * 100 : 0;
 
       const systemInfo: SystemInfo = {
-        os: navigator.platform,
-        arch: navigator.userAgent.includes('x64') ? 'x64' : navigator.userAgent.includes('arm') ? 'arm' : 'unknown',
-        platform: navigator.platform,
+        os: detectedOS,
+        arch: detectedArch,
+        platform: navigator.platform || 'unknown',
         cpus: navigator.hardwareConcurrency + ' cores',
         memory: {
           total: formatBytes(totalMemory),
@@ -423,7 +485,7 @@ export default function DebugTab() {
           userAgent: navigator.userAgent,
           cookiesEnabled: navigator.cookieEnabled,
           online: navigator.onLine,
-          platform: navigator.platform,
+          platform: navigator.platform || 'unknown',
           cores: navigator.hardwareConcurrency,
         },
         screen: {
@@ -445,8 +507,8 @@ export default function DebugTab() {
             usagePercentage: memory.totalJSHeapSize ? (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100 : 0,
           },
           timing: {
-            loadTime: timing.loadEventEnd - timing.navigationStart,
-            domReadyTime: timing.domContentLoadedEventEnd - timing.navigationStart,
+            loadTime,
+            domReadyTime,
             readyStart: timing.fetchStart - timing.navigationStart,
             redirectTime: timing.redirectEnd - timing.redirectStart,
             appcacheTime: timing.domainLookupStart - timing.fetchStart,
@@ -481,6 +543,23 @@ export default function DebugTab() {
     } finally {
       setLoading((prev) => ({ ...prev, systemInfo: false }));
     }
+  };
+
+  // Helper function to format bytes to human readable format with better precision
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) {
+      return '0 B';
+    }
+
+    const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+
+    // Return with proper precision based on unit size
+    if (i === 0) {
+      return `${bytes} ${units[i]}`;
+    }
+
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
   };
 
   const getWebAppInfo = async () => {
@@ -518,20 +597,6 @@ export default function DebugTab() {
     } finally {
       setLoading((prev) => ({ ...prev, webAppInfo: false }));
     }
-  };
-
-  // Helper function to format bytes to human readable format
-  const formatBytes = (bytes: number) => {
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let unitIndex = 0;
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return `${Math.round(size)} ${units[unitIndex]}`;
   };
 
   const handleLogPerformance = () => {
@@ -1077,7 +1142,7 @@ export default function DebugTab() {
     {
       id: 'json',
       label: 'Export as JSON',
-      icon: 'i-ph:file-json',
+      icon: 'i-ph:file-js',
       handler: exportDebugInfo,
     },
     {
@@ -1103,15 +1168,18 @@ export default function DebugTab() {
   // Add Ollama health check function
   const checkOllamaStatus = useCallback(async () => {
     try {
+      const ollamaProvider = providers?.Ollama;
+      const baseUrl = ollamaProvider?.settings?.baseUrl || 'http://127.0.0.1:11434';
+
       // First check if service is running
-      const versionResponse = await fetch('http://127.0.0.1:11434/api/version');
+      const versionResponse = await fetch(`${baseUrl}/api/version`);
 
       if (!versionResponse.ok) {
         throw new Error('Service not running');
       }
 
       // Then fetch installed models
-      const modelsResponse = await fetch('http://127.0.0.1:11434/api/tags');
+      const modelsResponse = await fetch(`${baseUrl}/api/tags`);
 
       const modelsData = (await modelsResponse.json()) as {
         models: Array<{ name: string; size: string; quantization: string }>;
@@ -1130,18 +1198,24 @@ export default function DebugTab() {
         models: undefined,
       });
     }
-  }, []);
+  }, [providers]);
 
-  // Monitor isLocalModel changes and check status periodically
+  // Monitor Ollama provider status and check periodically
   useEffect(() => {
-    // Check immediately when isLocalModel changes
-    checkOllamaStatus();
+    const ollamaProvider = providers?.Ollama;
 
-    // Set up periodic checks every 10 seconds
-    const intervalId = setInterval(checkOllamaStatus, 10000);
+    if (ollamaProvider?.settings?.enabled) {
+      // Check immediately when provider is enabled
+      checkOllamaStatus();
 
-    return () => clearInterval(intervalId);
-  }, [isLocalModel, checkOllamaStatus]);
+      // Set up periodic checks every 10 seconds
+      const intervalId = setInterval(checkOllamaStatus, 10000);
+
+      return () => clearInterval(intervalId);
+    }
+
+    return undefined;
+  }, [providers, checkOllamaStatus]);
 
   // Replace the existing export button with this new component
   const ExportButton = () => {
@@ -1219,15 +1293,6 @@ export default function DebugTab() {
     const ollamaProvider = providers?.Ollama;
     const isOllamaEnabled = ollamaProvider?.settings?.enabled;
 
-    if (!isLocalModel) {
-      return {
-        status: 'Disabled',
-        color: 'text-red-500',
-        bgColor: 'bg-red-500',
-        message: 'Local models are disabled in settings',
-      };
-    }
-
     if (!isOllamaEnabled) {
       return {
         status: 'Disabled',
@@ -1270,60 +1335,32 @@ export default function DebugTab() {
     <div className="flex flex-col gap-6 max-w-7xl mx-auto p-4">
       {/* Quick Stats Banner */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Ollama Service Status Card */}
-        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200">
+        {/* Errors Card */}
+        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200 h-[180px] flex flex-col">
           <div className="flex items-center gap-2">
-            <div className="i-ph:robot text-purple-500 w-4 h-4" />
-            <div className="text-sm text-bolt-elements-textSecondary">Ollama Service</div>
+            <div className="i-ph:warning-octagon text-purple-500 w-4 h-4" />
+            <div className="text-sm text-bolt-elements-textSecondary">Errors</div>
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <div
-              className={classNames('w-2 h-2 rounded-full animate-pulse', status.bgColor, {
-                'shadow-lg shadow-green-500/20': status.status === 'Running',
-                'shadow-lg shadow-red-500/20': status.status === 'Not Running',
-              })}
-            />
-            <span className={classNames('text-sm font-medium flex items-center gap-1.5', status.color)}>
-              {status.status === 'Running' && <div className="i-ph:check-circle-fill w-3.5 h-3.5" />}
-              {status.status === 'Not Running' && <div className="i-ph:x-circle-fill w-3.5 h-3.5" />}
-              {status.status === 'Disabled' && <div className="i-ph:prohibit-fill w-3.5 h-3.5" />}
-              {status.status}
+            <span
+              className={classNames('text-2xl font-semibold', errorLogs.length > 0 ? 'text-red-500' : 'text-green-500')}
+            >
+              {errorLogs.length}
             </span>
           </div>
           <div className="text-xs text-bolt-elements-textSecondary mt-2 flex items-center gap-1.5">
             <div
-              className={classNames('w-3.5 h-3.5', {
-                'i-ph:info text-green-500': status.status === 'Running',
-                'i-ph:warning text-red-500': status.status === 'Not Running' || status.status === 'Disabled',
-              })}
+              className={classNames(
+                'w-3.5 h-3.5',
+                errorLogs.length > 0 ? 'i-ph:warning text-red-500' : 'i-ph:check-circle text-green-500',
+              )}
             />
-            {status.message}
-          </div>
-          {ollamaStatus.models && ollamaStatus.models.length > 0 && (
-            <div className="mt-3 space-y-1 border-t border-[#E5E5E5] dark:border-[#1A1A1A] pt-2">
-              <div className="text-xs font-medium text-bolt-elements-textSecondary flex items-center gap-1.5">
-                <div className="i-ph:cube-duotone w-3.5 h-3.5 text-purple-500" />
-                Installed Models
-              </div>
-              {ollamaStatus.models.map((model) => (
-                <div key={model.name} className="text-xs text-bolt-elements-textSecondary flex items-center gap-2 pl-5">
-                  <div className="i-ph:cube w-3 h-3 text-purple-500/70" />
-                  <span className="font-mono">{model.name}</span>
-                  <span className="text-bolt-elements-textTertiary">
-                    ({Math.round(parseInt(model.size) / 1024 / 1024)}MB, {model.quantization})
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="text-xs text-bolt-elements-textTertiary mt-3 flex items-center gap-1.5">
-            <div className="i-ph:clock w-3 h-3" />
-            Last checked: {ollamaStatus.lastChecked.toLocaleTimeString()}
+            {errorLogs.length > 0 ? 'Errors detected' : 'No errors detected'}
           </div>
         </div>
 
         {/* Memory Usage Card */}
-        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200">
+        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200 h-[180px] flex flex-col">
           <div className="flex items-center gap-2">
             <div className="i-ph:cpu text-purple-500 w-4 h-4" />
             <div className="text-sm text-bolt-elements-textSecondary">Memory Usage</div>
@@ -1360,7 +1397,7 @@ export default function DebugTab() {
         </div>
 
         {/* Page Load Time Card */}
-        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200">
+        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200 h-[180px] flex flex-col">
           <div className="flex items-center gap-2">
             <div className="i-ph:timer text-purple-500 w-4 h-4" />
             <div className="text-sm text-bolt-elements-textSecondary">Page Load Time</div>
@@ -1386,7 +1423,7 @@ export default function DebugTab() {
         </div>
 
         {/* Network Speed Card */}
-        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200">
+        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200 h-[180px] flex flex-col">
           <div className="flex items-center gap-2">
             <div className="i-ph:wifi-high text-purple-500 w-4 h-4" />
             <div className="text-sm text-bolt-elements-textSecondary">Network Speed</div>
@@ -1411,27 +1448,80 @@ export default function DebugTab() {
           </div>
         </div>
 
-        {/* Errors Card */}
-        <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200">
-          <div className="flex items-center gap-2">
-            <div className="i-ph:warning-octagon text-purple-500 w-4 h-4" />
-            <div className="text-sm text-bolt-elements-textSecondary">Errors</div>
+        {/* Ollama Service Card - Now spans all 4 columns */}
+        <div className="md:col-span-4 p-6 rounded-xl bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/30 transition-all duration-200 h-[260px] flex flex-col">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="i-ph:robot text-purple-500 w-5 h-5" />
+              <div>
+                <div className="text-base font-medium text-bolt-elements-textPrimary">Ollama Service</div>
+                <div className="text-xs text-bolt-elements-textSecondary mt-0.5">{status.message}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-bolt-elements-background-depth-3">
+                <div
+                  className={classNames('w-2 h-2 rounded-full animate-pulse', status.bgColor, {
+                    'shadow-lg shadow-green-500/20': status.status === 'Running',
+                    'shadow-lg shadow-red-500/20': status.status === 'Not Running',
+                  })}
+                />
+                <span className={classNames('text-xs font-medium flex items-center gap-1', status.color)}>
+                  {status.status}
+                </span>
+              </div>
+              <div className="text-[10px] text-bolt-elements-textTertiary flex items-center gap-1.5">
+                <div className="i-ph:clock w-3 h-3" />
+                {ollamaStatus.lastChecked.toLocaleTimeString()}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span
-              className={classNames('text-2xl font-semibold', errorLogs.length > 0 ? 'text-red-500' : 'text-green-500')}
-            >
-              {errorLogs.length}
-            </span>
-          </div>
-          <div className="text-xs text-bolt-elements-textSecondary mt-2 flex items-center gap-1.5">
-            <div
-              className={classNames(
-                'w-3.5 h-3.5',
-                errorLogs.length > 0 ? 'i-ph:warning text-red-500' : 'i-ph:check-circle text-green-500',
-              )}
-            />
-            {errorLogs.length > 0 ? 'Errors detected' : 'No errors detected'}
+
+          <div className="mt-6 flex-1 min-h-0 flex flex-col">
+            {status.status === 'Running' && ollamaStatus.models && ollamaStatus.models.length > 0 ? (
+              <>
+                <div className="text-xs font-medium text-bolt-elements-textSecondary flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="i-ph:cube-duotone w-4 h-4 text-purple-500" />
+                    <span>Installed Models</span>
+                    <Badge variant="secondary" className="ml-1">
+                      {ollamaStatus.models.length}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600">
+                  <div className="grid grid-cols-2 gap-3 pr-2">
+                    {ollamaStatus.models.map((model) => (
+                      <div
+                        key={model.name}
+                        className="text-sm bg-bolt-elements-background-depth-3 hover:bg-bolt-elements-background-depth-4 rounded-lg px-4 py-3 flex items-center justify-between transition-colors group"
+                      >
+                        <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
+                          <div className="i-ph:cube w-4 h-4 text-purple-500/70 group-hover:text-purple-500 transition-colors" />
+                          <span className="font-mono truncate">{model.name}</span>
+                        </div>
+                        <Badge variant="outline" className="ml-2 text-xs font-mono">
+                          {Math.round(parseInt(model.size) / 1024 / 1024)}MB
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 max-w-[280px] text-center">
+                  <div
+                    className={classNames('w-12 h-12', {
+                      'i-ph:warning-circle text-red-500/80':
+                        status.status === 'Not Running' || status.status === 'Disabled',
+                      'i-ph:cube-duotone text-purple-500/80': status.status === 'Running',
+                    })}
+                  />
+                  <span className="text-sm text-bolt-elements-textSecondary">{status.message}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1562,7 +1652,7 @@ export default function DebugTab() {
                     <span className="text-bolt-elements-textPrimary">{systemInfo.platform}</span>
                   </div>
                   <div className="text-sm flex items-center gap-2">
-                    <div className="i-ph:microchip text-bolt-elements-textSecondary w-4 h-4" />
+                    <div className="i-ph:circuitry text-bolt-elements-textSecondary w-4 h-4" />
                     <span className="text-bolt-elements-textSecondary">Architecture: </span>
                     <span className="text-bolt-elements-textPrimary">{systemInfo.arch}</span>
                   </div>
@@ -1572,7 +1662,7 @@ export default function DebugTab() {
                     <span className="text-bolt-elements-textPrimary">{systemInfo.cpus}</span>
                   </div>
                   <div className="text-sm flex items-center gap-2">
-                    <div className="i-ph:node text-bolt-elements-textSecondary w-4 h-4" />
+                    <div className="i-ph:graph text-bolt-elements-textSecondary w-4 h-4" />
                     <span className="text-bolt-elements-textSecondary">Node Version: </span>
                     <span className="text-bolt-elements-textPrimary">{systemInfo.node}</span>
                   </div>
@@ -1827,7 +1917,7 @@ export default function DebugTab() {
                       <span className="text-bolt-elements-textPrimary">{webAppInfo.environment}</span>
                     </div>
                     <div className="text-sm flex items-center gap-2">
-                      <div className="i-ph:node text-bolt-elements-textSecondary w-4 h-4" />
+                      <div className="i-ph:graph text-bolt-elements-textSecondary w-4 h-4" />
                       <span className="text-bolt-elements-textSecondary">Node Version:</span>
                       <span className="text-bolt-elements-textPrimary">{webAppInfo.runtimeInfo.nodeVersion}</span>
                     </div>
@@ -1862,7 +1952,7 @@ export default function DebugTab() {
                       <>
                         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                           <div className="text-sm flex items-center gap-2">
-                            <div className="i-ph:git-repository text-bolt-elements-textSecondary w-4 h-4" />
+                            <div className="i-ph:git-fork text-bolt-elements-textSecondary w-4 h-4" />
                             <span className="text-bolt-elements-textSecondary">Repository:</span>
                             <span className="text-bolt-elements-textPrimary">
                               {webAppInfo.gitInfo.github.currentRepo.fullName}

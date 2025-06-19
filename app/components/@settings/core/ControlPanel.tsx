@@ -29,7 +29,7 @@ import ProfileTab from '~/components/@settings/tabs/profile/ProfileTab';
 import SettingsTab from '~/components/@settings/tabs/settings/SettingsTab';
 import NotificationsTab from '~/components/@settings/tabs/notifications/NotificationsTab';
 import FeaturesTab from '~/components/@settings/tabs/features/FeaturesTab';
-import DataTab from '~/components/@settings/tabs/data/DataTab';
+import { DataTab } from '~/components/@settings/tabs/data/DataTab';
 import DebugTab from '~/components/@settings/tabs/debug/DebugTab';
 import { EventLogsTab } from '~/components/@settings/tabs/event-logs/EventLogsTab';
 import UpdateTab from '~/components/@settings/tabs/update/UpdateTab';
@@ -263,6 +263,27 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
     },
   };
 
+  // Reset to default view when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      // Reset when closing
+      setActiveTab(null);
+      setLoadingTab(null);
+      setShowTabManagement(false);
+    } else {
+      // When opening, set to null to show the main view
+      setActiveTab(null);
+    }
+  }, [open]);
+
+  // Handle closing
+  const handleClose = () => {
+    setActiveTab(null);
+    setLoadingTab(null);
+    setShowTabManagement(false);
+    onClose();
+  };
+
   // Handlers
   const handleBack = () => {
     if (showTabManagement) {
@@ -392,10 +413,10 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
   return (
     <RadixDialog.Root open={open}>
       <RadixDialog.Portal>
-        <div className="fixed inset-0 flex items-center justify-center z-[100]">
+        <div className="fixed inset-0 flex items-center justify-center z-[100] modern-scrollbar">
           <RadixDialog.Overlay asChild>
             <motion.div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -405,8 +426,8 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
 
           <RadixDialog.Content
             aria-describedby={undefined}
-            onEscapeKeyDown={onClose}
-            onPointerDownOutside={onClose}
+            onEscapeKeyDown={handleClose}
+            onPointerDownOutside={handleClose}
             className="relative z-[101]"
           >
             <motion.div
@@ -461,7 +482,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
 
                     {/* Close Button */}
                     <button
-                      onClick={onClose}
+                      onClick={handleClose}
                       className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-purple-500/10 dark:hover:bg-purple-500/20 group transition-all duration-200"
                     >
                       <div className="i-ph:x w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
