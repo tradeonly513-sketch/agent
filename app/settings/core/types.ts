@@ -25,6 +25,7 @@ export interface UserProfile {
   bio?: string;
   language: string;
   timezone: string;
+  logLevel?: 'none' | 'trace' | 'debug' | 'info' | 'warn' | 'error';
 }
 
 export interface SettingItem {

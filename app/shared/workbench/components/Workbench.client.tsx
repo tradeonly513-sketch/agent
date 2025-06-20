@@ -24,7 +24,6 @@ import { Preview } from './Preview';
 import useViewport from '~/shared/hooks';
 import { PushToGitHubDialog } from '~/settings/tabs/connections/components/PushToGitHubDialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { usePreviewStore } from '~/shared/workbench/stores/previews';
 import { chatStore } from '~/chat/stores/chat';
 import type { ElementInfo } from './ui/Inspector';
 
@@ -327,16 +326,9 @@ export const Workbench = memo(
     }, []);
 
     const onFileSave = useCallback(() => {
-      workbenchStore
-        .saveCurrentDocument()
-        .then(() => {
-          // Explicitly refresh all previews after a file save
-          const previewStore = usePreviewStore();
-          previewStore.refreshAllPreviews();
-        })
-        .catch(() => {
-          toast.error('Failed to update file content');
-        });
+      workbenchStore.saveCurrentDocument().catch(() => {
+        toast.error('Failed to update file content');
+      });
     }, []);
 
     const onFileReset = useCallback(() => {

@@ -1,4 +1,4 @@
-export type DebugLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+export type DebugLevel = 'none' | 'trace' | 'debug' | 'info' | 'warn' | 'error';
 import { Chalk } from 'chalk';
 
 const chalk = new Chalk({ level: 3 });
@@ -14,7 +14,7 @@ interface Logger {
   setLevel: (level: DebugLevel) => void;
 }
 
-let currentLevel: DebugLevel = (import.meta.env.VITE_LOG_LEVEL ?? import.meta.env.DEV) ? 'debug' : 'info';
+let currentLevel: DebugLevel = (import.meta.env.VITE_LOG_LEVEL ?? import.meta.env.DEV) ? 'none' : 'info';
 
 export const logger: Logger = {
   trace: (...messages: any[]) => log('trace', undefined, messages),
@@ -37,15 +37,16 @@ export function createScopedLogger(scope: string): Logger {
 }
 
 function setLevel(level: DebugLevel) {
-  if ((level === 'trace' || level === 'debug') && import.meta.env.PROD) {
-    return;
-  }
-
   currentLevel = level;
 }
 
 function log(level: DebugLevel, scope: string | undefined, messages: any[]) {
-  const levelOrder: DebugLevel[] = ['trace', 'debug', 'info', 'warn', 'error'];
+  // If logging is completely disabled, return early
+  if (currentLevel === 'none') {
+    return;
+  }
+
+  const levelOrder: DebugLevel[] = ['none', 'trace', 'debug', 'info', 'warn', 'error'];
 
   if (levelOrder.indexOf(level) < levelOrder.indexOf(currentLevel)) {
     return;
@@ -98,6 +99,9 @@ function getLabelStyles(color: string, textColor: string) {
 
 function getColorForLevel(level: DebugLevel): string {
   switch (level) {
+    case 'none': {
+      return '#000000';
+    }
     case 'trace':
     case 'debug': {
       return '#77828D';

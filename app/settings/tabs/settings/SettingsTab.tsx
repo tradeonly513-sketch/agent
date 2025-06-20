@@ -5,6 +5,7 @@ import { classNames } from '~/shared/utils/classNames';
 import { Switch } from '~/shared/components/ui/Switch';
 import type { UserProfile } from '~/settings/core/types';
 import { isMac } from '~/shared/utils/os';
+import { logger, type DebugLevel } from '~/shared/utils/logger';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -24,13 +25,21 @@ export default function SettingsTab() {
   const [currentTimezone, setCurrentTimezone] = useState('');
   const [settings, setSettings] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('bolt_user_profile');
-    return saved
+    const profile = saved
       ? JSON.parse(saved)
       : {
           notifications: true,
           language: 'en',
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          logLevel: 'info' as DebugLevel,
         };
+
+    // Initialize logger with saved preference
+    if (profile.logLevel) {
+      logger.setLevel(profile.logLevel);
+    }
+
+    return profile;
   });
 
   useEffect(() => {
@@ -49,9 +58,16 @@ export default function SettingsTab() {
         notifications: settings.notifications,
         language: settings.language,
         timezone: settings.timezone,
+        logLevel: settings.logLevel,
       };
 
       localStorage.setItem('bolt_user_profile', JSON.stringify(updatedProfile));
+
+      // Update logger level when logLevel changes
+      if (settings.logLevel) {
+        logger.setLevel(settings.logLevel);
+      }
+
       toast.success('Settings updated');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -138,6 +154,50 @@ export default function SettingsTab() {
               }}
             />
           </div>
+        </div>
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="i-ph:bug-fill w-4 h-4 text-bolt-elements-textSecondary" />
+            <label className="block text-sm text-bolt-elements-textSecondary">Logging Level</label>
+          </div>
+          <select
+            value={settings.logLevel || 'info'}
+            onChange={(e) => {
+              const newLogLevel = e.target.value as DebugLevel;
+              setSettings((prev) => ({ ...prev, logLevel: newLogLevel }));
+
+              // Update logger immediately
+              logger.setLevel(newLogLevel);
+
+              // Update localStorage immediately
+              const existingProfile = JSON.parse(localStorage.getItem('bolt_user_profile') || '{}');
+              const updatedProfile = {
+                ...existingProfile,
+                logLevel: newLogLevel,
+              };
+              localStorage.setItem('bolt_user_profile', JSON.stringify(updatedProfile));
+
+              toast.success(`Logging level set to ${newLogLevel}`);
+            }}
+            className={classNames(
+              'w-full px-3 py-2 rounded-lg text-sm',
+              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
+              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'text-bolt-elements-textPrimary',
+              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'transition-all duration-200',
+            )}
+          >
+            <option value="none">None - Disable all logging</option>
+            <option value="error">Error - Only critical errors</option>
+            <option value="warn">Warning - Errors and warnings</option>
+            <option value="info">Info - General information (default)</option>
+            <option value="debug">Debug - Detailed debugging info</option>
+            <option value="trace">Trace - Very detailed tracing</option>
+          </select>
+          <p className="text-xs text-bolt-elements-textSecondary mt-1">
+            Controls the verbosity of application logs in the browser console
+          </p>
         </div>
       </motion.div>
 
