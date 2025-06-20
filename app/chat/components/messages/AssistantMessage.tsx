@@ -2,7 +2,7 @@ import { memo, Fragment } from 'react';
 import { Markdown } from '~/chat/components/markdown/Markdown';
 import type { JSONValue } from 'ai';
 import Popover from '~/shared/components/ui/Popover';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { WORK_DIR } from '~/shared/utils/constants';
 import WithTooltip from '~/shared/components/ui/Tooltip';
 import type { Message } from 'ai';

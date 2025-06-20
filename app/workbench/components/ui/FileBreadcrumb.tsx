@@ -1,7 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { memo, useEffect, useRef, useState } from 'react';
-import type { FileMap } from '~/shared/workbench/stores/files';
+import type { FileMap } from '~/workbench/stores/files';
 import { classNames } from '~/shared/utils/classNames';
 import { WORK_DIR } from '~/shared/utils/constants';
 import { cubicEasingFn } from '~/shared/utils/easings';

@@ -9,10 +9,10 @@ import { getLocalStorage } from '~/shared/lib/persistence';
 import { classNames } from '~/shared/utils/classNames';
 import type { GitHubUserResponse } from '~/shared/components/github/types/GitHub';
 import { logStore } from '~/shared/stores/logs';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { extractRelativePath } from '~/shared/utils/diff';
 import { formatSize } from '~/shared/utils/formatSize';
-import type { FileMap, File } from '~/shared/workbench/stores/files';
+import type { FileMap, File } from '~/workbench/stores/files';
 
 // UI Components
 import { Badge, EmptyState, StatusIndicator, SearchInput } from '~/shared/components/ui';

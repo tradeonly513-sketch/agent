@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogDescription, DialogRoot } from '~/shared/components/ui/Dialog';
 import { useStore } from '@nanostores/react';
-import { expoUrlAtom } from '~/shared/workbench/stores/qrCodeStore';
+import { expoUrlAtom } from '~/workbench/stores/qrCodeStore';
 import { QRCode } from 'react-qrcode-logo';
 
 interface ExpoQrModalProps {

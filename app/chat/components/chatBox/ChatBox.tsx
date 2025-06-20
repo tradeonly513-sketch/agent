@@ -12,12 +12,12 @@ import { IconButton } from '~/shared/components/ui/IconButton';
 import { toast } from 'react-toastify';
 import { SpeechRecognitionButton } from '~/chat/components/chatBox/SpeechRecognition';
 import { SupabaseConnection } from './SupabaseConnection';
-import { ExpoQrModal } from '~/shared/workbench/components/ui/ExpoQrModal';
+import { ExpoQrModal } from '~/workbench/components/ui/ExpoQrModal';
 import styles from '~/chat/components/BaseChat.module.scss';
 import type { ProviderInfo } from '~/shared/types/model';
 import { ColorSchemeDialog } from '~/shared/components/ui/ColorSchemeDialog';
 import type { DesignScheme } from '~/shared/types/design-scheme';
-import type { ElementInfo } from '~/shared/workbench/components/ui/Inspector';
+import type { ElementInfo } from '~/workbench/components/ui/Inspector';
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;

@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import { useStore } from '@nanostores/react';
 import { netlifyConnection } from '~/shared/stores/netlify';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { webcontainer } from '~/shared/lib/webcontainer';
 import { path } from '~/shared/utils/path';
 import { useState } from 'react';

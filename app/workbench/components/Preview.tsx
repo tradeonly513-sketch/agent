@@ -1,11 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { IconButton } from '~/shared/components/ui/IconButton';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { PortDropdown } from './ui/PortDropdown';
 import { ScreenshotSelector } from './ui/ScreenshotSelector';
-import { expoUrlAtom } from '~/shared/workbench/stores/qrCodeStore';
-import { ExpoQrModal } from '~/shared/workbench/components/ui/ExpoQrModal';
+import { expoUrlAtom } from '~/workbench/stores/qrCodeStore';
+import { ExpoQrModal } from '~/workbench/components/ui/ExpoQrModal';
 import type { ElementInfo } from './ui/Inspector';
 
 type ResizeSide = 'left' | 'right' | null;

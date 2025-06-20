@@ -1,5 +1,5 @@
 import { atom, computed, map, type MapStore, type WritableAtom } from 'nanostores';
-import type { EditorDocument, ScrollPosition } from '~/shared/workbench/components/editor/codemirror/CodeMirrorEditor';
+import type { EditorDocument, ScrollPosition } from '~/workbench/components/editor/codemirror/CodeMirrorEditor';
 import type { FileMap, FilesStore } from './files';
 import { createScopedLogger } from '~/shared/utils/logger';
 

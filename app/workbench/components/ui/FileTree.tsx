@@ -1,11 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { FileMap } from '~/shared/workbench/stores/files';
+import type { FileMap } from '~/workbench/stores/files';
 import { classNames } from '~/shared/utils/classNames';
 import { createScopedLogger, renderLogger } from '~/shared/utils/logger';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import type { FileHistory } from '~/shared/types/actions';
 import { diffLines, type Change } from 'diff';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { toast } from 'react-toastify';
 import { path } from '~/shared/utils/path';
 

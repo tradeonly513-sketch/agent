@@ -6,7 +6,7 @@ import type { JSONValue, Message } from 'ai';
 import React, { type RefCallback, useEffect, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Menu } from '~/layout/sidebar/Menu.client';
-import { Workbench } from '~/shared/workbench/components/Workbench.client';
+import { Workbench } from '~/workbench/components/Workbench.client';
 import { classNames } from '~/shared/utils/classNames';
 import { PROVIDER_LIST } from '~/shared/utils/constants';
 import { Messages } from './Messages.client';
@@ -26,12 +26,12 @@ import type { ModelInfo } from '~/shared/lib/providers/types';
 import ProgressCompilation from './ProgressCompilation';
 import type { ProgressAnnotation } from '~/shared/types/context';
 import { SupabaseChatAlert } from '~/chat/components/alerts/SupabaseAlert';
-import { expoUrlAtom } from '~/shared/workbench/stores/qrCodeStore';
+import { expoUrlAtom } from '~/workbench/stores/qrCodeStore';
 import { useStore } from '@nanostores/react';
 import { StickToBottom, useStickToBottomContext } from '~/chat/hooks/StickToBottom';
 import { ChatBox } from './chatBox/ChatBox';
 import type { DesignScheme } from '~/shared/types/design-scheme';
-import type { ElementInfo } from '~/shared/workbench/components/ui/Inspector';
+import type { ElementInfo } from '~/workbench/components/ui/Inspector';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 

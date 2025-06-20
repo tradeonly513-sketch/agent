@@ -9,10 +9,10 @@ import {
   type OnChangeCallback as OnEditorChange,
   type OnSaveCallback as OnEditorSave,
   type OnScrollCallback as OnEditorScroll,
-} from '~/shared/workbench/components/editor/codemirror/CodeMirrorEditor';
+} from '~/workbench/components/editor/codemirror/CodeMirrorEditor';
 import { PanelHeader } from '~/shared/components/ui/PanelHeader';
 import { PanelHeaderButton } from '~/shared/components/ui/PanelHeaderButton';
-import type { FileMap } from '~/shared/workbench/stores/files';
+import type { FileMap } from '~/workbench/stores/files';
 import type { FileHistory } from '~/shared/types/actions';
 import { themeStore } from '~/shared/stores/theme';
 import { WORK_DIR } from '~/shared/utils/constants';
@@ -21,7 +21,7 @@ import { isMobile } from '~/shared/utils/mobile';
 import { FileBreadcrumb } from './ui/FileBreadcrumb';
 import { FileTree } from './ui/FileTree';
 import { DEFAULT_TERMINAL_SIZE, TerminalTabs } from './terminal/TerminalTabs';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { Search } from './ui/Search'; // <-- Ensure Search is imported
 import { classNames } from '~/shared/utils/classNames'; // <-- Import classNames if not already present
 import { LockManager } from './ui/LockManager'; // <-- Import LockManager

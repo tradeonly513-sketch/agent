@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { classNames } from '~/shared/utils/classNames';
 import { Checkbox } from '~/shared/components/ui/Checkbox';
 import { toast } from '~/shared/components/ui/use-toast';

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { TextSearchOptions, TextSearchOnProgressCallback, WebContainer } from '@webcontainer/api';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { webcontainer } from '~/shared/lib/webcontainer';
 import { WORK_DIR } from '~/shared/utils/constants';
 import { debounce } from '~/shared/utils/debounce';

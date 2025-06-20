@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { useState } from 'react';
 import { streamingState } from '~/shared/stores/streaming';
 import { ExportChatButton } from '~/chat/components/chatExportAndImport/ExportChatButton';

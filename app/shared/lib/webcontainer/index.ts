@@ -32,7 +32,7 @@ if (!import.meta.env.SSR) {
       .then(async (webcontainer) => {
         webcontainerContext.loaded = true;
 
-        const { workbenchStore } = await import('~/shared/workbench/stores/workbench');
+        const { workbenchStore } = await import('~/workbench/stores/workbench');
 
         const response = await fetch('/inspector-script.js');
         const inspectorScript = await response.text();

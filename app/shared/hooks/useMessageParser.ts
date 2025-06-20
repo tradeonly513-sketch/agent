@@ -1,7 +1,7 @@
 import type { Message } from 'ai';
 import { useCallback, useState } from 'react';
 import { StreamingMessageParser } from '~/shared/lib/runtime/message-parser';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { createScopedLogger } from '~/shared/utils/logger';
 
 const logger = createScopedLogger('useMessageParser');

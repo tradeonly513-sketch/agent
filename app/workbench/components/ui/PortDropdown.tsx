@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
-import type { PreviewInfo } from '~/shared/workbench/stores/previews';
+import type { PreviewInfo } from '~/workbench/stores/previews';
 
 interface PortDropdownProps {
   activePreviewIndex: number;

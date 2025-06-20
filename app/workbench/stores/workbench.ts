@@ -1,9 +1,9 @@
 import { atom, map, type MapStore, type ReadableAtom, type WritableAtom } from 'nanostores';
-import type { EditorDocument, ScrollPosition } from '~/shared/workbench/components/editor/codemirror/CodeMirrorEditor';
+import type { EditorDocument, ScrollPosition } from '~/workbench/components/editor/codemirror/CodeMirrorEditor';
 import { ActionRunner } from '~/shared/lib/runtime/action-runner';
 import type { ActionCallbackData, ArtifactCallbackData } from '~/shared/lib/runtime/message-parser';
 import { webcontainer } from '~/shared/lib/webcontainer';
-import type { ITerminal } from '~/shared/workbench/components/terminal/types/terminal';
+import type { ITerminal } from '~/workbench/components/terminal/types/terminal';
 import { unreachable } from '~/shared/utils/unreachable';
 import { EditorStore } from './editor';
 import { FilesStore, type FileMap } from './files';

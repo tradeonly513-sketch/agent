@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { atom } from 'nanostores';
 import { generateId, type JSONValue, type Message } from 'ai';
 import { toast } from 'react-toastify';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { logStore } from '~/shared/stores/logs'; // Import logStore
 import {
   getMessages,
@@ -17,7 +17,7 @@ import {
   setSnapshot,
   type IChatMetadata,
 } from './db';
-import type { FileMap } from '~/shared/workbench/stores/files';
+import type { FileMap } from '~/workbench/stores/files';
 import type { Snapshot } from './types';
 import { webcontainer } from '~/shared/lib/webcontainer';
 import { detectProjectCommands, createCommandActionsString } from '~/shared/utils/projectCommands';

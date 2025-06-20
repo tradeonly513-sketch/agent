@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useStore } from '@nanostores/react';
 import { netlifyConnection } from '~/shared/stores/netlify';
 import { vercelConnection } from '~/shared/stores/vercel';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { streamingState } from '~/shared/stores/streaming';
 import { classNames } from '~/shared/utils/classNames';
 import { useState } from 'react';

@@ -4,7 +4,7 @@ import { Panel, type ImperativePanelHandle } from 'react-resizable-panels';
 import { IconButton } from '~/shared/components/ui/IconButton';
 import { shortcutEventEmitter } from '~/shared/hooks';
 import { themeStore } from '~/shared/stores/theme';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { classNames } from '~/shared/utils/classNames';
 import { Terminal, type TerminalRef } from './Terminal';
 import { createScopedLogger } from '~/shared/utils/logger';

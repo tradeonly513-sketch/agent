@@ -11,7 +11,7 @@ import { cssTransition, toast, ToastContainer } from 'react-toastify';
 import { useMessageParser, usePromptEnhancer, useShortcuts } from '~/shared/hooks';
 import { description, useChatHistory } from '~/shared/lib/persistence';
 import { chatStore } from '~/chat/stores/chat';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROMPT_COOKIE_KEY, PROVIDER_LIST } from '~/shared/utils/constants';
 import { cubicEasingFn } from '~/shared/utils/easings';
 import { createScopedLogger, renderLogger } from '~/shared/utils/logger';
@@ -28,7 +28,7 @@ import { streamingState } from '~/shared/stores/streaming';
 import { filesToArtifacts } from '~/shared/utils/fileUtils';
 import { supabaseConnection } from '~/shared/stores/supabase';
 import { defaultDesignScheme, type DesignScheme } from '~/shared/types/design-scheme';
-import type { ElementInfo } from '~/shared/workbench/components/ui/Inspector';
+import type { ElementInfo } from '~/workbench/components/ui/Inspector';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',

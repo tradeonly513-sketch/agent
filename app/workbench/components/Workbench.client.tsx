@@ -11,11 +11,11 @@ import { DiffView } from './ui/DiffView';
 import {
   type OnChangeCallback as OnEditorChange,
   type OnScrollCallback as OnEditorScroll,
-} from '~/shared/workbench/components/editor/codemirror/CodeMirrorEditor';
+} from '~/workbench/components/editor/codemirror/CodeMirrorEditor';
 import { IconButton } from '~/shared/components/ui/IconButton';
 import { PanelHeaderButton } from '~/shared/components/ui/PanelHeaderButton';
 import { Slider, type SliderOptions } from '~/shared/components/ui/Slider';
-import { workbenchStore, type WorkbenchViewType } from '~/shared/workbench/stores/workbench';
+import { workbenchStore, type WorkbenchViewType } from '~/workbench/stores/workbench';
 import { classNames } from '~/shared/utils/classNames';
 import { cubicEasingFn } from '~/shared/utils/easings';
 import { renderLogger } from '~/shared/utils/logger';

@@ -1,6 +1,6 @@
 import type { WebContainer, WebContainerProcess } from '@webcontainer/api';
 import { atom, type WritableAtom } from 'nanostores';
-import type { ITerminal } from '~/shared/workbench/components/terminal/types/terminal';
+import type { ITerminal } from '~/workbench/components/terminal/types/terminal';
 import { newBoltShellProcess, newShellProcess } from '~/shared/utils/shell';
 import { coloredText } from '~/shared/utils/terminal';
 

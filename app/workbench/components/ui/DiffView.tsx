@@ -1,8 +1,8 @@
 import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
-import type { FileMap } from '~/shared/workbench/stores/files';
-import type { EditorDocument } from '~/shared/workbench/components/editor/codemirror/CodeMirrorEditor';
+import { workbenchStore } from '~/workbench/stores/workbench';
+import type { FileMap } from '~/workbench/stores/files';
+import type { EditorDocument } from '~/workbench/components/editor/codemirror/CodeMirrorEditor';
 import { diffLines, type Change } from 'diff';
 import { getHighlighter } from 'shiki';
 import '~/styles/diff-view.css';

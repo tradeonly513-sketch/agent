@@ -4,7 +4,7 @@ import { computed } from 'nanostores';
 import { memo, useEffect, useRef, useState } from 'react';
 import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
 import type { ActionState } from '~/shared/lib/runtime/action-runner';
-import { workbenchStore } from '~/shared/workbench/stores/workbench';
+import { workbenchStore } from '~/workbench/stores/workbench';
 import { classNames } from '~/shared/utils/classNames';
 import { cubicEasingFn } from '~/shared/utils/easings';
 import { WORK_DIR } from '~/shared/utils/constants';
