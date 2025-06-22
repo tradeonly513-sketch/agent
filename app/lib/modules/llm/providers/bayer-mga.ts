@@ -7,6 +7,18 @@ import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('BayerMGAProvider');
 
+// Helper function to map model names to their actual API names
+function mapModelName(modelName: string): string {
+  const modelMapping: Record<string, string> = {
+    // Remove mappings for now - use exact names returned by the API
+    // The issue might be that the actual API expects the unmapped names
+    // 'claude-3-5-sonnet': 'claude-3-5-sonnet-20241022',
+    // 'claude-sonnet-4': 'claude-sonnet-4-20250219',
+  };
+  
+  return modelMapping[modelName] || modelName;
+}
+
 export default class BayerMGAProvider extends BaseProvider {
   name = 'BayerMGA';
   getApiKeyLink = 'https://chat.int.bayer.com';
@@ -96,7 +108,7 @@ export default class BayerMGAProvider extends BaseProvider {
           name: model.model.trim(),
           label: model.name ? model.name.trim() : model.model.trim(),
           provider: this.name,
-          maxTokenAllowed: model.context_window || 128000, // Use actual context window from API, fallback to 128K
+          maxTokenAllowed: 8192, // Use conservative limit like other providers in bolt.diy
         }));
 
       logger.info(`Found ${models.length} available models from Bayer MGA`);
@@ -176,19 +188,19 @@ export default class BayerMGAProvider extends BaseProvider {
       }
     }
     
-    logger.info(`Creating model instance for "${effectiveModel}" using Bayer MGA API at ${normalizedBaseUrl}`);
+    // Map model name to actual API name if needed
+    const mappedModel = mapModelName(effectiveModel);
+    logger.info(`Creating model instance for "${effectiveModel}" (mapped to "${mappedModel}") using Bayer MGA API at ${normalizedBaseUrl}`);
 
     try {
-      // Create a simplified instance without the problematic fetch interceptor
-      // We'll handle token limits through other means to avoid cross-provider interference
+      // Bayer MGA uses OpenAI-compatible API for ALL models
+      // Even Claude models need to use OpenAI SDK for this provider
+      logger.info(`Using OpenAI SDK for model: ${effectiveModel} -> ${mappedModel} (Bayer MGA API is OpenAI-compatible)`);
       const openai = createOpenAI({
         baseURL: normalizedBaseUrl,
         apiKey,
-        // Remove custom fetch to avoid interfering with other providers
-        // Token limit handling will be done at the application level instead
       });
-
-      return openai(effectiveModel);
+      return openai(mappedModel);
     } catch (error) {
       logger.error(`Failed to create model instance: ${error instanceof Error ? error.message : String(error)}`);
       throw new Error(`Failed to create model instance for ${effectiveModel}: ${error instanceof Error ? error.message : String(error)}`);
