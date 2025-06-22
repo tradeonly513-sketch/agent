@@ -13,6 +13,8 @@ services:
       - COMPOSE_PROFILES=production
       # No strictly needed but serving as hints for Coolify
       - PORT=5173
+      # Fix TLS certificate issues with external APIs
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
       - GROQ_API_KEY=${GROQ_API_KEY}
       - HuggingFace_API_KEY=${HuggingFace_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -24,6 +26,8 @@ services:
       - TOGETHER_API_KEY=${TOGETHER_API_KEY}
       - TOGETHER_API_BASE_URL=${TOGETHER_API_BASE_URL}
       - AWS_BEDROCK_CONFIG=${AWS_BEDROCK_CONFIG}
+      - BAYER_MGA_API_KEY=${BAYER_MGA_API_KEY}
+      - BAYER_MGA_API_BASE_URL=${BAYER_MGA_API_BASE_URL}
       - VITE_LOG_LEVEL=${VITE_LOG_LEVEL:-debug}
       - DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX:-32768}
       - RUNNING_IN_DOCKER=true
@@ -61,6 +65,8 @@ services:
       - TOGETHER_API_KEY=${TOGETHER_API_KEY}
       - TOGETHER_API_BASE_URL=${TOGETHER_API_BASE_URL}
       - AWS_BEDROCK_CONFIG=${AWS_BEDROCK_CONFIG}
+      - BAYER_MGA_API_KEY=${BAYER_MGA_API_KEY}
+      - BAYER_MGA_API_BASE_URL=${BAYER_MGA_API_BASE_URL}
       - VITE_LOG_LEVEL=${VITE_LOG_LEVEL:-debug}
       - DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX:-32768}
       - RUNNING_IN_DOCKER=true

@@ -18,6 +18,8 @@ interface Env {
   XAI_API_KEY: string;
   PERPLEXITY_API_KEY: string;
   AWS_BEDROCK_CONFIG: string;
+  BAYER_MGA_API_KEY: string;
+  BAYER_MGA_API_BASE_URL: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   SESSION_SECRET: string;
