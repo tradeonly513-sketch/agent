@@ -1,6 +1,7 @@
 import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { workbenchStore } from '~/workbench/stores/workbench';
+import { debounce } from '~/shared/utils/debounce'; // Import debounce
 import type { FileMap } from '~/workbench/stores/files';
 import type { EditorDocument } from '~/workbench/components/editor/codemirror/CodeMirrorEditor';
 import { diffLines, type Change } from 'diff';
@@ -671,6 +672,13 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
   const currentDocument = useStore(workbenchStore.currentDocument) as EditorDocument;
   const unsavedFiles = useStore(workbenchStore.unsavedFiles);
 
+  const debouncedSetFileHistory = useCallback(
+    debounce((newHistoryEntry: FileHistory) => {
+      setFileHistory((prev) => ({ ...prev, [selectedFile!]: newHistoryEntry }));
+    }, 300), // 300ms debounce
+    [setFileHistory, selectedFile],
+  );
+
   useEffect(() => {
     if (selectedFile && currentDocument) {
       const file = files[selectedFile];
@@ -692,21 +700,34 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
       if (!existingHistory) {
         if (normalizedCurrentContent !== normalizedOriginalContent) {
           const newChanges = diffLines(file.content, currentContent);
-          setFileHistory((prev) => ({
-            ...prev,
-            [selectedFile]: {
-              originalContent: file.content,
-              lastModified: Date.now(),
-              changes: newChanges,
-              versions: [
-                {
-                  timestamp: Date.now(),
-                  content: currentContent,
-                },
-              ],
-              changeSource: 'auto-save',
+          const stats = newChanges.reduce(
+            (acc, change) => {
+              if (change.added) {
+                acc.additions += change.count || 0;
+              }
+
+              if (change.removed) {
+                acc.deletions += change.count || 0;
+              }
+
+              return acc;
             },
-          }));
+            { additions: 0, deletions: 0 },
+          );
+          debouncedSetFileHistory({
+            originalContent: file.content,
+            lastModified: Date.now(),
+            changes: newChanges,
+            versions: [
+              {
+                timestamp: Date.now(),
+                content: currentContent,
+              },
+            ],
+            additions: stats.additions,
+            deletions: stats.deletions,
+            changeSource: 'auto-save',
+          });
         }
 
         return;
@@ -733,6 +754,22 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
         );
 
         if (hasSignificantChanges) {
+          const overallChanges = diffLines(existingHistory.originalContent, currentContent);
+          const stats = overallChanges.reduce(
+            (acc, change) => {
+              if (change.added) {
+                acc.additions += change.count || 0;
+              }
+
+              if (change.removed) {
+                acc.deletions += change.count || 0;
+              }
+
+              return acc;
+            },
+            { additions: 0, deletions: 0 },
+          );
+
           const newHistory: FileHistory = {
             originalContent: existingHistory.originalContent,
             lastModified: Date.now(),
@@ -744,14 +781,16 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
                 content: currentContent,
               },
             ].slice(-10), // Manter apenas as 10 últimas versões
+            additions: stats.additions,
+            deletions: stats.deletions,
             changeSource: 'auto-save',
           };
 
-          setFileHistory((prev) => ({ ...prev, [selectedFile]: newHistory }));
+          debouncedSetFileHistory(newHistory);
         }
       }
     }
-  }, [selectedFile, currentDocument?.value, files, setFileHistory, unsavedFiles]);
+  }, [selectedFile, currentDocument?.value, files, debouncedSetFileHistory, unsavedFiles]); // Added debouncedSetFileHistory to deps
 
   if (!selectedFile || !currentDocument) {
     return (

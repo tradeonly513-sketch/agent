@@ -9,6 +9,7 @@ export interface BaseAction {
 export interface FileAction extends BaseAction {
   type: 'file';
   filePath: string;
+  actionType: 'create' | 'update';
 }
 
 export interface ShellAction extends BaseAction {
@@ -70,6 +71,8 @@ export interface FileHistory {
     timestamp: number;
     content: string;
   }[];
+  additions?: number;
+  deletions?: number;
 
   // Novo campo para rastrear a origem das mudanças
   changeSource?: 'user' | 'auto-save' | 'external';

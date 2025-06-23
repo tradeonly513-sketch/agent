@@ -68,6 +68,18 @@ export class PreviewsStore {
     return match ? match[1] : null;
   }
 
+  refreshAllPreviews() {
+    const previews = this.previews.get();
+
+    previews.forEach((preview) => {
+      const previewId = this.getPreviewId(preview.baseUrl);
+
+      if (previewId) {
+        this.refreshPreview(previewId);
+      }
+    });
+  }
+
   // Method to refresh a specific preview
   refreshPreview(previewId: string) {
     // Clear any pending refresh for this preview

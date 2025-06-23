@@ -238,6 +238,7 @@ export class WorkbenchStore {
     newUnsavedFiles.delete(filePath);
 
     this.unsavedFiles.set(newUnsavedFiles);
+    this.#previewsStore.refreshAllPreviews();
   }
 
   async saveCurrentDocument() {
@@ -581,6 +582,7 @@ export class WorkbenchStore {
 
       if (!isStreaming) {
         await artifact.runner.runAction(data);
+        await this.saveFile(fullPath);
         this.resetAllFileModifications();
       }
     } else {

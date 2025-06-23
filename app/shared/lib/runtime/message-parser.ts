@@ -357,12 +357,14 @@ export class StreamingMessageParser {
       }
     } else if (actionType === 'file') {
       const filePath = this.#extractAttribute(actionTag, 'filePath') as string;
+      const actionType = this.#extractAttribute(actionTag, 'actionType') as 'create' | 'update';
 
       if (!filePath) {
         logger.debug('File path not specified');
       }
 
       (actionAttributes as FileAction).filePath = filePath;
+      (actionAttributes as FileAction).actionType = actionType || 'create'; // default to 'create' if not specified
     } else if (!['shell', 'start'].includes(actionType)) {
       logger.warn(`Unknown action type '${actionType}'`);
     }

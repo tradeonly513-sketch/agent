@@ -180,7 +180,11 @@ export async function selectContext(props: {
   const updateContextBuffer = response.match(/<updateContextBuffer>([\s\S]*?)<\/updateContextBuffer>/);
 
   if (!updateContextBuffer) {
-    throw new Error('Invalid response. Please follow the response format');
+    logger.error('Invalid response format. Response:', response);
+    logger.warn('Falling back to current context files');
+
+    // Return current context instead of throwing
+    return contextFiles;
   }
 
   const includeFiles =

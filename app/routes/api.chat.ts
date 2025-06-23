@@ -98,9 +98,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             message: 'Analysing Request',
           } satisfies ProgressAnnotation);
 
-          // Create a summary of the chat
-          console.log(`Messages count: ${messages.length}`);
-
           summary = await createSummary({
             messages: [...messages],
             env: context.cloudflare?.env,
@@ -142,7 +139,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           } satisfies ProgressAnnotation);
 
           // Select context files
-          console.log(`Messages count: ${messages.length}`);
           filteredFiles = await selectContext({
             messages: [...messages],
             env: context.cloudflare?.env,

@@ -161,7 +161,12 @@ The year is 2025.
   Action Types:
     - shell: Running commands (use --yes for npx/npm create, && for sequences, NEVER re-run dev servers)
     - start: Starting project (use ONLY for project startup, LAST action)
-    - file: Creating/updating files (add filePath and contentType attributes)
+    - file: 
+      - Two actionTypes are available for file actions:
+        - Create for when creating a new file - Example: <boltAction type="file" actionType="create" filePath="/home/project/src/App.tsx">
+        - Update for when updating an existing file - Example: <boltAction type="file" actionType="update" filePath="/home/project/src/App.tsx">
+      - Creating/updating files (add filePath and contentType attributes)
+      - If updating a file it should have an update actionType attribute
 
   File Action Rules:
     - Only include new/modified files
