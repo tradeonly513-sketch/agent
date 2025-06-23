@@ -57,6 +57,7 @@ exports[`StreamingMessageParser > valid artifacts with actions > should correctl
 exports[`StreamingMessageParser > valid artifacts with actions > should correctly parse chunks and strip out bolt artifacts (1) > onActionClose 2`] = `
 {
   "action": {
+    "actionType": "create",
     "content": "some content
 ",
     "filePath": "index.js",
@@ -83,6 +84,7 @@ exports[`StreamingMessageParser > valid artifacts with actions > should correctl
 exports[`StreamingMessageParser > valid artifacts with actions > should correctly parse chunks and strip out bolt artifacts (1) > onActionOpen 2`] = `
 {
   "action": {
+    "actionType": "create",
     "content": "",
     "filePath": "index.js",
     "type": "file",
