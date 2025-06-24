@@ -18,7 +18,15 @@ export type SSEMCPConfig = {
   url: string;
 };
 
-export type MCPConfig = StdioMCPConfig | SSEMCPConfig;
+export type ProxyMCPConfig = {
+  type: 'proxy';
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+  proxyUrl?: string; // URL of the MCP proxy server
+};
+
+export type MCPConfig = StdioMCPConfig | SSEMCPConfig | ProxyMCPConfig;
 
 export interface MCPClient {
   tools: () => Promise<any>;
@@ -82,10 +90,7 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
 
   logger.debug(`Creating stdio MCP client for '${serverName}' with command: '${command}' ${args?.join(' ') || ''}`);
 
-  // Check if we're in Cloudflare Workers environment (no child_process support)
-  if (typeof process === 'undefined' || !process.versions?.node) {
-    throw new Error(`Stdio MCP servers are not supported in the current runtime environment. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
-  }
+  // Note: This requires Node.js compatibility in the runtime environment
 
   try {
     const transport = new Experimental_StdioMCPTransport({
