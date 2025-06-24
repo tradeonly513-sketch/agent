@@ -1,6 +1,8 @@
 import { experimental_createMCPClient } from 'ai';
-import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
 import { createScopedLogger } from '~/utils/logger';
+
+// Dynamic import for stdio transport to avoid build issues
+let Experimental_StdioMCPTransport: any;
 
 const logger = createScopedLogger('mcp-service');
 
@@ -90,9 +92,13 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
 
   logger.debug(`Creating stdio MCP client for '${serverName}' with command: '${command}' ${args?.join(' ') || ''}`);
 
-  // Note: This requires Node.js compatibility in the runtime environment
-
   try {
+    // Dynamic import to avoid build issues with missing export
+    if (!Experimental_StdioMCPTransport) {
+      const module = await import('ai/mcp-stdio');
+      Experimental_StdioMCPTransport = module.Experimental_StdioMCPTransport;
+    }
+
     const transport = new Experimental_StdioMCPTransport({
       command: command!,
       args,
@@ -102,6 +108,10 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
 
     return await experimental_createMCPClient({ transport });
   } catch (e) {
+    // Fallback error message for unsupported environments
+    if (e instanceof Error && e.message.includes('Missing')) {
+      throw new Error(`Stdio MCP servers are not supported in this environment. Please use SSE-based servers instead.`);
+    }
     throw new Error(`Failed to start command "${command}": ${errorToString(e)}`);
   }
 }
