@@ -59,16 +59,20 @@ export function parseAppSummaryMessage(message: Message): AppSummary | undefined
   }
 }
 
-  // Get the latest app summary from messages (use passed messages, not store)
-  export const getLatestAppSummary = (messages: Message[]): AppSummary | null => {
-    if (!messages) return null;
-    
-    // Find the last message with APP_SUMMARY_CATEGORY
-    const appSummaryMessage = messages
-      .slice()
-      .reverse()
-      .find(message => message.category === APP_SUMMARY_CATEGORY);
-    
-    if (!appSummaryMessage) return null;
-    return parseAppSummaryMessage(appSummaryMessage) || null;
-  };
+// Get the latest app summary from messages (use passed messages, not store)
+export const getLatestAppSummary = (messages: Message[]): AppSummary | null => {
+  if (!messages) {
+    return null;
+  }
+
+  // Find the last message with APP_SUMMARY_CATEGORY
+  const appSummaryMessage = messages
+    .slice()
+    .reverse()
+    .find((message) => message.category === APP_SUMMARY_CATEGORY);
+
+  if (!appSummaryMessage) {
+    return null;
+  }
+  return parseAppSummaryMessage(appSummaryMessage) || null;
+};

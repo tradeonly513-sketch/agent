@@ -51,7 +51,7 @@ export const MultiSlider = genericMemo(<T,>({ selected, options, setSelected }: 
   return (
     <div className="flex items-center flex-wrap shrink-0 gap-1 bg-bolt-elements-background-depth-1 overflow-hidden rounded-full p-1">
       {options.options.map((option) => (
-        <SliderButton 
+        <SliderButton
           key={String(option.value)}
           selected={selected === option.value}
           disabled={option.disabled}
@@ -78,11 +78,11 @@ const SliderButton = memo(({ selected, disabled = false, children, setSelected }
       disabled={disabled}
       className={classNames(
         'bg-transparent text-sm px-2.5 py-0.5 rounded-full relative transition-opacity',
-        disabled 
+        disabled
           ? 'text-bolt-elements-item-contentDefault opacity-50 cursor-not-allowed'
           : selected
-          ? 'text-bolt-elements-item-contentAccent'
-          : 'text-bolt-elements-item-contentDefault hover:text-bolt-elements-item-contentActive',
+            ? 'text-bolt-elements-item-contentAccent'
+            : 'text-bolt-elements-item-contentDefault hover:text-bolt-elements-item-contentActive',
       )}
     >
       <span className="relative z-10">{children}</span>

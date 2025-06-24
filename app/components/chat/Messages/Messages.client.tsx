@@ -84,8 +84,6 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(
       return null;
     };
 
-
-
     const renderMessage = (message: Message, index: number) => {
       const { role, repositoryId } = message;
       const isUserMessage = role === 'user';

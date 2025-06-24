@@ -40,8 +40,6 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
 
   const showWorkbench = useStore(workbenchStore.showWorkbench);
   const currentChat = useStore(chatStore.currentChat);
-  const previewURL = useStore(workbenchStore.previewURL);
-  const repositoryId = useStore(workbenchStore.repositoryId);
   const [activeTab, setActiveTab] = useState<'planning' | 'preview'>('planning');
 
   const hasSeenPreviewRef = useRef(false);
@@ -49,24 +47,19 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
 
   const isSmallViewport = useViewport(1024);
 
-
   const appSummary = getLatestAppSummary(messages ?? []);
-
-  // Check if testing is available (has tests)
-  const hasTests = appSummary?.tests && appSummary.tests.length > 0;
 
   // Debug logging
   console.log('AppSummary debug:', {
     hasAppSummary: !!appSummary,
     tests: appSummary?.tests,
     testsLength: appSummary?.tests?.length,
-    hasTests,
   });
 
-  const hasPreview = !!previewURL;
-
   useEffect(() => {
-    if (hasSeenProjectPlanRef.current) return;
+    if (hasSeenProjectPlanRef.current) {
+      return;
+    }
 
     if (currentChat?.title && currentChat.title !== 'New Chat' && !showWorkbench) {
       hasSeenProjectPlanRef.current = true;
@@ -85,7 +78,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
     options: [
       { value: 'planning' as const, text: 'Planning' },
       { value: 'preview' as const, text: 'Preview' },
-    ]
+    ],
   };
 
   return (
@@ -110,13 +103,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
           <div className="absolute inset-0 px-2 lg:px-6">
             <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
               <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor">
-                {appSummary && (
-                  <MultiSlider
-                    selected={activeTab}
-                    options={tabOptions}
-                    setSelected={setActiveTab}
-                  />
-                )}
+                {appSummary && <MultiSlider selected={activeTab} options={tabOptions} setSelected={setActiveTab} />}
                 <div className="ml-auto" />
                 <IconButton
                   icon="i-ph:x-circle"
@@ -128,7 +115,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
                 />
               </div>
               <div className="relative flex-1 overflow-hidden">
-                <Preview  activeTab={activeTab} appSummary={appSummary} messages={messages} />
+                <Preview activeTab={activeTab} appSummary={appSummary} messages={messages} />
               </div>
             </div>
           </div>

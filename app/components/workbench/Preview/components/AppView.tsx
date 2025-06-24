@@ -1,38 +1,38 @@
-import { PointSelector } from "~/components/workbench/PointSelector";
-import GripIcon from "~/components/icons/GripIcon";
-import type { AppSummary } from "~/lib/persistence/messageAppSummary";
-import FeatureProgress from "./StatusProgress";
+import { PointSelector } from '~/components/workbench/PointSelector';
+import GripIcon from '~/components/icons/GripIcon';
+import type { AppSummary } from '~/lib/persistence/messageAppSummary';
+import FeatureProgress from './StatusProgress';
 
 export type ResizeSide = 'left' | 'right' | null;
 
 const AppView = ({
-    activeTab,
-    appSummary,
-    isDeviceModeOn,
-    widthPercent,
-    previewURL,
-    iframeRef,
-    iframeUrl,
-    isSelectionMode,
-    setIsSelectionMode,
-    selectionPoint,
-    setSelectionPoint,
-    startResizing
+  activeTab,
+  appSummary,
+  isDeviceModeOn,
+  widthPercent,
+  previewURL,
+  iframeRef,
+  iframeUrl,
+  isSelectionMode,
+  setIsSelectionMode,
+  selectionPoint,
+  setSelectionPoint,
+  startResizing,
 }: {
-    activeTab: 'planning' | 'testing' | 'preview';
-    appSummary: AppSummary | null;
-    isDeviceModeOn: boolean;
-    widthPercent: number;
-    previewURL: string;
-    iframeRef: React.RefObject<HTMLIFrameElement>;
-    iframeUrl: string;
-    isSelectionMode: boolean;
-    setIsSelectionMode: (isSelectionMode: boolean) => void;
-    selectionPoint: { x: number; y: number } | null;
-    setSelectionPoint: (selectionPoint: { x: number; y: number } | null) => void;
-    startResizing: (e: React.MouseEvent, side: ResizeSide) => void;
+  activeTab: 'planning' | 'testing' | 'preview';
+  appSummary: AppSummary | null;
+  isDeviceModeOn: boolean;
+  widthPercent: number;
+  previewURL: string;
+  iframeRef: React.RefObject<HTMLIFrameElement>;
+  iframeUrl: string;
+  isSelectionMode: boolean;
+  setIsSelectionMode: (isSelectionMode: boolean) => void;
+  selectionPoint: { x: number; y: number } | null;
+  setSelectionPoint: (selectionPoint: { x: number; y: number } | null) => void;
+  startResizing: (e: React.MouseEvent, side: ResizeSide) => void;
 }) => {
-    console.log('appSummary', appSummary);
+  console.log('appSummary', appSummary);
   return (
     <div
       style={{
