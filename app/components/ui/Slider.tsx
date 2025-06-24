@@ -15,7 +15,6 @@ export interface SliderOptions<T> {
   right: SliderOption<T>;
 }
 
-// New interface for multiple options
 export interface MultiSliderOptions<T> {
   options: SliderOption<T>[];
 }
@@ -26,7 +25,6 @@ interface SliderProps<T> {
   setSelected?: (selected: T) => void;
 }
 
-// New interface for multi-option slider
 interface MultiSliderProps<T> {
   selected: T;
   options: MultiSliderOptions<T>;

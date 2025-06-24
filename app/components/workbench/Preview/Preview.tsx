@@ -241,16 +241,17 @@ export const Preview = memo(({ activeTab, appSummary }: PreviewProps) => {
         ) : (
           <AppView
             activeTab={activeTab}
+            appSummary={appSummary}
             isDeviceModeOn={isDeviceModeOn}
-            widthPercent={widthPercent}
-            previewURL={url}
             iframeRef={iframeRef}
             iframeUrl={iframeUrl ?? ''}
             isSelectionMode={isSelectionMode}
-            setIsSelectionMode={setIsSelectionMode}
+            previewURL={url}
             selectionPoint={selectionPoint}
+            setIsSelectionMode={setIsSelectionMode}
             setSelectionPoint={setSelectionPoint}
             startResizing={startResizing}
+            widthPercent={widthPercent}
           />
         )}
       </div>

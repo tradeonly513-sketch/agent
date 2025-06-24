@@ -42,10 +42,8 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
   const currentChat = useStore(chatStore.currentChat);
   const previewURL = useStore(workbenchStore.previewURL);
   const repositoryId = useStore(workbenchStore.repositoryId);
-  const [activeTab, setActiveTab] = useState<'planning' | 'testing' | 'preview'>('planning');
+  const [activeTab, setActiveTab] = useState<'planning' | 'preview'>('planning');
 
-  // Track when we've seen testing/preview for the first time to auto-switch
-  const hasSeenTestingRef = useRef(false);
   const hasSeenPreviewRef = useRef(false);
   const hasSeenProjectPlanRef = useRef(false);
 
@@ -65,10 +63,8 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
     hasTests,
   });
 
-  // Check if preview is available
   const hasPreview = !!previewURL;
 
-  // Auto-open workbench when thread gets a meaningful title (not "New Chat")
   useEffect(() => {
     if (hasSeenProjectPlanRef.current) return;
 
@@ -78,28 +74,17 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
     }
   }, [currentChat?.title, showWorkbench]);
 
-  // Auto-switch tabs when content becomes available
   useEffect(() => {
-    // Switch to testing tab when tests first appear
-    if (hasTests && !hasSeenTestingRef.current) {
-      hasSeenTestingRef.current = true;
-      setActiveTab('testing');
-    }
-  }, [hasTests]);
-
-  useEffect(() => {
-    // Switch to preview tab when preview first becomes available
-    if (hasPreview && !hasSeenPreviewRef.current) {
+    if (showWorkbench && !hasSeenPreviewRef.current) {
       hasSeenPreviewRef.current = true;
       setActiveTab('preview');
     }
-  }, [hasPreview]);
+  }, [showWorkbench]);
 
   const tabOptions = {
     options: [
       { value: 'planning' as const, text: 'Planning' },
-      { value: 'testing' as const, text: 'Testing', disabled: !hasTests },
-      { value: 'preview' as const, text: 'Preview', disabled: !hasPreview },
+      { value: 'preview' as const, text: 'Preview' },
     ]
   };
 
@@ -125,7 +110,6 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
           <div className="absolute inset-0 px-2 lg:px-6">
             <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
               <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor">
-                {/* Tab slider */}
                 {appSummary && (
                   <MultiSlider
                     selected={activeTab}

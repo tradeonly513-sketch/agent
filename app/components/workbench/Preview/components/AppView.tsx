@@ -1,10 +1,13 @@
 import { PointSelector } from "~/components/workbench/PointSelector";
 import GripIcon from "~/components/icons/GripIcon";
+import type { AppSummary } from "~/lib/persistence/messageAppSummary";
+import FeatureProgress from "./StatusProgress";
 
 export type ResizeSide = 'left' | 'right' | null;
 
 const AppView = ({
     activeTab,
+    appSummary,
     isDeviceModeOn,
     widthPercent,
     previewURL,
@@ -17,6 +20,7 @@ const AppView = ({
     startResizing
 }: {
     activeTab: 'planning' | 'testing' | 'preview';
+    appSummary: AppSummary | null;
     isDeviceModeOn: boolean;
     widthPercent: number;
     previewURL: string;
@@ -28,6 +32,7 @@ const AppView = ({
     setSelectionPoint: (selectionPoint: { x: number; y: number } | null) => void;
     startResizing: (e: React.MouseEvent, side: ResizeSide) => void;
 }) => {
+    console.log('appSummary', appSummary);
   return (
     <div
       style={{
@@ -57,7 +62,13 @@ const AppView = ({
           />
         </>
       ) : (
-        <div className="flex w-full h-full justify-center items-center bg-white">Preview loading...</div>
+        <div className="flex w-full h-full justify-center items-center bg-bolt-elements-background-depth-1">
+          {appSummary ? (
+            <FeatureProgress />
+          ) : (
+            <div className="text-bolt-elements-textSecondary">Preview loading...</div>
+          )}
+        </div>
       )}
 
       {isDeviceModeOn && activeTab === 'preview' && (
