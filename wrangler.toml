@@ -4,7 +4,3 @@ compatibility_flags = ["nodejs_compat", "nodejs_als"]
 compatibility_date = "2025-03-28"
 pages_build_output_dir = "./build/client"
 send_metrics = false
-
-[node_compat]
-# Enable Node.js compatibility mode for child_process and other APIs
-preset = "legacy"
