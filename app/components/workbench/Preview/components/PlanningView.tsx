@@ -2,12 +2,8 @@ import { classNames } from '~/utils/classNames';
 import type { AppSummary } from '~/lib/persistence/messageAppSummary';
 
 const PlanningView = ({ appSummary }: { appSummary: AppSummary | null }) => {
-  if (!appSummary) {
-    return null;
-  }
-
   // Group tests by feature index (matching the array index of features)
-  const testsByFeature = appSummary.tests.reduce(
+  const testsByFeature = appSummary?.tests?.reduce(
     (acc, test) => {
       // @ts-ignore - featureIndex exists in the data but not in the type
       const featureIndex = test.featureIndex;
@@ -31,18 +27,18 @@ const PlanningView = ({ appSummary }: { appSummary: AppSummary | null }) => {
 
         <div className="mb-8">
           <div className="text-lg font-semibold mb-3 text-bolt-elements-textPrimary">Project Description</div>
-          <div className="text-bolt-elements-textSecondary leading-relaxed">{appSummary.description}</div>
+          <div className="text-bolt-elements-textSecondary leading-relaxed">{appSummary?.description}</div>
         </div>
 
         <div className="mb-8">
           <div className="text-lg font-semibold mb-4 text-bolt-elements-textPrimary">Features</div>
           <div className="space-y-6">
-            {appSummary.features.map((feature, index) => {
-              const featureTests = testsByFeature[index] || [];
+            {appSummary?.features.map((feature, index) => {
+              const featureTests = testsByFeature?.[index] || [];
 
               return (
                 <div
-                  key={feature.id}
+                  key={index}
                   className="rounded-lg bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor overflow-hidden"
                 >
                   <div className="flex items-center gap-3 p-3 border-b border-bolt-elements-borderColor">
