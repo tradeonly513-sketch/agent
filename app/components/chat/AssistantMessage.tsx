@@ -127,6 +127,7 @@ export const AssistantMessage = memo(
                       </div>
                     </div>
                   )}
+                </div>
                 <div className="context"></div>
               </Popover>
             )}

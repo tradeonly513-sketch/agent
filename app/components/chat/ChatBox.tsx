@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
 import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportChatButton';
 import { SupabaseConnection } from './SupabaseConnection';
+import { McpConnection } from './MCPConnection';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
 import styles from './BaseChat.module.scss';
 import type { ProviderInfo } from '~/types/model';
@@ -302,6 +303,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             </div>
           ) : null}
           <SupabaseConnection />
+          <McpConnection />
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
       </div>
