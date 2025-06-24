@@ -5,17 +5,18 @@ import { useMCPConfig, type MCPConfig } from '~/lib/hooks/useMCPConfig';
 import { IconButton } from '~/components/ui/IconButton';
 
 // Example MCP configuration that users can load
+// Note: Buildify runs on Cloudflare Workers, so only SSE-based servers are supported
 const EXAMPLE_MCP_CONFIG: MCPConfig = {
   mcpServers: {
-    everything: {
-      command: 'npx',
-      args: ['-y', '@modelcontextprotocol/server-everything'],
+    'brave-search': {
+      type: 'sse',
+      url: 'https://mcp.brave.com/sse',
     },
-    git: {
-      command: 'uvx',
-      args: ['mcp-server-git'],
+    'github-mcp': {
+      type: 'sse', 
+      url: 'https://github-mcp-server.vercel.app/sse',
     },
-    'remote-sse': {
+    'local-sse-server': {
       type: 'sse',
       url: 'http://localhost:8000/sse',
     },
@@ -368,6 +369,10 @@ export function McpConnection() {
                   {error && <p className="mt-2 text-sm text-bolt-elements-icon-error">{error}</p>}
 
                   <div className="mt-2 text-sm text-bolt-elements-textSecondary">
+                    <div className="mb-2 p-2 bg-bolt-elements-background-depth-1 rounded border border-bolt-elements-borderColor">
+                      <strong>⚠️ Runtime Limitation:</strong> Buildify runs on Cloudflare Workers, which only supports SSE-based MCP servers. 
+                      Stdio servers (using commands like npx, uvx, docker) are not supported.
+                    </div>
                     The MCP configuration format is identical to the one used in Claude Desktop.
                     <a
                       href="https://modelcontextprotocol.io/examples"

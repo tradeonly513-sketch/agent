@@ -241,6 +241,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
               <div className="i-ph:paperclip text-xl"></div>
             </IconButton>
+            <McpConnection />
             <IconButton
               title="Enhance prompt"
               disabled={props.input.length === 0 || props.enhancingPrompt}
@@ -303,7 +304,6 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             </div>
           ) : null}
           <SupabaseConnection />
-          <McpConnection />
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
       </div>

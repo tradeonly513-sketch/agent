@@ -82,6 +82,11 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
 
   logger.debug(`Creating stdio MCP client for '${serverName}' with command: '${command}' ${args?.join(' ') || ''}`);
 
+  // Check if we're in Cloudflare Workers environment (no child_process support)
+  if (typeof process === 'undefined' || !process.versions?.node) {
+    throw new Error(`Stdio MCP servers are not supported in the current runtime environment. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
+  }
+
   try {
     const transport = new Experimental_StdioMCPTransport({
       command: command!,
