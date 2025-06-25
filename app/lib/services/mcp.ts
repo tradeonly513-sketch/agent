@@ -105,6 +105,9 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
     if (e instanceof Error && e.message.includes('Missing')) {
       throw new Error(`MCP stdio transport not available. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
     }
+    if (e instanceof Error && e.message.includes('child_process.spawn is not implemented')) {
+      throw new Error(`Stdio MCP servers require Node.js child_process which is not available in this environment. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
+    }
     throw new Error(`Failed to start command "${command}": ${errorToString(e)}`);
   }
 }
