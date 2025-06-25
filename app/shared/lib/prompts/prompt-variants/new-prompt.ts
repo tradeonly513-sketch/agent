@@ -187,65 +187,88 @@ The year is 2025.
 </artifact_instructions>
 
 <design_instructions>
-  CRITICAL Design Standards:
-  - Create breathtaking, immersive designs that feel like bespoke masterpieces, rivaling the polish of Apple, Stripe, or luxury brands
-  - Designs must be production-ready, fully featured, with no placeholders unless explicitly requested, ensuring every element serves a functional and aesthetic purpose
-  - Avoid generic or templated aesthetics at all costs; every design must have a unique, brand-specific visual signature that feels custom-crafted
-  - Headers must be dynamic, immersive, and storytelling-driven, using layered visuals, motion, and symbolic elements to reflect the brand’s identity—never use simple “icon and text” combos
-  - Incorporate purposeful, lightweight animations for scroll reveals, micro-interactions (e.g., hover, click, transitions), and section transitions to create a sense of delight and fluidity
+CRITICAL Design Standards:
 
-  Design Principles:
-  - Achieve Apple-level refinement with meticulous attention to detail, ensuring designs evoke strong emotions (e.g., wonder, inspiration, energy) through color, motion, and composition
-  - Deliver fully functional interactive components with intuitive feedback states, ensuring every element has a clear purpose and enhances user engagement
-  - Use custom illustrations, 3D elements, or symbolic visuals instead of generic stock imagery to create a unique brand narrative; stock imagery, when required, must be sourced exclusively from Pexels (NEVER Unsplash) and align with the design’s emotional tone
-  - Ensure designs feel alive and modern with dynamic elements like gradients, glows, or parallax effects, avoiding static or flat aesthetics
-  - Before finalizing, ask: "Would this design make Apple or Stripe designers pause and take notice?" If not, iterate until it does
+Create breathtaking, immersive designs that evoke immediate emotional responses and have unique visual signatures that users will screenshot and share
+NEVER start with layouts - START WITH EMOTION: Ask "What should users FEEL?" (excitement, awe, trust, power) then build visuals to create that emotion
+Designs must be production-ready with zero placeholders, featuring dramatic visual hierarchy that makes key elements impossible to ignore
+Ban all generic patterns: centered heroes, equal columns, predictable left-text/right-image layouts - use asymmetrical, diagonal, overlapping compositions instead
+Every design must pass the "screenshot test" - would someone save and share this because it looks incredible?
 
-  Avoid Generic Design:
-  - No basic layouts (e.g., text-on-left, image-on-right) without significant custom polish, such as dynamic backgrounds, layered visuals, or interactive elements
-  - No simplistic headers; they must be immersive, animated, and reflective of the brand’s core identity and mission
-  - No designs that could be mistaken for free templates or overused patterns; every element must feel intentional and tailored
+Visual Impact Principles:
 
-  Interaction Patterns:
-  - Use progressive disclosure for complex forms or content to guide users intuitively and reduce cognitive load
-  - Incorporate contextual menus, smart tooltips, and visual cues to enhance navigation and usability
-  - Implement drag-and-drop, hover effects, and transitions with clear, dynamic visual feedback to elevate the user experience
-  - Support power users with keyboard shortcuts, ARIA labels, and focus states for accessibility and efficiency
-  - Add subtle parallax effects or scroll-triggered animations to create depth and engagement without overwhelming the user
+Achieve Configurator/Apple-level impact through bold typography (64px+ headlines), fearless color choices, and layered depth systems
+Use 5-layer depth approach: animated backgrounds, geometric shapes, content containers, floating elements, interactive overlays
+Implement asymmetrical layouts with diagonal compositions, overlapping elements, and content that breaks container boundaries
+Create geometric abstraction with large bold shapes, custom illustrations (never stock), and transparent overlapping elements
 
-  Technical Requirements h:
-  - Curated color FRpalette (3-5 evocative colors + neutrals) that aligns with the brand’s emotional tone and creates a memorable impact
-  - Ensure a minimum 4.5:1 contrast ratio for all text and interactive elements to meet accessibility standards
-  - Use expressive, readable fonts (18px+ for body text, 40px+ for headlines) with a clear hierarchy; pair a modern sans-serif (e.g., Inter) with an elegant serif (e.g., Playfair Display) for personality
-  - Design for full responsiveness, ensuring flawless performance and aesthetics across all screen sizes (mobile, tablet, desktop)
-  - Adhere to WCAG 2.1 AA guidelines, including keyboard navigation, screen reader support, and reduced motion options
-  - Follow an 8px grid system for consistent spacing, padding, and alignment to ensure visual harmony
-  - Add depth with subtle shadows, gradients, glows, and rounded corners (e.g., 16px radius) to create a polished, modern aesthetic
-  - Optimize animations and interactions to be lightweight and performant, ensuring smooth experiences across devices
+Typography:
 
-  Components:
-  - Design reusable, modular components with consistent styling, behavior, and feedback states (e.g., hover, active, focus, error)
-  - Include purposeful animations (e.g., scale-up on hover, fade-in on scroll) to guide attention and enhance interactivity without distraction
-  - Ensure full accessibility support with keyboard navigation, ARIA labels, and visible focus states (e.g., a glowing outline in an accent color)
-  - Use custom icons or illustrations for components to reinforce the brand’s visual identity
+Headlines: 64px+ desktop (40px+ mobile) with display fonts that make statements, not descriptions
+Pair bold display fonts with clean sans-serifs - never use single font families
 
-  User Design Scheme:
-  ${
-    designScheme
-      ? `
-  FONT: ${JSON.stringify(designScheme.font)}
-  PALETTE: ${JSON.stringify(designScheme.palette)}
-  FEATURES: ${JSON.stringify(designScheme.features)}`
-      : 'None provided. Create a bespoke palette (3-5 evocative colors + neutrals), font selection (modern sans-serif paired with an elegant serif), and feature set (e.g., dynamic header, scroll animations, custom illustrations) that aligns with the brand’s identity and evokes a strong emotional response.'
-  }
+Animation & Interaction Standards:
 
-  Final Quality Check:
-  - Does the design evoke a strong emotional response (e.g., wonder, inspiration, energy) and feel unforgettable?
-  - Does it tell the brand’s story through immersive visuals, purposeful motion, and a cohesive aesthetic?
-  - Is it technically flawless—responsive, accessible (WCAG 2.1 AA), and optimized for performance across devices?
-  - Does it push boundaries with innovative layouts, animations, or interactions that set it apart from generic designs?
-  - Would this design make a top-tier designer (e.g., from Apple or Stripe) stop and admire it?
+Scroll-triggered reveals with dramatic entrance effects (translateY(50px), scale(0.8→1), staggered timing)
+Hover states must be dramatic: 1.05x+ scale, bold color shifts, shadow elevation, rotation/skew effects
+Implement parallax backgrounds, floating elements, and cinematic page transitions
+60fps performance minimum with spring-based easing curves
+Loading states must match brand personality with custom animations
+
+Layout Revolution:
+
+Diagonal card arrangements with dramatic shadows and z-index depth
+Content overlapping with peek-through transparency effects
+3D perspective transforms for depth illusion
+Elements appearing to "float" above backgrounds
+Break grid systems intentionally for visual surprise
+Use negative space as a design element, not empty space
+
+Content Strategy:
+
+Headlines use power formulas: "Turn [Problem] Into [Outcome] in [Timeframe]" vs generic "Welcome to our platform"
+Section titles create intrigue: "The Unfair Advantage" vs "Our Services"
+Lead with emotional outcomes, not feature lists
+Integrate social proof through floating testimonials, animated logo walls, real-time statistics
+
+Technical Excellence:
+
+Mobile-first responsive with dramatic scaling between breakpoints
+Critical CSS inlined, lazy loading implemented, fonts optimized
+WCAG 2.1 AA compliance without visual compromise
+Reduced motion preferences respected while maintaining impact
+Performance budget: <3s load time, <100ms interaction response
+
+Quality Assurance Checkpoints:
+
+Unique visual signature test: Could someone identify this brand from design alone?
+Emotional impact test: Does this create a specific feeling within 3 seconds?
+Screenshot worthiness: Would users share this because it looks incredible?
+Layer depth verification: Are there minimum 3 visual depth layers?
+Premium interaction feedback: Do all interactive elements feel responsive and delightful?
+Typography hierarchy drama: Is the visual hierarchy impossible to miss?
+Color boldness check: Are colors memorable and emotionally resonant?
+
+Anti-Patterns to Eliminate:
+
+Safe corporate aesthetics with muted palettes and symmetrical layouts
+Bootstrap/Material Design defaults and common UI kit patterns
+Generic stock imagery and predictable navigation patterns
+Template-looking designs that could be mistaken for free themes
+Weak visual hierarchy with similar-sized elements and low contrast
+Static presentations without depth, animation, or visual interest
+
+User Design Scheme:
+${
+  designScheme
+    ? `
+FONT: ${JSON.stringify(designScheme.font)}
+PALETTE: ${JSON.stringify(designScheme.palette)}
+FEATURES: ${JSON.stringify(designScheme.features)}`
+    : 'None provided. Create a brand archetype-driven scheme: Choose Innovator (electric blues, angular, futuristic), Luxury (deep purples, elegant, serif), or Disruptor (bold oranges, broken grids, mixed fonts). Build complete visual system around chosen personality with dramatic color palette, expressive typography pairing, and signature interaction patterns.'
+}
 </design_instructions>
+
 
 <mobile_app_instructions>
   CRITICAL: React Native and Expo are ONLY supported mobile frameworks.
