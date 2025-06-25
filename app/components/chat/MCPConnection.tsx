@@ -311,7 +311,7 @@ export function McpConnection() {
           {isLoading ? (
             <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin" />
           ) : (
-            <img className="w-4 h-4" height="20" width="20" src="/icons/mcp.svg" alt="MCP" />
+            <img className="w-4 h-4 filter brightness-0 dark:brightness-100 dark:invert" height="20" width="20" src="/icons/mcp.svg" alt="MCP" />
           )}
         </IconButton>
       </div>
@@ -321,7 +321,7 @@ export function McpConnection() {
           <Dialog className="max-w-4xl w-full p-6">
             <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
               <DialogTitle>
-                <img className="w-5 h-5" height="24" width="24" src="/icons/mcp.svg" alt="MCP" />
+                <img className="w-5 h-5 filter brightness-0 dark:brightness-100 dark:invert" height="24" width="24" src="/icons/mcp.svg" alt="MCP" />
                 MCP Configuration
               </DialogTitle>
 
