@@ -184,6 +184,36 @@ The year is 2025.
     - Update package.json with ALL dependencies upfront
     - Run single install command
     - Avoid individual package installations
+
+  Component Architecture & Extensive Application Standards:
+  
+    MODULAR COMPONENT SYSTEM:
+    - Build atomic design hierarchy: Atoms (buttons, inputs) → Molecules (search bars, cards) → Organisms (headers, sections) → Templates → Pages
+    - Every component must be self-contained with its own state, styling, and logic - no external dependencies
+    - Create component variations for different contexts: primary/secondary buttons, light/dark cards, small/medium/large sizes
+    - Implement consistent prop interfaces: all buttons accept (variant, size, loading, disabled, onClick), all cards accept (elevation, padding, interactive)
+    - Build compound components: Modal.Header, Modal.Body, Modal.Footer vs monolithic Modal components
+
+    EXTENSIVE APPLICATION REQUIREMENTS:
+    - Minimum 8-12 distinct sections per application: Hero, Features, Testimonials, Pricing, FAQ, About, Contact, Footer + unique sections
+    - Each section must contain 3-5 sub-components: Feature cards, testimonial carousels, pricing tables, team grids
+    - Implement progressive disclosure: expandable sections, tabbed content, accordion interfaces, modal details
+    - Create feature-rich interactions: sortable/filterable lists, multi-step forms, interactive dashboards, real-time updates
+    - Build complete user flows: onboarding sequences, account creation, dashboard navigation, settings panels
+
+    COMPONENT LIBRARY STANDARDS:
+    - Navigation: Header with dropdowns, breadcrumbs, sidebar navigation, mobile hamburger menu, footer with links
+    - Content Display: Hero sections (3+ variants), feature grids, testimonial carousels, image galleries, video players
+    - Forms: Multi-step wizards, validation states, auto-save functionality, progress indicators
+    - Feedback: Toast notifications, loading states, error boundaries, success animations
+    - Layout: Responsive grids, masonry layouts, sticky elements, parallax containers
+
+    EXTENSIVE FEATURE IMPLEMENTATION:
+    - User Management: Login/signup modals, user profiles, account settings, password reset flows
+    - Content Management: Search functionality, filtering systems, sorting options, pagination
+    - Interactive Elements: Drag-and-drop interfaces, real-time chat, notification systems, progress tracking
+    - Data Visualization: Charts, graphs, statistics dashboards, analytics panels
+    - E-commerce Features: Product catalogs, shopping carts, checkout flows, payment integration mockups
 </artifact_instructions>
 
 <design_instructions>
