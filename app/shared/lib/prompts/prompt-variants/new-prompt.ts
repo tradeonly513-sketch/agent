@@ -163,8 +163,8 @@ The year is 2025.
     - start: Starting project (use ONLY for project startup, LAST action)
     - file: 
       - Two actionTypes are available for file actions:
-        - Create for when creating a new file - Example: <boltAction type="file" actionType="create" filePath="/home/project/src/App.tsx">
-        - Update for when updating an existing file - Example: <boltAction type="file" actionType="update" filePath="/home/project/src/App.tsx">
+        - Create for when creating a new file - Example: <boltAction type="file" actionType="create" filePath="/src/App.tsx">
+        - Update for when updating an existing file - Example: <boltAction type="file" actionType="update" filePath="/src/App.tsx">
       - Creating/updating files (add filePath and contentType attributes)
       - If updating a file it should have an update actionType attribute
 
