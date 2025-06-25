@@ -25,6 +25,22 @@ export class TerminalStore {
   toggleTerminal(value?: boolean) {
     this.showTerminal.set(value !== undefined ? value : !this.showTerminal.get());
   }
+
+  async detachTerminal(terminal: ITerminal) {
+    const terminalIndex = this.#terminals.findIndex((t) => t.terminal === terminal);
+
+    if (terminalIndex !== -1) {
+      const { process } = this.#terminals[terminalIndex];
+
+      try {
+        process.kill();
+      } catch (error) {
+        console.warn('Failed to kill terminal process:', error);
+      }
+      this.#terminals.splice(terminalIndex, 1);
+    }
+  }
+
   async attachBoltTerminal(terminal: ITerminal) {
     try {
       const wc = await this.#webcontainer;
