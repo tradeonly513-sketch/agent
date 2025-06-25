@@ -90,6 +90,17 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
   logger.debug(`Creating stdio MCP client for '${serverName}' with command: '${command}' ${args?.join(' ') || ''}`);
 
   try {
+    // Check if we're in a Node.js environment that supports child_process
+    if (typeof process !== 'undefined' && process.platform) {
+      // Try to import child_process to test availability
+      try {
+        const { spawn } = await import('node:child_process');
+        logger.debug('child_process is available, proceeding with stdio transport');
+      } catch (cpError) {
+        throw new Error(`Node.js child_process not available: ${cpError instanceof Error ? cpError.message : String(cpError)}`);
+      }
+    }
+
     // Dynamic import to handle potential missing export
     const { Experimental_StdioMCPTransport } = await import('ai/mcp-stdio');
     
@@ -106,7 +117,10 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
       throw new Error(`MCP stdio transport not available. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
     }
     if (e instanceof Error && e.message.includes('child_process.spawn is not implemented')) {
-      throw new Error(`Stdio MCP servers require Node.js child_process which is not available in this environment. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
+      throw new Error(`Stdio MCP servers require Node.js child_process which is not available in Cloudflare Workers. Try enabling nodejs_compat_v2 or use SSE-based servers. See: https://modelcontextprotocol.io/examples`);
+    }
+    if (e instanceof Error && e.message.includes('child_process not available')) {
+      throw new Error(`Node.js child_process not available in this environment. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
     }
     throw new Error(`Failed to start command "${command}": ${errorToString(e)}`);
   }
