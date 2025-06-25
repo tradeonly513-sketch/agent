@@ -89,8 +89,24 @@ async function createStdioClient(serverName: string, config: ServerConfig): Prom
 
   logger.debug(`Creating stdio MCP client for '${serverName}' with command: '${command}' ${args?.join(' ') || ''}`);
 
-  // Stdio servers not supported in this environment
-  throw new Error(`Stdio MCP servers are not supported in this environment. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
+  try {
+    // Dynamic import to handle potential missing export
+    const { Experimental_StdioMCPTransport } = await import('ai/mcp-stdio');
+    
+    const transport = new Experimental_StdioMCPTransport({
+      command: command!,
+      args,
+      env,
+      cwd,
+    });
+
+    return await experimental_createMCPClient({ transport });
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('Missing')) {
+      throw new Error(`MCP stdio transport not available. Please use SSE-based servers instead. See: https://modelcontextprotocol.io/examples`);
+    }
+    throw new Error(`Failed to start command "${command}": ${errorToString(e)}`);
+  }
 }
 
 export async function createMCPClients(mcpConfig?: {
