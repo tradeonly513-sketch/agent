@@ -7,21 +7,19 @@ import { IconButton } from '~/components/ui/IconButton';
 // Example MCP configuration that users can load
 const EXAMPLE_MCP_CONFIG: MCPConfig = {
   mcpServers: {
-    everything: {
+    // Stdio servers (development only)
+    'everything': {
       command: 'npx',
       args: ['-y', '@modelcontextprotocol/server-everything'],
     },
-    git: {
+    'git': {
       command: 'uvx',
       args: ['mcp-server-git'],
     },
-    'sequential-thinking': {
-      command: 'npx',
-      args: ['-y', '@modelcontextprotocol/server-sequential-thinking'],
-    },
-    'local-sse-server': {
+    // SSE servers (works in all environments)
+    'weather-service': {
       type: 'sse',
-      url: 'http://localhost:8000/sse',
+      url: 'https://your-mcp-gateway.com/mcp/weather/sse',
     },
   },
 };
@@ -42,6 +40,27 @@ export function McpConnection() {
   const [configTextParsed, setConfigTextParsed] = useState<MCPConfig | null>(null);
   const [expandedServer, setExpandedServer] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Environment detection from server
+  const [environment, setEnvironment] = useState<any>(null);
+  const [environmentDescription, setEnvironmentDescription] = useState<string>('Loading...');
+  const [stdioMessage, setStdioMessage] = useState<string>('Loading...');
+
+  // Fetch environment info from server
+  useEffect(() => {
+    fetch('/api/environment')
+      .then(res => res.json())
+      .then((data: any) => {
+        setEnvironment(data.environment);
+        setEnvironmentDescription(data.description);
+        setStdioMessage(data.stdioMessage);
+      })
+      .catch(err => {
+        console.error('Failed to fetch environment info:', err);
+        setEnvironmentDescription('Unknown Environment');
+        setStdioMessage('Unable to determine stdio availability');
+      });
+  }, []);
 
   // Initialize config text from config
   useEffect(() => {
@@ -264,9 +283,16 @@ export function McpConnection() {
                   {serverConfig.type === 'sse' ? (
                     <span className="text-xs text-bolt-elements-textSecondary">SSE: {serverConfig.url}</span>
                   ) : (
-                    <span className="text-xs text-bolt-elements-textSecondary">
-                      {serverConfig.command} {serverConfig.args?.join(' ')}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-bolt-elements-textSecondary">
+                        {serverConfig.command} {serverConfig.args?.join(' ')}
+                      </span>
+                      {environment && !environment.canUseStdio && (
+                        <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                          ⚠️ Stdio unavailable in {environment.runtimeEnvironment}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -372,10 +398,27 @@ export function McpConnection() {
                   {error && <p className="mt-2 text-sm text-bolt-elements-icon-error">{error}</p>}
 
                   <div className="mt-2 text-sm text-bolt-elements-textSecondary">
+                    {/* Environment Info */}
                     <div className="mb-2 p-2 bg-bolt-elements-background-depth-1 rounded border border-bolt-elements-borderColor">
-                      <strong>ℹ️ Server Types:</strong> Buildify supports both stdio (npx, uvx, docker) and SSE-based MCP servers. 
-                      Stdio servers require Node.js runtime compatibility.
+                      <strong>🔧 Environment:</strong> {environmentDescription}
+                      <br />
+                      {stdioMessage}
                     </div>
+                    
+                    {/* Transport Types */}
+                    <div className="mb-2 p-2 bg-bolt-elements-background-depth-1 rounded border border-bolt-elements-borderColor">
+                      <strong>📡 Supported Transports:</strong>
+                      <ul className="mt-1 ml-4 text-xs space-y-1">
+                        <li>
+                          <span className={environment?.canUseStdio ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                            {environment?.canUseStdio ? '✅' : '❌'} Stdio (npx, uvx commands)
+                          </span>
+                          {environment && !environment.canUseStdio && <span className="ml-1 text-bolt-elements-textSecondary">- Development only</span>}
+                        </li>
+                        <li className="text-green-600 dark:text-green-400">✅ SSE (Server-Sent Events) - All environments</li>
+                      </ul>
+                    </div>
+                    
                     The MCP configuration format is identical to the one used in Claude Desktop.
                     <a
                       href="https://modelcontextprotocol.io/examples"

@@ -13,6 +13,7 @@ export interface MCPConfig {
       url?: string;
       env?: Record<string, string>;
       type?: string;
+      cwd?: string;
     }
   >;
 }
