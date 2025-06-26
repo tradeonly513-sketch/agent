@@ -16,7 +16,11 @@ export default class OpenAILikeProvider extends BaseProvider {
   staticModels: ModelInfo[] = [];
 
   getEnvDefinedModels(serverEnv: Record<string, string> = {}): ModelInfo[] {
-    const models = serverEnv[this.config.modelKey] || process.env[this.config.modelKey];
+    const models =
+      serverEnv[this.config.modelKey] ||
+      process.env[this.config.modelKey] ||
+      import.meta.env[this.config.modelKey] ||
+      '';
     console.debug(`${this.name}: ${this.config.modelKey}=${models}`);
 
     const mklabel = (model: string) => {
