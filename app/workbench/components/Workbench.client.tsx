@@ -292,11 +292,11 @@ export const Workbench = memo(
           <PushToGitHubDialog
             isOpen={isPushDialogOpen}
             onClose={() => setIsPushDialogOpen(false)}
-            onPush={async (repoName, username, token, isPrivate) => {
+            onPush={async (repoName, commitMessage, username, token, isPrivate) => {
               try {
                 console.log('Dialog onPush called with isPrivate =', isPrivate);
 
-                const commitMessage = prompt('Please enter a commit message:', 'Initial commit') || 'Initial commit';
+                // Remove the prompt() call - commitMessage now comes from the dialog as electron does not support prompt()
                 const repoUrl = await workbenchStore.pushToGitHub(repoName, commitMessage, username, token, isPrivate);
 
                 if (updateChatMestaData && !metadata?.gitUrl) {

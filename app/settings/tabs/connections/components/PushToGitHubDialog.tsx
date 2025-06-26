@@ -20,7 +20,13 @@ import { Badge, EmptyState, StatusIndicator, SearchInput } from '~/shared/compon
 interface PushToGitHubDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onPush: (repoName: string, username?: string, token?: string, isPrivate?: boolean) => Promise<string>;
+  onPush: (
+    repoName: string,
+    commitMessage: string,
+    username?: string,
+    token?: string,
+    isPrivate?: boolean,
+  ) => Promise<string>;
 }
 
 interface GitHubRepo {
@@ -38,6 +44,7 @@ interface GitHubRepo {
 
 export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDialogProps) {
   const [repoName, setRepoName] = useState('');
+  const [commitMessage, setCommitMessage] = useState('Initial commit');
   const [isPrivate, setIsPrivate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<GitHubUserResponse | null>(null);
@@ -199,6 +206,11 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
       return;
     }
 
+    if (!commitMessage.trim()) {
+      toast.error('Commit message is required');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -236,7 +248,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
         }
       }
 
-      const repoUrl = await onPush(repoName, connection.user.login, connection.token, isPrivate);
+      const repoUrl = await onPush(repoName, commitMessage.trim(), connection.user.login, connection.token, isPrivate);
       setCreatedRepoUrl(repoUrl);
 
       // Get list of pushed files
@@ -260,6 +272,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
 
   const handleClose = () => {
     setRepoName('');
+    setCommitMessage('Initial commit');
     setIsPrivate(false);
     setShowSuccessDialog(false);
     setCreatedRepoUrl('');
@@ -475,19 +488,20 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]" />
-        <div className="fixed inset-0 flex items-center justify-center z-[9999]">
+        <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="w-[90vw] md:w-[500px]"
+            className="w-[90vw] md:w-[500px] max-h-[90vh] flex flex-col"
           >
             <Dialog.Content
-              className="bg-white dark:bg-bolt-elements-background-depth-1 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark shadow-xl"
+              className="bg-white dark:bg-bolt-elements-background-depth-1 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark shadow-xl flex flex-col max-h-full overflow-hidden"
               aria-describedby="push-dialog-description"
             >
-              <div className="p-6">
+              {/* Header - Fixed */}
+              <div className="p-6 pb-4 flex-shrink-0">
                 <div className="flex items-center gap-4 mb-6">
                   <motion.div
                     initial={{ scale: 0.8 }}
@@ -519,7 +533,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                   </Dialog.Close>
                 </div>
 
-                <div className="flex items-center gap-3 mb-6 p-4 bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
+                <div className="flex items-center gap-3 mb-2 p-4 bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
                   <div className="relative">
                     <img src={user.avatar_url} alt={user.login} className="w-10 h-10 rounded-full" />
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
@@ -535,8 +549,12 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     </p>
                   </div>
                 </div>
+              </div>
 
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto px-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Repository Name Input */}
                   <div className="space-y-2">
                     <label
                       htmlFor="repoName"
@@ -560,6 +578,31 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     </div>
                   </div>
 
+                  {/* Commit Message Input */}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="commitMessage"
+                      className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark"
+                    >
+                      Commit Message
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-3 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark">
+                        <span className="i-ph:chat-circle w-4 h-4" />
+                      </div>
+                      <textarea
+                        id="commitMessage"
+                        value={commitMessage}
+                        onChange={(e) => setCommitMessage(e.target.value)}
+                        placeholder="Describe your changes..."
+                        rows={3}
+                        className="w-full pl-10 px-4 py-2 rounded-lg bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark placeholder-bolt-elements-textTertiary dark:placeholder-bolt-elements-textTertiary-dark focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Recent Repositories Section */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark">
@@ -647,11 +690,14 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     )}
                   </div>
 
+                  {/* Loading indicator */}
                   {isFetchingRepos && (
                     <div className="flex items-center justify-center py-4">
                       <StatusIndicator status="loading" pulse={true} label="Loading repositories..." />
                     </div>
                   )}
+
+                  {/* Private Repository Checkbox */}
                   <div className="p-3 bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
                     <div className="flex items-center gap-2">
                       <input
@@ -672,41 +718,48 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       Private repositories are only visible to you and people you share them with
                     </p>
                   </div>
-
-                  <div className="pt-4 flex gap-2">
-                    <motion.button
-                      type="button"
-                      onClick={handleClose}
-                      className="px-4 py-2 rounded-lg bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark hover:bg-bolt-elements-background-depth-3 dark:hover:bg-bolt-elements-background-depth-4 text-sm border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Cancel
-                    </motion.button>
-                    <motion.button
-                      type="submit"
-                      disabled={isLoading}
-                      className={classNames(
-                        'flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm inline-flex items-center justify-center gap-2',
-                        isLoading ? 'opacity-50 cursor-not-allowed' : '',
-                      )}
-                      whileHover={!isLoading ? { scale: 1.02 } : {}}
-                      whileTap={!isLoading ? { scale: 0.98 } : {}}
-                    >
-                      {isLoading ? (
-                        <>
-                          <div className="i-ph:spinner-gap animate-spin w-4 h-4" />
-                          Pushing...
-                        </>
-                      ) : (
-                        <>
-                          <div className="i-ph:github-logo w-4 h-4" />
-                          Push to GitHub
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
                 </form>
+              </div>
+
+              {/* Footer - Fixed */}
+              <div className="p-6 pt-4 flex-shrink-0 border-t border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
+                <div className="flex gap-2">
+                  <motion.button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-4 py-2 rounded-lg bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark hover:bg-bolt-elements-background-depth-3 dark:hover:bg-bolt-elements-background-depth-4 text-sm border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    type="submit"
+                    disabled={isLoading}
+                    className={classNames(
+                      'flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm inline-flex items-center justify-center gap-2',
+                      isLoading ? 'opacity-50 cursor-not-allowed' : '',
+                    )}
+                    whileHover={!isLoading ? { scale: 1.02 } : {}}
+                    whileTap={!isLoading ? { scale: 0.98 } : {}}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSubmit(e as any);
+                    }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="i-ph:spinner-gap animate-spin w-4 h-4" />
+                        Pushing...
+                      </>
+                    ) : (
+                      <>
+                        <div className="i-ph:github-logo w-4 h-4" />
+                        Push to GitHub
+                      </>
+                    )}
+                  </motion.button>
+                </div>
               </div>
             </Dialog.Content>
           </motion.div>
