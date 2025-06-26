@@ -1,6 +1,6 @@
 import { getIFrameSimulationData } from '~/lib/replay/Recording';
 import { simulationAddData } from '~/lib/replay/ChatManager';
-import { getCurrentIFrame } from '~/components/workbench/Preview';
+import { getCurrentIFrame } from '~/components/workbench/Preview/Preview';
 import { waitForTime } from '~/lib/replay/ReplayProtocolClient';
 import { createScopedLogger } from '~/utils/logger';
 import { pingTelemetry } from '~/lib/hooks/pingTelemetry';

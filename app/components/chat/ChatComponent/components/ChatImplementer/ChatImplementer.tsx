@@ -33,6 +33,7 @@ import flushSimulationData from '~/components/chat/ChatComponent/functions/flush
 import getRewindMessageIndexAfterReject from '~/components/chat/ChatComponent/functions/getRewindMessageIndexAfterReject';
 import flashScreen from '~/components/chat/ChatComponent/functions/flashScreen';
 import { usingMockChat } from '~/lib/replay/MockChat';
+import { pendingMessageStatusStore, setPendingMessageStatus, clearPendingMessageStatus } from '~/lib/stores/status';
 
 interface ChatProps {
   initialMessages: Message[];
@@ -67,7 +68,7 @@ const ChatImplementer = memo((props: ChatProps) => {
 
   const [pendingMessageId, setPendingMessageId] = useState<string | undefined>(undefined);
 
-  const [pendingMessageStatus, setPendingMessageStatus] = useState('');
+  const pendingMessageStatus = useStore(pendingMessageStatusStore);
 
   const [resumeChat, setResumeChat] = useState<ResumeChatInfo | undefined>(initialResumeChat);
 
@@ -108,7 +109,7 @@ const ChatImplementer = memo((props: ChatProps) => {
     gNumAborts++;
     chatStore.aborted.set(true);
     setPendingMessageId(undefined);
-    setPendingMessageStatus('');
+    clearPendingMessageStatus();
     setResumeChat(undefined);
 
     const chatId = chatStore.currentChat.get()?.id;
