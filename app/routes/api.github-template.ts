@@ -1,19 +1,6 @@
 import { json } from '@remix-run/cloudflare';
 import JSZip from 'jszip';
 
-// Function to detect if we're running in Cloudflare
-function isCloudflareEnvironment(context: any): boolean {
-  // Check if we're in production AND have Cloudflare Pages specific env vars
-  const isProduction = process.env.NODE_ENV === 'production';
-  const hasCfPagesVars = !!(
-    context?.cloudflare?.env?.CF_PAGES ||
-    context?.cloudflare?.env?.CF_PAGES_URL ||
-    context?.cloudflare?.env?.CF_PAGES_COMMIT_SHA
-  );
-
-  return isProduction && hasCfPagesVars;
-}
-
 // Cloudflare-compatible method using GitHub Contents API
 async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
   const baseUrl = 'https://api.github.com';
@@ -215,10 +202,14 @@ export async function loader({ request, context }: { request: Request; context: 
 
     let fileList;
 
-    if (isCloudflareEnvironment(context)) {
-      fileList = await fetchRepoContentsCloudflare(repo, githubToken);
-    } else {
+    try {
+      // Try zip method first (uses latest release)
       fileList = await fetchRepoContentsZip(repo, githubToken);
+    } catch (zipError) {
+      console.warn('Zip method failed, falling back to Cloudflare method:', zipError);
+
+      // Fallback to Cloudflare method (uses GitHub Contents API)
+      fileList = await fetchRepoContentsCloudflare(repo, githubToken);
     }
 
     // Filter out .git files for both methods
