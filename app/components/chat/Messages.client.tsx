@@ -61,7 +61,7 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
 
               return (
                 <div
-                  key={index}
+                  key={messageId || index} // Use messageId as key, fallback to index if id is somehow missing
                   className={classNames('flex gap-4 p-6 py-5 w-full rounded-[calc(0.75rem-1px)]', {
                     'bg-bolt-elements-messages-background': isUserMessage || !isStreaming || (isStreaming && !isLast),
                     'bg-gradient-to-b from-bolt-elements-messages-background from-30% to-transparent':

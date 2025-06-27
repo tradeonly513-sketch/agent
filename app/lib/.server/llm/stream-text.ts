@@ -3,7 +3,8 @@ import { MAX_TOKENS, type FileMap } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
 import type { IProviderSetting } from '~/types/model';
-import { PromptLibrary } from '~/lib/common/prompt-library';
+import { PromptLibrary, type PromptOptions } from '~/lib/common/prompt-library';
+import { getDatabaseInstructions, getMobileAppInstructions } from '~/lib/common/prompts/instruction-blocks';
 import { allowedHTMLElements } from '~/utils/markdown';
 import { LLMManager } from '~/lib/modules/llm/manager';
 import { createScopedLogger } from '~/utils/logger';
@@ -37,6 +38,7 @@ export async function streamText(props: {
   summary?: string;
   messageSliceId?: number;
 }) {
+  console.time('streamText_total');
   const {
     messages,
     env: serverEnv,
@@ -49,6 +51,7 @@ export async function streamText(props: {
     contextFiles,
     summary,
   } = props;
+  console.time('streamText_message_processing_and_model_selection');
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
   let processedMessages = messages.map((message) => {
@@ -108,18 +111,40 @@ export async function streamText(props: {
   }
 
   const dynamicMaxTokens = modelDetails && modelDetails.maxTokenAllowed ? modelDetails.maxTokenAllowed : MAX_TOKENS;
+  console.timeEnd('streamText_message_processing_and_model_selection');
 
-  let systemPrompt =
-    PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
-      cwd: WORK_DIR,
-      allowedHtmlElements: allowedHTMLElements,
-      modificationTagName: MODIFICATIONS_TAG_NAME,
-      supabase: {
-        isConnected: options?.supabaseConnection?.isConnected || false,
-        hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
-        credentials: options?.supabaseConnection?.credentials || undefined,
-      },
-    }) ?? getSystemPrompt();
+  console.time('streamText_system_prompt_generation');
+  const promptOptions: PromptOptions = {
+    cwd: WORK_DIR,
+    allowedHtmlElements: allowedHTMLElements,
+    modificationTagName: MODIFICATIONS_TAG_NAME,
+    supabase: {
+      isConnected: options?.supabaseConnection?.isConnected || false,
+      hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
+      credentials: options?.supabaseConnection?.credentials || undefined,
+    },
+  };
+
+  let systemPrompt = PromptLibrary.getPropmtFromLibrary(promptId || 'default', promptOptions) ?? getSystemPrompt(promptOptions.cwd, promptOptions.supabase);
+
+  // If using the optimized prompt, conditionally append database or mobile instructions
+  if (promptId === 'optimized') {
+    if (promptOptions.supabase?.isConnected) {
+      systemPrompt += `\n\n${getDatabaseInstructions(promptOptions.supabase)}`;
+    }
+
+    const lastUserMessage = processedMessages.filter((m) => m.role === 'user').pop();
+    if (lastUserMessage) {
+      const content = Array.isArray(lastUserMessage.content)
+        ? lastUserMessage.content.map(c => c.type === 'text' ? c.text : '').join(' ')
+        : lastUserMessage.content;
+
+      const mobileKeywords = ['expo', 'react native', 'mobile app', 'android', 'ios'];
+      if (mobileKeywords.some(keyword => content.toLowerCase().includes(keyword))) {
+        systemPrompt += `\n\n${getMobileAppInstructions()}`;
+      }
+    }
+  }
 
   if (contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
@@ -177,12 +202,13 @@ ${lockedFilesListString}
   } else {
     console.log('No locked files found from any source for prompt.');
   }
+  console.timeEnd('streamText_system_prompt_generation');
 
   logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);
 
   // console.log(systemPrompt, processedMessages);
-
-  return await _streamText({
+  console.time('streamText_actual_llm_call');
+  const result = await _streamText({
     model: provider.getModelInstance({
       model: modelDetails.name,
       serverEnv,
@@ -194,4 +220,7 @@ ${lockedFilesListString}
     messages: convertToCoreMessages(processedMessages as any),
     ...options,
   });
+  console.timeEnd('streamText_actual_llm_call');
+  console.timeEnd('streamText_total');
+  return result;
 }

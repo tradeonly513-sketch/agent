@@ -13,7 +13,10 @@ import { createSummary } from '~/lib/.server/llm/create-summary';
 import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
 
 export async function action(args: ActionFunctionArgs) {
-  return chatAction(args);
+  console.time('chatAction_total');
+  const result = await chatAction(args);
+  console.timeEnd('chatAction_total');
+  return result;
 }
 
 const logger = createScopedLogger('api.chat');
@@ -37,6 +40,7 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
+  console.time('chatAction_request_json_parse');
   const { messages, files, promptId, contextOptimization, supabase } = await request.json<{
     messages: Messages;
     files: any;
@@ -57,6 +61,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
   const providerSettings: Record<string, IProviderSetting> = JSON.parse(
     parseCookies(cookieHeader || '').providers || '{}',
   );
+  console.timeEnd('chatAction_request_json_parse');
 
   const stream = new SwitchableStream();
 
@@ -98,6 +103,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           // Create a summary of the chat
           console.log(`Messages count: ${messages.length}`);
 
+          console.time('chatAction_createSummary');
           summary = await createSummary({
             messages: [...messages],
             env: context.cloudflare?.env,
@@ -114,6 +120,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               }
             },
           });
+          console.timeEnd('chatAction_createSummary');
           dataStream.writeData({
             type: 'progress',
             label: 'summary',
@@ -140,6 +147,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
           // Select context files
           console.log(`Messages count: ${messages.length}`);
+          console.time('chatAction_selectContext');
           filteredFiles = await selectContext({
             messages: [...messages],
             env: context.cloudflare?.env,
@@ -158,6 +166,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               }
             },
           });
+          console.timeEnd('chatAction_selectContext');
 
           if (filteredFiles) {
             logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
@@ -237,7 +246,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               role: 'user',
               content: `[Model: ${model}]\n\n[Provider: ${provider}]\n\n${CONTINUE_PROMPT}`,
             });
-
+          console.time('chatAction_streamText_continue');
             const result = await streamText({
               messages,
               env: context.cloudflare?.env,
@@ -253,6 +262,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             });
 
             result.mergeIntoDataStream(dataStream);
+            console.timeEnd('chatAction_streamText_continue');
 
             (async () => {
               for await (const part of result.fullStream) {
@@ -276,7 +286,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           order: progressCounter++,
           message: 'Generating Response',
         } satisfies ProgressAnnotation);
-
+        console.time('chatAction_streamText_initial');
         const result = await streamText({
           messages,
           env: context.cloudflare?.env,
@@ -302,6 +312,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           }
         })();
         result.mergeIntoDataStream(dataStream);
+        console.timeEnd('chatAction_streamText_initial');
       },
       onError: (error: any) => `Custom error: ${error.message}`,
     }).pipeThrough(

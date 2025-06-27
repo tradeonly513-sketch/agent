@@ -6,11 +6,15 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constant
 import { createFilesContext, extractCurrentContext, extractPropertiesFromMessage, simplifyBoltActions } from './utils';
 import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
+import GroqProviderClass from '~/lib/modules/llm/providers/groq';
 
 // Common patterns to ignore, similar to .gitignore
 
 const ig = ignore().add(IGNORE_PATTERNS);
 const logger = createScopedLogger('select-context');
+
+const CONTEXT_SELECTION_PROVIDER_NAME = 'Groq';
+const CONTEXT_SELECTION_MODEL_ID = 'llama-3.1-8b-instant';
 
 export async function selectContext(props: {
   messages: Message[];
@@ -130,9 +134,9 @@ export async function selectContext(props: {
 
         You have following code loaded in the context buffer that you can refer to:
 
-        CURRENT CONTEXT BUFFER
+        CURRENT CONTEXT BUFFER (contains the full content of these files):
         ---
-        ${context}
+        ${Object.keys(contextFiles).map(path => `- ${path}`).join('\n') || 'No files currently in context buffer.'}
         ---
 
         Now, you are given a task. You need to select the files that are relevant to the task from the list of files above.
@@ -168,11 +172,11 @@ export async function selectContext(props: {
         * if the buffer is full, you need to exclude files that is not needed and include files that is relevent.
 
         `,
-    model: provider.getModelInstance({
-      model: currentModel,
+    model: new GroqProviderClass().getModelInstance({ // Use the dedicated Groq provider and model
+      model: CONTEXT_SELECTION_MODEL_ID,
       serverEnv,
       apiKeys,
-      providerSettings,
+      providerSettings, // Ensure Groq provider settings are correctly picked up if needed
     }),
   });
 
@@ -192,45 +196,69 @@ export async function selectContext(props: {
       .match(/<excludeFile path="(.*?)"/gm)
       ?.map((x) => x.replace('<excludeFile path="', '').replace('"', '')) || [];
 
-  const filteredFiles: FileMap = {};
+  // Start with a copy of the files already in context, then modify it.
+  const newContextFiles: FileMap = { ...contextFiles };
+
   excludeFiles.forEach((path) => {
-    delete contextFiles[path];
+    // Ensure path normalization if necessary, though contextFiles should have normalized keys
+    const normalizedPath = path.startsWith('/home/project/') ? path.substring('/home/project/'.length) : path;
+    delete newContextFiles[normalizedPath];
+    logger.debug(`Excluded file from context: ${normalizedPath}`);
   });
+
+  let includedCount = 0;
   includeFiles.forEach((path) => {
     let fullPath = path;
-
+    // Normalize path for lookup in `files` map (which uses full paths)
     if (!path.startsWith('/home/project/')) {
       fullPath = `/home/project/${path}`;
     }
 
-    if (!filePaths.includes(fullPath)) {
-      logger.error(`File ${path} is not in the list of files above.`);
-      return;
+    // Normalize path for keys in `newContextFiles` (which should be relative)
+    const relativePath = path.startsWith('/home/project/') ? path.substring('/home/project/'.length) : path;
 
-      // throw new Error(`File ${path} is not in the list of files above.`);
-    }
-
-    if (currrentFiles.includes(path)) {
+    if (!files[fullPath]) { // Check existence in the global `files` map
+      logger.warn(`LLM tried to include file not available in project: ${path}`);
       return;
     }
 
-    filteredFiles[path] = files[fullPath];
+    if (newContextFiles[relativePath]) { // Already in context (e.g. wasn't excluded)
+      logger.debug(`File ${relativePath} is already in context or was re-included.`);
+      // Potentially refresh content if it could change, but FileMap holds content.
+      // newContextFiles[relativePath] = files[fullPath]; // Re-assign to ensure latest content if needed
+      return;
+    }
+
+    // Add to context
+    newContextFiles[relativePath] = files[fullPath];
+    includedCount++;
+    logger.debug(`Included file into context: ${relativePath}`);
   });
 
   if (onFinish) {
     onFinish(resp);
   }
 
-  const totalFiles = Object.keys(filteredFiles).length;
-  logger.info(`Total files: ${totalFiles}`);
+  const finalContextFileCount = Object.keys(newContextFiles).length;
+  logger.info(`Final context file count: ${finalContextFileCount}. Newly included by LLM: ${includedCount}. Excluded by LLM: ${excludeFiles.length}`);
 
-  if (totalFiles == 0) {
-    throw new Error(`Bolt failed to select files`);
+  if (includedCount === 0 && excludeFiles.length === 0 && Object.keys(contextFiles).length > 0) {
+    logger.warn('LLM made no changes to the context selection.');
+    // No error, just proceed with the original contextFiles (which is effectively newContextFiles if no changes)
   }
 
-  return filteredFiles;
+  // Fallback: If the LLM's selection leads to an empty context,
+  // and there were files before, it might be an error.
+  // For now, we allow an empty context if the LLM decides so.
+  // A more robust solution might be to revert to original contextFiles if newContextFiles is empty AND contextFiles was not.
+  if (finalContextFileCount === 0 && Object.keys(files).length > 0) {
+     logger.warn('LLM context selection resulted in an empty context. Proceeding with empty context.');
+     // If this is undesirable, one might return the original `contextFiles` here:
+     // logger.warn('LLM context selection resulted in an empty context. Reverting to original context for this turn.');
+     // return contextFiles;
+  }
 
-  // generateText({
+  return newContextFiles;
 }
 
 export function getFilePaths(files: FileMap) {

@@ -1,6 +1,7 @@
 import { getSystemPrompt } from './prompts/prompts';
-import optimized from './prompts/optimized';
+import getBaseOptimizedPrompt from './prompts/optimized';
 import { getFineTunedPrompt } from './prompts/new-prompt';
+import { getDatabaseInstructions, getMobileAppInstructions } from './prompts/instruction-blocks';
 
 export interface PromptOptions {
   cwd: string;
@@ -38,7 +39,7 @@ export class PromptLibrary {
     optimized: {
       label: 'Optimized Prompt (experimental)',
       description: 'an Experimental version of the prompt for lower token usage',
-      get: (options) => optimized(options),
+      get: (options) => getBaseOptimizedPrompt(options), // Return only the base
     },
   };
   static getList() {

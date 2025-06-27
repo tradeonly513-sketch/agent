@@ -1,8 +1,9 @@
 import type { ProviderInfo } from '~/types/model';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { classNames } from '~/utils/classNames';
+import { useDebounce } from '~/utils/useDebounce';
 
 interface ModelSelectorProps {
   model?: string;
@@ -24,13 +25,18 @@ export const ModelSelector = ({
   providerList,
   modelLoading,
 }: ModelSelectorProps) => {
-  const [modelSearchQuery, setModelSearchQuery] = useState('');
+  const [modelSearchInput, setModelSearchInput] = useState('');
+  const [providerSearchInput, setProviderSearchInput] = useState('');
+
+  const debouncedModelSearchQuery = useDebounce(modelSearchInput, 300);
+  const debouncedProviderSearchQuery = useDebounce(providerSearchInput, 300);
+
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [focusedModelIndex, setFocusedModelIndex] = useState(-1);
   const modelSearchInputRef = useRef<HTMLInputElement>(null);
   const modelOptionsRef = useRef<(HTMLDivElement | null)[]>([]);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
-  const [providerSearchQuery, setProviderSearchQuery] = useState('');
+  // const [providerSearchQuery, setProviderSearchQuery] = useState(''); // Leftover, remove
   const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
   const [focusedProviderIndex, setFocusedProviderIndex] = useState(-1);
   const providerSearchInputRef = useRef<HTMLInputElement>(null);
@@ -41,12 +47,12 @@ export const ModelSelector = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
         setIsModelDropdownOpen(false);
-        setModelSearchQuery('');
+        setModelSearchInput(''); // Clear input on close
       }
 
       if (providerDropdownRef.current && !providerDropdownRef.current.contains(event.target as Node)) {
         setIsProviderDropdownOpen(false);
-        setProviderSearchQuery('');
+        setProviderSearchInput(''); // Clear input on close
       }
     };
 
@@ -55,25 +61,30 @@ export const ModelSelector = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredModels = [...modelList]
-    .filter((e) => e.provider === provider?.name && e.name)
-    .filter(
-      (model) =>
-        model.label.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
-        model.name.toLowerCase().includes(modelSearchQuery.toLowerCase()),
-    );
+  const filteredModels = useMemo(() => {
+    if (!provider?.name) return [];
+    return [...modelList]
+      .filter((e) => e.provider === provider.name && e.name)
+      .filter(
+        (model) =>
+          model.label.toLowerCase().includes(debouncedModelSearchQuery.toLowerCase()) ||
+          model.name.toLowerCase().includes(debouncedModelSearchQuery.toLowerCase()),
+      );
+  }, [modelList, provider?.name, debouncedModelSearchQuery]);
 
-  const filteredProviders = providerList.filter((p) =>
-    p.name.toLowerCase().includes(providerSearchQuery.toLowerCase()),
-  );
+  const filteredProviders = useMemo(() => {
+    return providerList.filter((p) =>
+      p.name.toLowerCase().includes(debouncedProviderSearchQuery.toLowerCase()),
+    );
+  }, [providerList, debouncedProviderSearchQuery]);
 
   useEffect(() => {
     setFocusedModelIndex(-1);
-  }, [modelSearchQuery, isModelDropdownOpen]);
+  }, [debouncedModelSearchQuery, isModelDropdownOpen]);
 
   useEffect(() => {
     setFocusedProviderIndex(-1);
-  }, [providerSearchQuery, isProviderDropdownOpen]);
+  }, [debouncedProviderSearchQuery, isProviderDropdownOpen]);
 
   useEffect(() => {
     if (isModelDropdownOpen && modelSearchInputRef.current) {
@@ -108,14 +119,14 @@ export const ModelSelector = ({
           const selectedModel = filteredModels[focusedModelIndex];
           setModel?.(selectedModel.name);
           setIsModelDropdownOpen(false);
-          setModelSearchQuery('');
+          setModelSearchInput('');
         }
 
         break;
       case 'Escape':
         e.preventDefault();
         setIsModelDropdownOpen(false);
-        setModelSearchQuery('');
+        setModelSearchInput('');
         break;
       case 'Tab':
         if (!e.shiftKey && focusedModelIndex === filteredModels.length - 1) {
@@ -157,14 +168,14 @@ export const ModelSelector = ({
           }
 
           setIsProviderDropdownOpen(false);
-          setProviderSearchQuery('');
+          setProviderSearchInput('');
         }
 
         break;
       case 'Escape':
         e.preventDefault();
         setIsProviderDropdownOpen(false);
-        setProviderSearchQuery('');
+        setProviderSearchInput('');
         break;
       case 'Tab':
         if (!e.shiftKey && focusedProviderIndex === filteredProviders.length - 1) {
@@ -262,8 +273,8 @@ export const ModelSelector = ({
                 <input
                   ref={providerSearchInputRef}
                   type="text"
-                  value={providerSearchQuery}
-                  onChange={(e) => setProviderSearchQuery(e.target.value)}
+                  value={providerSearchInput}
+                  onChange={(e) => setProviderSearchInput(e.target.value)}
                   placeholder="Search providers..."
                   className={classNames(
                     'w-full pl-2 py-1.5 rounded-md text-sm',
@@ -331,7 +342,7 @@ export const ModelSelector = ({
                       }
 
                       setIsProviderDropdownOpen(false);
-                      setProviderSearchQuery('');
+                    setProviderSearchInput(''); // Corrected state setter
                     }}
                     tabIndex={focusedProviderIndex === index ? 0 : -1}
                   >
@@ -389,8 +400,8 @@ export const ModelSelector = ({
                 <input
                   ref={modelSearchInputRef}
                   type="text"
-                  value={modelSearchQuery}
-                  onChange={(e) => setModelSearchQuery(e.target.value)}
+                  value={modelSearchInput}
+                  onChange={(e) => setModelSearchInput(e.target.value)}
                   placeholder="Search models..."
                   className={classNames(
                     'w-full pl-2 py-1.5 rounded-md text-sm',
@@ -433,7 +444,7 @@ export const ModelSelector = ({
                 filteredModels.map((modelOption, index) => (
                   <div
                     ref={(el) => (modelOptionsRef.current[index] = el)}
-                    key={index} // Consider using modelOption.name if unique
+                    key={modelOption.name} // Use modelOption.name as key
                     role="option"
                     aria-selected={model === modelOption.name}
                     className={classNames(
@@ -450,7 +461,7 @@ export const ModelSelector = ({
                       e.stopPropagation();
                       setModel?.(modelOption.name);
                       setIsModelDropdownOpen(false);
-                      setModelSearchQuery('');
+                      setModelSearchInput(''); // Corrected state setter
                     }}
                     tabIndex={focusedModelIndex === index ? 0 : -1}
                   >
