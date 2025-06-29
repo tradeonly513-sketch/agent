@@ -94,6 +94,12 @@ export default defineConfig((config) => {
     build: {
       target: 'esnext',
     },
+    server: {
+      host: true,
+      allowedHosts: [
+        'automacao-boltdiy.0rau8r.easypanel.host'
+      ],
+    },
     plugins: [
       nodePolyfills({
         include: ['buffer', 'process', 'util', 'stream'],
