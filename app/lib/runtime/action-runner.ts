@@ -1,6 +1,7 @@
 import type { WebContainer } from '@webcontainer/api';
 import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
+import { isFileLocked, getCurrentChatId } from '~/utils/fileLocks';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
@@ -160,7 +161,8 @@ export class ActionRunner {
           break;
         }
         case 'file': {
-          await this.#runFileAction(action);
+          // Pass actionId for user-facing actions
+          await this.#runFileAction(action, actionId);
           break;
         }
         case 'supabase': {
@@ -270,7 +272,7 @@ export class ActionRunner {
     }
   }
 
-  async #runStartAction(action: ActionState) {
+  async #runFileAction(actionId: string, action: ActionState) {
     if (action.type !== 'start') {
       unreachable('Expected shell action');
     }
@@ -299,13 +301,35 @@ export class ActionRunner {
     return resp;
   }
 
-  async #runFileAction(action: ActionState) {
+  async #runFileAction(action: ActionState, actionId?: string) { // actionId is now optional
     if (action.type !== 'file') {
       unreachable('Expected file action');
     }
 
     const webcontainer = await this.#webcontainer;
     const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
+
+    // Bypass lock check for internal history saving or other designated changeSources
+    const isInternalOperation = action.changeSource === 'auto-save' ||
+                               (action.filePath && action.filePath.startsWith(this.#getHistoryPath('')));
+
+    if (!isInternalOperation) {
+      const chatId = getCurrentChatId();
+      const lockStatus = isFileLocked(action.filePath, chatId);
+
+      if (lockStatus.locked) {
+        const errorMessage = `File ${action.filePath} is locked${lockStatus.lockedBy && lockStatus.lockedBy !== action.filePath ? ` by ${lockStatus.lockedBy}` : ''}. Cannot write.`;
+        logger.warn(`[#runFileAction]: ${errorMessage}`);
+        if (actionId) { // Only update action status if an actionId was provided
+          this.#updateAction(actionId, {
+            status: 'failed',
+            error: errorMessage,
+          });
+        }
+        // Prevent file writing for locked files, regardless of actionId presence for safety
+        return;
+      }
+    }
 
     let folder = nodePath.dirname(relativePath);
 
@@ -352,6 +376,8 @@ export class ActionRunner {
     // const webcontainer = await this.#webcontainer;
     const historyPath = this.#getHistoryPath(filePath);
 
+    // No actionId is passed here, as this is an internal operation.
+    // The `changeSource: 'auto-save'` and path check in #runFileAction will bypass lock checks.
     await this.#runFileAction({
       type: 'file',
       filePath: historyPath,

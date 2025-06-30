@@ -560,12 +560,22 @@ export class FilesStore {
       const oldContent = this.getFile(filePath)?.content;
 
       if (!oldContent && oldContent !== '') {
-        unreachable('Expected content to be defined');
+        // This case implies creating a new file or overwriting an empty file.
+        // For saving, we usually expect existing content.
+        // However, if we proceed, we must ensure it's not locked.
+      }
+
+      // Check for locks before writing
+      const lockStatus = this.isFileLocked(filePath);
+      if (lockStatus.locked) {
+        const errorMessage = `File ${filePath} is locked${lockStatus.lockedBy && lockStatus.lockedBy !== filePath ? ` by ${lockStatus.lockedBy}` : ''}. Cannot save.`;
+        logger.warn(`[saveFile]: ${errorMessage}`);
+        throw new Error(errorMessage); // Or return a status object
       }
 
       await webcontainer.fs.writeFile(relativePath, content);
 
-      if (!this.#modifiedFiles.has(filePath)) {
+      if (!this.#modifiedFiles.has(filePath) && oldContent !== undefined) { // Ensure oldContent was defined
         this.#modifiedFiles.set(filePath, oldContent);
       }
 
@@ -812,6 +822,15 @@ export class FilesStore {
 
       if (dirPath !== '.') {
         await webcontainer.fs.mkdir(dirPath, { recursive: true });
+      }
+
+      // Check for locks before creating/writing the file
+      // this.isFileLocked also checks for parent folder locks
+      const lockStatus = this.isFileLocked(filePath);
+      if (lockStatus.locked) {
+        const errorMessage = `Cannot create file at ${filePath} because it is locked${lockStatus.lockedBy && lockStatus.lockedBy !== filePath ? ` by ${lockStatus.lockedBy}` : ''}.`;
+        logger.warn(`[createFile]: ${errorMessage}`);
+        throw new Error(errorMessage); // Or return a status object
       }
 
       const isBinary = content instanceof Uint8Array;
