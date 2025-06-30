@@ -51,6 +51,18 @@ export interface SupabaseAlert {
   source?: 'supabase';
 }
 
+export interface LlmErrorAlertType {
+  type: 'error' | 'warning';
+  title: string;
+  description: string;
+  content?: string;
+  isRetryable: boolean;
+  retryCount: number;
+  maxRetries: number;
+  provider?: string;
+  errorType?: 'authentication' | 'rate_limit' | 'quota' | 'network' | 'unknown';
+}
+
 export interface DeployAlert {
   type: 'success' | 'error' | 'info';
   title: string;

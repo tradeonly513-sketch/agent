@@ -7,7 +7,7 @@ import type { Message } from 'ai';
 import { useChat } from 'ai/react';
 import { useAnimate } from 'framer-motion';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { cssTransition, toast, ToastContainer } from 'react-toastify';
+import { cssTransition, toast, ToastContainer } from 'react-toastify'; // Remove toast import
 import { useMessageParser, usePromptEnhancer, useShortcuts } from '~/shared/hooks';
 import { description, useChatHistory } from '~/shared/lib/persistence';
 import { chatStore } from '~/chat/stores/chat';
@@ -29,6 +29,7 @@ import { filesToArtifacts } from '~/shared/utils/fileUtils';
 import { supabaseConnection } from '~/shared/stores/supabase';
 import { defaultDesignScheme, type DesignScheme } from '~/shared/types/design-scheme';
 import type { ElementInfo } from '~/workbench/components/ui/Inspector';
+import type { LlmErrorAlertType } from '~/shared/types/actions'; // Add this import
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -129,12 +130,14 @@ export const ChatImpl = memo(
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
     const deployAlert = useStore(workbenchStore.deployAlert);
-    const supabaseConn = useStore(supabaseConnection); // Add this line to get Supabase connection
+    const supabaseConn = useStore(supabaseConnection);
     const selectedProject = supabaseConn.stats?.projects?.find(
       (project) => project.id === supabaseConn.selectedProjectId,
     );
     const supabaseAlert = useStore(workbenchStore.supabaseAlert);
     const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled } = useSettings();
+    const [llmErrorAlert, setLlmErrorAlert] = useState<LlmErrorAlertType | undefined>(undefined);
+
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
       return savedModel || DEFAULT_MODEL;
@@ -148,6 +151,10 @@ export const ChatImpl = memo(
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
     const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
+    const [lastFailedMessage, setLastFailedMessage] = useState<any>(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const MAX_RETRY_ATTEMPTS = 3;
+
     const {
       messages,
       isLoading,
@@ -181,17 +188,19 @@ export const ChatImpl = memo(
       },
       sendExtraMessageFields: true,
       onError: (e) => {
-        logger.error('Request failed\n\n', e, error);
-        logStore.logError('Chat request failed', e, {
-          component: 'Chat',
-          action: 'request',
-          error: e.message,
+        setFakeLoading(false);
+        setLastFailedMessage({
+          role: 'user',
+          content: messages[messages.length - 1]?.content || input,
+          isTemplate: false,
         });
-        toast.error(
-          'There was an error processing your request: ' + (e.message ? e.message : 'No details were returned'),
-        );
+        handleError(e, 'chat');
       },
       onFinish: (message, response) => {
+        setLastFailedMessage(null);
+        setRetryCount(0);
+        setLlmErrorAlert(undefined);
+
         const usage = response.usage;
         setData(undefined);
 
@@ -212,6 +221,7 @@ export const ChatImpl = memo(
       initialMessages,
       initialInput: Cookies.get(PROMPT_COOKIE_KEY) || '',
     });
+
     useEffect(() => {
       const prompt = searchParams.get('prompt');
 
@@ -261,6 +271,7 @@ export const ChatImpl = memo(
 
     const abort = () => {
       stop();
+      setFakeLoading(false);
       chatStore.setKey('aborted', true);
       workbenchStore.abortAllActions();
 
@@ -271,6 +282,112 @@ export const ChatImpl = memo(
         provider: provider.name,
       });
     };
+
+    const retryLastMessage = useCallback(() => {
+      if (!lastFailedMessage || retryCount >= MAX_RETRY_ATTEMPTS) {
+        setLlmErrorAlert({
+          type: 'error',
+          title: 'Retry Failed',
+          description: 'Maximum retry attempts reached',
+          isRetryable: false,
+          retryCount,
+          maxRetries: MAX_RETRY_ATTEMPTS,
+          provider: provider.name,
+          errorType: 'unknown',
+        });
+        return;
+      }
+
+      setRetryCount((prev) => prev + 1);
+
+      setLlmErrorAlert(undefined);
+
+      if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+        setMessages(messages.slice(0, -1));
+      }
+
+      if (lastFailedMessage.isTemplate) {
+        reload();
+      } else {
+        append(lastFailedMessage);
+      }
+    }, [lastFailedMessage, retryCount, messages, reload, append, provider.name]);
+
+    const handleError = useCallback(
+      (error: any, context: 'chat' | 'template' | 'llmcall' = 'chat') => {
+        logger.error(`${context} request failed`, error);
+
+        stop();
+        setFakeLoading(false);
+
+        let errorInfo = {
+          message: 'An unexpected error occurred',
+          isRetryable: true,
+          statusCode: 500,
+          provider: provider.name,
+          type: 'unknown' as const,
+          retryDelay: 0,
+        };
+
+        if (error.message) {
+          try {
+            const parsed = JSON.parse(error.message);
+
+            if (parsed.error || parsed.message) {
+              errorInfo = { ...errorInfo, ...parsed };
+            } else {
+              errorInfo.message = error.message;
+            }
+          } catch {
+            errorInfo.message = error.message;
+          }
+        }
+
+        let errorType: LlmErrorAlertType['errorType'] = 'unknown';
+        let title = 'Request Failed';
+
+        if (errorInfo.statusCode === 401 || errorInfo.message.toLowerCase().includes('api key')) {
+          errorType = 'authentication';
+          title = 'Authentication Error';
+        } else if (errorInfo.statusCode === 429 || errorInfo.message.toLowerCase().includes('rate limit')) {
+          errorType = 'rate_limit';
+          title = 'Rate Limit Exceeded';
+        } else if (errorInfo.message.toLowerCase().includes('quota')) {
+          errorType = 'quota';
+          title = 'Quota Exceeded';
+        } else if (errorInfo.statusCode >= 500) {
+          errorType = 'network';
+          title = 'Server Error';
+        }
+
+        logStore.logError(`${context} request failed`, error, {
+          component: 'Chat',
+          action: 'request',
+          error: errorInfo.message,
+          context,
+          retryable: errorInfo.isRetryable,
+          errorType,
+          provider: provider.name,
+        });
+
+        // Create API error alert
+        setLlmErrorAlert({
+          type: 'error',
+          title,
+          description: errorInfo.message,
+          isRetryable: errorInfo.isRetryable && retryCount < MAX_RETRY_ATTEMPTS,
+          retryCount,
+          maxRetries: MAX_RETRY_ATTEMPTS,
+          provider: provider.name,
+          errorType,
+        });
+      },
+      [retryCount, provider.name, stop],
+    );
+
+    const clearApiErrorAlert = useCallback(() => {
+      setLlmErrorAlert(undefined);
+    }, []);
 
     useEffect(() => {
       const textarea = textareaRef.current;
@@ -312,6 +429,9 @@ export const ChatImpl = memo(
         return;
       }
 
+      setLastFailedMessage(null);
+      setRetryCount(0);
+
       let finalMessageContent = messageContent;
 
       if (selectedElement) {
@@ -327,66 +447,80 @@ export const ChatImpl = memo(
         setFakeLoading(true);
 
         if (autoSelectTemplate) {
-          const { template, title } = await selectStarterTemplate({
-            message: finalMessageContent,
-            model,
-            provider,
-          });
-
-          if (template !== 'blank') {
-            const temResp = await getTemplates(template, title).catch((e) => {
-              if (e.message.includes('rate limit')) {
-                toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
-              } else {
-                toast.warning('Failed to import starter template\n Continuing with blank template');
-              }
-
-              return null;
+          try {
+            const { template, title } = await selectStarterTemplate({
+              message: finalMessageContent,
+              model,
+              provider,
             });
 
-            if (temResp) {
-              const { assistantMessage, userMessage } = temResp;
-              setMessages([
-                {
-                  id: `1-${new Date().getTime()}`,
+            if (template !== 'blank') {
+              const temResp = await getTemplates(template, title).catch((e) => {
+                setLastFailedMessage({
                   role: 'user',
-                  content: [
-                    {
-                      type: 'text',
-                      text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`,
-                    },
-                    ...imageDataList.map((imageData) => ({
-                      type: 'image',
-                      image: imageData,
-                    })),
-                  ] as any,
-                },
-                {
-                  id: `2-${new Date().getTime()}`,
-                  role: 'assistant',
-                  content: assistantMessage,
-                },
-                {
-                  id: `3-${new Date().getTime()}`,
-                  role: 'user',
-                  content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
-                  annotations: ['hidden'],
-                },
-              ]);
-              reload();
-              setInput('');
-              Cookies.remove(PROMPT_COOKIE_KEY);
+                  content: finalMessageContent,
+                  isTemplate: true,
+                });
 
-              setUploadedFiles([]);
-              setImageDataList([]);
+                if (e.message.includes('rate limit')) {
+                  handleError(e, 'template');
+                } else {
+                  handleError(e, 'template');
+                }
 
-              resetEnhancer();
+                return null;
+              });
 
-              textareaRef.current?.blur();
-              setFakeLoading(false);
+              if (temResp) {
+                const { assistantMessage, userMessage } = temResp;
+                setMessages([
+                  {
+                    id: `1-${new Date().getTime()}`,
+                    role: 'user',
+                    content: [
+                      {
+                        type: 'text',
+                        text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`,
+                      },
+                      ...imageDataList.map((imageData) => ({
+                        type: 'image',
+                        image: imageData,
+                      })),
+                    ] as any,
+                  },
+                  {
+                    id: `2-${new Date().getTime()}`,
+                    role: 'assistant',
+                    content: assistantMessage,
+                  },
+                  {
+                    id: `3-${new Date().getTime()}`,
+                    role: 'user',
+                    content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
+                    annotations: ['hidden'],
+                  },
+                ]);
+                reload();
+                setInput('');
+                Cookies.remove(PROMPT_COOKIE_KEY);
 
-              return;
+                setUploadedFiles([]);
+                setImageDataList([]);
+
+                resetEnhancer();
+
+                textareaRef.current?.blur();
+                setFakeLoading(false);
+
+                return;
+              }
             }
+          } catch (error: any) {
+            setLastFailedMessage({
+              role: 'user',
+              content: finalMessageContent || error.message,
+              isTemplate: true,
+            });
           }
         }
 
@@ -571,6 +705,9 @@ export const ChatImpl = memo(
         clearSupabaseAlert={() => workbenchStore.clearSupabaseAlert()}
         deployAlert={deployAlert}
         clearDeployAlert={() => workbenchStore.clearDeployAlert()}
+        llmErrorAlert={llmErrorAlert}
+        clearLlmErrorAlert={clearApiErrorAlert}
+        retryLastMessage={retryLastMessage}
         data={chatData}
         chatMode={chatMode}
         setChatMode={setChatMode}

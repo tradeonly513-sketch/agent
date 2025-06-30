@@ -19,7 +19,7 @@ import { ExamplePrompts } from '~/chat/components/ExamplePrompts';
 import GitCloneButton from '~/shared/components/github/components/GitCloneButton';
 import type { ProviderInfo } from '~/shared/types/model';
 import StarterTemplates from './StarterTemplates';
-import type { ActionAlert, SupabaseAlert, DeployAlert } from '~/shared/types/actions';
+import type { ActionAlert, SupabaseAlert, DeployAlert, LlmErrorAlertType } from '~/shared/types/actions';
 import DeployChatAlert from '~/chat/components/alerts/DeployAlert';
 import ChatAlert from './alerts/ChatAlert';
 import type { ModelInfo } from '~/shared/lib/providers/types';
@@ -32,6 +32,7 @@ import { StickToBottom, useStickToBottomContext } from '~/chat/hooks/StickToBott
 import { ChatBox } from './chatBox/ChatBox';
 import type { DesignScheme } from '~/shared/types/design-scheme';
 import type { ElementInfo } from '~/workbench/components/ui/Inspector';
+import LlmErrorAlert from './alerts/LLMErrorAlert';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -66,6 +67,9 @@ interface BaseChatProps {
   actionAlert?: ActionAlert;
   clearAlert?: () => void;
   supabaseAlert?: SupabaseAlert;
+  llmErrorAlert?: LlmErrorAlertType;
+  clearLlmErrorAlert?: () => void;
+  retryLastMessage?: () => void;
   clearSupabaseAlert?: () => void;
   deployAlert?: DeployAlert;
   clearDeployAlert?: () => void;
@@ -113,6 +117,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       clearDeployAlert,
       supabaseAlert,
       clearSupabaseAlert,
+      llmErrorAlert,
+      clearLlmErrorAlert,
+      retryLastMessage,
       data,
       chatMode,
       setChatMode,
@@ -263,11 +270,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         setSelectedElement?.(null);
 
         if (recognition) {
-          recognition.abort(); // Stop current recognition
-          setTranscript(''); // Clear transcript
+          recognition.abort();
+          setTranscript('');
           setIsListening(false);
 
-          // Clear the input by triggering handleInputChange with empty value
           if (handleInputChange) {
             const syntheticEvent = {
               target: { value: '' },
@@ -409,6 +415,13 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                         sendMessage?.({} as any, message);
                         clearAlert?.();
                       }}
+                    />
+                  )}
+                  {llmErrorAlert && (
+                    <LlmErrorAlert
+                      alert={llmErrorAlert}
+                      clearAlert={() => clearLlmErrorAlert?.()}
+                      retryMessage={() => retryLastMessage?.()}
                     />
                   )}
                 </div>
