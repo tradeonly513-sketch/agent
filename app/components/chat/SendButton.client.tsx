@@ -1,6 +1,6 @@
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { AnimatePresence, cubicBezier, motion } from 'framer-motion';
-import WithTooltip from '../ui/Tooltip';
+import WithTooltip from '~/components/ui/Tooltip';
 
 interface SendButtonProps {
   show: boolean;
