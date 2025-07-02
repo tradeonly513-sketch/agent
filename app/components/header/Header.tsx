@@ -9,6 +9,8 @@ import { Suspense } from 'react';
 import { ClientAuth } from '~/components/auth/ClientAuth/ClientAuth';
 import { DeployChatButton } from './DeployChat/DeployChatButton';
 import { DownloadButton } from './DownloadButton';
+import WithTooltip from '~/components/ui/Tooltip';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
 
 export function Header() {
   const chatStarted = useStore(chatStore.started);
@@ -21,19 +23,23 @@ export function Header() {
       })}
     >
       <div className="flex flex-1 items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
-        <div data-testid="sidebar-icon" className="i-ph:sidebar-simple-duotone text-xl" />
-        <a href="/" className="text-2xl font-semibold text-accent flex items-center">
-          <img src="/logo-styled.svg" alt="logo" className="w-[40px] inline-block rotate-90" />
+        <div data-testid="sidebar-icon" className="i-ph:sidebar-simple-duotone text-3xl" />
+        <a href="/" className="text-3xl font-semibold text-accent flex items-center">
+          <img src="/logo-styled.svg" alt="logo" className="w-[30px] inline-block rotate-90" />
         </a>
         <Feedback />
-        <a
-          href="https://www.replay.io/discord"
-          className="text-bolt-elements-accent underline hover:no-underline"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div className="i-ph:discord-logo-fill text-[1.3em]" />
-        </a>
+        <TooltipProvider>
+          <WithTooltip tooltip="Join Discord">
+            <a
+              href="https://www.replay.io/discord"
+              className="text-bolt-elements-accent underline hover:no-underline flex items-center gap-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="i-ph:discord-logo-fill text-3xl" />
+            </a>
+          </WithTooltip>
+        </TooltipProvider>
       </div>
 
       <div className="flex-1 flex items-center ">
