@@ -144,7 +144,7 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(
                 </WithTooltip>
               </div>
             )}
-            {!isUserMessage && message.category === 'UserResponse' && !showDetailMessageIds.includes(message.id) && (
+            {/* {!isUserMessage && message.category === 'UserResponse' && !showDetailMessageIds.includes(message.id) && (
               <div className="flex items-center justify-center p-2 rounded-lg h-fit -mt-1.5">
                 <WithTooltip tooltip="Show chat details">
                   <button
@@ -158,7 +158,7 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(
                   />
                 </WithTooltip>
               </div>
-            )}
+            )} */}
             {repositoryId && (
               <div className="flex gap-2 flex-col lg:flex-row">
                 <WithTooltip tooltip="Start new chat from here">
