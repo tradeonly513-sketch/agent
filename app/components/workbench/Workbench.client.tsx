@@ -12,10 +12,12 @@ import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
 import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 import type { Message } from '~/lib/persistence/message';
+import type { ChatMode } from '~/lib/replay/ChatManager';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
   messages?: Message[];
+  handleSendMessage?: (event: React.UIEvent, messageInput?: string, chatMode?: ChatMode) => void;
 }
 
 const workbenchVariants = {
@@ -35,7 +37,7 @@ const workbenchVariants = {
   },
 } satisfies Variants;
 
-export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
+export const Workbench = memo(({ chatStarted, messages, handleSendMessage }: WorkspaceProps) => {
   renderLogger.trace('Workbench');
 
   const showWorkbench = useStore(workbenchStore.showWorkbench);
@@ -44,6 +46,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
 
   const hasSeenPreviewRef = useRef(false);
   const hasSeenProjectPlanRef = useRef(false);
+  const hasSetPlanningTabRef = useRef(false);
 
   const isSmallViewport = useViewport(1024);
 
@@ -70,9 +73,16 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
   useEffect(() => {
     if (showWorkbench && !hasSeenPreviewRef.current) {
       hasSeenPreviewRef.current = true;
-      setActiveTab('preview');
+      chatStore.showChat.set(false);
     }
   }, [showWorkbench]);
+
+  useEffect(() => {
+    if (appSummary && !hasSetPlanningTabRef.current) {
+      hasSetPlanningTabRef.current = true;
+      setActiveTab('planning');
+    }
+  }, [appSummary]);
 
   const tabOptions = {
     options: [
@@ -115,7 +125,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
                 />
               </div>
               <div className="relative flex-1 overflow-hidden">
-                <Preview activeTab={activeTab} appSummary={appSummary} messages={messages} />
+                <Preview activeTab={activeTab} appSummary={appSummary} handleSendMessage={handleSendMessage} messages={messages} setActiveTab={setActiveTab} />
               </div>
             </div>
           </div>
