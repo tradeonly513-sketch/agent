@@ -9,7 +9,10 @@ RUN apt-get update && apt-get install -y python3 python3-pip python3-venv && rm 
 # Install dependencies (this step is cached as long as the dependencies don't change)
 COPY package.json pnpm-lock.yaml ./
 
-RUN corepack enable pnpm && pnpm install
+#RUN npm install -g corepack@latest
+
+#RUN corepack enable pnpm && pnpm install
+RUN npm install -g pnpm && pnpm install
 
 # Copy the rest of your app's source code
 COPY . .

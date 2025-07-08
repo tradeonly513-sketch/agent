@@ -3,7 +3,8 @@ import { generateId } from './fileUtils';
 
 export interface ProjectCommands {
   type: string;
-  setupCommand: string;
+  setupCommand?: string;
+  startCommand?: string;
   followupMessage: string;
 }
 
@@ -33,7 +34,8 @@ export async function detectProjectCommands(files: FileContent[]): Promise<Proje
       if (availableCommand) {
         return {
           type: 'Node.js',
-          setupCommand: `npm install && npm run ${availableCommand}`,
+          setupCommand: `npm install`,
+          startCommand: `npm run ${availableCommand}`,
           followupMessage: `Found "${availableCommand}" script in package.json. Running "npm run ${availableCommand}" after installation.`,
         };
       }
@@ -53,7 +55,7 @@ export async function detectProjectCommands(files: FileContent[]): Promise<Proje
   if (hasFile('index.html')) {
     return {
       type: 'Static',
-      setupCommand: 'npx --yes serve',
+      startCommand: 'npx --yes serve',
       followupMessage: '',
     };
   }
@@ -62,18 +64,30 @@ export async function detectProjectCommands(files: FileContent[]): Promise<Proje
 }
 
 export function createCommandsMessage(commands: ProjectCommands): Message | null {
-  if (!commands.setupCommand) {
+  if (!commands.setupCommand && !commands.startCommand) {
     return null;
+  }
+
+  let commandString = '';
+
+  if (commands.setupCommand) {
+    commandString += `
+<boltAction type="shell">${commands.setupCommand}</boltAction>`;
+  }
+
+  if (commands.startCommand) {
+    commandString += `
+<boltAction type="start">${commands.startCommand}</boltAction>
+`;
   }
 
   return {
     role: 'assistant',
     content: `
+${commands.followupMessage ? `\n\n${commands.followupMessage}` : ''}
 <boltArtifact id="project-setup" title="Project Setup">
-<boltAction type="shell">
-${commands.setupCommand}
-</boltAction>
-</boltArtifact>${commands.followupMessage ? `\n\n${commands.followupMessage}` : ''}`,
+${commandString}
+</boltArtifact>`,
     id: generateId(),
     createdAt: new Date(),
   };
@@ -113,4 +127,27 @@ export function escapeBoltAActionTags(input: string) {
 
 export function escapeBoltTags(input: string) {
   return escapeBoltArtifactTags(escapeBoltAActionTags(input));
+}
+
+// We have this seperate function to simplify the restore snapshot process in to one single artifact.
+export function createCommandActionsString(commands: ProjectCommands): string {
+  if (!commands.setupCommand && !commands.startCommand) {
+    // Return empty string if no commands
+    return '';
+  }
+
+  let commandString = '';
+
+  if (commands.setupCommand) {
+    commandString += `
+<boltAction type="shell">${commands.setupCommand}</boltAction>`;
+  }
+
+  if (commands.startCommand) {
+    commandString += `
+<boltAction type="start">${commands.startCommand}</boltAction>
+`;
+  }
+
+  return commandString;
 }

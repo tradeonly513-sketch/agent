@@ -31,7 +31,8 @@ const IGNORE_PATTERNS = [
   '**/npm-debug.log*',
   '**/yarn-debug.log*',
   '**/yarn-error.log*',
-  '**/*lock.json',
+
+  // Include this so npm install runs much faster '**/*lock.json',
   '**/*lock.yaml',
 ];
 
@@ -91,6 +92,11 @@ ${escapeBoltTags(file.content)}
           const messages = [filesMessage];
 
           if (commandsMessage) {
+            messages.push({
+              role: 'user',
+              id: generateId(),
+              content: 'Setup the codebase and Start the application',
+            });
             messages.push(commandsMessage);
           }
 

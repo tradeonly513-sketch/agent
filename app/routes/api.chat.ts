@@ -10,6 +10,8 @@ import { getFilePaths, selectContext } from '~/lib/.server/llm/select-context';
 import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
 import { WORK_DIR } from '~/utils/constants';
 import { createSummary } from '~/lib/.server/llm/create-summary';
+import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
+import type { DesignScheme } from '~/types/design-scheme';
 
 export async function action(args: ActionFunctionArgs) {
   return chatAction(args);
@@ -36,11 +38,21 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
-  const { messages, files, promptId, contextOptimization } = await request.json<{
+  const { messages, files, promptId, contextOptimization, supabase, chatMode, designScheme } = await request.json<{
     messages: Messages;
     files: any;
     promptId?: string;
     contextOptimization: boolean;
+    chatMode: 'discuss' | 'build';
+    designScheme?: DesignScheme;
+    supabase?: {
+      isConnected: boolean;
+      hasSelectedProject: boolean;
+      credentials?: {
+        anonKey?: string;
+        supabaseUrl?: string;
+      };
+    };
   }>();
 
   const cookieHeader = request.headers.get('Cookie');
@@ -70,15 +82,21 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         const filePaths = getFilePaths(files || {});
         let filteredFiles: FileMap | undefined = undefined;
         let summary: string | undefined = undefined;
+        let messageSliceId = 0;
+
+        if (messages.length > 3) {
+          messageSliceId = messages.length - 3;
+        }
 
         if (filePaths.length > 0 && contextOptimization) {
-          dataStream.writeData('HI ');
           logger.debug('Generating Chat Summary');
-          dataStream.writeMessageAnnotation({
+          dataStream.writeData({
             type: 'progress',
-            value: progressCounter++,
-            message: 'Generating Chat Summary',
-          } as ProgressAnnotation);
+            label: 'summary',
+            status: 'in-progress',
+            order: progressCounter++,
+            message: 'Analysing Request',
+          } satisfies ProgressAnnotation);
 
           // Create a summary of the chat
           console.log(`Messages count: ${messages.length}`);
@@ -99,6 +117,13 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               }
             },
           });
+          dataStream.writeData({
+            type: 'progress',
+            label: 'summary',
+            status: 'complete',
+            order: progressCounter++,
+            message: 'Analysis Complete',
+          } satisfies ProgressAnnotation);
 
           dataStream.writeMessageAnnotation({
             type: 'chatSummary',
@@ -108,11 +133,13 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
           // Update context buffer
           logger.debug('Updating Context Buffer');
-          dataStream.writeMessageAnnotation({
+          dataStream.writeData({
             type: 'progress',
-            value: progressCounter++,
-            message: 'Updating Context Buffer',
-          } as ProgressAnnotation);
+            label: 'context',
+            status: 'in-progress',
+            order: progressCounter++,
+            message: 'Determining Files to Read',
+          } satisfies ProgressAnnotation);
 
           // Select context files
           console.log(`Messages count: ${messages.length}`);
@@ -152,16 +179,19 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             }),
           } as ContextAnnotation);
 
-          dataStream.writeMessageAnnotation({
+          dataStream.writeData({
             type: 'progress',
-            value: progressCounter++,
-            message: 'Context Buffer Updated',
-          } as ProgressAnnotation);
-          logger.debug('Context Buffer Updated');
+            label: 'context',
+            status: 'complete',
+            order: progressCounter++,
+            message: 'Code Files Selected',
+          } satisfies ProgressAnnotation);
+
+          // logger.debug('Code Files Selected');
         }
 
-        // Stream the text
         const options: StreamingOptions = {
+          supabaseConnection: supabase,
           toolChoice: 'none',
           onFinish: async ({ text: content, finishReason, usage }) => {
             logger.debug('usage', JSON.stringify(usage));
@@ -181,6 +211,13 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
                   totalTokens: cumulativeUsage.totalTokens,
                 },
               });
+              dataStream.writeData({
+                type: 'progress',
+                label: 'response',
+                status: 'complete',
+                order: progressCounter++,
+                message: 'Response Generated',
+              } satisfies ProgressAnnotation);
               await new Promise((resolve) => setTimeout(resolve, 0));
 
               // stream.close();
@@ -195,8 +232,14 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
             logger.info(`Reached max token limit (${MAX_TOKENS}): Continuing message (${switchesLeft} switches left)`);
 
+            const lastUserMessage = messages.filter((x) => x.role == 'user').slice(-1)[0];
+            const { model, provider } = extractPropertiesFromMessage(lastUserMessage);
             messages.push({ id: generateId(), role: 'assistant', content });
-            messages.push({ id: generateId(), role: 'user', content: CONTINUE_PROMPT });
+            messages.push({
+              id: generateId(),
+              role: 'user',
+              content: `[Model: ${model}]\n\n[Provider: ${provider}]\n\n${CONTINUE_PROMPT}`,
+            });
 
             const result = await streamText({
               messages,
@@ -207,6 +250,11 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               providerSettings,
               promptId,
               contextOptimization,
+              contextFiles: filteredFiles,
+              chatMode,
+              designScheme,
+              summary,
+              messageSliceId,
             });
 
             result.mergeIntoDataStream(dataStream);
@@ -226,6 +274,14 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           },
         };
 
+        dataStream.writeData({
+          type: 'progress',
+          label: 'response',
+          status: 'in-progress',
+          order: progressCounter++,
+          message: 'Generating Response',
+        } satisfies ProgressAnnotation);
+
         const result = await streamText({
           messages,
           env: context.cloudflare?.env,
@@ -236,7 +292,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           promptId,
           contextOptimization,
           contextFiles: filteredFiles,
+          chatMode,
+          designScheme,
           summary,
+          messageSliceId,
         });
 
         (async () => {
@@ -302,16 +361,34 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
   } catch (error: any) {
     logger.error(error);
 
+    const errorResponse = {
+      error: true,
+      message: error.message || 'An unexpected error occurred',
+      statusCode: error.statusCode || 500,
+      isRetryable: error.isRetryable !== false, // Default to retryable unless explicitly false
+      provider: error.provider || 'unknown',
+    };
+
     if (error.message?.includes('API key')) {
-      throw new Response('Invalid or missing API key', {
-        status: 401,
-        statusText: 'Unauthorized',
-      });
+      return new Response(
+        JSON.stringify({
+          ...errorResponse,
+          message: 'Invalid or missing API key',
+          statusCode: 401,
+          isRetryable: false,
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+          statusText: 'Unauthorized',
+        },
+      );
     }
 
-    throw new Response(null, {
-      status: 500,
-      statusText: 'Internal Server Error',
+    return new Response(JSON.stringify(errorResponse), {
+      status: errorResponse.statusCode,
+      headers: { 'Content-Type': 'application/json' },
+      statusText: 'Error',
     });
   }
 }
