@@ -12,7 +12,7 @@ const EXAMPLE_PROMPTS = [
   },
 ];
 
-export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput?: string): void | undefined }) {
+export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput: string): void | undefined }) {
   return (
     <div id="examples" className="relative flex flex-col gap-9 w-full max-w-3xl mx-auto flex justify-center mt-4">
       <div
