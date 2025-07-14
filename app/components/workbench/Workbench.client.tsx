@@ -12,6 +12,7 @@ import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
 import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 import type { Message } from '~/lib/persistence/message';
+import type { ChatMode } from '~/lib/replay/ChatManager';
 import { ClientOnly } from 'remix-utils/client-only';
 import { DeployChatButton } from '~/components/header/DeployChat/DeployChatButton';
 import { DownloadButton } from '~/components/header/DownloadButton';
@@ -20,6 +21,7 @@ import { ChatDescription } from '~/lib/persistence/ChatDescription.client';
 interface WorkspaceProps {
   chatStarted?: boolean;
   messages?: Message[];
+  handleSendMessage?: (event: React.UIEvent, messageInput: string, startPlanning: boolean, chatMode?: ChatMode) => void;
 }
 
 const workbenchVariants = {
@@ -39,15 +41,17 @@ const workbenchVariants = {
   },
 } satisfies Variants;
 
-export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
+export const Workbench = memo(({ chatStarted, messages, handleSendMessage }: WorkspaceProps) => {
   renderLogger.trace('Workbench');
 
   const showWorkbench = useStore(workbenchStore.showWorkbench);
   const currentChat = useStore(chatStore.currentChat);
-  const [activeTab, setActiveTab] = useState<'planning' | 'preview'>('planning');
+  const [activeTab, setActiveTab] = useState<'planning' | 'layout' | 'preview'>('layout');
 
   const hasSeenPreviewRef = useRef(false);
   const hasSeenProjectPlanRef = useRef(false);
+  const hasSetLayoutTabRef = useRef(false);
+  const hasSetPlanningTabRef = useRef(false);
 
   const isSmallViewport = useViewport(1024);
 
@@ -58,7 +62,7 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
       return;
     }
 
-    if (currentChat?.title && currentChat.title !== 'New Chat' && !showWorkbench) {
+    if (currentChat?.title && currentChat.title !== 'New Chat' && !showWorkbench && appSummary) {
       hasSeenProjectPlanRef.current = true;
       workbenchStore.showWorkbench.set(true);
     }
@@ -67,13 +71,25 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
   useEffect(() => {
     if (showWorkbench && !hasSeenPreviewRef.current) {
       hasSeenPreviewRef.current = true;
-      setActiveTab('preview');
     }
   }, [showWorkbench]);
 
+  useEffect(() => {
+    if (appSummary?.pages && !hasSetLayoutTabRef.current) {
+      hasSetLayoutTabRef.current = true;
+      setActiveTab('layout');
+    }
+
+    if (appSummary?.features && !hasSetPlanningTabRef.current) {
+      hasSetPlanningTabRef.current = true;
+      setActiveTab('planning');
+    }
+  }, [appSummary]);
+
   const tabOptions = {
     options: [
-      { value: 'planning' as const, text: 'Planning' },
+      { value: 'layout' as const, text: 'Layout' },
+      ...(appSummary?.features ? [{ value: 'planning' as const, text: 'Planning' }] : []),
       { value: 'preview' as const, text: 'Preview' },
     ],
   };
@@ -130,7 +146,13 @@ export const Workbench = memo(({ chatStarted, messages }: WorkspaceProps) => {
                 />
               </div>
               <div className="relative flex-1 overflow-hidden">
-                <Preview activeTab={activeTab} appSummary={appSummary} messages={messages} />
+                <Preview
+                  activeTab={activeTab}
+                  appSummary={appSummary}
+                  handleSendMessage={handleSendMessage}
+                  messages={messages}
+                  setActiveTab={setActiveTab}
+                />
               </div>
             </div>
           </div>

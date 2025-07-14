@@ -19,6 +19,7 @@ import type { RejectChangeData } from '~/components/chat/ApproveChange';
 import { type MessageInputProps } from '~/components/chat/MessageInput/MessageInput';
 import { Arboretum } from './components/Arboretum/Arboretum';
 import { useArboretumVisibility } from '~/lib/stores/settings';
+import { ChatMode } from '~/lib/replay/ChatManager';
 import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 
 export const TEXTAREA_MIN_HEIGHT = 76;
@@ -35,7 +36,7 @@ interface BaseChatProps {
   setMessages?: (messages: Message[]) => void;
   input?: string;
   handleStop?: () => void;
-  sendMessage?: (messageInput: string, startPlanning: boolean) => void;
+  sendMessage?: (messageInput: string, startPlanning: boolean, chatMode?: ChatMode) => void;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   uploadedFiles?: File[];
   setUploadedFiles?: (files: File[]) => void;
@@ -103,9 +104,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     messagesRef.current = messages || [];
     const checkedBoxesRef = useRef<string[]>([]);
 
-    const handleSendMessage = (event: React.UIEvent, messageInput: string, startPlanning: boolean) => {
+    const handleSendMessage = (
+      event: React.UIEvent,
+      messageInput: string,
+      startPlanning: boolean,
+      chatMode?: ChatMode,
+    ) => {
       if (sendMessage) {
-        sendMessage(messageInput, startPlanning);
+        sendMessage(messageInput, startPlanning, chatMode);
         abortListening();
         checkedBoxesRef.current = [];
 
@@ -249,13 +255,15 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     handleStop?.();
                     return;
                   }
-                  handleSendMessage(event, messageInput, false);
+                  handleSendMessage(event, messageInput, false, ChatMode.PlanApp);
                 })}
                 {isArboretumVisible && <Arboretum />}
               </>
             )}
           </div>
-          <ClientOnly>{() => <Workbench chatStarted={chatStarted} messages={messages} />}</ClientOnly>
+          <ClientOnly>
+            {() => <Workbench chatStarted={chatStarted} handleSendMessage={handleSendMessage} messages={messages} />}
+          </ClientOnly>
         </div>
       </div>
     );

@@ -4,13 +4,14 @@ import { IconButton } from '~/components/ui/IconButton';
 import { classNames } from '~/utils/classNames';
 import { SendButton } from '~/components/chat/SendButton.client';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
+import { ChatMode } from '~/lib/replay/ChatManager';
 import { StartPlanningButton } from '~/components/chat/StartPlanningButton';
 
 export interface MessageInputProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
   input?: string;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  handleSendMessage?: (event: React.UIEvent, messageInput: string, startPlanning: boolean) => void;
+  handleSendMessage?: (event: React.UIEvent, messageInput: string, startPlanning: boolean, chatMode?: ChatMode) => void;
   handleStop?: () => void;
   hasPendingMessage?: boolean;
   chatStarted?: boolean;
@@ -166,7 +167,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               return;
             }
 
-            handleSendMessage(event, fullInput, false);
+            handleSendMessage(event, fullInput, false, ChatMode.PlanApp);
           }
         }}
         value={input}
@@ -192,7 +193,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 }
 
                 if (fullInput.length > 0 || uploadedFiles.length > 0) {
-                  handleSendMessage(event, fullInput, false);
+                  handleSendMessage(event, fullInput, false, ChatMode.PlanApp);
                 }
               }}
             />
@@ -200,7 +201,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               <StartPlanningButton
                 onClick={(event) => {
                   const message = (fullInput + '\n\nStart planning the app based on these requirements.').trim();
-                  handleSendMessage(event, message, true);
+                  handleSendMessage(event, message, true, ChatMode.PlanApp);
                 }}
               />
             )}
