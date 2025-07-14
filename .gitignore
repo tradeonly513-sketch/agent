@@ -25,6 +25,7 @@ dist-ssr
 /.history
 /.cache
 /build
+functions/build/
 .env.local
 .env
 .dev.vars
@@ -43,5 +44,5 @@ app/commit.json
 changelogUI.md
 docs/instructions/Roadmap.md
 .cursorrules
-.cursorrules
 *.md
+.qodo
