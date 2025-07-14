@@ -64,6 +64,12 @@ export class ProviderStatusCheckerFactory {
       headers: {},
       testModel: 'mistral-tiny',
     },
+    Moonshot: {
+      statusUrl: 'https://status.moonshot.cn/',
+      apiUrl: 'https://api.moonshot.cn/v1/models',
+      headers: {},
+      testModel: 'kimi-k2-0711-preview',
+    },
     OpenRouter: {
       statusUrl: 'https://status.openrouter.ai/',
       apiUrl: 'https://openrouter.ai/api/v1/models',

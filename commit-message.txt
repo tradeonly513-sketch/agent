@@ -1,0 +1,13 @@
+[Cursor] feat: Add Moonshot AI provider integration
+
+- Add MoonshotProvider class with support for Kimi and Moonshot models
+- Include static models: kimi-k2-0711-preview, moonshot-v1-8k/32k/128k
+- Implement dynamic model fetching from Moonshot API
+- Add provider to registry and service status monitoring
+- Include Moonshot icon and environment configuration
+- Fix TypeScript type issues for proper compilation
+
+Supports models:
+- Kimi K2 Preview (128K context)
+- Moonshot v1 8K/32K/128K models
+- Dynamic model discovery via API 
