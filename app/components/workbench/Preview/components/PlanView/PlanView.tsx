@@ -11,7 +11,7 @@ interface PlanViewProps {
 
 const PlanView = ({ appSummary, handleSendMessage, setActiveTab }: PlanViewProps) => {
   return (
-    <div className="relative h-full">
+    <div className="relative h-full w-full">
       <div className="h-full overflow-auto bg-transparent p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-2xl font-bold mb-6 text-bolt-elements-textPrimary">Feature Plan</div>
