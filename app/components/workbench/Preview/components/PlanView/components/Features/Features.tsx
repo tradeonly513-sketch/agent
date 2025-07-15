@@ -6,6 +6,7 @@ import { AddFeatureInput } from '~/components/workbench/Preview/components/PlanV
 import Tests from './components/Tests';
 import DefinedApis from './components/DefinedApis';
 import DatabaseChanges from './components/DatabaseChanges';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FeaturesProps {
   appSummary: AppSummary | null;
@@ -130,6 +131,7 @@ const Features = ({ appSummary, handleSendMessage, setActiveTab }: FeaturesProps
           <div className="space-y-6">
             {allFeatures.map((feature, index) => {
               const done = feature.status === AppFeatureStatus.Done;
+              const isSelected = selectedFeatures.has(index);
 
               return (
                 <div
@@ -143,12 +145,12 @@ const Features = ({ appSummary, handleSendMessage, setActiveTab }: FeaturesProps
                         'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
                         {
                           'border-bolt-elements-borderColor bg-bolt-elements-background-depth-3 hover:bg-bolt-elements-background-depth-1':
-                            !selectedFeatures.has(index),
-                          'border-blue-500 bg-blue-500 hover:bg-blue-600': selectedFeatures.has(index),
+                            !isSelected,
+                          'border-blue-500 bg-blue-500 hover:bg-blue-600': isSelected,
                         },
                       )}
                     >
-                      {selectedFeatures.has(index) && <div className="i-ph:check-bold text-white text-sm" />}
+                      {isSelected && <div className="i-ph:check-bold text-white text-sm" />}
                     </button>
 
                     {editingFeatureIndex === index ? (
@@ -183,8 +185,9 @@ const Features = ({ appSummary, handleSendMessage, setActiveTab }: FeaturesProps
                     ) : (
                       <div
                         className={classNames('flex-1 flex items-center group cursor-pointer', {
-                          'text-bolt-elements-textSecondary': !done,
-                          'text-bolt-elements-textPrimary': done,
+                          'text-bolt-elements-textSecondary line-through opacity-50': !isSelected,
+                          'text-bolt-elements-textPrimary': isSelected && done,
+                          'text-bolt-elements-textSecondary': isSelected && !done,
                         })}
                         onClick={() => startEditing(index, feature.description)}
                       >
@@ -206,12 +209,23 @@ const Features = ({ appSummary, handleSendMessage, setActiveTab }: FeaturesProps
                     ) : null}
                   </div>
 
-                  {feature.databaseChange &&
-                    feature.databaseChange.tables &&
-                    feature.databaseChange.tables.length > 0 && <DatabaseChanges feature={feature} />}
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                      >
+                        {feature.databaseChange &&
+                          feature.databaseChange.tables &&
+                          feature.databaseChange.tables.length > 0 && <DatabaseChanges feature={feature} />}
 
-                  {feature.definedAPIs && feature.definedAPIs.length > 0 && <DefinedApis feature={feature} />}
-                  {feature.tests && feature.tests.length > 0 && <Tests featureTests={feature.tests} />}
+                        {feature.definedAPIs && feature.definedAPIs.length > 0 && <DefinedApis feature={feature} />}
+                        {feature.tests && feature.tests.length > 0 && <Tests featureTests={feature.tests} />}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
