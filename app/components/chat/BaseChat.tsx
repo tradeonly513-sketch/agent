@@ -33,6 +33,9 @@ import { ChatBox } from './ChatBox';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
+import AgentStatus from './AgentStatus';
+import AgentControls from './AgentControls';
+import type { ChatMode } from '~/types/actions';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -81,6 +84,8 @@ interface BaseChatProps {
   selectedElement?: ElementInfo | null;
   setSelectedElement?: (element: ElementInfo | null) => void;
   addToolResult?: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
+  agentMode?: ChatMode;
+  setAgentMode?: (mode: ChatMode) => void;
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -130,6 +135,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       addToolResult = () => {
         throw new Error('addToolResult not implemented');
       },
+      agentMode = 'chat',
+      setAgentMode,
     },
     ref,
   ) => {
@@ -423,6 +430,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   )}
                   {llmErrorAlert && <LlmErrorAlert alert={llmErrorAlert} clearAlert={() => clearLlmErrorAlert?.()} />}
                 </div>
+                {agentMode === 'agent' && (
+                  <>
+                    <AgentStatus />
+                    <AgentControls />
+                  </>
+                )}
                 {progressAnnotations && <ProgressCompilation data={progressAnnotations} />}
                 <ChatBox
                   isModelSettingsCollapsed={isModelSettingsCollapsed}
@@ -465,6 +478,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   setDesignScheme={setDesignScheme}
                   selectedElement={selectedElement}
                   setSelectedElement={setSelectedElement}
+                  agentMode={agentMode}
+                  setAgentMode={setAgentMode}
                 />
               </div>
             </StickToBottom>

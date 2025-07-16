@@ -19,6 +19,7 @@ import { ColorSchemeDialog } from '~/components/ui/ColorSchemeDialog';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
+import type { ChatMode } from '~/types/actions';
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
@@ -57,6 +58,8 @@ interface ChatBoxProps {
   enhancePrompt?: (() => void) | undefined;
   chatMode?: 'discuss' | 'build';
   setChatMode?: (mode: 'discuss' | 'build') => void;
+  agentMode?: ChatMode;
+  setAgentMode?: (mode: ChatMode) => void;
   designScheme?: DesignScheme;
   setDesignScheme?: (scheme: DesignScheme) => void;
   selectedElement?: ElementInfo | null;
@@ -236,7 +239,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             minHeight: props.TEXTAREA_MIN_HEIGHT,
             maxHeight: props.TEXTAREA_MAX_HEIGHT,
           }}
-          placeholder={props.chatMode === 'build' ? 'How can Bolt help you today?' : 'What would you like to discuss?'}
+          placeholder={
+            props.agentMode === 'agent'
+              ? 'Describe a task for the agent to complete step by step...'
+              : props.chatMode === 'build'
+                ? 'How can Bolt help you today?'
+                : 'What would you like to discuss?'
+          }
           translate="no"
         />
         <ClientOnly>
@@ -287,6 +296,26 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               onStop={props.stopListening}
               disabled={props.isStreaming}
             />
+
+            {/* Agent/Chat Mode Toggle */}
+            <IconButton
+              title={props.agentMode === 'agent' ? 'Switch to Chat Mode' : 'Switch to Agent Mode'}
+              className={classNames(
+                'transition-all flex items-center gap-1 px-1.5',
+                props.agentMode === 'agent'
+                  ? '!bg-orange-100 !text-orange-800 border border-orange-300'
+                  : 'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault hover:bg-bolt-elements-item-backgroundAccent',
+              )}
+              onClick={() => {
+                const newMode = props.agentMode === 'agent' ? 'chat' : 'agent';
+                props.setAgentMode?.(newMode);
+                toast.success(`Switched to ${newMode.charAt(0).toUpperCase() + newMode.slice(1)} mode`);
+              }}
+            >
+              <div className={`${props.agentMode === 'agent' ? 'i-ph:robot' : 'i-ph:chat-circle'} text-xl`} />
+              {props.agentMode === 'agent' ? <span>Agent</span> : <span>Chat</span>}
+            </IconButton>
+
             {props.chatStarted && (
               <IconButton
                 title="Discuss"

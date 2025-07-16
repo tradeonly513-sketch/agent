@@ -27,7 +27,9 @@ import { defaultDesignScheme, type DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { Attachment, FileUIPart, TextUIPart } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
-import type { LlmErrorAlertType } from '~/types/actions';
+import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
+import { agentStore } from '~/lib/stores/chat';
+import { AgentExecutor } from '~/lib/agent/executor';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -149,6 +151,8 @@ export const ChatImpl = memo(
     const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
+    const agentState = useStore(agentStore);
+    const [agentExecutor] = useState(() => new AgentExecutor());
 
     const {
       messages,
@@ -172,6 +176,7 @@ export const ChatImpl = memo(
         promptId,
         contextOptimization: contextOptimizationEnabled,
         chatMode,
+        agentMode: agentState.mode,
         designScheme,
         supabase: {
           isConnected: supabaseConn.isConnected,
@@ -431,6 +436,40 @@ export const ChatImpl = memo(
         return;
       }
 
+      // Handle Agent mode
+      if (agentState.mode === 'agent') {
+        try {
+          agentStore.setKey('isActive', true);
+          agentStore.setKey('isPaused', false);
+
+          const task = await agentExecutor.executeTask(messageContent, {
+            model,
+            provider: provider.name,
+            apiKeys,
+          });
+
+          agentStore.setKey('currentTask', task);
+          agentStore.setKey('taskHistory', [...agentState.taskHistory, task]);
+
+          // Add the task result as a message
+          const taskSummary = `Agent Task: ${task.title}\nStatus: ${task.status}\nSteps completed: ${task.steps.filter((s) => s.status === 'completed').length}/${task.steps.length}`;
+
+          append({
+            role: 'assistant',
+            content: taskSummary,
+          });
+        } catch (error) {
+          console.error('Agent execution failed:', error);
+          toast.error('Agent task failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          agentStore.setKey('isActive', false);
+        }
+
+        setInput('');
+        textareaRef.current?.blur();
+
+        return;
+      }
+
       let finalMessageContent = messageContent;
 
       if (selectedElement) {
@@ -611,9 +650,14 @@ export const ChatImpl = memo(
 
     useEffect(() => {
       const storedApiKeys = Cookies.get('apiKeys');
+      const storedAgentMode = Cookies.get('agentMode') as ChatMode;
 
       if (storedApiKeys) {
         setApiKeys(JSON.parse(storedApiKeys));
+      }
+
+      if (storedAgentMode && (storedAgentMode === 'chat' || storedAgentMode === 'agent')) {
+        agentStore.setKey('mode', storedAgentMode);
       }
     }, []);
 
@@ -625,6 +669,20 @@ export const ChatImpl = memo(
     const handleProviderChange = (newProvider: ProviderInfo) => {
       setProvider(newProvider);
       Cookies.set('selectedProvider', newProvider.name, { expires: 30 });
+    };
+
+    const handleAgentModeChange = (newMode: ChatMode) => {
+      agentStore.setKey('mode', newMode);
+      Cookies.set('agentMode', newMode, { expires: 30 });
+
+      if (newMode === 'chat') {
+        // Stop any running agent tasks
+        agentExecutor.abort();
+        agentStore.setKey('isActive', false);
+        agentStore.setKey('currentTask', undefined);
+        agentStore.setKey('isPaused', false);
+        agentStore.setKey('awaitingUserInput', false);
+      }
     };
 
     return (
@@ -697,6 +755,8 @@ export const ChatImpl = memo(
         selectedElement={selectedElement}
         setSelectedElement={setSelectedElement}
         addToolResult={addToolResult}
+        agentMode={agentState.mode}
+        setAgentMode={handleAgentModeChange}
       />
     );
   },

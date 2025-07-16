@@ -46,6 +46,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       promptId?: string;
       contextOptimization: boolean;
       chatMode: 'discuss' | 'build';
+      agentMode?: 'chat' | 'agent';
       designScheme?: DesignScheme;
       supabase?: {
         isConnected: boolean;

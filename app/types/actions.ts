@@ -83,3 +83,48 @@ export interface FileHistory {
   // Novo campo para rastrear a origem das mudanças
   changeSource?: 'user' | 'auto-save' | 'external';
 }
+
+// Agent mode types
+export type ChatMode = 'chat' | 'agent';
+
+export interface AgentStep {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  output?: string;
+  error?: string;
+  timestamp: number;
+  toolCalls?: ToolCall[];
+}
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  parameters: Record<string, any>;
+  result?: any;
+  error?: string;
+  timestamp: number;
+}
+
+export interface AgentTask {
+  id: string;
+  title: string;
+  description: string;
+  steps: AgentStep[];
+  status: 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  currentStepIndex: number;
+  createdAt: number;
+  updatedAt: number;
+  context?: Record<string, any>;
+}
+
+export interface AgentState {
+  isActive: boolean;
+  currentTask?: AgentTask;
+  taskHistory: AgentTask[];
+  isPaused: boolean;
+  awaitingUserInput: boolean;
+  userInputPrompt?: string;
+  mode: ChatMode;
+}
