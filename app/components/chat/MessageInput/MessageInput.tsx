@@ -167,7 +167,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               return;
             }
 
-            handleSendMessage(event, fullInput, false, ChatMode.PlanApp);
+            handleSendMessage(event, fullInput, false, ChatMode.Discovery);
           }
         }}
         value={input}
@@ -193,15 +193,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 }
 
                 if (fullInput.length > 0 || uploadedFiles.length > 0) {
-                  handleSendMessage(event, fullInput, false, ChatMode.PlanApp);
+                  handleSendMessage(event, fullInput, false, ChatMode.Discovery);
                 }
               }}
             />
             {startPlanningRating > 0 && (
               <StartPlanningButton
                 onClick={(event) => {
-                  const message = (fullInput + '\n\nStart planning the app based on these requirements.').trim();
-                  handleSendMessage(event, message, true, ChatMode.PlanApp);
+                  const message = (fullInput + '\n\nStart building the app based on these requirements.').trim();
+                  handleSendMessage(event, message, true, ChatMode.BuildApp);
                 }}
               />
             )}
