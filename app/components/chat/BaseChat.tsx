@@ -346,46 +346,101 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         data-chat-visible={showChat}
       >
         <ClientOnly>{() => <Menu />}</ClientOnly>
-        <div className="flex flex-col h-full bg-bolt-elements-background-depth-1">
+        <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           <div className="flex flex-col lg:flex-row overflow-hidden w-full h-full">
             <div className={classNames(
               styles.Chat, 
               'flex flex-col flex-grow h-full',
               'w-full lg:min-w-[var(--chat-min-width)]',
-              'lg:max-w-[50%] xl:max-w-[60%]'
+              'lg:max-w-[55%] xl:max-w-[60%]',
+              'relative'
             )}>
               {!chatStarted && (
-                <div id="intro" className="mt-[8vh] md:mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
-                  <h1 className="text-2xl md:text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
-                    Where ideas become{' '}
-                    <span className="text-gradient bg-gradient-to-r from-accent-500 to-accent-300 bg-clip-text text-transparent">
-                      reality.
-                    </span>
-                  </h1>
-                  <p className="text-sm md:text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200 leading-relaxed">
-                    Bring ideas to life in seconds or get help with your existing projects.
-                  </p>
+                <div id="intro" className="flex-1 flex flex-col justify-center items-center px-4 lg:px-8 py-8 md:py-16">
+                  <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in-up">
+                    {/* Hero Section */}
+                    <div className="space-y-6">
+                      <div className="flex justify-center mb-8">
+                        <div className="relative">
+                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-300">
+                            <div className="i-ph:code-duotone text-white text-3xl md:text-4xl" />
+                          </div>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-success-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
+                        </div>
+                      </div>
+                      
+                      <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6 leading-tight">
+                        Where ideas become{' '}
+                        <span className="text-gradient bg-gradient-to-r from-primary-500 via-accent-500 to-primary-600 bg-clip-text text-transparent animate-gradient">
+                          reality
+                        </span>
+                      </h1>
+                      
+                      <p className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto">
+                        Bring your ideas to life in seconds with AI-powered development. 
+                        Build, code, and deploy applications directly in your browser.
+                      </p>
+                    </div>
+
+                    {/* Features Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                      <div className="group p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                          <div className="i-ph:lightning-duotone text-white text-xl" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                          Lightning Fast
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm">
+                          Build applications in seconds with AI assistance
+                        </p>
+                      </div>
+                      
+                      <div className="group p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-500 to-accent-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                          <div className="i-ph:devices-duotone text-white text-xl" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                          Mobile First
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm">
+                          Perfect experience on any device, anywhere
+                        </p>
+                      </div>
+                      
+                      <div className="group p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                          <div className="i-ph:rocket-launch-duotone text-white text-xl" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                          Deploy Instantly
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm">
+                          One-click deployment to popular platforms
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
-              <div
-                className={classNames('pt-4 md:pt-6 px-2 sm:px-4 md:px-6 relative', {
-                  'h-full flex flex-col': true,
-                  'overflow-y-auto': chatStarted,
-                })}
-              >
+              
+              <div className={classNames(
+                'flex flex-col h-full',
+                chatStarted ? 'pt-6' : ''
+              )}>
                 <StickToBottom
-                  className={classNames('pt-6 px-2 sm:px-6 relative', {
-                    'h-full flex flex-col modern-scrollbar': chatStarted,
+                  className={classNames('flex-1 overflow-hidden', {
+                    'px-4 md:px-6 lg:px-8': chatStarted,
                   })}
                   resize="smooth"
                   initial="smooth"
                 >
-                  <StickToBottom.Content className="flex flex-col gap-4 relative ">
+                  <StickToBottom.Content className="flex flex-col gap-6 h-full">
                     <ClientOnly>
                       {() => {
                         return chatStarted ? (
                           <Messages
-                            className="flex flex-col w-full flex-1 max-w-chat pb-4 mx-auto z-1"
+                            className="flex flex-col w-full flex-1 max-w-4xl mx-auto space-y-6"
                             messages={messages}
                             isStreaming={isStreaming}
                             append={append}
@@ -400,12 +455,16 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     </ClientOnly>
                     <ScrollToBottom />
                   </StickToBottom.Content>
-                  <div
-                    className={classNames('my-auto flex flex-col gap-2 w-full max-w-chat mx-auto z-prompt mb-6', {
-                      'sticky bottom-2': chatStarted,
-                    })}
-                  >
-                    <div className="flex flex-col gap-2">
+                  
+                  {/* Enhanced Chat Input Section */}
+                  <div className={classNames(
+                    'sticky bottom-0 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-slate-900 dark:via-slate-900/95 dark:to-transparent',
+                    'border-t border-slate-200/50 dark:border-slate-700/50 backdrop-blur-xl',
+                    'px-4 md:px-6 lg:px-8 py-4 md:py-6',
+                    'space-y-4'
+                  )}>
+                    {/* Alert Messages */}
+                    <div className="space-y-3">
                       {deployAlert && (
                         <DeployChatAlert
                           alert={deployAlert}
@@ -438,7 +497,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       )}
                       {llmErrorAlert && <LlmErrorAlert alert={llmErrorAlert} clearAlert={() => clearLlmErrorAlert?.()} />}
                     </div>
+                    
                     {progressAnnotations && <ProgressCompilation data={progressAnnotations} />}
+                    
+                    {/* Enhanced Chat Box */}
                     <ChatBox
                       isModelSettingsCollapsed={isModelSettingsCollapsed}
                       setIsModelSettingsCollapsed={setIsModelSettingsCollapsed}
@@ -483,21 +545,23 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     />
                   </div>
                 </StickToBottom>
-                <div className="flex flex-col justify-center">
+                
+                {/* Import/Export and Examples */}
+                <div className="flex flex-col items-center space-y-6 pb-6">
                   {!chatStarted && (
-                    <div className="flex justify-center gap-2">
+                    <div className="flex flex-wrap justify-center gap-3">
                       {ImportButtons(importChat)}
                       <GitCloneButton importChat={importChat} />
                     </div>
                   )}
-                  <div className="flex flex-col gap-5">
+                  
+                  <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
                     {!chatStarted &&
                       ExamplePrompts((event, messageInput) => {
                         if (isStreaming) {
                           handleStop?.();
                           return;
                         }
-
                         handleSendMessage?.(event, messageInput);
                       })}
                     {!chatStarted && <StarterTemplates />}
@@ -505,9 +569,15 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 </div>
               </div>
             </div>
+            
+            {/* Enhanced Workbench */}
             <ClientOnly>
               {() => (
-                <Workbench chatStarted={chatStarted} isStreaming={isStreaming} setSelectedElement={setSelectedElement} />
+                <Workbench 
+                  chatStarted={chatStarted} 
+                  isStreaming={isStreaming} 
+                  setSelectedElement={setSelectedElement} 
+                />
               )}
             </ClientOnly>
           </div>

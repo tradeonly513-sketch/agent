@@ -110,9 +110,9 @@ export class WorkbenchStore {
   get showTerminal() {
     return this.#terminalStore.showTerminal;
   }
-  get boltTerminal() {
-    return this.#terminalStore.boltTerminal;
-  }
+      get codecraftTerminal() {
+      return this.#terminalStore.codecraftTerminal;
+    }
   get alert() {
     return this.actionAlert;
   }
@@ -143,9 +143,9 @@ export class WorkbenchStore {
   attachTerminal(terminal: ITerminal) {
     this.#terminalStore.attachTerminal(terminal);
   }
-  attachBoltTerminal(terminal: ITerminal) {
-    this.#terminalStore.attachBoltTerminal(terminal);
-  }
+      attachCodecraftTerminal(terminal: ITerminal) {
+      this.#terminalStore.attachCodecraftTerminal(terminal);
+    }
 
   detachTerminal(terminal: ITerminal) {
     this.#terminalStore.detachTerminal(terminal);

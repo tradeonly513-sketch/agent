@@ -1,105 +1,255 @@
-@use 'variables.scss';
-@use 'z-index.scss';
-@use 'animations.scss';
-@use 'components/terminal.scss';
-@use 'components/resize-handle.scss';
-@use 'components/code.scss';
-@use 'components/editor.scss';
-@use 'components/toast.scss';
+/* CodeCraft Studio - Modern Design System */
+@import 'virtual:uno.css';
 
-html,
-body {
-  height: 100%;
-  width: 100%;
-  background-color: var(--bolt-elements-bg-depth-1);
-}
-
+/* Modern CSS Custom Properties */
 :root {
-  --gradient-opacity: 0.8;
-  --primary-color: rgba(158, 117, 240, var(--gradient-opacity));
-  --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
-  --accent-color: rgba(128, 59, 239, var(--gradient-opacity));
-  // --primary-color: rgba(147, 112, 219, var(--gradient-opacity));
-  // --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
-  // --accent-color: rgba(180, 170, 220, var(--gradient-opacity));
+  /* Color System */
+  --primary-50: #F5F3FF;
+  --primary-500: #8B5CF6;
+  --primary-600: #7C3AED;
+  --primary-700: #6D28D9;
+  
+  --accent-500: #0EA5E9;
+  --accent-600: #0284C7;
+  
+  --success-500: #22C55E;
+  --warning-500: #F59E0B;
+  --error-500: #EF4444;
+  
+  /* Background System */
+  --bg-depth-1: #FFFFFF;
+  --bg-depth-2: #F8FAFC;
+  --bg-depth-3: #F1F5F9;
+  --bg-depth-4: #E2E8F0;
+  
+  /* Border System */
+  --border-color: #E2E8F0;
+  --border-color-active: #CBD5E1;
+  
+  /* Text System */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+  
+  /* Interactive Elements */
+  --button-primary-bg: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  --button-primary-bg-hover: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+  --button-primary-text: #FFFFFF;
+  
+  --button-secondary-bg: #FFFFFF;
+  --button-secondary-bg-hover: #F8FAFC;
+  --button-secondary-text: #475569;
+  
+  --item-bg-active: #F1F5F9;
+  --item-bg-hover: #F8FAFC;
+  --item-content-default: #64748B;
+  --item-content-active: #0F172A;
+  
+  /* Layout */
+  --header-height: 60px;
+  --sidebar-width: 280px;
+  --chat-max-width: 900px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
-.modern-scrollbar {
-  overflow: auto;
+/* Dark Theme */
+[data-theme="dark"] {
+  /* Background System */
+  --bg-depth-1: #020617;
+  --bg-depth-2: #0F172A;
+  --bg-depth-3: #1E293B;
+  --bg-depth-4: #334155;
+  
+  /* Border System */
+  --border-color: #334155;
+  --border-color-active: #475569;
+  
+  /* Text System */
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #94A3B8;
+  
+  /* Interactive Elements */
+  --button-secondary-bg: #1E293B;
+  --button-secondary-bg-hover: #334155;
+  --button-secondary-text: #CBD5E1;
+  
+  --item-bg-active: #334155;
+  --item-bg-hover: #1E293B;
+  --item-content-default: #94A3B8;
+  --item-content-active: #F8FAFC;
+}
 
-  // WebKit scrollbar styling
-  &::-webkit-scrollbar {
-    width: 2px;
-    height: 4px;
-  }
+/* Enhanced Typography System */
+* {
+  box-sizing: border-box;
+}
 
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+html {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
 
-  &::-webkit-scrollbar-thumb {
-    // Use CSS variables for colors
-    background-color: var(--modern-scrollbar-thumb-background);
-    border-radius: 9999px; // pill shape
-    border: 2px solid transparent; // for padding-like effect
-    background-clip: content-box;
-    transition: background-color 0.2s ease-in-out; // Add transition
-  }
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-depth-1);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 16px;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
-  &::-webkit-scrollbar-thumb:hover {
-    // Use CSS variable for hover color
-    background-color: var(--modern-scrollbar-thumb-backgroundHover);
-  }
+/* Enhanced Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--text-primary);
+}
 
-  // Firefox support
+h1 {
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+h3 {
+  font-size: clamp(1.25rem, 2.5vw, 1.875rem);
+}
+
+p {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Modern Button System */
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Enhanced Form Elements */
+input, textarea, select {
+  font-family: inherit;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: var(--bg-depth-1);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary-500);
+  ring: 2px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color-active);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Firefox Scrollbar */
+* {
   scrollbar-width: thin;
-  // Use CSS variables for Firefox colors
-  scrollbar-color: var(--modern-scrollbar-thumb-backgroundHover) transparent; // Use hover color for thumb for consistency
-}
-
-.modern-scrollbar-invert {
-  &::-webkit-scrollbar-thumb {
-    // Override with a contrasting color, e.g., primary text color with transparency
-    background-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 70%);
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    // Darker/more opaque version on hover
-    background-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%);
-  }
-
-  // Firefox support for inverted colors
-  scrollbar-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%) transparent;
+  scrollbar-color: var(--border-color-active) transparent;
 }
 
 /* Enhanced Mobile Styles for CodeCraft Studio */
-
-/* Touch-friendly interactions */
 @media (max-width: 768px) {
-  /* Minimum touch target size */
+  /* Touch-friendly interactions */
   button, 
   a[role="button"], 
   input[type="button"], 
-  input[type="submit"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Better touch feedback */
+  input[type="submit"],
   .touch-target {
     min-height: 44px;
     min-width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
-  /* Mobile-optimized typography */
-  h1 { font-size: 1.75rem; line-height: 1.3; }
-  h2 { font-size: 1.5rem; line-height: 1.3; }
-  h3 { font-size: 1.25rem; line-height: 1.4; }
+  /* Mobile typography improvements */
+  html {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
   
-  /* Better spacing for mobile */
+  h1 { 
+    font-size: 1.75rem; 
+    line-height: 1.3; 
+    letter-spacing: -0.02em;
+  }
+  
+  h2 { 
+    font-size: 1.5rem; 
+    line-height: 1.3; 
+  }
+  
+  h3 { 
+    font-size: 1.25rem; 
+    line-height: 1.4; 
+  }
+  
+  p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  /* Better mobile spacing */
   .mobile-padding {
     padding: 1rem;
   }
@@ -110,6 +260,13 @@ body {
     max-height: 95vh;
     width: calc(100vw - 1rem);
     border-radius: 12px 12px 0 0;
+  }
+  
+  /* Enhanced mobile chat input */
+  .chat-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+    padding: 0.875rem 1rem;
   }
 }
 
@@ -122,9 +279,9 @@ body {
     right: 0;
     bottom: 0;
     z-index: 100;
-    background: var(--bolt-elements-background-depth-1);
+    background: var(--bg-depth-1);
     transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .workbench-mobile.open {
@@ -145,80 +302,286 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     z-index: 49;
   }
 }
 
-/* Improved scrolling for mobile */
-.mobile-scroll {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-/* Better mobile chat input */
-@media (max-width: 768px) {
-  .chat-input {
-    font-size: 16px; /* Prevents zoom on iOS */
-    min-height: 44px;
-  }
-  
-  .chat-container {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* Responsive grid improvements */
-.responsive-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 640px) {
-  .responsive-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (min-width: 1024px) {
-  .responsive-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-/* Enhanced button styles for mobile */
-.btn-mobile {
-  padding: 0.75rem 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-.btn-mobile:active {
-  transform: scale(0.98);
-}
-
-/* Better mobile header */
-@media (max-width: 768px) {
-  .mobile-header {
-    height: 60px;
-    padding: 0 1rem;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-}
-
-/* Loading states for mobile */
-.mobile-loading {
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-/* Safe area handling */
+/* Safe area handling for modern mobile devices */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Modern Animation System */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { 
+    transform: scale(0.9); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Enhanced utility classes */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-gradient {
+  animation: gradientShift 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+/* Glass morphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Modern card system */
+.card {
+  background: var(--bg-depth-1);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--border-color-active);
+}
+
+.card-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Enhanced gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.text-gradient-sunset {
+  background: linear-gradient(135deg, var(--warning-500) 0%, var(--error-500) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Loading states */
+.loading {
+  pointer-events: none;
+  opacity: 0.6;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* Enhanced focus states */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* Modern tooltip system */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-depth-4);
+  color: var(--text-primary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  margin-bottom: 4px;
+  box-shadow: var(--shadow-md);
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --border-color-active: #000000;
+    --text-secondary: #000000;
+    --text-tertiary: #333333;
+  }
+  
+  [data-theme="dark"] {
+    --border-color: #FFFFFF;
+    --border-color-active: #FFFFFF;
+    --text-secondary: #FFFFFF;
+    --text-tertiary: #CCCCCC;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  * {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Enhanced accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Modern selection styles */
+::selection {
+  background: rgba(139, 92, 246, 0.2);
+  color: var(--text-primary);
+}
+
+::-moz-selection {
+  background: rgba(139, 92, 246, 0.2);
+  color: var(--text-primary);
 }
