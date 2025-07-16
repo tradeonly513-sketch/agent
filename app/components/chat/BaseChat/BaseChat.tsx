@@ -255,7 +255,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     handleStop?.();
                     return;
                   }
-                  handleSendMessage(event, messageInput, false, ChatMode.PlanApp);
+                  handleSendMessage(event, messageInput, false, ChatMode.Discovery);
                 })}
                 {isArboretumVisible && <Arboretum />}
               </>

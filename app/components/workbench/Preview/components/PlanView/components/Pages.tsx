@@ -1,3 +1,5 @@
+import { TooltipProvider } from '@radix-ui/react-tooltip';
+import WithTooltip from '~/components/ui/Tooltip';
 import type { AppSummary } from '~/lib/persistence/messageAppSummary';
 
 interface PagesProps {
@@ -5,10 +7,11 @@ interface PagesProps {
 }
 
 const Pages = ({ appSummary }: PagesProps) => {
+  console.log(appSummary);
   return (
-    <div className="relative h-full p-6">
+    <div>
       <div className="space-y-4 mb-8">
-        <div className="text-2xl font-bold mb-6 text-bolt-elements-textPrimary">Page Layouts</div>
+      <div className="text-lg font-semibold text-bolt-elements-textPrimary">Page Layouts</div>
 
         {appSummary?.pages?.length === 0 ? (
           <div className="text-sm text-bolt-elements-textSecondary italic">No pages defined</div>
@@ -29,7 +32,7 @@ const Pages = ({ appSummary }: PagesProps) => {
 
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-bolt-elements-button-primary-background rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                     <div className="font-mono text-sm font-semibold text-bolt-elements-textPrimary">
                       Endpoint Path: {page.path}
                     </div>
@@ -43,12 +46,16 @@ const Pages = ({ appSummary }: PagesProps) => {
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {page.components.map((component, componentIndex) => (
-                        <span
-                          key={componentIndex}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium bg-bolt-elements-background-depth-1 text-bolt-elements-textSecondary rounded border border-bolt-elements-borderColor"
-                        >
-                          {component.name}
-                        </span>
+                        <TooltipProvider>
+                          <WithTooltip tooltip={component.description}>
+                            <span
+                              key={componentIndex}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium bg-bolt-elements-background-depth-1 text-bolt-elements-textSecondary rounded border border-bolt-elements-borderColor"
+                            >
+                              {component.name}
+                            </span>
+                          </WithTooltip>
+                        </TooltipProvider>
                       ))}
                     </div>
                   </div>
