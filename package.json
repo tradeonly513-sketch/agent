@@ -1,14 +1,14 @@
 {
-  "name": "bolt",
-  "description": "An AI Agent",
+  "name": "codecraft-studio",
+  "description": "CodeCraft Studio - Your AI-Powered Development Companion. Build, code, and deploy with intelligent assistance.",
   "private": true,
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
   "version": "1.0.0",
   "author": {
-    "name": "bolt.diy team",
-    "email": "maintainers@bolt.diy"
+    "name": "CodeCraft Studio team",
+    "email": "hello@codecraft.studio"
   },
   "scripts": {
     "deploy": "npm run build && wrangler pages deploy",

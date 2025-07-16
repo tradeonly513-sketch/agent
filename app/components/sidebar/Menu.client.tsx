@@ -19,9 +19,9 @@ const menuVariants = {
   closed: {
     opacity: 0,
     visibility: 'hidden',
-    left: '-340px',
+    left: '-100%',
     transition: {
-      duration: 0.2,
+      duration: 0.25,
       ease: cubicEasingFn,
     },
   },
@@ -30,8 +30,26 @@ const menuVariants = {
     visibility: 'initial',
     left: 0,
     transition: {
-      duration: 0.2,
+      duration: 0.25,
       ease: cubicEasingFn,
+    },
+  },
+} satisfies Variants;
+
+// Mobile overlay variants for better mobile UX
+const overlayVariants = {
+  closed: {
+    opacity: 0,
+    visibility: 'hidden',
+    transition: {
+      duration: 0.2,
+    },
+  },
+  open: {
+    opacity: 1,
+    visibility: 'initial',
+    transition: {
+      duration: 0.2,
     },
   },
 } satisfies Variants;

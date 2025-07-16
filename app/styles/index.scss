@@ -71,3 +71,154 @@ body {
   // Firefox support for inverted colors
   scrollbar-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%) transparent;
 }
+
+/* Enhanced Mobile Styles for CodeCraft Studio */
+
+/* Touch-friendly interactions */
+@media (max-width: 768px) {
+  /* Minimum touch target size */
+  button, 
+  a[role="button"], 
+  input[type="button"], 
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better touch feedback */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mobile-optimized typography */
+  h1 { font-size: 1.75rem; line-height: 1.3; }
+  h2 { font-size: 1.5rem; line-height: 1.3; }
+  h3 { font-size: 1.25rem; line-height: 1.4; }
+  
+  /* Better spacing for mobile */
+  .mobile-padding {
+    padding: 1rem;
+  }
+  
+  /* Mobile-friendly modals */
+  .mobile-modal {
+    margin: 0;
+    max-height: 95vh;
+    width: calc(100vw - 1rem);
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+/* Improved mobile workbench */
+@media (max-width: 1024px) {
+  .workbench-mobile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bolt-elements-background-depth-1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .workbench-mobile.open {
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced mobile sidebar */
+@media (max-width: 768px) {
+  .mobile-sidebar {
+    width: 85vw;
+    max-width: 320px;
+  }
+  
+  .mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 49;
+  }
+}
+
+/* Improved scrolling for mobile */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Better mobile chat input */
+@media (max-width: 768px) {
+  .chat-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+  
+  .chat-container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Responsive grid improvements */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Enhanced button styles for mobile */
+.btn-mobile {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.btn-mobile:active {
+  transform: scale(0.98);
+}
+
+/* Better mobile header */
+@media (max-width: 768px) {
+  .mobile-header {
+    height: 60px;
+    padding: 0 1rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Loading states for mobile */
+.mobile-loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Safe area handling */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}

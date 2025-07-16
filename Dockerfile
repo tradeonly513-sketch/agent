@@ -1,95 +1,131 @@
-ARG BASE=node:20.18.0
-FROM ${BASE} AS base
+# CodeCraft Studio - Mobile-Optimized Dockerfile
+# Multi-stage build for efficient container deployment
+
+# Build stage
+FROM node:20-alpine AS build-stage
 
 WORKDIR /app
 
-# Install dependencies (this step is cached as long as the dependencies don't change)
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-#RUN npm install -g corepack@latest
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
-#RUN corepack enable pnpm && pnpm install
-RUN npm install -g pnpm && pnpm install
-
-# Copy the rest of your app's source code
+# Copy source code
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5173
-
-# Production image
-FROM base AS bolt-ai-production
-
-# Define environment variables with default values or let them be overridden
-ARG GROQ_API_KEY
-ARG HuggingFace_API_KEY
-ARG OPENAI_API_KEY
-ARG ANTHROPIC_API_KEY
-ARG OPEN_ROUTER_API_KEY
-ARG GOOGLE_GENERATIVE_AI_API_KEY
-ARG OLLAMA_API_BASE_URL
-ARG XAI_API_KEY
-ARG TOGETHER_API_KEY
-ARG TOGETHER_API_BASE_URL
-ARG AWS_BEDROCK_CONFIG
-ARG VITE_LOG_LEVEL=debug
-ARG DEFAULT_NUM_CTX
-
-ENV WRANGLER_SEND_METRICS=false \
-    GROQ_API_KEY=${GROQ_API_KEY} \
-    HuggingFace_KEY=${HuggingFace_API_KEY} \
-    OPENAI_API_KEY=${OPENAI_API_KEY} \
-    ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
-    OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY} \
-    GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY} \
-    OLLAMA_API_BASE_URL=${OLLAMA_API_BASE_URL} \
-    XAI_API_KEY=${XAI_API_KEY} \
-    TOGETHER_API_KEY=${TOGETHER_API_KEY} \
-    TOGETHER_API_BASE_URL=${TOGETHER_API_BASE_URL} \
-    AWS_BEDROCK_CONFIG=${AWS_BEDROCK_CONFIG} \
-    VITE_LOG_LEVEL=${VITE_LOG_LEVEL} \
-    DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX}\
-    RUNNING_IN_DOCKER=true
-
-# Pre-configure wrangler to disable metrics
-RUN mkdir -p /root/.config/.wrangler && \
-    echo '{"enabled":false}' > /root/.config/.wrangler/metrics.json
-
+# Build application
 RUN pnpm run build
 
-CMD [ "pnpm", "run", "dockerstart"]
+# Development target
+FROM node:20-alpine AS codecraft-studio-development
 
-# Development image
-FROM base AS bolt-ai-development
+WORKDIR /app
 
-# Define the same environment variables for development
-ARG GROQ_API_KEY
-ARG HuggingFace 
-ARG OPENAI_API_KEY
-ARG ANTHROPIC_API_KEY
-ARG OPEN_ROUTER_API_KEY
-ARG GOOGLE_GENERATIVE_AI_API_KEY
-ARG OLLAMA_API_BASE_URL
-ARG XAI_API_KEY
-ARG TOGETHER_API_KEY
-ARG TOGETHER_API_BASE_URL
-ARG VITE_LOG_LEVEL=debug
-ARG DEFAULT_NUM_CTX
+# Install pnpm and curl for health checks
+RUN npm install -g pnpm && apk add --no-cache curl
 
-ENV GROQ_API_KEY=${GROQ_API_KEY} \
-    HuggingFace_API_KEY=${HuggingFace_API_KEY} \
-    OPENAI_API_KEY=${OPENAI_API_KEY} \
-    ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
-    OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY} \
-    GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY} \
-    OLLAMA_API_BASE_URL=${OLLAMA_API_BASE_URL} \
-    XAI_API_KEY=${XAI_API_KEY} \
-    TOGETHER_API_KEY=${TOGETHER_API_KEY} \
-    TOGETHER_API_BASE_URL=${TOGETHER_API_BASE_URL} \
-    AWS_BEDROCK_CONFIG=${AWS_BEDROCK_CONFIG} \
-    VITE_LOG_LEVEL=${VITE_LOG_LEVEL} \
-    DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX}\
-    RUNNING_IN_DOCKER=true
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
 
-RUN mkdir -p ${WORKDIR}/run
-CMD pnpm run dev --host
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 5173
+
+# Set environment for mobile optimization
+ENV HOST=0.0.0.0
+ENV PORT=5173
+ENV NODE_ENV=development
+ENV VITE_MOBILE_OPTIMIZED=true
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5173/api/health || exit 1
+
+# Development command
+CMD ["pnpm", "run", "dev", "--host", "0.0.0.0"]
+
+# Production target
+FROM node:20-alpine AS codecraft-studio-production
+
+WORKDIR /app
+
+# Install pnpm and required tools
+RUN npm install -g pnpm wrangler && apk add --no-cache curl
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy built application from build stage
+COPY --from=build-stage /app/build ./build
+COPY --from=build-stage /app/public ./public
+COPY --from=build-stage /app/bindings.sh ./
+COPY --from=build-stage /app/package.json ./
+
+# Make bindings script executable
+RUN chmod +x bindings.sh
+
+# Expose port
+EXPOSE 5173
+
+# Set production environment with mobile optimization
+ENV HOST=0.0.0.0
+ENV PORT=5173
+ENV NODE_ENV=production
+ENV VITE_MOBILE_OPTIMIZED=true
+ENV RUNNING_IN_DOCKER=true
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5173/api/health || exit 1
+
+# Production command optimized for mobile
+CMD ["pnpm", "run", "dockerstart"]
+
+# Optimized lightweight target for containerized deployments
+FROM node:20-alpine AS codecraft-studio-slim
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN npm install -g pnpm && apk add --no-cache curl
+
+# Copy only necessary files
+COPY --from=build-stage /app/build ./build
+COPY --from=build-stage /app/public ./public
+COPY --from=build-stage /app/package.json ./
+COPY bindings.sh ./
+
+# Install minimal runtime dependencies
+RUN pnpm install --frozen-lockfile --prod && \
+    npm install -g wrangler && \
+    chmod +x bindings.sh
+
+# Expose port
+EXPOSE 5173
+
+# Optimized environment
+ENV HOST=0.0.0.0
+ENV PORT=5173
+ENV NODE_ENV=production
+ENV VITE_MOBILE_OPTIMIZED=true
+ENV RUNNING_IN_DOCKER=true
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5173/api/health || exit 1
+
+# Lightweight startup
+CMD ["pnpm", "run", "dockerstart"]

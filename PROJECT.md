@@ -1,57 +1,211 @@
-# Project management of bolt.diy
+# CodeCraft Studio - Project Management
 
-First off: this sounds funny, we know. "Project management" comes from a world of enterprise stuff and this project is
-far from being enterprisy- it's still anarchy all over the place 😉
+Welcome to the organized chaos that is **CodeCraft Studio**! 🚀
 
-But we need to organize ourselves somehow, right?
+We've evolved from a simple showcase project into a full-featured, mobile-first AI development platform. While we maintain the innovative spirit that made bolt.diy special, we now organize ourselves around clear goals and user-focused outcomes.
 
-> tl;dr: We've got a project board with epics and features. We use PRs as change log and as materialized features. Find it [here](https://github.com/orgs/stackblitz-labs/projects/4).
+> **tl;dr**: We use GitHub Projects to manage our mobile-first development roadmap. Our focus areas include mobile UX, performance optimization, accessibility, and cross-platform compatibility. Find our project board [here](https://github.com/orgs/codecraft-studio/projects/1).
 
-Here's how we structure long-term vision, mid-term capabilities of the software and short term improvements.
+## 🎯 Our Mission: Mobile-First AI Development
 
-## Strategic epics (long-term)
+CodeCraft Studio is built around the principle that powerful development tools should work seamlessly on any device. Here's how we structure our work:
 
-Strategic epics define areas in which the product evolves. Usually, these epics don’t overlap. They shall allow the core
-team to define what they believe is most important and should be worked on with the highest priority.
+## 📱 Strategic Focus Areas (Long-term Vision)
 
-You can find the [epics as issues](https://github.com/stackblitz-labs/bolt.diy/labels/epic) which are probably never
-going to be closed.
+Our strategic epics define the core areas where CodeCraft Studio evolves. These focus areas guide our priority decisions and resource allocation:
 
-What's the benefit / purpose of epics?
+### 1. **Mobile Excellence** 🚀
+*Making AI development truly mobile-first*
+- Touch-optimized interfaces
+- Mobile performance optimization
+- Cross-device synchronization
+- Mobile-specific features
 
-1. Prioritization
+### 2. **Universal Accessibility** ♿
+*Ensuring everyone can use CodeCraft Studio*
+- Screen reader compatibility
+- High contrast modes
+- Keyboard navigation
+- Voice control integration
 
-E. g. we could say “managing files is currently more important that quality”. Then, we could thing about which features
-would bring “managing files” forward. It may be different features, such as “upload local files”, “import from a repo”
-or also undo/redo/commit.
+### 3. **Performance & Efficiency** ⚡
+*Optimizing for all devices and networks*
+- Mobile network optimization
+- Battery life considerations
+- Progressive loading
+- Efficient rendering
 
-In a more-or-less regular meeting dedicated for that, the core team discusses which epics matter most, sketch features
-and then check who can work on them. After the meeting, they update the roadmap (at least for the next development turn)
-and this way communicate where the focus currently is.
+### 4. **Developer Experience** 🛠️
+*Making development enjoyable on any device*
+- Intuitive mobile workflows
+- Cross-platform consistency
+- Smart contextual assistance
+- Seamless device switching
 
-2. Grouping of features
+### 5. **AI Integration** 🤖
+*Enhancing AI capabilities for mobile*
+- Mobile-optimized prompting
+- Touch-friendly AI interactions
+- Voice input and commands
+- Offline AI assistance (future)
 
-By linking features with epics, we can keep them together and document _why_ we invest work into a particular thing.
+You can find these [strategic epics as labeled issues](https://github.com/codecraft-studio/issues?q=label%3Aepic) which represent our ongoing focus areas.
 
-## Features (mid-term)
+## 🏗️ Feature Development (Mid-term Capabilities)
 
-We all know probably a dozen of methodologies following which features are being described (User story, business
-function, you name it).
+Features represent specific capabilities we're building within our strategic areas. Each feature:
 
-However, we intentionally describe features in a more vague manner. Why? Everybody loves crisp, well-defined
-acceptance-criteria, no? Well, every product owner loves it. because he knows what he’ll get once it’s done.
+- **Addresses mobile-first design principles**
+- **Improves cross-device compatibility**
+- **Enhances accessibility**
+- **Delivers measurable user value**
 
-But: **here is no owner of this product**. Therefore, we grant _maximum flexibility to the developer contributing a feature_ – so that he can bring in his ideas and have most fun implementing it.
+### Current Feature Priorities:
 
-The feature therefore tries to describe _what_ should be improved but not in detail _how_.
+#### 🚀 **Mobile UX Enhancements**
+- Touch gesture navigation
+- Mobile workbench optimization
+- Responsive chat interface
+- Mobile-friendly modals and dialogs
 
-## PRs as materialized features (short-term)
+#### ⚡ **Performance Optimizations**
+- Bundle size reduction
+- Mobile network efficiency
+- Touch response optimization
+- Progressive loading strategies
 
-Once a developer starts working on a feature, a draft-PR _can_ be opened asap to share, describe and discuss, how the feature shall be implemented. But: this is not a must. It just helps to get early feedback and get other developers involved. Sometimes, the developer just wants to get started and then open a PR later.
+#### ♿ **Accessibility Improvements**
+- Screen reader support
+- Keyboard navigation
+- High contrast themes
+- Voice control integration
 
-In a loosely organized project, it may as well happen that multiple PRs are opened for the same feature. This is no real issue: Usually, peoply being passionate about a solution are willing to join forces and get it done together. And if a second developer was just faster getting the same feature realized: Be happy that it's been done, close the PR and look out for the next feature to implement 🤓
+#### 🔄 **Cross-Platform Features**
+- Device synchronization
+- Progressive Web App (PWA) capabilities
+- Mobile deployment tools
+- Cloud storage integration
 
-## PRs as change log
+## 🔧 Implementation Tasks (Short-term Improvements)
 
-Once a PR is merged, a squashed commit contains the whole PR description which allows for a good change log.
-All authors of commits in the PR are mentioned in the squashed commit message and become contributors 🙌
+Implementation tasks are concrete, actionable items that contribute to our features. These are typically:
+
+- **Bug fixes** that improve mobile experience
+- **UI improvements** for touch interfaces
+- **Performance optimizations** for mobile devices
+- **Accessibility enhancements**
+- **Mobile-specific feature additions**
+
+## 📊 How We Organize Work
+
+### GitHub Projects Integration
+We use [GitHub Projects](https://github.com/orgs/codecraft-studio/projects/1) to track our mobile-first development:
+
+- **📋 Backlog**: Prioritized by mobile impact and user value
+- **🏃 In Progress**: Currently being developed with mobile testing
+- **👀 Review**: Code review with mobile experience validation
+- **✅ Done**: Deployed and verified on mobile devices
+
+### Mobile-First Development Process
+
+1. **🎯 Problem Identification**
+   - Focus on mobile user pain points
+   - Consider cross-device scenarios
+   - Evaluate accessibility impact
+
+2. **📱 Mobile Design First**
+   - Design for mobile screens first
+   - Ensure touch-friendly interactions
+   - Plan responsive scaling
+
+3. **⚡ Performance Consideration**
+   - Optimize for mobile networks
+   - Consider battery impact
+   - Test on lower-end devices
+
+4. **♿ Accessibility Integration**
+   - Design with screen readers in mind
+   - Ensure keyboard navigation
+   - Test with assistive technologies
+
+5. **🧪 Cross-Device Testing**
+   - Test on actual mobile devices
+   - Verify tablet compatibility
+   - Ensure desktop enhancement
+
+### Pull Request Guidelines
+
+All PRs should include:
+- **📱 Mobile testing evidence** (screenshots, videos)
+- **♿ Accessibility verification** (screen reader testing, keyboard nav)
+- **⚡ Performance impact** (bundle size, loading times)
+- **🌍 Cross-browser compatibility** (iOS Safari, Chrome Mobile, etc.)
+
+## 🤝 Community Involvement
+
+### How to Contribute to Mobile-First Development
+
+1. **🐛 Report Mobile Issues**
+   - Test on your mobile devices
+   - Report touch interaction problems
+   - Share accessibility challenges
+
+2. **💡 Suggest Mobile Features**
+   - Propose touch-friendly improvements
+   - Share mobile workflow ideas
+   - Suggest accessibility enhancements
+
+3. **🔧 Contribute Code**
+   - Follow mobile-first design principles
+   - Test on multiple device sizes
+   - Ensure accessibility compliance
+
+4. **📚 Improve Documentation**
+   - Add mobile setup guides
+   - Document touch interactions
+   - Share mobile best practices
+
+### Recognition & Rewards
+
+We especially celebrate contributors who:
+- **📱 Improve mobile experience**
+- **♿ Enhance accessibility**
+- **⚡ Optimize performance**
+- **🎨 Create inclusive designs**
+- **📖 Document mobile workflows**
+
+## 📈 Success Metrics
+
+We measure success through:
+
+### Mobile Experience Metrics
+- **Touch success rate**: Can users complete tasks on mobile?
+- **Loading performance**: How fast does it load on mobile networks?
+- **Accessibility score**: Lighthouse accessibility audit results
+- **Cross-device consistency**: Feature parity across devices
+
+### Community Health Metrics
+- **Mobile issue resolution time**
+- **Cross-device compatibility reports**
+- **Accessibility improvement contributions**
+- **Mobile-focused feature adoption**
+
+## 🚀 Getting Started
+
+Ready to contribute to CodeCraft Studio's mobile-first vision?
+
+1. **📋 Check our project board** for mobile-focused issues
+2. **📱 Test on your devices** and report problems
+3. **💡 Share mobile ideas** that could help others
+4. **🔧 Submit PRs** with mobile testing evidence
+5. **📚 Help document** mobile best practices
+
+## 🎉 The Future is Mobile-First
+
+CodeCraft Studio represents the future of AI-powered development - where powerful tools work beautifully on every device. By focusing on mobile-first principles, we're not just building for today's mobile users; we're preparing for a world where development happens anywhere, anytime, on any device.
+
+Together, we're crafting the studio where ideas become reality, no matter where inspiration strikes! 🚀
+
+---
+
+**Questions about our mobile-first approach?** Open a discussion or reach out to our maintainers. We're here to help you contribute to the mobile development revolution!

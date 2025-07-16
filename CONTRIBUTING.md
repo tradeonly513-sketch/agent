@@ -1,242 +1,304 @@
-# Contribution Guidelines
+# Contributing to CodeCraft Studio
 
-Welcome! This guide provides all the details you need to contribute effectively to the project. Thank you for helping us make **bolt.diy** a better tool for developers worldwide. 💡
+Thank you for your interest in contributing to **CodeCraft Studio**! We're excited to have you help make AI-powered development more accessible and mobile-friendly for everyone.
 
----
+## 🎯 Our Mission
 
-## 📋 Table of Contents
+CodeCraft Studio aims to provide the best AI-powered development experience across all devices, with particular focus on mobile-first design and accessibility. We believe powerful development tools should work seamlessly whether you're on a phone, tablet, or desktop.
 
-1. [Code of Conduct](#code-of-conduct)
-2. [How Can I Contribute?](#how-can-i-contribute)
-3. [Pull Request Guidelines](#pull-request-guidelines)
-4. [Coding Standards](#coding-standards)
-5. [Development Setup](#development-setup)
-6. [Testing](#testing)
-7. [Deployment](#deployment)
-8. [Docker Deployment](#docker-deployment)
-9. [VS Code Dev Containers Integration](#vs-code-dev-containers-integration)
+## 📱 Mobile-First Development
 
----
+Since CodeCraft Studio prioritizes mobile experience, all contributions should consider mobile users:
 
-## 🛡️ Code of Conduct
+### Mobile Development Guidelines
+- **Touch-first design**: All interactive elements should be touch-friendly (44px minimum)
+- **Responsive layouts**: Test on mobile, tablet, and desktop viewports
+- **Performance**: Optimize for mobile networks and devices
+- **Accessibility**: Ensure features work with screen readers and assistive tech
+- **Cross-browser**: Test on iOS Safari, Chrome Mobile, and Firefox Mobile
 
-This project is governed by our **Code of Conduct**. By participating, you agree to uphold this code. Report unacceptable behavior to the project maintainers.
+### Testing on Mobile
+Before submitting, please test your changes on:
+- **Mobile Chrome** (Android)
+- **Safari** (iOS)
+- **Different screen sizes** (phones, tablets)
+- **Both orientations** (portrait and landscape)
+- **Touch interactions** (tap, swipe, pinch)
 
----
+## 🚀 Getting Started
 
-## 🛠️ How Can I Contribute?
+### Prerequisites
+- **Node.js** 20 or higher
+- **pnpm** package manager
+- **Git** for version control
+- **Mobile device** or browser dev tools for testing
 
-### 1️⃣ Reporting Bugs or Feature Requests
+### Development Setup
 
-- Check the [issue tracker](#) to avoid duplicates.
-- Use issue templates (if available).
-- Provide detailed, relevant information and steps to reproduce bugs.
-
-### 2️⃣ Code Contributions
-
-1. Fork the repository.
-2. Create a feature or fix branch.
-3. Write and test your code.
-4. Submit a pull request (PR).
-
-### 3️⃣ Join as a Core Contributor
-
-Interested in maintaining and growing the project? Fill out our [Contributor Application Form](https://forms.gle/TBSteXSDCtBDwr5m7).
-
----
-
-## ✅ Pull Request Guidelines
-
-### PR Checklist
-
-- Branch from the **main** branch.
-- Update documentation, if needed.
-- Test all functionality manually.
-- Focus on one feature/bug per PR.
-
-### Review Process
-
-1. Manual testing by reviewers.
-2. At least one maintainer review required.
-3. Address review comments.
-4. Maintain a clean commit history.
-
----
-
-## 📏 Coding Standards
-
-### General Guidelines
-
-- Follow existing code style.
-- Comment complex logic.
-- Keep functions small and focused.
-- Use meaningful variable names.
-
----
-
-## 🖥️ Development Setup
-
-### 1️⃣ Initial Setup
-
-- Clone the repository:
-  ```bash
-  git clone https://github.com/stackblitz-labs/bolt.diy.git
-  ```
-- Install dependencies:
-  ```bash
-  pnpm install
-  ```
-- Set up environment variables:
-  1. Rename `.env.example` to `.env.local`.
-  2. Add your API keys:
-     ```bash
-     GROQ_API_KEY=XXX
-     HuggingFace_API_KEY=XXX
-     OPENAI_API_KEY=XXX
-     ...
-     ```
-  3. Optionally set:
-     - Debug level: `VITE_LOG_LEVEL=debug`
-     - Context size: `DEFAULT_NUM_CTX=32768`
-
-**Note**: Never commit your `.env.local` file to version control. It’s already in `.gitignore`.
-
-### 2️⃣ Run Development Server
-
-```bash
-pnpm run dev
-```
-
-**Tip**: Use **Google Chrome Canary** for local testing.
-
----
-
-## 🧪 Testing
-
-Run the test suite with:
-
-```bash
-pnpm test
-```
-
----
-
-## 🚀 Deployment
-
-### Deploy to Cloudflare Pages
-
-```bash
-pnpm run deploy
-```
-
-Ensure you have required permissions and that Wrangler is configured.
-
----
-
-## 🐳 Docker Deployment
-
-This section outlines the methods for deploying the application using Docker. The processes for **Development** and **Production** are provided separately for clarity.
-
----
-
-### 🧑‍💻 Development Environment
-
-#### Build Options
-
-**Option 1: Helper Scripts**
-
-```bash
-# Development build
-npm run dockerbuild
-```
-
-**Option 2: Direct Docker Build Command**
-
-```bash
-docker build . --target bolt-ai-development
-```
-
-**Option 3: Docker Compose Profile**
-
-```bash
-docker compose --profile development up
-```
-
-#### Running the Development Container
-
-```bash
-docker run -p 5173:5173 --env-file .env.local bolt-ai:development
-```
-
----
-
-### 🏭 Production Environment
-
-#### Build Options
-
-**Option 1: Helper Scripts**
-
-```bash
-# Production build
-npm run dockerbuild:prod
-```
-
-**Option 2: Direct Docker Build Command**
-
-```bash
-docker build . --target bolt-ai-production
-```
-
-**Option 3: Docker Compose Profile**
-
-```bash
-docker compose --profile production up
-```
-
-#### Running the Production Container
-
-```bash
-docker run -p 5173:5173 --env-file .env.local bolt-ai:production
-```
-
----
-
-### Coolify Deployment
-
-For an easy deployment process, use [Coolify](https://github.com/coollabsio/coolify):
-
-1. Import your Git repository into Coolify.
-2. Choose **Docker Compose** as the build pack.
-3. Configure environment variables (e.g., API keys).
-4. Set the start command:
+1. **Fork and Clone**
    ```bash
-   docker compose --profile production up
+   git clone https://github.com/your-username/codecraft-studio.git
+   cd codecraft-studio
    ```
 
----
+2. **Install Dependencies**
+   ```bash
+   pnpm install
+   ```
 
-## 🛠️ VS Code Dev Containers Integration
+3. **Start Development Server**
+   ```bash
+   pnpm run dev
+   ```
 
-The `docker-compose.yaml` configuration is compatible with **VS Code Dev Containers**, making it easy to set up a development environment directly in Visual Studio Code.
+4. **Test Mobile Experience**
+   ```bash
+   # Enable mobile testing
+   pnpm run dev -- --host 0.0.0.0
+   # Access via your phone using your computer's IP
+   ```
 
-### Steps to Use Dev Containers
+## 📋 How to Contribute
 
-1. Open the command palette in VS Code (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS).
-2. Select **Dev Containers: Reopen in Container**.
-3. Choose the **development** profile when prompted.
-4. VS Code will rebuild the container and open it with the pre-configured environment.
+### 🐛 Reporting Bugs
 
----
+When reporting bugs, especially mobile-related ones, please include:
 
-## 🔑 Environment Variables
+- **Device information** (iPhone 15, Samsung Galaxy S24, iPad Pro, etc.)
+- **Browser and version** (Safari 17.1, Chrome 119, etc.)
+- **Screen size/resolution**
+- **Orientation** (portrait/landscape)
+- **Steps to reproduce**
+- **Expected vs actual behavior**
+- **Screenshots/videos** if applicable
+- **Console errors** from browser dev tools
 
-Ensure `.env.local` is configured correctly with:
+### ✨ Suggesting Features
 
-- API keys.
-- Context-specific configurations.
+We love feature suggestions! Please:
 
-Example for the `DEFAULT_NUM_CTX` variable:
+- **Check existing issues** first
+- **Consider mobile impact** - how will this work on phones?
+- **Provide use cases** - real scenarios where this helps
+- **Include mockups** for UI changes
+- **Think about accessibility** - how do screen readers interact?
 
-```bash
-DEFAULT_NUM_CTX=24576 # Uses 32GB VRAM
+### 🔧 Making Code Changes
+
+#### Mobile-Specific Contributions
+We especially welcome:
+- **Mobile UI improvements**
+- **Touch gesture enhancements**
+- **Performance optimizations**
+- **Accessibility improvements**
+- **Cross-browser compatibility fixes**
+- **Mobile-specific features**
+
+#### Before You Start
+1. **Check existing issues** or create one to discuss your idea
+2. **Fork the repository**
+3. **Create a feature branch** from `main`
+4. **Follow our coding standards**
+
+#### Code Standards
+
+**TypeScript/JavaScript**
+- Use **TypeScript** for all new code
+- Follow **ESLint** and **Prettier** configurations
+- Add **JSDoc comments** for complex functions
+- Use **meaningful variable names**
+
+**React Components**
+- Use **functional components** with hooks
+- Implement **proper error boundaries**
+- Ensure **accessibility** (ARIA labels, keyboard navigation)
+- Make components **responsive by default**
+
+**CSS/Styling**
+- Use **UnoCSS/Tailwind** classes when possible
+- Follow **mobile-first** responsive design
+- Ensure **44px minimum touch targets**
+- Test **dark/light themes**
+- Support **high contrast** modes
+
+**Mobile-Specific Code**
+```typescript
+// Good: Mobile-first responsive design
+className="text-sm md:text-base lg:text-lg"
+
+// Good: Touch-friendly interactions
+className="min-h-[44px] min-w-[44px] touch-manipulation"
+
+// Good: Mobile detection
+import { isMobile } from '~/utils/mobile';
 ```
+
+#### Testing Requirements
+
+All contributions must include:
+
+1. **Unit Tests** (where applicable)
+   ```bash
+   pnpm run test
+   ```
+
+2. **Type Checking**
+   ```bash
+   pnpm run typecheck
+   ```
+
+3. **Linting**
+   ```bash
+   pnpm run lint
+   pnpm run lint:fix
+   ```
+
+4. **Mobile Testing**
+   - Test on actual mobile devices
+   - Verify touch interactions
+   - Check performance on slower devices
+   - Ensure accessibility compliance
+
+#### Pull Request Process
+
+1. **Create descriptive PR title**
+   - `feat: add mobile gesture navigation`
+   - `fix: improve mobile chat scrolling`
+   - `docs: update mobile setup guide`
+
+2. **Write comprehensive description**
+   - What does this change?
+   - Why is it needed?
+   - How does it affect mobile users?
+   - Any breaking changes?
+
+3. **Include screenshots/videos**
+   - Before/after comparisons
+   - Mobile device demonstrations
+   - Different screen sizes
+
+4. **Request appropriate reviewers**
+   - Tag maintainers familiar with changed areas
+   - Request mobile-focused review if applicable
+
+## 🎨 Design Guidelines
+
+### Mobile UI Principles
+- **Thumb-friendly**: Important actions within thumb reach
+- **Clear hierarchy**: Obvious content organization
+- **Minimal taps**: Reduce steps to complete tasks
+- **Forgiveness**: Easy undo/back functionality
+- **Feedback**: Clear response to user actions
+
+### Responsive Breakpoints
+```scss
+// Mobile first approach
+.component {
+  // Mobile (default)
+  padding: 1rem;
+  
+  // Tablet
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+  
+  // Desktop
+  @media (min-width: 1024px) {
+    padding: 2rem;
+  }
+}
+```
+
+### Touch Targets
+- **Minimum size**: 44x44px
+- **Spacing**: 8px between touch targets
+- **Visual feedback**: Hover/active states
+- **Gesture support**: Swipe, pinch, long-press where appropriate
+
+## 🛠 Technical Architecture
+
+### Key Areas for Contribution
+
+**Mobile Store** (`app/lib/stores/mobile.ts`)
+- Mobile state management
+- Device detection
+- Responsive behavior
+
+**Mobile Components**
+- Touch-friendly UI components
+- Responsive layouts
+- Mobile-specific interactions
+
+**Performance**
+- Bundle optimization
+- Mobile network considerations
+- Battery usage optimization
+
+**Accessibility**
+- Screen reader support
+- High contrast modes
+- Keyboard navigation
+- Voice control compatibility
+
+## 📚 Resources
+
+### Learning Materials
+- **Mobile Web Best Practices**: [web.dev/mobile](https://web.dev/mobile/)
+- **Touch Design Guidelines**: [Material Design Touch](https://material.io/design/usability/accessibility.html)
+- **React Mobile Patterns**: [React Native Web](https://necolas.github.io/react-native-web/)
+
+### Testing Tools
+- **Chrome DevTools**: Mobile device simulation
+- **BrowserStack**: Real device testing
+- **Lighthouse**: Performance and accessibility audits
+- **axe-core**: Accessibility testing
+
+## 🤝 Community
+
+### Communication Channels
+- **GitHub Issues**: Bug reports and feature requests
+- **Discussions**: General questions and ideas
+- **Pull Requests**: Code contributions and reviews
+
+### Getting Help
+- **Stuck on mobile implementation?** Open a discussion
+- **Need design guidance?** Tag design-focused maintainers
+- **Performance questions?** Include profiling data
+
+## 🎉 Recognition
+
+Contributors are recognized through:
+- **GitHub contributors page**
+- **Release notes mentions**
+- **Community highlights**
+- **Contributor badges**
+
+We especially celebrate:
+- **First-time contributors**
+- **Mobile experience improvements**
+- **Accessibility enhancements**
+- **Performance optimizations**
+
+## 📝 Code of Conduct
+
+We maintain a welcoming, inclusive environment:
+- **Be respectful** of different viewpoints and experiences
+- **Be patient** with newcomers and different skill levels
+- **Be constructive** in feedback and criticism
+- **Focus on the best outcome** for the community
+
+## 🚀 Ready to Contribute?
+
+1. **Find an issue** tagged `good-first-issue` or `mobile`
+2. **Comment** that you'd like to work on it
+3. **Fork and code** following our guidelines
+4. **Test thoroughly** on mobile devices
+5. **Submit your PR** with detailed description
+
+**Questions?** Don't hesitate to ask! We're here to help you contribute successfully.
+
+---
+
+**Thank you for helping make CodeCraft Studio the best mobile-first AI development platform!** 🎉
+
+Together, we're building the future of accessible, powerful development tools that work beautifully on every device.

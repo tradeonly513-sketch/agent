@@ -167,7 +167,16 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         </div>
       )}
       <div
-        className={classNames('relative shadow-xs border border-bolt-elements-borderColor backdrop-blur rounded-lg')}
+        className={classNames(
+          'relative flex-shrink-0 contain-size overflow-hidden bg-bolt-elements-background-depth-2',
+          'border border-bolt-elements-borderColor rounded-lg transition-all duration-300',
+          'touch-pan-y', // Enable touch scrolling
+          {
+            'min-h-[120px] md:min-h-[134px]': true,
+            'max-h-[300px] md:max-h-[400px]': !props.isModelSettingsCollapsed,
+            'h-[120px] md:h-[134px]': props.isModelSettingsCollapsed,
+          }
+        )}
       >
         <textarea
           ref={props.textareaRef}
