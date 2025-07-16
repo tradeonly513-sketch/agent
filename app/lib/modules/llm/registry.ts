@@ -15,6 +15,7 @@ import OpenAILikeProvider from './providers/openai-like';
 import OpenAIProvider from './providers/openai';
 import OpenRouterProvider from './providers/open-router';
 import PerplexityProvider from './providers/perplexity';
+import SiliconFlowProvider from './providers/siliconflow';
 import TogetherProvider from './providers/together';
 import XAIProvider from './providers/xai';
 
@@ -36,6 +37,7 @@ export {
   OpenRouterProvider,
   OpenAILikeProvider,
   PerplexityProvider,
+  SiliconFlowProvider,
   TogetherProvider,
   XAIProvider,
 };
