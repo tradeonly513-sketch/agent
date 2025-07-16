@@ -9,6 +9,7 @@ export default class MistralProvider extends BaseProvider {
   getApiKeyLink = 'https://console.mistral.ai/api-keys/';
 
   config = {
+    baseUrlKey: 'MISTRAL_API_BASE_URL',
     apiTokenKey: 'MISTRAL_API_KEY',
   };
 
@@ -32,11 +33,11 @@ export default class MistralProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'MISTRAL_API_BASE_URL',
       defaultApiTokenKey: 'MISTRAL_API_KEY',
     });
 
@@ -45,6 +46,7 @@ export default class MistralProvider extends BaseProvider {
     }
 
     const mistral = createMistral({
+      baseURL: baseUrl,
       apiKey,
     });
 

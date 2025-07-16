@@ -9,6 +9,7 @@ export default class DeepseekProvider extends BaseProvider {
   getApiKeyLink = 'https://platform.deepseek.com/apiKeys';
 
   config = {
+    baseUrlKey: 'DEEPSEEK_API_BASE_URL',
     apiTokenKey: 'DEEPSEEK_API_KEY',
   };
 
@@ -26,11 +27,11 @@ export default class DeepseekProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'DEEPSEEK_API_BASE_URL',
       defaultApiTokenKey: 'DEEPSEEK_API_KEY',
     });
 
@@ -39,6 +40,7 @@ export default class DeepseekProvider extends BaseProvider {
     }
 
     const deepseek = createDeepSeek({
+      baseURL: baseUrl,
       apiKey,
     });
 

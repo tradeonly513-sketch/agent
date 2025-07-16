@@ -9,6 +9,7 @@ export default class GroqProvider extends BaseProvider {
   getApiKeyLink = 'https://console.groq.com/keys';
 
   config = {
+    baseUrlKey: 'GROQ_API_BASE_URL',
     apiTokenKey: 'GROQ_API_KEY',
   };
 
@@ -32,11 +33,11 @@ export default class GroqProvider extends BaseProvider {
     settings?: IProviderSetting,
     serverEnv?: Record<string, string>,
   ): Promise<ModelInfo[]> {
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: settings,
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'GROQ_API_BASE_URL',
       defaultApiTokenKey: 'GROQ_API_KEY',
     });
 
@@ -44,7 +45,8 @@ export default class GroqProvider extends BaseProvider {
       throw `Missing Api Key configuration for ${this.name} provider`;
     }
 
-    const response = await fetch(`https://api.groq.com/openai/v1/models`, {
+    const apiBaseUrl = baseUrl || 'https://api.groq.com/openai/v1';
+    const response = await fetch(`${apiBaseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -72,11 +74,11 @@ export default class GroqProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'GROQ_API_BASE_URL',
       defaultApiTokenKey: 'GROQ_API_KEY',
     });
 
@@ -85,7 +87,7 @@ export default class GroqProvider extends BaseProvider {
     }
 
     const openai = createOpenAI({
-      baseURL: 'https://api.groq.com/openai/v1',
+      baseURL: baseUrl || 'https://api.groq.com/openai/v1',
       apiKey,
     });
 

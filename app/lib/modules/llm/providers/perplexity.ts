@@ -9,6 +9,7 @@ export default class PerplexityProvider extends BaseProvider {
   getApiKeyLink = 'https://www.perplexity.ai/settings/api';
 
   config = {
+    baseUrlKey: 'PERPLEXITY_API_BASE_URL',
     apiTokenKey: 'PERPLEXITY_API_KEY',
   };
 
@@ -41,11 +42,11 @@ export default class PerplexityProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'PERPLEXITY_API_BASE_URL',
       defaultApiTokenKey: 'PERPLEXITY_API_KEY',
     });
 
@@ -54,7 +55,7 @@ export default class PerplexityProvider extends BaseProvider {
     }
 
     const perplexity = createOpenAI({
-      baseURL: 'https://api.perplexity.ai/',
+      baseURL: baseUrl || 'https://api.perplexity.ai/',
       apiKey,
     });
 

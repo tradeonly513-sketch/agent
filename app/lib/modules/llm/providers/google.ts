@@ -9,6 +9,7 @@ export default class GoogleProvider extends BaseProvider {
   getApiKeyLink = 'https://aistudio.google.com/app/apikey';
 
   config = {
+    baseUrlKey: 'GOOGLE_GENERATIVE_AI_API_BASE_URL',
     apiTokenKey: 'GOOGLE_GENERATIVE_AI_API_KEY',
   };
 
@@ -33,11 +34,11 @@ export default class GoogleProvider extends BaseProvider {
     settings?: IProviderSetting,
     serverEnv?: Record<string, string>,
   ): Promise<ModelInfo[]> {
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: settings,
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'GOOGLE_GENERATIVE_AI_API_BASE_URL',
       defaultApiTokenKey: 'GOOGLE_GENERATIVE_AI_API_KEY',
     });
 
@@ -45,7 +46,8 @@ export default class GoogleProvider extends BaseProvider {
       throw `Missing Api Key configuration for ${this.name} provider`;
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+    const apiBaseUrl = baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
+    const response = await fetch(`${apiBaseUrl}/models?key=${apiKey}`, {
       headers: {
         ['Content-Type']: 'application/json',
       },
@@ -71,11 +73,11 @@ export default class GoogleProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'GOOGLE_GENERATIVE_AI_API_BASE_URL',
       defaultApiTokenKey: 'GOOGLE_GENERATIVE_AI_API_KEY',
     });
 
@@ -84,6 +86,7 @@ export default class GoogleProvider extends BaseProvider {
     }
 
     const google = createGoogleGenerativeAI({
+      baseURL: baseUrl,
       apiKey,
     });
 

@@ -9,6 +9,7 @@ export default class CohereProvider extends BaseProvider {
   getApiKeyLink = 'https://dashboard.cohere.com/api-keys';
 
   config = {
+    baseUrlKey: 'COHERE_API_BASE_URL',
     apiTokenKey: 'COHERE_API_KEY',
   };
 
@@ -33,11 +34,11 @@ export default class CohereProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'COHERE_API_BASE_URL',
       defaultApiTokenKey: 'COHERE_API_KEY',
     });
 
@@ -46,6 +47,7 @@ export default class CohereProvider extends BaseProvider {
     }
 
     const cohere = createCohere({
+      baseURL: baseUrl,
       apiKey,
     });
 

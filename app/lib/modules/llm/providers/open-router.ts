@@ -23,6 +23,7 @@ export default class OpenRouterProvider extends BaseProvider {
   getApiKeyLink = 'https://openrouter.ai/settings/keys';
 
   config = {
+    baseUrlKey: 'OPEN_ROUTER_API_BASE_URL',
     apiTokenKey: 'OPEN_ROUTER_API_KEY',
   };
 
@@ -79,7 +80,16 @@ export default class OpenRouterProvider extends BaseProvider {
     _serverEnv: Record<string, string> = {},
   ): Promise<ModelInfo[]> {
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/models', {
+      const { baseUrl } = this.getProviderBaseUrlAndKey({
+        apiKeys: _apiKeys,
+        providerSettings: _settings,
+        serverEnv: _serverEnv,
+        defaultBaseUrlKey: 'OPEN_ROUTER_API_BASE_URL',
+        defaultApiTokenKey: 'OPEN_ROUTER_API_KEY',
+      });
+
+      const apiBaseUrl = baseUrl || 'https://openrouter.ai/api/v1';
+      const response = await fetch(`${apiBaseUrl}/models`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -109,11 +119,11 @@ export default class OpenRouterProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'OPEN_ROUTER_API_BASE_URL',
       defaultApiTokenKey: 'OPEN_ROUTER_API_KEY',
     });
 
@@ -122,6 +132,7 @@ export default class OpenRouterProvider extends BaseProvider {
     }
 
     const openRouter = createOpenRouter({
+      baseURL: baseUrl,
       apiKey,
     });
     const instance = openRouter.chat(model) as LanguageModelV1;

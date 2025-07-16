@@ -9,6 +9,7 @@ export default class XAIProvider extends BaseProvider {
   getApiKeyLink = 'https://docs.x.ai/docs/quickstart#creating-an-api-key';
 
   config = {
+    baseUrlKey: 'XAI_API_BASE_URL',
     apiTokenKey: 'XAI_API_KEY',
   };
 
@@ -26,11 +27,11 @@ export default class XAIProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'XAI_API_BASE_URL',
       defaultApiTokenKey: 'XAI_API_KEY',
     });
 
@@ -39,7 +40,7 @@ export default class XAIProvider extends BaseProvider {
     }
 
     const openai = createOpenAI({
-      baseURL: 'https://api.x.ai/v1',
+      baseURL: baseUrl || 'https://api.x.ai/v1',
       apiKey,
     });
 

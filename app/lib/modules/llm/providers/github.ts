@@ -9,6 +9,7 @@ export default class GithubProvider extends BaseProvider {
   getApiKeyLink = 'https://github.com/settings/personal-access-tokens';
 
   config = {
+    baseUrlKey: 'GITHUB_API_BASE_URL',
     apiTokenKey: 'GITHUB_API_KEY',
   };
 
@@ -31,11 +32,11 @@ export default class GithubProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'GITHUB_API_BASE_URL',
       defaultApiTokenKey: 'GITHUB_API_KEY',
     });
 
@@ -44,7 +45,7 @@ export default class GithubProvider extends BaseProvider {
     }
 
     const openai = createOpenAI({
-      baseURL: 'https://models.inference.ai.azure.com',
+      baseURL: baseUrl || 'https://models.inference.ai.azure.com',
       apiKey,
     });
 

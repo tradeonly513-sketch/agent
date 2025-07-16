@@ -9,6 +9,7 @@ export default class HuggingFaceProvider extends BaseProvider {
   getApiKeyLink = 'https://huggingface.co/settings/tokens';
 
   config = {
+    baseUrlKey: 'HUGGINGFACE_API_BASE_URL',
     apiTokenKey: 'HuggingFace_API_KEY',
   };
 
@@ -89,11 +90,11 @@ export default class HuggingFaceProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'HUGGINGFACE_API_BASE_URL',
       defaultApiTokenKey: 'HuggingFace_API_KEY',
     });
 
@@ -102,7 +103,7 @@ export default class HuggingFaceProvider extends BaseProvider {
     }
 
     const openai = createOpenAI({
-      baseURL: 'https://api-inference.huggingface.co/v1/',
+      baseURL: baseUrl || 'https://api-inference.huggingface.co/v1/',
       apiKey,
     });
 

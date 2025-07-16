@@ -9,6 +9,7 @@ export default class OpenAIProvider extends BaseProvider {
   getApiKeyLink = 'https://platform.openai.com/api-keys';
 
   config = {
+    baseUrlKey: 'OPENAI_API_BASE_URL',
     apiTokenKey: 'OPENAI_API_KEY',
   };
 
@@ -25,11 +26,11 @@ export default class OpenAIProvider extends BaseProvider {
     settings?: IProviderSetting,
     serverEnv?: Record<string, string>,
   ): Promise<ModelInfo[]> {
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: settings,
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'OPENAI_API_BASE_URL',
       defaultApiTokenKey: 'OPENAI_API_KEY',
     });
 
@@ -37,7 +38,8 @@ export default class OpenAIProvider extends BaseProvider {
       throw `Missing Api Key configuration for ${this.name} provider`;
     }
 
-    const response = await fetch(`https://api.openai.com/v1/models`, {
+    const apiBaseUrl = baseUrl || 'https://api.openai.com/v1';
+    const response = await fetch(`${apiBaseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -69,11 +71,11 @@ export default class OpenAIProvider extends BaseProvider {
   }): LanguageModelV1 {
     const { model, serverEnv, apiKeys, providerSettings } = options;
 
-    const { apiKey } = this.getProviderBaseUrlAndKey({
+    const { baseUrl, apiKey } = this.getProviderBaseUrlAndKey({
       apiKeys,
       providerSettings: providerSettings?.[this.name],
       serverEnv: serverEnv as any,
-      defaultBaseUrlKey: '',
+      defaultBaseUrlKey: 'OPENAI_API_BASE_URL',
       defaultApiTokenKey: 'OPENAI_API_KEY',
     });
 
@@ -82,6 +84,7 @@ export default class OpenAIProvider extends BaseProvider {
     }
 
     const openai = createOpenAI({
+      baseURL: baseUrl || 'https://api.openai.com/v1',
       apiKey,
     });
 
