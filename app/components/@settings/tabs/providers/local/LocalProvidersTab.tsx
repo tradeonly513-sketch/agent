@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Switch } from '~/components/ui/Switch';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { LOCAL_PROVIDERS, URL_CONFIGURABLE_PROVIDERS } from '~/lib/stores/settings';
 import type { IProviderConfig } from '~/types/model';
 import { logStore } from '~/lib/stores/logs';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { BsRobot } from 'react-icons/bs';
 import type { IconType } from 'react-icons';

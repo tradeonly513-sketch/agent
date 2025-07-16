@@ -104,7 +104,6 @@ export function useNetlifyDeploy() {
         } catch (error) {
           // Directory doesn't exist, try the next one
           console.log(`Directory ${dir} doesn't exist, trying next option. ${error}`);
-          continue;
         }
       }
 

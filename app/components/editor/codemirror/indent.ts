@@ -1,6 +1,6 @@
 import { indentLess } from '@codemirror/commands';
 import { indentUnit } from '@codemirror/language';
-import { EditorSelection, EditorState, Line, type ChangeSpec } from '@codemirror/state';
+import { type ChangeSpec, EditorSelection, EditorState, Line } from '@codemirror/state';
 import { EditorView, type KeyBinding } from '@codemirror/view';
 
 export const indentKeyBinding: KeyBinding = {

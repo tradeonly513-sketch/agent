@@ -1,11 +1,11 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '~/components/ui/Button';
 import { ConfirmationDialog, SelectionDialog } from '~/components/ui/Dialog';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '~/components/ui/Card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/Card';
 import { motion } from 'framer-motion';
 import { useDataOperations } from '~/lib/hooks/useDataOperations';
 import { openDatabase } from '~/lib/persistence/db';
-import { getAllChats, type Chat } from '~/lib/persistence/chats';
+import { type Chat, getAllChats } from '~/lib/persistence/chats';
 import { DataVisualization } from './DataVisualization';
 import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';

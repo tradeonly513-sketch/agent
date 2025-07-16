@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { classNames } from '~/utils/classNames';
 import { Input } from './Input';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /** Function to call when the clear button is clicked */

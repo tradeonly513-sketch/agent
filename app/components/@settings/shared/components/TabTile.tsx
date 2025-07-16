@@ -1,7 +1,7 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { classNames } from '~/utils/classNames';
 import type { TabVisibilityConfig } from '~/components/@settings/core/types';
-import { TAB_LABELS, TAB_ICONS } from '~/components/@settings/core/constants';
+import { TAB_ICONS, TAB_LABELS } from '~/components/@settings/core/constants';
 import { GlowingEffect } from '~/components/ui/GlowingEffect';
 
 interface TabTileProps {

@@ -7,8 +7,8 @@
 
 import * as React from 'react';
 import {
-  type ReactNode,
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useImperativeHandle,
@@ -32,8 +32,11 @@ export interface StickToBottomContext {
   stopScroll: StopScroll;
   isAtBottom: boolean;
   escapedFromLock: boolean;
+
   get targetScrollTop(): GetTargetScrollTop | null;
+
   set targetScrollTop(targetScrollTop: GetTargetScrollTop | null);
+
   state: StickToBottomState;
 }
 

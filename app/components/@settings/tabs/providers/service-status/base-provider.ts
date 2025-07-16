@@ -1,4 +1,4 @@
-import type { ProviderConfig, StatusCheckResult, ApiResponse } from './types';
+import type { ApiResponse, ProviderConfig, StatusCheckResult } from './types';
 
 export abstract class BaseProviderChecker {
   protected config: ProviderConfig;

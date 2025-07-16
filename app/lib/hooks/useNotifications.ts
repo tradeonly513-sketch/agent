@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getNotifications, markNotificationRead, type Notification } from '~/lib/api/notifications';
 import { logStore } from '~/lib/stores/logs';
 import { useStore } from '@nanostores/react';

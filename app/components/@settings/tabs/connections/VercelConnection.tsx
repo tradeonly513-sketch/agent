@@ -5,11 +5,11 @@ import { useStore } from '@nanostores/react';
 import { logStore } from '~/lib/stores/logs';
 import { classNames } from '~/utils/classNames';
 import {
-  vercelConnection,
+  fetchVercelStats,
   isConnecting,
   isFetchingStats,
   updateVercelConnection,
-  fetchVercelStats,
+  vercelConnection,
 } from '~/lib/stores/vercel';
 
 export default function VercelConnection() {

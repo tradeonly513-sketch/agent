@@ -1,24 +1,24 @@
 import { useStore } from '@nanostores/react';
 import {
-  isDebugMode,
-  isEventLogsEnabled,
-  promptStore,
-  providersStore,
-  latestBranchStore,
   autoSelectStarterTemplate,
   enableContextOptimizationStore,
-  tabConfigurationStore,
+  isDebugMode,
+  isEventLogsEnabled,
+  latestBranchStore,
+  promptStore,
+  providersStore,
   resetTabConfiguration as resetTabConfig,
-  updateProviderSettings as updateProviderSettingsStore,
-  updateLatestBranch,
+  tabConfigurationStore,
   updateAutoSelectTemplate,
   updateContextOptimization,
   updateEventLogs,
+  updateLatestBranch,
   updatePromptId,
+  updateProviderSettings as updateProviderSettingsStore,
 } from '~/lib/stores/settings';
 import { useCallback, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import type { IProviderSetting, ProviderInfo, IProviderConfig } from '~/types/model';
+import type { IProviderConfig, IProviderSetting, ProviderInfo } from '~/types/model';
 import type { TabWindowConfig } from '~/components/@settings/core/types';
 import { logStore } from '~/lib/stores/logs';
 import { getLocalStorage, setLocalStorage } from '~/lib/persistence';

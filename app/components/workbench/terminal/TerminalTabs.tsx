@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react';
 import React, { memo, useEffect, useRef, useState } from 'react';
-import { Panel, type ImperativePanelHandle } from 'react-resizable-panels';
+import { type ImperativePanelHandle, Panel } from 'react-resizable-panels';
 import { IconButton } from '~/components/ui/IconButton';
 import { shortcutEventEmitter } from '~/lib/hooks';
 import { themeStore } from '~/lib/stores/theme';

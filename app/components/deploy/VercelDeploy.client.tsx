@@ -99,7 +99,6 @@ export function useVercelDeploy() {
           break;
         } catch {
           // Directory doesn't exist, expected — just skip it
-          continue;
         }
       }
 

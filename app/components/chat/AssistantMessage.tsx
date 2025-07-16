@@ -1,19 +1,18 @@
-import { memo, Fragment } from 'react';
+import { Fragment, memo } from 'react';
 import { Markdown } from './Markdown';
-import type { JSONValue } from 'ai';
+import type { JSONValue, Message } from 'ai';
 import Popover from '~/components/ui/Popover';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { WORK_DIR } from '~/utils/constants';
 import WithTooltip from '~/components/ui/Tooltip';
-import type { Message } from 'ai';
 import type { ProviderInfo } from '~/types/model';
 import type {
-  TextUIPart,
-  ReasoningUIPart,
-  ToolInvocationUIPart,
-  SourceUIPart,
   FileUIPart,
+  ReasoningUIPart,
+  SourceUIPart,
   StepStartUIPart,
+  TextUIPart,
+  ToolInvocationUIPart,
 } from '@ai-sdk/ui-utils';
 import { ToolInvocations } from './ToolInvocations';
 import type { ToolCallAnnotation } from '~/types/context';

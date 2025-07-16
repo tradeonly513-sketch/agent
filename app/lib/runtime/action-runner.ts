@@ -58,6 +58,7 @@ class ActionCommandError extends Error {
   get output() {
     return this._output;
   }
+
   get header() {
     return this._header;
   }
@@ -436,9 +437,7 @@ export class ActionRunner {
         await webcontainer.fs.readdir(dirPath);
         buildDir = dirPath;
         break;
-      } catch {
-        continue;
-      }
+      } catch {}
     }
 
     // If no build directory was found, use the default (dist)
@@ -452,6 +451,7 @@ export class ActionRunner {
       output,
     };
   }
+
   async handleSupabaseAction(action: SupabaseAction) {
     const { operation, content, filePath } = action;
     logger.debug('[Supabase Action]:', { operation, filePath, content });

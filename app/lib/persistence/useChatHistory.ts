@@ -1,26 +1,26 @@
 import { useLoaderData, useNavigate, useSearchParams } from '@remix-run/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { atom } from 'nanostores';
 import { generateId, type JSONValue, type Message } from 'ai';
 import { toast } from 'react-toastify';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { logStore } from '~/lib/stores/logs'; // Import logStore
 import {
+  createChatFromMessages,
+  duplicateChat,
   getMessages,
   getNextId,
+  getSnapshot,
   getUrlId,
+  type IChatMetadata,
   openDatabase,
   setMessages,
-  duplicateChat,
-  createChatFromMessages,
-  getSnapshot,
   setSnapshot,
-  type IChatMetadata,
 } from './db';
 import type { FileMap } from '~/lib/stores/files';
 import type { Snapshot } from './types';
 import { webcontainer } from '~/lib/webcontainer';
-import { detectProjectCommands, createCommandActionsString } from '~/utils/projectCommands';
+import { createCommandActionsString, detectProjectCommands } from '~/utils/projectCommands';
 import type { ContextAnnotation } from '~/types/context';
 
 export interface ChatHistoryItem {
@@ -39,6 +39,7 @@ export const db = persistenceEnabled ? await openDatabase() : undefined;
 export const chatId = atom<string | undefined>(undefined);
 export const description = atom<string | undefined>(undefined);
 export const chatMetadata = atom<IChatMetadata | undefined>(undefined);
+
 export function useChatHistory() {
   const navigate = useNavigate();
   const { id: mixedId } = useLoaderData<{ id?: string }>();
@@ -145,7 +146,7 @@ ${value.content}
                       }
                     })
                     .join('\n')}
-                  ${commandActionsString} 
+                  ${commandActionsString}
                   </boltArtifact>
                   `, // Added commandActionsString, followupMessage, updated id and title
                   annotations: [

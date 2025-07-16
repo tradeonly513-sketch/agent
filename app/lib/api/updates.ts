@@ -11,6 +11,7 @@ export interface UpdateCheckResult {
 interface PackageJson {
   version: string;
   name: string;
+
   [key: string]: unknown;
 }
 

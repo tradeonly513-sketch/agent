@@ -1,4 +1,4 @@
-import { EditorView, Decoration, type DecorationSet, ViewPlugin, WidgetType } from '@codemirror/view';
+import { Decoration, type DecorationSet, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 
 // Create a proper WidgetType class for the masked text
 class MaskedTextWidget extends WidgetType {

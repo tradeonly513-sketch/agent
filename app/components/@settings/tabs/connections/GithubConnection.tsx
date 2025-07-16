@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { logStore } from '~/lib/stores/logs';
 import { classNames } from '~/utils/classNames';
 import Cookies from 'js-cookie';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '~/components/ui/Collapsible';
 import { Button } from '~/components/ui/Button';
 
 interface GitHubUserResponse {

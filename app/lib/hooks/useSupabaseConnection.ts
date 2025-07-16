@@ -3,12 +3,12 @@ import { toast } from 'react-toastify';
 import { useStore } from '@nanostores/react';
 import { logStore } from '~/lib/stores/logs';
 import {
-  supabaseConnection,
-  isConnecting,
-  isFetchingStats,
-  isFetchingApiKeys,
-  updateSupabaseConnection,
   fetchProjectApiKeys,
+  isConnecting,
+  isFetchingApiKeys,
+  isFetchingStats,
+  supabaseConnection,
+  updateSupabaseConnection,
 } from '~/lib/stores/supabase';
 
 export function useSupabaseConnection() {

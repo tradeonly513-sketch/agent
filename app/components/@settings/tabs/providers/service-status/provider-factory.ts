@@ -1,4 +1,4 @@
-import type { ProviderName, ProviderConfig, StatusCheckResult } from './types';
+import type { ProviderConfig, ProviderName, StatusCheckResult } from './types';
 import { BaseProviderChecker } from './base-provider';
 
 import { AmazonBedrockStatusChecker } from './providers/amazon-bedrock';

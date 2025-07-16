@@ -18,6 +18,7 @@ export class TerminalStore {
       import.meta.hot.data.showTerminal = this.showTerminal;
     }
   }
+
   get boltTerminal() {
     return this.#boltTerminal;
   }
@@ -25,6 +26,7 @@ export class TerminalStore {
   toggleTerminal(value?: boolean) {
     this.showTerminal.set(value !== undefined ? value : !this.showTerminal.get());
   }
+
   async attachBoltTerminal(terminal: ITerminal) {
     try {
       const wc = await this.#webcontainer;

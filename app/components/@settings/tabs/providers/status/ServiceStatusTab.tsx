@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
-import { TbActivityHeartbeat } from 'react-icons/tb';
-import { BsCheckCircleFill, BsXCircleFill, BsExclamationCircleFill } from 'react-icons/bs';
-import { SiAmazon, SiGoogle, SiHuggingface, SiPerplexity, SiOpenai } from 'react-icons/si';
-import { BsRobot, BsCloud } from 'react-icons/bs';
-import { TbBrain } from 'react-icons/tb';
+import { TbActivityHeartbeat, TbBrain } from 'react-icons/tb';
+import { BsCheckCircleFill, BsCloud, BsExclamationCircleFill, BsRobot, BsXCircleFill } from 'react-icons/bs';
+import { SiAmazon, SiGoogle, SiHuggingface, SiOpenai, SiPerplexity } from 'react-icons/si';
 import { BiChip, BiCodeBlock } from 'react-icons/bi';
-import { FaCloud, FaBrain } from 'react-icons/fa';
+import { FaBrain, FaCloud } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { useToast } from '~/components/ui/use-toast';

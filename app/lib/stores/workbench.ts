@@ -6,7 +6,7 @@ import { webcontainer } from '~/lib/webcontainer';
 import type { ITerminal } from '~/types/terminal';
 import { unreachable } from '~/utils/unreachable';
 import { EditorStore } from './editor';
-import { FilesStore, type FileMap } from './files';
+import { type FileMap, FilesStore } from './files';
 import { PreviewsStore } from './previews';
 import { TerminalStore } from './terminal';
 import JSZip from 'jszip';
@@ -57,6 +57,7 @@ export class WorkbenchStore {
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
   #globalExecutionQueue = Promise.resolve();
+
   constructor() {
     if (import.meta.hot) {
       import.meta.hot.data.artifacts = this.artifacts;
@@ -110,12 +111,15 @@ export class WorkbenchStore {
   get showTerminal() {
     return this.#terminalStore.showTerminal;
   }
+
   get boltTerminal() {
     return this.#terminalStore.boltTerminal;
   }
+
   get alert() {
     return this.actionAlert;
   }
+
   clearAlert() {
     this.actionAlert.set(undefined);
   }
@@ -143,6 +147,7 @@ export class WorkbenchStore {
   attachTerminal(terminal: ITerminal) {
     this.#terminalStore.attachTerminal(terminal);
   }
+
   attachBoltTerminal(terminal: ITerminal) {
     this.#terminalStore.attachBoltTerminal(terminal);
   }
@@ -518,11 +523,13 @@ export class WorkbenchStore {
 
     this.artifacts.setKey(messageId, { ...artifact, ...state });
   }
+
   addAction(data: ActionCallbackData) {
     // this._addAction(data);
 
     this.addToExecutionQueue(() => this._addAction(data));
   }
+
   async _addAction(data: ActionCallbackData) {
     const { messageId } = data;
 
@@ -542,6 +549,7 @@ export class WorkbenchStore {
       this.addToExecutionQueue(() => this._runAction(data, isStreaming));
     }
   }
+
   async _runAction(data: ActionCallbackData, isStreaming: boolean = false) {
     const { messageId } = data;
 

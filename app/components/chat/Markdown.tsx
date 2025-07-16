@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import type { BundledLanguage } from 'shiki';
 import { createScopedLogger } from '~/utils/logger';
-import { rehypePlugins, remarkPlugins, allowedHTMLElements } from '~/utils/markdown';
+import { allowedHTMLElements, rehypePlugins, remarkPlugins } from '~/utils/markdown';
 import { Artifact, openArtifactInWorkbench } from './Artifact';
 import { CodeBlock } from './CodeBlock';
 import type { Message } from 'ai';

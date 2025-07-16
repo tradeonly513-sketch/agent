@@ -1,6 +1,6 @@
 import type { Message } from 'ai';
 import { generateId } from './fileUtils';
-import { detectProjectCommands, createCommandsMessage, escapeBoltTags } from './projectCommands';
+import { createCommandsMessage, detectProjectCommands, escapeBoltTags } from './projectCommands';
 
 export const createChatFromFolder = async (
   files: File[],

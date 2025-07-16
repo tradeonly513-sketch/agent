@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
+  ArcElement,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  ArcElement,
-  PointElement,
-  LineElement,
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import type { Chat } from '~/lib/persistence/chats';

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Switch } from '~/components/ui/Switch';
-import { logStore, type LogEntry } from '~/lib/stores/logs';
+import { type LogEntry, logStore } from '~/lib/stores/logs';
 import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';

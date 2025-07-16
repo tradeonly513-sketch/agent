@@ -1,5 +1,5 @@
-import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
-import { MAX_TOKENS, type FileMap } from './constants';
+import { convertToCoreMessages, type Message, streamText as _streamText } from 'ai';
+import { type FileMap, MAX_TOKENS } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
 import type { IProviderSetting } from '~/types/model';

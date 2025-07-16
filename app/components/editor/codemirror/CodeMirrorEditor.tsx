@@ -2,7 +2,7 @@ import { acceptCompletion, autocompletion, closeBrackets } from '@codemirror/aut
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching, foldGutter, indentOnInput, indentUnit } from '@codemirror/language';
 import { searchKeymap } from '@codemirror/search';
-import { Compartment, EditorSelection, EditorState, StateEffect, StateField, type Extension } from '@codemirror/state';
+import { Compartment, EditorSelection, EditorState, type Extension, StateEffect, StateField } from '@codemirror/state';
 import {
   drawSelection,
   dropCursor,
@@ -13,15 +13,15 @@ import {
   lineNumbers,
   scrollPastEnd,
   showTooltip,
-  tooltips,
   type Tooltip,
+  tooltips,
 } from '@codemirror/view';
-import { memo, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { memo, type MutableRefObject, useEffect, useRef, useState } from 'react';
 import type { Theme } from '~/types/theme';
 import { classNames } from '~/utils/classNames';
 import { debounce } from '~/utils/debounce';
 import { createScopedLogger, renderLogger } from '~/utils/logger';
-import { isFileLocked, getCurrentChatId } from '~/utils/fileLocks';
+import { getCurrentChatId, isFileLocked } from '~/utils/fileLocks';
 import { BinaryContent } from './BinaryContent';
 import { getTheme, reconfigureTheme } from './cm-theme';
 import { indentKeyBinding } from './indent';

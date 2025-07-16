@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import type { TextSearchOptions, TextSearchOnProgressCallback, WebContainer } from '@webcontainer/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { TextSearchOnProgressCallback, TextSearchOptions, WebContainer } from '@webcontainer/api';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { webcontainer } from '~/lib/webcontainer';
 import { WORK_DIR } from '~/utils/constants';
@@ -196,7 +196,8 @@ export function Search() {
       <div className="flex-1 overflow-auto py-2">
         {isSearching && (
           <div className="flex items-center justify-center h-32 text-bolt-elements-textTertiary">
-            <div className="i-ph:circle-notch animate-spin mr-2" /> Searching...
+            <div className="i-ph:circle-notch animate-spin mr-2" />
+            Searching...
           </div>
         )}
         {!isSearching && hasSearched && searchResults.length === 0 && searchQuery.trim() !== '' && (

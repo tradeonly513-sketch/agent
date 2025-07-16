@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Switch } from '~/components/ui/Switch';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { URL_CONFIGURABLE_PROVIDERS } from '~/lib/stores/settings';
@@ -8,11 +8,11 @@ import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
-import { SiAmazon, SiGoogle, SiHuggingface, SiPerplexity, SiOpenai } from 'react-icons/si';
-import { BsRobot, BsCloud } from 'react-icons/bs';
+import { SiAmazon, SiGoogle, SiHuggingface, SiOpenai, SiPerplexity } from 'react-icons/si';
+import { BsCloud, BsRobot } from 'react-icons/bs';
 import { TbBrain, TbCloudComputing } from 'react-icons/tb';
-import { BiCodeBlock, BiChip } from 'react-icons/bi';
-import { FaCloud, FaBrain } from 'react-icons/fa';
+import { BiChip, BiCodeBlock } from 'react-icons/bi';
+import { FaBrain, FaCloud } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 
 // Add type for provider names to ensure type safety

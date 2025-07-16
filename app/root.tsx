@@ -15,6 +15,7 @@ import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
 
 import 'virtual:uno.css';
+import { logStore } from './lib/stores/logs';
 
 export const links: LinksFunction = () => [
   {
@@ -80,8 +81,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
-import { logStore } from './lib/stores/logs';
 
 export default function App() {
   const theme = useStore(themeStore);

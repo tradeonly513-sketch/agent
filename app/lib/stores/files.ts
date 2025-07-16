@@ -10,15 +10,15 @@ import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import {
   addLockedFile,
-  removeLockedFile,
   addLockedFolder,
-  removeLockedFolder,
-  getLockedItemsForChat,
+  clearCache,
   getLockedFilesForChat,
   getLockedFoldersForChat,
+  getLockedItemsForChat,
   isPathInLockedFolder,
   migrateLegacyLocks,
-  clearCache,
+  removeLockedFile,
+  removeLockedFolder,
 } from '~/lib/persistence/lockedFiles';
 import { getCurrentChatId } from '~/utils/fileLocks';
 
@@ -519,6 +519,7 @@ export class FilesStore {
   getFileModifications() {
     return computeFileModifications(this.files.get(), this.#modifiedFiles);
   }
+
   getModifiedFiles() {
     let modifiedFiles: { [path: string]: File } | undefined = undefined;
 

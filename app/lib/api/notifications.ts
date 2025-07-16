@@ -1,5 +1,5 @@
-import { logStore } from '~/lib/stores/logs';
 import type { LogEntry } from '~/lib/stores/logs';
+import { logStore } from '~/lib/stores/logs';
 
 export interface Notification {
   id: string;

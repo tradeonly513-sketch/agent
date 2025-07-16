@@ -1,7 +1,7 @@
 import ignore from 'ignore';
 import { useGit } from '~/lib/hooks/useGit';
 import type { Message } from 'ai';
-import { detectProjectCommands, createCommandsMessage, escapeBoltTags } from '~/utils/projectCommands';
+import { createCommandsMessage, detectProjectCommands, escapeBoltTags } from '~/utils/projectCommands';
 import { generateId } from '~/utils/fileUtils';
 import { useState } from 'react';
 import { toast } from 'react-toastify';

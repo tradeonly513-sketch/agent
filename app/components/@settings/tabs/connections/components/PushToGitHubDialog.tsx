@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/rest';
@@ -12,10 +12,10 @@ import { logStore } from '~/lib/stores/logs';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { extractRelativePath } from '~/utils/diff';
 import { formatSize } from '~/utils/formatSize';
-import type { FileMap, File } from '~/lib/stores/files';
+import type { File, FileMap } from '~/lib/stores/files';
 
 // UI Components
-import { Badge, EmptyState, StatusIndicator, SearchInput } from '~/components/ui';
+import { Badge, EmptyState, SearchInput, StatusIndicator } from '~/components/ui';
 
 interface PushToGitHubDialogProps {
   isOpen: boolean;

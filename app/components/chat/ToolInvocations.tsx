@@ -1,7 +1,7 @@
 import type { ToolInvocationUIPart } from '@ai-sdk/ui-utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useMemo, useState, useEffect } from 'react';
-import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { type BundledLanguage, type BundledTheme, createHighlighter, type HighlighterGeneric } from 'shiki';
 import { classNames } from '~/utils/classNames';
 import {
   TOOL_EXECUTION_APPROVAL,
@@ -11,7 +11,7 @@ import {
 } from '~/utils/constants';
 import { cubicEasingFn } from '~/utils/easings';
 import { logger } from '~/utils/logger';
-import { themeStore, type Theme } from '~/lib/stores/theme';
+import { type Theme, themeStore } from '~/lib/stores/theme';
 import { useStore } from '@nanostores/react';
 import type { ToolCallAnnotation } from '~/types/context';
 

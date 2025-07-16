@@ -1,7 +1,7 @@
-import { generateText, type CoreTool, type GenerateTextResult, type Message } from 'ai';
+import { type CoreTool, generateText, type GenerateTextResult, type Message } from 'ai';
 import ignore from 'ignore';
 import type { IProviderSetting } from '~/types/model';
-import { IGNORE_PATTERNS, type FileMap } from './constants';
+import { type FileMap, IGNORE_PATTERNS } from './constants';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constants';
 import { createFilesContext, extractCurrentContext, extractPropertiesFromMessage, simplifyBoltActions } from './utils';
 import { createScopedLogger } from '~/utils/logger';

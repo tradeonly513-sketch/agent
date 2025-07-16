@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getFeatureFlags, markFeatureViewed, type Feature } from '~/lib/api/features';
+import { useEffect, useState } from 'react';
+import { type Feature, getFeatureFlags, markFeatureViewed } from '~/lib/api/features';
 
 const VIEWED_FEATURES_KEY = 'bolt_viewed_features';
 

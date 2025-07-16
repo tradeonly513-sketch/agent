@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react';
 import { useEffect } from 'react';
-import { shortcutsStore, type Shortcuts } from '~/lib/stores/settings';
+import { type Shortcuts, shortcutsStore } from '~/lib/stores/settings';
 import { isMac } from '~/utils/os';
 
 // List of keys that should not trigger shortcuts when typing in input/textarea

@@ -1,10 +1,10 @@
 import { useStore } from '@nanostores/react';
-import { motion, type HTMLMotionProps, type Variants } from 'framer-motion';
+import { type HTMLMotionProps, motion, type Variants } from 'framer-motion';
 import { computed } from 'nanostores';
-import { memo, useCallback, useEffect, useState, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Popover, Transition } from '@headlessui/react';
-import { diffLines, type Change } from 'diff';
+import { type Change, diffLines } from 'diff';
 import { getLanguageFromExtension } from '~/utils/getLanguageFromExtension';
 import type { FileHistory } from '~/types/actions';
 import { DiffView } from './DiffView';

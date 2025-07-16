@@ -56,6 +56,7 @@ export default class LMStudioProvider extends BaseProvider {
       maxTokenAllowed: 8000,
     }));
   }
+
   getModelInstance: (options: {
     model: string;
     serverEnv?: Env;

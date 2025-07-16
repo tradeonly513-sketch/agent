@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
-import { netlifyConnection, updateNetlifyConnection, initializeNetlifyConnection } from '~/lib/stores/netlify';
-import type { NetlifySite, NetlifyDeploy, NetlifyBuild, NetlifyUser } from '~/types/netlify';
+import { initializeNetlifyConnection, netlifyConnection, updateNetlifyConnection } from '~/lib/stores/netlify';
+import type { NetlifyBuild, NetlifyDeploy, NetlifySite, NetlifyUser } from '~/types/netlify';
 import {
-  CloudIcon,
-  BuildingLibraryIcon,
-  ClockIcon,
-  CodeBracketIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  TrashIcon,
   ArrowPathIcon,
+  BuildingLibraryIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  CloudIcon,
+  CodeBracketIcon,
   LockClosedIcon,
   LockOpenIcon,
   RocketLaunchIcon,
+  TrashIcon,
+  XCircleIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '~/components/ui/Button';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '~/components/ui/Collapsible';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '~/components/ui/Badge';
 

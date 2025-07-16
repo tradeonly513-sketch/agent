@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { GitHubRepoInfo } from '~/types/GitHub';
 
@@ -6,8 +6,6 @@ interface RepositoryCardProps {
   repo: GitHubRepoInfo;
   onSelect: () => void;
 }
-
-import { useMemo } from 'react';
 
 export function RepositoryCard({ repo, onSelect }: RepositoryCardProps) {
   // Use a consistent styling for all repository cards

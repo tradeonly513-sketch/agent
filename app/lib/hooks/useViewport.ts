@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const useViewport = (threshold = 1024) => {
   const [isSmallViewport, setIsSmallViewport] = useState(window.innerWidth < threshold);

@@ -43,6 +43,7 @@ export class PromptLibrary {
       get: (options) => optimized(options),
     },
   };
+
   static getList() {
     return Object.entries(this.library).map(([key, value]) => {
       const { label, description } = value;
@@ -53,6 +54,7 @@ export class PromptLibrary {
       };
     });
   }
+
   static getPropmtFromLibrary(promptId: string, options: PromptOptions) {
     const prompt = this.library[promptId];
 

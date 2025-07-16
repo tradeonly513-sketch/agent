@@ -5,6 +5,7 @@ import * as providers from './registry';
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('LLMManager');
+
 export class LLMManager {
   private static _instance: LLMManager;
   private _providers: Map<string, BaseProvider> = new Map();
@@ -23,6 +24,7 @@ export class LLMManager {
 
     return LLMManager._instance;
   }
+
   get env() {
     return this._env;
   }
@@ -130,9 +132,11 @@ export class LLMManager {
 
     return modelList;
   }
+
   getStaticModelList() {
     return [...this._providers.values()].flatMap((p) => p.staticModels || []);
   }
+
   async getModelListFromProvider(
     providerArg: BaseProvider,
     options: {
@@ -187,6 +191,7 @@ export class LLMManager {
 
     return modelList;
   }
+
   getStaticModelListFromProvider(providerArg: BaseProvider) {
     const provider = this._providers.get(providerArg.name);
 

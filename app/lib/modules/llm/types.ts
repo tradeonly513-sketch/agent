@@ -26,6 +26,7 @@ export interface ProviderInfo {
   labelForGetApiKey?: string;
   icon?: string;
 }
+
 export interface ProviderConfig {
   baseUrlKey?: string;
   baseUrl?: string;
