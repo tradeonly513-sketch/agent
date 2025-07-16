@@ -6,14 +6,16 @@ import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 
 interface AgentControlsProps {
+  agentExecutor?: any; // AgentExecutor instance
   onPause?: () => void;
   onResume?: () => void;
   onStop?: () => void;
   onSkipStep?: () => void;
+  onRetryStep?: () => void;
   className?: string;
 }
 
-export const AgentControls: React.FC<AgentControlsProps> = ({ onPause, onResume, onStop, onSkipStep, className }) => {
+export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onPause, onResume, onStop, onSkipStep, onRetryStep, className }) => {
   const agentState = useStore(agentStore);
 
   if (!agentState.isActive || !agentState.currentTask) {
@@ -22,24 +24,36 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ onPause, onResume,
 
   const { currentTask, isPaused } = agentState;
   const isRunning = currentTask.status === 'running';
+  const isCompleted = currentTask.status === 'completed';
   const canPause = isRunning && !isPaused;
   const canResume = isPaused;
   const canStop = isRunning || isPaused;
   const canSkip = isRunning && currentTask.currentStepIndex < currentTask.steps.length - 1;
+  const currentStep = currentTask.steps[currentTask.currentStepIndex];
+  const canRetry = currentStep && currentStep.status === 'failed';
 
   const handlePause = () => {
+    if (agentExecutor) {
+      agentExecutor.pause();
+    }
     onPause?.();
     agentStore.setKey('isPaused', true);
     toast.info('Agent task paused');
   };
 
   const handleResume = () => {
+    if (agentExecutor) {
+      agentExecutor.resume();
+    }
     onResume?.();
     agentStore.setKey('isPaused', false);
     toast.info('Agent task resumed');
   };
 
   const handleStop = () => {
+    if (agentExecutor) {
+      agentExecutor.abort();
+    }
     onStop?.();
     agentStore.setKey('isActive', false);
     agentStore.setKey('currentTask', undefined);
@@ -48,15 +62,26 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ onPause, onResume,
   };
 
   const handleSkipStep = () => {
-    if (currentTask && currentTask.currentStepIndex < currentTask.steps.length - 1) {
-      const currentStep = currentTask.steps[currentTask.currentStepIndex];
-      currentStep.status = 'skipped';
-      currentTask.currentStepIndex += 1;
-
-      agentStore.setKey('currentTask', { ...currentTask });
-      onSkipStep?.();
-      toast.info('Step skipped');
+    if (agentExecutor) {
+      agentExecutor.skipCurrentStep();
     }
+    onSkipStep?.();
+    toast.info('Step skipped');
+  };
+
+  const handleRetryStep = () => {
+    if (agentExecutor) {
+      agentExecutor.retryCurrentStep();
+    }
+    onRetryStep?.();
+    toast.info('Retrying step');
+  };
+
+  const handleClose = () => {
+    agentStore.setKey('isActive', false);
+    agentStore.setKey('currentTask', undefined);
+    agentStore.setKey('isPaused', false);
+    toast.info('Agent panel closed');
   };
 
   return (
@@ -94,6 +119,17 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ onPause, onResume,
           </IconButton>
         )}
 
+        {canRetry && (
+          <IconButton
+            title="Retry Failed Step"
+            size="sm"
+            className="text-purple-600 hover:bg-purple-100"
+            onClick={handleRetryStep}
+          >
+            <div className="i-ph:arrow-clockwise text-sm" />
+          </IconButton>
+        )}
+
         {canSkip && (
           <IconButton
             title="Skip Current Step"
@@ -110,10 +146,16 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ onPause, onResume,
             <div className="i-ph:stop text-sm" />
           </IconButton>
         )}
+
+        {isCompleted && (
+          <IconButton title="Close Agent Panel" size="sm" className="text-gray-600 hover:bg-gray-100" onClick={handleClose}>
+            <div className="i-ph:x text-sm" />
+          </IconButton>
+        )}
       </div>
 
       <div className="ml-auto text-xs text-bolt-elements-textTertiary">
-        Step {currentTask.currentStepIndex + 1} of {currentTask.steps.length}
+        {isCompleted ? 'Task Completed' : `Step ${currentTask.currentStepIndex + 1} of ${currentTask.steps.length}`}
       </div>
     </div>
   );

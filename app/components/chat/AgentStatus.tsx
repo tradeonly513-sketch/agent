@@ -15,7 +15,10 @@ export const AgentStatus: React.FC<AgentStatusProps> = ({ className }) => {
     return null;
   }
 
-  const { currentTask } = agentState;
+  const { currentTask, isPaused } = agentState;
+  const completedSteps = currentTask.steps.filter(s => s.status === 'completed').length;
+  const failedSteps = currentTask.steps.filter(s => s.status === 'failed').length;
+  const totalSteps = currentTask.steps.length;
 
   return (
     <div
@@ -41,6 +44,12 @@ export const AgentStatus: React.FC<AgentStatusProps> = ({ className }) => {
             )}
           />
           <h3 className="text-sm font-medium text-bolt-elements-textPrimary">Agent Task: {currentTask.title}</h3>
+          {isPaused && (
+            <div className="flex items-center gap-1 text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+              <div className="i-ph:pause text-xs" />
+              <span>Paused</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span
@@ -59,12 +68,30 @@ export const AgentStatus: React.FC<AgentStatusProps> = ({ className }) => {
           >
             {currentTask.status.charAt(0).toUpperCase() + currentTask.status.slice(1)}
           </span>
+          <span className="text-xs text-bolt-elements-textTertiary">
+            {completedSteps}/{totalSteps} steps
+            {failedSteps > 0 && <span className="text-red-600 ml-1">({failedSteps} failed)</span>}
+          </span>
         </div>
       </div>
 
       <div className="text-xs text-bolt-elements-textSecondary mb-3">{currentTask.description}</div>
 
-      <div className="space-y-2">
+      {/* Progress bar */}
+      <div className="mb-3">
+        <div className="flex justify-between text-xs text-bolt-elements-textTertiary mb-1">
+          <span>Progress</span>
+          <span>{totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0}%</span>
+        </div>
+        <div className="w-full bg-bolt-elements-background-depth-1 rounded-full h-2">
+          <div
+            className="bg-green-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2 max-h-60 overflow-y-auto">
         {currentTask.steps.map((step, index) => (
           <StepItem
             key={step.id}

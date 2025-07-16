@@ -29,7 +29,7 @@ import type { Attachment, FileUIPart, TextUIPart } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
 import { agentStore } from '~/lib/stores/chat';
-import { AgentExecutor } from '~/lib/agent/executor';
+import { ClientAgentExecutor } from '~/lib/agent/client-executor';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -152,7 +152,32 @@ export const ChatImpl = memo(
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
     const agentState = useStore(agentStore);
-    const [agentExecutor] = useState(() => new AgentExecutor());
+    const [agentExecutor] = useState(() => new ClientAgentExecutor({
+      onStepStart: (step) => {
+        console.log('Agent step started:', step);
+      },
+      onStepComplete: (step) => {
+        console.log('Agent step completed:', step);
+      },
+      onStepError: (step, error) => {
+        console.error('Agent step error:', step, error);
+        toast.error(`Step "${step.title}" failed: ${error.message}`);
+      },
+      onTaskComplete: (task) => {
+        console.log('Agent task completed:', task);
+        toast.success(`Task "${task.title}" completed successfully!`);
+        // Don't immediately set isActive to false - let user see the results
+        // agentStore.setKey('isActive', false);
+      },
+      onTaskError: (task, error) => {
+        console.error('Agent task error:', task, error);
+        toast.error(`Task "${task.title}" failed: ${error.message}`);
+        agentStore.setKey('isActive', false);
+      },
+      onTaskUpdate: (task) => {
+        agentStore.setKey('currentTask', task);
+      },
+    }));
 
     const {
       messages,
@@ -436,27 +461,71 @@ export const ChatImpl = memo(
         return;
       }
 
+      // Handle quick commands
+      if (messageContent.startsWith('/')) {
+        const command = messageContent.toLowerCase();
+
+        if (command === '/agent') {
+          handleAgentModeChange('agent');
+          toast.success('Switched to Agent mode');
+          setInput('');
+          return;
+        } else if (command === '/chat') {
+          handleAgentModeChange('chat');
+          toast.success('Switched to Chat mode');
+          setInput('');
+          return;
+        } else if (command === '/status' && agentState.currentTask) {
+          const task = agentState.currentTask;
+          const statusMessage = `Current task: ${task.title}\nStatus: ${task.status}\nStep: ${task.currentStepIndex + 1}/${task.steps.length}`;
+          toast.info(statusMessage);
+          setInput('');
+          return;
+        } else if (command === '/stop' && agentState.isActive) {
+          agentExecutor.abort();
+          agentStore.setKey('isActive', false);
+          agentStore.setKey('currentTask', undefined);
+          toast.info('Agent task stopped');
+          setInput('');
+          return;
+        }
+      }
+
       // Handle Agent mode
       if (agentState.mode === 'agent') {
         try {
           agentStore.setKey('isActive', true);
           agentStore.setKey('isPaused', false);
 
-          const task = await agentExecutor.executeTask(messageContent, {
-            model,
-            provider: provider.name,
-            apiKeys,
-          });
+          // Start agent task execution (no LLM call needed)
+          toast.info('Starting agent task execution...');
+
+          const task = await agentExecutor.executeTask(messageContent);
 
           agentStore.setKey('currentTask', task);
           agentStore.setKey('taskHistory', [...agentState.taskHistory, task]);
 
-          // Add the task result as a message
-          const taskSummary = `Agent Task: ${task.title}\nStatus: ${task.status}\nSteps completed: ${task.steps.filter((s) => s.status === 'completed').length}/${task.steps.length}`;
+          // Keep Agent active to show results, but mark as completed
+          agentStore.setKey('isActive', true); // Keep active to show results
 
-          append({
-            role: 'assistant',
-            content: taskSummary,
+          // Show completion message without triggering LLM
+          const completedSteps = task.steps.filter((s) => s.status === 'completed').length;
+          const failedSteps = task.steps.filter((s) => s.status === 'failed').length;
+          const skippedSteps = task.steps.filter((s) => s.status === 'skipped').length;
+
+          let statusMessage = `Agent Task Completed: ${task.title}`;
+          statusMessage += `\nProgress: ${completedSteps}/${task.steps.length} steps completed`;
+
+          if (failedSteps > 0) {
+            statusMessage += ` (${failedSteps} failed)`;
+          }
+          if (skippedSteps > 0) {
+            statusMessage += ` (${skippedSteps} skipped)`;
+          }
+
+          // Show detailed completion message
+          toast.success(statusMessage + '\n\nCheck the file tree on the left to see created files!', {
+            duration: 8000, // Show longer to give user time to check files
           });
         } catch (error) {
           console.error('Agent execution failed:', error);
@@ -685,6 +754,21 @@ export const ChatImpl = memo(
       }
     };
 
+    const handleTemplateSelect = (template: any) => {
+      // Switch to agent mode if not already
+      if (agentState.mode !== 'agent') {
+        handleAgentModeChange('agent');
+      }
+
+      // Set the template prompt as input
+      setInput(template.prompt);
+
+      // Focus the textarea
+      textareaRef.current?.focus();
+
+      toast.success(`Template "${template.title}" loaded`);
+    };
+
     return (
       <BaseChat
         ref={animationScope}
@@ -757,6 +841,8 @@ export const ChatImpl = memo(
         addToolResult={addToolResult}
         agentMode={agentState.mode}
         setAgentMode={handleAgentModeChange}
+        agentExecutor={agentExecutor}
+        onTemplateSelect={handleTemplateSelect}
       />
     );
   },

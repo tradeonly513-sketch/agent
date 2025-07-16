@@ -35,7 +35,9 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import AgentStatus from './AgentStatus';
 import AgentControls from './AgentControls';
+import TaskTemplates from './TaskTemplates';
 import type { ChatMode } from '~/types/actions';
+import type { TaskTemplate } from '~/lib/agent/templates';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -86,6 +88,8 @@ interface BaseChatProps {
   addToolResult?: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
   agentMode?: ChatMode;
   setAgentMode?: (mode: ChatMode) => void;
+  agentExecutor?: any; // AgentExecutor instance
+  onTemplateSelect?: (template: TaskTemplate) => void;
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -137,6 +141,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       },
       agentMode = 'chat',
       setAgentMode,
+      agentExecutor,
+      onTemplateSelect,
     },
     ref,
   ) => {
@@ -433,7 +439,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 {agentMode === 'agent' && (
                   <>
                     <AgentStatus />
-                    <AgentControls />
+                    <AgentControls agentExecutor={agentExecutor} />
                   </>
                 )}
                 {progressAnnotations && <ProgressCompilation data={progressAnnotations} />}
@@ -491,7 +497,13 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 </div>
               )}
               <div className="flex flex-col gap-5">
-                {!chatStarted &&
+                {!chatStarted && agentMode === 'agent' && onTemplateSelect && (
+                  <TaskTemplates
+                    onSelectTemplate={onTemplateSelect}
+                    className="mb-6"
+                  />
+                )}
+                {!chatStarted && agentMode === 'chat' &&
                   ExamplePrompts((event, messageInput) => {
                     if (isStreaming) {
                       handleStop?.();
@@ -500,7 +512,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
                     handleSendMessage?.(event, messageInput);
                   })}
-                {!chatStarted && <StarterTemplates />}
+                {!chatStarted && agentMode === 'chat' && <StarterTemplates />}
               </div>
             </div>
           </div>
