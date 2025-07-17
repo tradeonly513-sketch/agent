@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import type { BmadAgentConfig, BmadTask, BmadTemplate } from '~/types/bmad';
+import type { BmadAgentConfig, BmadTask } from '~/types/bmad';
 
 export class BmadParser {
   /**

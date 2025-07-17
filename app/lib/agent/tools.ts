@@ -1,5 +1,4 @@
 import type { ToolCall } from '~/types/actions';
-import { workbenchStore } from '~/lib/stores/workbench';
 
 export interface Tool {
   name: string;

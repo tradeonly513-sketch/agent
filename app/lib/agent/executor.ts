@@ -155,8 +155,13 @@ export class AgentExecutor {
     return this._getIntelligentSteps(description, context);
   }
 
-  private _getIntelligentSteps(description: string, _context?: Record<string, any>): AgentStep[] {
+  private _getIntelligentSteps(description: string, context?: Record<string, any>): AgentStep[] {
     const lowerDesc = description.toLowerCase();
+
+    // Use context if provided for future enhancements
+    if (context) {
+      console.log('Using context for step generation:', Object.keys(context));
+    }
 
     // React/Vue/Frontend App patterns
     if (lowerDesc.includes('react') || lowerDesc.includes('vue') || lowerDesc.includes('frontend')) {

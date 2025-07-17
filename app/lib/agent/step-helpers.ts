@@ -1,8 +1,11 @@
 import type { AgentTask, AgentStep } from '~/types/actions';
 
 export class StepHelpers {
-  static getReactFileCreationCalls(__task: AgentTask): Array<{ name: string; parameters: any }> {
+  static getReactFileCreationCalls(task: AgentTask): Array<{ name: string; parameters: any }> {
     const calls = [];
+
+    // Use task information for file creation
+    console.log('Creating React files for task:', task.title);
 
     // Create package.json
     calls.push({

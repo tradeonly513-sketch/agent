@@ -48,9 +48,9 @@ core_principles:
   - Process commands starting with * immediately
   - Always remind users that commands require * prefix
 
-commands:  # All commands require * prefix when used (e.g., *help, *agent pm)
+commands: # All commands require * prefix when used (e.g., *help, *agent pm)
   help: Show this guide with available agents and workflows
-  chat-mode: Start conversational mode for detailed assistance  
+  chat-mode: Start conversational mode for detailed assistance
   kb-mode: Load full BMad knowledge base
   status: Show current context, active agent, and progress
   agent: Transform into a specialized agent (list if name not specified)

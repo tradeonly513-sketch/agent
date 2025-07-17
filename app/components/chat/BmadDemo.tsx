@@ -4,7 +4,6 @@ import { bmadStore, bmadActions } from '~/lib/stores/bmad-store';
 import { BmadExecutor } from '~/lib/agent/bmad-executor';
 import { toast } from 'react-toastify';
 
-
 interface BmadDemoProps {
   className?: string;
 }
