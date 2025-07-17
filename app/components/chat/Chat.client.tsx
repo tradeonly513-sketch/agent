@@ -22,6 +22,7 @@ import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTempla
 import { logStore } from '~/lib/stores/logs';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
+import { ChatErrorBoundary } from './ErrorBoundary';
 import { supabaseConnection } from '~/lib/stores/supabase';
 import { defaultDesignScheme, type DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
@@ -50,13 +51,15 @@ export function Chat() {
   return (
     <>
       {ready && (
-        <ChatImpl
-          description={title}
-          initialMessages={initialMessages}
-          exportChat={exportChat}
-          storeMessageHistory={storeMessageHistory}
-          importChat={importChat}
-        />
+        <ChatErrorBoundary>
+          <ChatImpl
+            description={title}
+            initialMessages={initialMessages}
+            exportChat={exportChat}
+            storeMessageHistory={storeMessageHistory}
+            importChat={importChat}
+          />
+        </ChatErrorBoundary>
       )}
       <ToastContainer
         closeButton={({ closeToast }) => {
@@ -267,10 +270,14 @@ export const ChatImpl = memo(
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 
     useEffect(() => {
-      const shouldStart = initialMessages.length > 0 || window.location.pathname.startsWith('/chat/');
+      const shouldStart = initialMessages.length > 0 ||
+        (typeof window !== 'undefined' && window.location.pathname.startsWith('/chat/'));
       chatStore.setKey('started', shouldStart);
       setChatStarted(shouldStart);
     }, [initialMessages]);
+
+    const storeMessageHistoryRef = useRef(storeMessageHistory);
+    storeMessageHistoryRef.current = storeMessageHistory;
 
     useEffect(() => {
       processSampledMessages({
@@ -278,9 +285,9 @@ export const ChatImpl = memo(
         initialMessages,
         isLoading,
         parseMessages,
-        storeMessageHistory,
+        storeMessageHistory: storeMessageHistoryRef.current,
       });
-    }, [messages, isLoading, parseMessages]);
+    }, [messages, isLoading, parseMessages, initialMessages]);
 
     const scrollTextArea = () => {
       const textarea = textareaRef.current;
@@ -545,8 +552,11 @@ Please proceed to create the project step by step.`;
           window.history.replaceState({}, '', url);
 
           // Force update chatStarted state after URL change
-          setChatStarted(true);
-          chatStore.setKey('started', true);
+          // Use setTimeout to avoid potential state race conditions
+          setTimeout(() => {
+            setChatStarted(true);
+            chatStore.setKey('started', true);
+          }, 0);
         }
       }
 
