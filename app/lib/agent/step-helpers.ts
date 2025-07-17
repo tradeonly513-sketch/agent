@@ -202,7 +202,7 @@ if __name__ == "__main__":
     ];
   }
 
-  static getGenericFileCreationCalls(_task: AgentTask, _step: AgentStep): Array<{ name: string; parameters: any }> {
+  static getGenericFileCreationCalls(task: AgentTask, _step: AgentStep): Array<{ name: string; parameters: any }> {
     const fileName = StepHelpers.extractFileNameFromDescription(task.description) || 'example.txt';
     const content = StepHelpers.generateFileContent(fileName, task.description);
 

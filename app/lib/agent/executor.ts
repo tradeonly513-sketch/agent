@@ -37,7 +37,7 @@ export class AgentExecutor {
     };
   }
 
-  async executeTask(_description: string, _context?: Record<string, any>): Promise<AgentTask> {
+  async executeTask(description: string, context?: Record<string, any>): Promise<AgentTask> {
     if (this._isRunning) {
       throw new Error('Agent is already running a task');
     }
@@ -666,9 +666,9 @@ export class AgentExecutor {
             toolCall.result = toolResult;
             step.toolCalls.push(toolCall);
 
-            console.log(`‚ú?Agent: Tool ${toolCall.name} completed successfully`);
+            console.log(`ÔøΩ?Agent: Tool ${toolCall.name} completed successfully`);
           } catch (error) {
-            console.error(`‚ù?Agent: Tool ${toolCall.name} failed:`, error);
+            console.error(`ÔøΩ?Agent: Tool ${toolCall.name} failed:`, error);
             toolCall.error = error instanceof Error ? error.message : 'Unknown error';
             step.toolCalls.push(toolCall);
             throw new Error(`Tool execution failed: ${toolCall.error}`);
@@ -681,7 +681,7 @@ export class AgentExecutor {
         step.output = `Completed: ${step.description}`;
       }
     } catch (error) {
-      console.error('‚ù?Agent: Step execution failed:', error);
+      console.error('ÔøΩ?Agent: Step execution failed:', error);
       step.output = `Step failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       throw error;
     }
