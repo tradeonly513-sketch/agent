@@ -133,6 +133,7 @@ export const ChatImpl = memo(
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [fakeLoading, setFakeLoading] = useState(false);
+    const [lastMessageTime, setLastMessageTime] = useState<number>(0);
     const files = useStore(workbenchStore.files);
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
@@ -282,7 +283,17 @@ export const ChatImpl = memo(
       },
       sendExtraMessageFields: true,
       onError: (e) => {
+        console.error('Chat error:', e);
         setFakeLoading(false);
+
+        // 确保状态正确重置
+        setTimeout(() => {
+          if (isLoading) {
+            console.log('Force stopping loading state after error');
+            stop();
+          }
+        }, 1000);
+
         handleError(e, 'chat');
       },
       onFinish: (message, response) => {
@@ -306,6 +317,30 @@ export const ChatImpl = memo(
       initialMessages,
       initialInput: Cookies.get(PROMPT_COOKIE_KEY) || '',
     });
+
+    // 监控聊天状态，自动恢复卡住的状态
+    useEffect(() => {
+      let timeoutId: NodeJS.Timeout;
+
+      if (isLoading || fakeLoading) {
+        // 如果加载状态持续超过30秒，自动重置
+        timeoutId = setTimeout(() => {
+          console.warn('Chat loading timeout, resetting state...');
+          setFakeLoading(false);
+          if (isLoading) {
+            stop();
+          }
+          toast.warning('Request timeout. Please try again.');
+        }, 30000);
+      }
+
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }, [isLoading, fakeLoading, stop]);
+
     useEffect(() => {
       const prompt = searchParams.get('prompt');
 
@@ -529,26 +564,37 @@ export const ChatImpl = memo(
         return;
       }
 
+      // 防止重复发送 - 添加发送状态锁
       if (isLoading) {
+        console.log('Message sending in progress, aborting current request...');
         abort();
         return;
       }
 
-      // Handle BMad commands (starting with *) - only if BMad is active
-      if (messageContent.startsWith('*') && bmadState.isActive) {
-        try {
-          await bmadExecutor.executeCommand(messageContent);
-          setInput('');
-
-          return;
-        } catch (error) {
-          console.error('BMad command error:', error);
-          toast.error(`BMad command failed: ${error}`);
-          setInput('');
-
-          return;
-        }
+      // 防止快速重复点击
+      const now = Date.now();
+      if (now - lastMessageTime < 1000) {
+        console.log('Message sent too quickly, ignoring...');
+        return;
       }
+      setLastMessageTime(now);
+
+      // 添加发送前的状态检查
+      try {
+
+        // Handle BMad commands (starting with *) - only if BMad is active
+        if (messageContent.startsWith('*') && bmadState.isActive) {
+          try {
+            await bmadExecutor.executeCommand(messageContent);
+            setInput('');
+            return;
+          } catch (error) {
+            console.error('BMad command error:', error);
+            toast.error(`BMad command failed: ${error}`);
+            setInput('');
+            return;
+          }
+        }
 
       // Handle quick commands
       if (messageContent.startsWith('/')) {
@@ -837,6 +883,19 @@ The agent will create all necessary files and project structure automatically.
       resetEnhancer();
 
       textareaRef.current?.blur();
+
+      } catch (error) {
+        // 确保在任何错误情况下都能重置状态
+        console.error('Error in sendMessage:', error);
+        setFakeLoading(false);
+        setInput('');
+        toast.error('Failed to send message. Please try again.');
+
+        // 重置聊天状态
+        if (isLoading) {
+          abort();
+        }
+      }
     };
 
     /**

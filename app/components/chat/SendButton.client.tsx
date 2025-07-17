@@ -23,9 +23,23 @@ export const SendButton = ({ show, isStreaming, disabled, onClick }: SendButtonP
           disabled={disabled}
           onClick={(event) => {
             event.preventDefault();
+            event.stopPropagation();
 
-            if (!disabled) {
-              onClick?.(event);
+            if (!disabled && onClick) {
+              // 防止重复点击
+              const button = event.currentTarget;
+              button.disabled = true;
+
+              try {
+                onClick(event);
+              } catch (error) {
+                console.error('Send button click error:', error);
+              } finally {
+                // 短暂延迟后重新启用按钮
+                setTimeout(() => {
+                  button.disabled = disabled || false;
+                }, 500);
+              }
             }
           }}
         >

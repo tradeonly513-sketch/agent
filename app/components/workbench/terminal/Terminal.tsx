@@ -31,39 +31,72 @@ export const Terminal = memo(
       useEffect(() => {
         const element = terminalElementRef.current!;
 
-        const fitAddon = new FitAddon();
-        const webLinksAddon = new WebLinksAddon();
+        try {
+          const fitAddon = new FitAddon();
+          const webLinksAddon = new WebLinksAddon();
 
-        const terminal = new XTerm({
-          cursorBlink: true,
-          convertEol: true,
-          disableStdin: readonly,
-          theme: getTerminalTheme(readonly ? { cursor: '#00000000' } : {}),
-          fontSize: 12,
-          fontFamily: 'Menlo, courier-new, courier, monospace',
-        });
+          const terminal = new XTerm({
+            cursorBlink: true,
+            convertEol: true,
+            disableStdin: readonly,
+            theme: getTerminalTheme(readonly ? { cursor: '#00000000' } : {}),
+            fontSize: 12,
+            fontFamily: 'Menlo, courier-new, courier, monospace',
+            allowProposedApi: true, // 允许提议的API
+          });
 
-        terminalRef.current = terminal;
+          terminalRef.current = terminal;
 
-        terminal.loadAddon(fitAddon);
-        terminal.loadAddon(webLinksAddon);
-        terminal.open(element);
+          terminal.loadAddon(fitAddon);
+          terminal.loadAddon(webLinksAddon);
+          terminal.open(element);
 
-        const resizeObserver = new ResizeObserver(() => {
-          fitAddon.fit();
-          onTerminalResize?.(terminal.cols, terminal.rows);
-        });
+          // 添加错误处理
+          terminal.onRender(() => {
+            try {
+              fitAddon.fit();
+            } catch (error) {
+              console.warn('Terminal fit error:', error);
+            }
+          });
 
-        resizeObserver.observe(element);
+          const resizeObserver = new ResizeObserver(() => {
+            try {
+              fitAddon.fit();
+              onTerminalResize?.(terminal.cols, terminal.rows);
+            } catch (error) {
+              console.warn('Terminal resize error:', error);
+            }
+          });
 
-        logger.debug(`Attach [${id}]`);
+          resizeObserver.observe(element);
 
-        onTerminalReady?.(terminal);
+          logger.debug(`Attach [${id}]`);
 
-        return () => {
-          resizeObserver.disconnect();
-          terminal.dispose();
-        };
+          // 延迟调用onTerminalReady，确保终端完全初始化
+          setTimeout(() => {
+            try {
+              onTerminalReady?.(terminal);
+            } catch (error) {
+              console.error('Terminal ready callback error:', error);
+            }
+          }, 100);
+
+          return () => {
+            try {
+              resizeObserver.disconnect();
+              terminal.dispose();
+            } catch (error) {
+              console.warn('Terminal cleanup error:', error);
+            }
+          };
+        } catch (error) {
+          console.error('Terminal initialization error:', error);
+          // 显示错误信息
+          if (element) {
+            element.innerHTML = `<div style="color: red; padding: 10px;">Terminal initialization failed: ${error}</div>`;
+          }
+        }
       }, []);
 
       useEffect(() => {

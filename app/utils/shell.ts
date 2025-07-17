@@ -44,7 +44,21 @@ export async function newShellProcess(webcontainer: WebContainer, terminal: ITer
     // console.log('terminal onData', { data, isInteractive });
 
     if (isInteractive) {
-      input.write(data);
+      try {
+        input.write(data);
+      } catch (error) {
+        console.warn('Terminal input write error:', error);
+        // 尝试重新连接
+        setTimeout(() => {
+          if (isInteractive) {
+            try {
+              input.write(data);
+            } catch (retryError) {
+              console.error('Terminal input retry failed:', retryError);
+            }
+          }
+        }, 100);
+      }
     }
   });
 
@@ -130,7 +144,21 @@ export class BoltShell {
 
     terminal.onData((data) => {
       if (isInteractive) {
-        input.write(data);
+        try {
+          input.write(data);
+        } catch (error) {
+          console.warn('BoltShell input write error:', error);
+          // 尝试重新连接
+          setTimeout(() => {
+            if (isInteractive && this.#shellInputStream) {
+              try {
+                this.#shellInputStream.write(data);
+              } catch (retryError) {
+                console.error('BoltShell input retry failed:', retryError);
+              }
+            }
+          }, 100);
+        }
       }
     });
 
@@ -181,45 +209,65 @@ export class BoltShell {
 
   async executeCommand(sessionId: string, command: string, abort?: () => void): Promise<ExecutionResult> {
     if (!this.process || !this.terminal) {
+      console.warn('Terminal or process not available');
       return undefined;
     }
 
-    const state = this.executionState.get();
-
-    if (state?.active && state.abort) {
-      state.abort();
-    }
-
-    /*
-     * interrupt the current execution
-     *  this.#shellInputStream?.write('\x03');
-     */
-    this.terminal.input('\x03');
-    await this.waitTillOscCode('prompt');
-
-    if (state && state.executionPrms) {
-      await state.executionPrms;
-    }
-
-    //start a new execution
-    this.terminal.input(command.trim() + '\n');
-
-    //wait for the execution to finish
-    const executionPromise = this.getCurrentExecutionResult();
-    this.executionState.set({ sessionId, active: true, executionPrms: executionPromise, abort });
-
-    const resp = await executionPromise;
-    this.executionState.set({ sessionId, active: false });
-
-    if (resp) {
+    // 检查终端连接状态
+    if (!this.#shellInputStream) {
+      console.warn('Shell input stream not available, attempting to reconnect...');
       try {
-        resp.output = cleanTerminalOutput(resp.output);
+        if (this.#webcontainer && this.#terminal) {
+          await this.init(this.#webcontainer, this.#terminal);
+        }
       } catch (error) {
-        console.log('failed to format terminal output', error);
+        console.error('Failed to reconnect terminal:', error);
+        return undefined;
       }
     }
 
-    return resp;
+    try {
+      const state = this.executionState.get();
+
+      if (state?.active && state.abort) {
+        state.abort();
+      }
+
+      /*
+       * interrupt the current execution
+       *  this.#shellInputStream?.write('\x03');
+       */
+      this.terminal.input('\x03');
+      await this.waitTillOscCode('prompt');
+
+      if (state && state.executionPrms) {
+        await state.executionPrms;
+      }
+
+      //start a new execution
+      this.terminal.input(command.trim() + '\n');
+
+      //wait for the execution to finish
+      const executionPromise = this.getCurrentExecutionResult();
+      this.executionState.set({ sessionId, active: true, executionPrms: executionPromise, abort });
+
+      const resp = await executionPromise;
+      this.executionState.set({ sessionId, active: false });
+
+      if (resp) {
+        try {
+          resp.output = cleanTerminalOutput(resp.output);
+        } catch (error) {
+          console.log('failed to format terminal output', error);
+        }
+      }
+
+      return resp;
+    } catch (error) {
+      console.error('Command execution failed:', error);
+      this.executionState.set({ sessionId, active: false });
+      throw error;
+    }
   }
 
   async getCurrentExecutionResult(): Promise<ExecutionResult> {

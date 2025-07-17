@@ -29,20 +29,55 @@ export class TerminalStore {
 
   async attachBoltTerminal(terminal: ITerminal) {
     try {
+      console.log('Attaching bolt terminal...');
       const wc = await this.#webcontainer;
-      await this.#boltTerminal.init(wc, terminal);
+
+      // 添加超时机制
+      const initPromise = this.#boltTerminal.init(wc, terminal);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Terminal initialization timeout')), 10000);
+      });
+
+      await Promise.race([initPromise, timeoutPromise]);
+      console.log('Bolt terminal attached successfully');
     } catch (error: any) {
+      console.error('Failed to attach bolt terminal:', error);
       terminal.write(coloredText.red('Failed to spawn bolt shell\n\n') + error.message);
+
+      // 尝试重新初始化
+      setTimeout(() => {
+        console.log('Retrying bolt terminal initialization...');
+        this.attachBoltTerminal(terminal).catch(console.error);
+      }, 3000);
+
       return;
     }
   }
 
   async attachTerminal(terminal: ITerminal) {
     try {
-      const shellProcess = await newShellProcess(await this.#webcontainer, terminal);
+      console.log('Attaching new terminal...');
+      const wc = await this.#webcontainer;
+
+      // 添加超时机制
+      const shellPromise = newShellProcess(wc, terminal);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Shell process timeout')), 8000);
+      });
+
+      const shellProcess = await Promise.race([shellPromise, timeoutPromise]) as WebContainerProcess;
       this.#terminals.push({ terminal, process: shellProcess });
+      console.log('Terminal attached successfully');
     } catch (error: any) {
+      console.error('Failed to attach terminal:', error);
       terminal.write(coloredText.red('Failed to spawn shell\n\n') + error.message);
+
+      // 尝试重新初始化
+      setTimeout(() => {
+        console.log('Retrying terminal initialization...');
+        this.attachTerminal(terminal).catch(console.error);
+      }, 3000);
+
       return;
     }
   }
