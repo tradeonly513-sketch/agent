@@ -152,32 +152,38 @@ export const ChatImpl = memo(
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
     const agentState = useStore(agentStore);
-    const [agentExecutor] = useState(() => new ClientAgentExecutor({
-      onStepStart: (step) => {
-        console.log('Agent step started:', step);
-      },
-      onStepComplete: (step) => {
-        console.log('Agent step completed:', step);
-      },
-      onStepError: (step, error) => {
-        console.error('Agent step error:', step, error);
-        toast.error(`Step "${step.title}" failed: ${error.message}`);
-      },
-      onTaskComplete: (task) => {
-        console.log('Agent task completed:', task);
-        toast.success(`Task "${task.title}" completed successfully!`);
-        // Don't immediately set isActive to false - let user see the results
-        // agentStore.setKey('isActive', false);
-      },
-      onTaskError: (task, error) => {
-        console.error('Agent task error:', task, error);
-        toast.error(`Task "${task.title}" failed: ${error.message}`);
-        agentStore.setKey('isActive', false);
-      },
-      onTaskUpdate: (task) => {
-        agentStore.setKey('currentTask', task);
-      },
-    }));
+    const [agentExecutor] = useState(
+      () =>
+        new ClientAgentExecutor({
+          onStepStart: (step) => {
+            console.log('Agent step started:', step);
+          },
+          onStepComplete: (step) => {
+            console.log('Agent step completed:', step);
+          },
+          onStepError: (step, error) => {
+            console.error('Agent step error:', step, error);
+            toast.error(`Step "${step.title}" failed: ${error.message}`);
+          },
+          onTaskComplete: (task) => {
+            console.log('Agent task completed:', task);
+            toast.success(`Task "${task.title}" completed successfully!`);
+
+            /*
+             * Don't immediately set isActive to false - let user see the results
+             * agentStore.setKey('isActive', false);
+             */
+          },
+          onTaskError: (task, error) => {
+            console.error('Agent task error:', task, error);
+            toast.error(`Task "${task.title}" failed: ${error.message}`);
+            agentStore.setKey('isActive', false);
+          },
+          onTaskUpdate: (task) => {
+            agentStore.setKey('currentTask', task);
+          },
+        }),
+    );
 
     const {
       messages,
@@ -469,17 +475,20 @@ export const ChatImpl = memo(
           handleAgentModeChange('agent');
           toast.success('Switched to Agent mode');
           setInput('');
+
           return;
         } else if (command === '/chat') {
           handleAgentModeChange('chat');
           toast.success('Switched to Chat mode');
           setInput('');
+
           return;
         } else if (command === '/status' && agentState.currentTask) {
           const task = agentState.currentTask;
           const statusMessage = `Current task: ${task.title}\nStatus: ${task.status}\nStep: ${task.currentStepIndex + 1}/${task.steps.length}`;
           toast.info(statusMessage);
           setInput('');
+
           return;
         } else if (command === '/stop' && agentState.isActive) {
           agentExecutor.abort();
@@ -487,6 +496,7 @@ export const ChatImpl = memo(
           agentStore.setKey('currentTask', undefined);
           toast.info('Agent task stopped');
           setInput('');
+
           return;
         }
       }
@@ -519,13 +529,14 @@ export const ChatImpl = memo(
           if (failedSteps > 0) {
             statusMessage += ` (${failedSteps} failed)`;
           }
+
           if (skippedSteps > 0) {
             statusMessage += ` (${skippedSteps} skipped)`;
           }
 
           // Show detailed completion message
           toast.success(statusMessage + '\n\nCheck the file tree on the left to see created files!', {
-            duration: 8000, // Show longer to give user time to check files
+            autoClose: 8000, // Show longer to give user time to check files
           });
         } catch (error) {
           console.error('Agent execution failed:', error);

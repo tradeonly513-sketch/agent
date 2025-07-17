@@ -1,5 +1,4 @@
 import type { ToolCall } from '~/types/actions';
-import { generateId } from 'ai';
 import { workbenchStore } from '~/lib/stores/workbench';
 
 export interface Tool {
@@ -76,13 +75,15 @@ export const defaultTools: Tool[] = [
     },
     execute: async ({ path, content }) => {
       try {
-        // For now, simulate file creation
-        // In a real implementation, this would integrate with the file system
+        /*
+         * For now, simulate file creation
+         * In a real implementation, this would integrate with the file system
+         */
         console.log(`📁 Creating file: ${path}`);
         console.log(`📄 Content length: ${content.length} characters`);
 
         // Simulate file creation delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         return {
           success: true,
@@ -115,7 +116,7 @@ export const defaultTools: Tool[] = [
         console.log(`📖 Reading file: ${path}`);
 
         // Simulate reading delay
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         // Return simulated content based on file extension
         const ext = path.split('.').pop()?.toLowerCase();
@@ -123,7 +124,8 @@ export const defaultTools: Tool[] = [
 
         switch (ext) {
           case 'html':
-            content = '<!DOCTYPE html>\n<html>\n<head><title>Sample</title></head>\n<body><h1>Hello World</h1></body>\n</html>';
+            content =
+              '<!DOCTYPE html>\n<html>\n<head><title>Sample</title></head>\n<body><h1>Hello World</h1></body>\n</html>';
             break;
           case 'js':
             content = '// JavaScript file\nconsole.log("Hello World");';
@@ -164,16 +166,15 @@ export const defaultTools: Tool[] = [
       },
       required: ['command'],
     },
-    execute: async ({ command, workingDirectory }) => {
+    execute: async ({ command, workingDirectory: _workingDirectory }) => {
       try {
-        const boltTerminal = workbenchStore.boltTerminal;
 
         // For now, simulate command execution since direct terminal access is complex
         console.log(`🔧 Simulating command execution: ${command}`);
 
         // Simulate some common commands
         let output = '';
-        let exitCode = 0;
+        const exitCode = 0;
 
         if (command.includes('npm install')) {
           output = 'npm packages installed successfully (simulated)';
@@ -193,7 +194,9 @@ export const defaultTools: Tool[] = [
           note: 'This is a simulated command execution. Real terminal integration requires more complex setup.',
         };
       } catch (error) {
-        throw new Error(`Failed to execute command "${command}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to execute command "${command}": ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     },
   },
@@ -221,7 +224,7 @@ export const defaultTools: Tool[] = [
         console.log(`📄 New content length: ${content.length} characters`);
 
         // Simulate update delay
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 400));
 
         return {
           success: true,
@@ -254,7 +257,7 @@ export const defaultTools: Tool[] = [
         console.log(`📁 Creating folder: ${path}`);
 
         // Simulate creation delay
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         return {
           success: true,
@@ -286,7 +289,7 @@ export const defaultTools: Tool[] = [
         console.log(`📋 Listing files in: ${path || 'root'}`);
 
         // Simulate listing delay
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Return simulated file structure
         const simulatedFiles = [
@@ -296,8 +299,11 @@ export const defaultTools: Tool[] = [
           { path: 'src/App.js', type: 'file', isLocked: false, isBinary: false },
           { path: 'public', type: 'folder', isLocked: false },
           { path: 'public/index.html', type: 'file', isLocked: false, isBinary: false },
-        ].filter(file => {
-          if (!path) return true;
+        ].filter((file) => {
+          if (!path) {
+            return true;
+          }
+
           return file.path.startsWith(path);
         });
 
@@ -309,7 +315,9 @@ export const defaultTools: Tool[] = [
           note: 'This is a simulated file listing. Real file system integration requires workbench access.',
         };
       } catch (error) {
-        throw new Error(`Failed to list files in ${path || 'root'}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to list files in ${path || 'root'}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     },
   },

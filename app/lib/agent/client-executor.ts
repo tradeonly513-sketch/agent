@@ -74,6 +74,7 @@ const createRealToolRegistry = () => {
 
           case 'update_file': {
             const { path, content } = toolCall.parameters;
+
             // Set the document content and save
             workbenchStore.setCurrentDocumentContent(content || '');
             await workbenchStore.saveFile(path);
@@ -92,7 +93,10 @@ const createRealToolRegistry = () => {
 
             const filteredFiles = Object.entries(allFiles)
               .filter(([filePath]) => {
-                if (!path) return true;
+                if (!path) {
+                  return true;
+                }
+
                 return filePath.startsWith(path);
               })
               .map(([filePath, dirent]) => ({
@@ -112,7 +116,7 @@ const createRealToolRegistry = () => {
 
           case 'execute_command': {
             // For now, simulate command execution since terminal integration is complex
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             return {
               success: true,
               output: `Command "${toolCall.parameters.command}" executed successfully (simulated)`,
@@ -122,20 +126,23 @@ const createRealToolRegistry = () => {
             };
           }
 
-        default:
-          throw new Error(`Unknown tool: ${toolCall.name}`);
+          default:
+            throw new Error(`Unknown tool: ${toolCall.name}`);
+        }
+      } catch (importError) {
+        console.error('❌ Failed to import workbenchStore:', importError);
+
+        // Fallback to simulation if import fails
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        return {
+          success: false,
+          message: `Tool ${toolCall.name} failed due to import error: ${importError instanceof Error ? importError.message : 'Unknown error'}`,
+          error: 'workbenchStore import failed',
+        };
       }
-    } catch (importError) {
-      console.error('❌ Failed to import workbenchStore:', importError);
-      // Fallback to simulation if import fails
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return {
-        success: false,
-        message: `Tool ${toolCall.name} failed due to import error: ${importError instanceof Error ? importError.message : 'Unknown error'}`,
-        error: 'workbenchStore import failed',
-      };
-    }
-  }
+    },
+  };
 };
 
 export interface ClientAgentExecutorOptions {
@@ -205,13 +212,17 @@ export class ClientAgentExecutor {
     try {
       // Parse the task into steps
       console.log('🤖 Agent: Parsing task into steps...');
+
       const steps = this._parseTaskIntoSteps(description, context);
       task.steps = steps;
       task.status = 'running';
       task.updatedAt = Date.now();
       this._options.onTaskUpdate?.(task);
 
-      console.log(`🤖 Agent: Task parsed into ${steps.length} steps:`, steps.map(s => s.title));
+      console.log(
+        `🤖 Agent: Task parsed into ${steps.length} steps:`,
+        steps.map((s) => s.title),
+      );
 
       // Execute steps sequentially
       for (let i = 0; i < steps.length; i++) {
@@ -222,7 +233,7 @@ export class ClientAgentExecutor {
 
         // Wait for resume if paused
         while (this._isPaused && !this._abortController?.signal.aborted) {
-          await new Promise<void>(resolve => {
+          await new Promise<void>((resolve) => {
             const stepId = `${task.id}-${i}`;
             this._stepCallbacks.set(stepId, resolve);
           });
@@ -273,7 +284,7 @@ export class ClientAgentExecutor {
     return task;
   }
 
-  private _parseTaskIntoSteps(description: string, context?: Record<string, any>): AgentStep[] {
+  private _parseTaskIntoSteps(description: string, _context?: Record<string, any>): AgentStep[] {
     console.log('🤖 Agent: Parsing task using intelligent fallback...');
 
     const lowerDesc = description.toLowerCase();
@@ -312,7 +323,7 @@ export class ClientAgentExecutor {
     return this._getGenericSteps(description);
   }
 
-  private _getExpressApiSteps(description: string): AgentStep[] {
+  private _getExpressApiSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -359,7 +370,7 @@ export class ClientAgentExecutor {
     ];
   }
 
-  private _getReactAppSteps(description: string): AgentStep[] {
+  private _getReactAppSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -399,7 +410,7 @@ export class ClientAgentExecutor {
     ];
   }
 
-  private _getHtmlFileSteps(description: string): AgentStep[] {
+  private _getHtmlFileSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -425,7 +436,7 @@ export class ClientAgentExecutor {
     ];
   }
 
-  private _getPythonScriptSteps(description: string): AgentStep[] {
+  private _getPythonScriptSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -458,7 +469,7 @@ export class ClientAgentExecutor {
     ];
   }
 
-  private _getVueAppSteps(description: string): AgentStep[] {
+  private _getVueAppSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -491,7 +502,7 @@ export class ClientAgentExecutor {
     ];
   }
 
-  private _getWebsiteSteps(description: string): AgentStep[] {
+  private _getWebsiteSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -531,7 +542,7 @@ export class ClientAgentExecutor {
     ];
   }
 
-  private _getGenericSteps(description: string): AgentStep[] {
+  private _getGenericSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateSimpleId(),
@@ -580,6 +591,7 @@ export class ClientAgentExecutor {
 
           try {
             console.log(`🔧 Agent: Using tool ${toolCall.name}`);
+
             const toolResult = await this._toolRegistry.execute(toolCall);
             toolCall.result = toolResult;
             step.toolCalls.push(toolCall);
@@ -595,14 +607,13 @@ export class ClientAgentExecutor {
         step.output = `Completed: ${step.description}\n\nActions performed:\n${toolCalls.map((call, i) => `${i + 1}. Used ${call.name}`).join('\n')}`;
       } else {
         // Analysis or planning step
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         step.output = `Completed: ${step.description}`;
       }
 
       step.status = 'completed';
       step.timestamp = Date.now();
       this._options.onStepComplete?.(step);
-
     } catch (error) {
       console.error('❌ Agent: Step execution failed:', error);
       step.status = 'failed';
@@ -612,10 +623,10 @@ export class ClientAgentExecutor {
     }
   }
 
-  private _determineToolCalls(step: AgentStep, task: AgentTask): Array<{name: string, parameters: any}> {
+  private _determineToolCalls(step: AgentStep, task: AgentTask): Array<{ name: string; parameters: any }> {
     const stepTitle = step.title.toLowerCase();
     const taskDesc = task.description.toLowerCase();
-    const toolCalls: Array<{name: string, parameters: any}> = [];
+    const toolCalls: Array<{ name: string; parameters: any }> = [];
 
     // Express.js API project setup
     if (taskDesc.includes('express') || (taskDesc.includes('api') && taskDesc.includes('node'))) {
@@ -625,29 +636,29 @@ export class ClientAgentExecutor {
             name: 'create_file',
             parameters: {
               path: 'package.json',
-              content: this._generateExpressPackageJson()
-            }
+              content: this._generateExpressPackageJson(),
+            },
           },
           {
             name: 'create_folder',
-            parameters: { path: 'routes' }
+            parameters: { path: 'routes' },
           },
           {
             name: 'create_folder',
-            parameters: { path: 'middleware' }
+            parameters: { path: 'middleware' },
           },
           {
             name: 'create_folder',
-            parameters: { path: 'models' }
-          }
+            parameters: { path: 'models' },
+          },
         );
       } else if (stepTitle.includes('server') || stepTitle.includes('setup')) {
         toolCalls.push({
           name: 'create_file',
           parameters: {
             path: 'server.js',
-            content: this._generateExpressServer()
-          }
+            content: this._generateExpressServer(),
+          },
         });
       } else if (stepTitle.includes('routes') || stepTitle.includes('middleware')) {
         toolCalls.push(
@@ -655,39 +666,39 @@ export class ClientAgentExecutor {
             name: 'create_file',
             parameters: {
               path: 'routes/auth.js',
-              content: this._generateAuthRoutes()
-            }
+              content: this._generateAuthRoutes(),
+            },
           },
           {
             name: 'create_file',
             parameters: {
               path: 'routes/api.js',
-              content: this._generateApiRoutes()
-            }
+              content: this._generateApiRoutes(),
+            },
           },
           {
             name: 'create_file',
             parameters: {
               path: 'middleware/auth.js',
-              content: this._generateAuthMiddleware()
-            }
-          }
+              content: this._generateAuthMiddleware(),
+            },
+          },
         );
       } else if (stepTitle.includes('authentication') || stepTitle.includes('jwt')) {
         toolCalls.push({
           name: 'create_file',
           parameters: {
             path: 'models/User.js',
-            content: this._generateUserModel()
-          }
+            content: this._generateUserModel(),
+          },
         });
       } else if (stepTitle.includes('crud')) {
         toolCalls.push({
           name: 'create_file',
           parameters: {
             path: 'models/Post.js',
-            content: this._generatePostModel()
-          }
+            content: this._generatePostModel(),
+          },
         });
       }
     }
@@ -700,24 +711,24 @@ export class ClientAgentExecutor {
             name: 'create_file',
             parameters: {
               path: 'package.json',
-              content: this._generateReactPackageJson()
-            }
+              content: this._generateReactPackageJson(),
+            },
           },
           {
             name: 'create_folder',
-            parameters: { path: 'src' }
+            parameters: { path: 'src' },
           },
           {
             name: 'create_folder',
-            parameters: { path: 'public' }
+            parameters: { path: 'public' },
           },
           {
             name: 'create_file',
             parameters: {
               path: 'public/index.html',
-              content: this._generateReactIndexHtml()
-            }
-          }
+              content: this._generateReactIndexHtml(),
+            },
+          },
         );
       } else if (stepTitle.includes('components')) {
         toolCalls.push(
@@ -725,16 +736,16 @@ export class ClientAgentExecutor {
             name: 'create_file',
             parameters: {
               path: 'src/App.js',
-              content: this._generateReactApp()
-            }
+              content: this._generateReactApp(),
+            },
           },
           {
             name: 'create_file',
             parameters: {
               path: 'src/index.js',
-              content: this._generateReactIndex()
-            }
-          }
+              content: this._generateReactIndex(),
+            },
+          },
         );
       }
     }
@@ -746,8 +757,8 @@ export class ClientAgentExecutor {
         name: 'create_file',
         parameters: {
           path: fileName,
-          content: this._generateFileContent(fileName, task.description)
-        }
+          content: this._generateFileContent(fileName, task.description),
+        },
       });
     }
 
@@ -757,8 +768,8 @@ export class ClientAgentExecutor {
         name: 'create_file',
         parameters: {
           path: 'main.py',
-          content: this._generatePythonScript(task.description)
-        }
+          content: this._generatePythonScript(task.description),
+        },
       });
     }
 
@@ -810,33 +821,37 @@ export class ClientAgentExecutor {
   }
 
   private _generateExpressPackageJson(): string {
-    return JSON.stringify({
-      name: 'express-api-server',
-      version: '1.0.0',
-      description: 'Express.js REST API server with JWT authentication',
-      main: 'server.js',
-      scripts: {
-        start: 'node server.js',
-        dev: 'nodemon server.js',
-        test: 'jest'
+    return JSON.stringify(
+      {
+        name: 'express-api-server',
+        version: '1.0.0',
+        description: 'Express.js REST API server with JWT authentication',
+        main: 'server.js',
+        scripts: {
+          start: 'node server.js',
+          dev: 'nodemon server.js',
+          test: 'jest',
+        },
+        dependencies: {
+          express: '^4.18.2',
+          cors: '^2.8.5',
+          helmet: '^7.0.0',
+          'express-rate-limit': '^6.7.0',
+          jsonwebtoken: '^9.0.0',
+          bcryptjs: '^2.4.3',
+          'express-validator': '^6.15.0',
+          dotenv: '^16.0.3',
+          mongoose: '^7.0.3',
+        },
+        devDependencies: {
+          nodemon: '^2.0.22',
+          jest: '^29.5.0',
+          supertest: '^6.3.3',
+        },
       },
-      dependencies: {
-        express: '^4.18.2',
-        cors: '^2.8.5',
-        helmet: '^7.0.0',
-        'express-rate-limit': '^6.7.0',
-        jsonwebtoken: '^9.0.0',
-        bcryptjs: '^2.4.3',
-        'express-validator': '^6.15.0',
-        dotenv: '^16.0.3',
-        mongoose: '^7.0.3'
-      },
-      devDependencies: {
-        nodemon: '^2.0.22',
-        jest: '^29.5.0',
-        supertest: '^6.3.3'
-      }
-    }, null, 2);
+      null,
+      2,
+    );
   }
 
   private _generateExpressServer(): string {
@@ -1273,29 +1288,33 @@ module.exports = mongoose.model('Post', postSchema);`;
   }
 
   private _generateReactPackageJson(): string {
-    return JSON.stringify({
-      name: 'react-todo-app',
-      version: '1.0.0',
-      private: true,
-      dependencies: {
-        react: '^18.2.0',
-        'react-dom': '^18.2.0',
-        'react-scripts': '5.0.1'
+    return JSON.stringify(
+      {
+        name: 'react-todo-app',
+        version: '1.0.0',
+        private: true,
+        dependencies: {
+          react: '^18.2.0',
+          'react-dom': '^18.2.0',
+          'react-scripts': '5.0.1',
+        },
+        scripts: {
+          start: 'react-scripts start',
+          build: 'react-scripts build',
+          test: 'react-scripts test',
+          eject: 'react-scripts eject',
+        },
+        eslintConfig: {
+          extends: ['react-app', 'react-app/jest'],
+        },
+        browserslist: {
+          production: ['>0.2%', 'not dead', 'not op_mini all'],
+          development: ['last 1 chrome version', 'last 1 firefox version', 'last 1 safari version'],
+        },
       },
-      scripts: {
-        start: 'react-scripts start',
-        build: 'react-scripts build',
-        test: 'react-scripts test',
-        eject: 'react-scripts eject'
-      },
-      eslintConfig: {
-        extends: ['react-app', 'react-app/jest']
-      },
-      browserslist: {
-        production: ['>0.2%', 'not dead', 'not op_mini all'],
-        development: ['last 1 chrome version', 'last 1 firefox version', 'last 1 safari version']
-      }
-    }, null, 2);
+      null,
+      2,
+    );
   }
 
   private _generateReactIndexHtml(): string {
@@ -1615,6 +1634,7 @@ if __name__ == "__main__":
   retryCurrentStep(): void {
     if (this._currentTask && this._currentTask.steps[this._currentTask.currentStepIndex]) {
       const currentStep = this._currentTask.steps[this._currentTask.currentStepIndex];
+
       if (currentStep.status === 'failed') {
         currentStep.status = 'pending';
         currentStep.error = undefined;
@@ -1624,5 +1644,4 @@ if __name__ == "__main__":
       }
     }
   }
-}
 }

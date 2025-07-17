@@ -15,7 +15,15 @@ interface AgentControlsProps {
   className?: string;
 }
 
-export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onPause, onResume, onStop, onSkipStep, onRetryStep, className }) => {
+export const AgentControls: React.FC<AgentControlsProps> = ({
+  agentExecutor,
+  onPause,
+  onResume,
+  onStop,
+  onSkipStep,
+  onRetryStep,
+  className,
+}) => {
   const agentState = useStore(agentStore);
 
   if (!agentState.isActive || !agentState.currentTask) {
@@ -36,6 +44,7 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onP
     if (agentExecutor) {
       agentExecutor.pause();
     }
+
     onPause?.();
     agentStore.setKey('isPaused', true);
     toast.info('Agent task paused');
@@ -45,6 +54,7 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onP
     if (agentExecutor) {
       agentExecutor.resume();
     }
+
     onResume?.();
     agentStore.setKey('isPaused', false);
     toast.info('Agent task resumed');
@@ -54,6 +64,7 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onP
     if (agentExecutor) {
       agentExecutor.abort();
     }
+
     onStop?.();
     agentStore.setKey('isActive', false);
     agentStore.setKey('currentTask', undefined);
@@ -65,6 +76,7 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onP
     if (agentExecutor) {
       agentExecutor.skipCurrentStep();
     }
+
     onSkipStep?.();
     toast.info('Step skipped');
   };
@@ -73,6 +85,7 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onP
     if (agentExecutor) {
       agentExecutor.retryCurrentStep();
     }
+
     onRetryStep?.();
     toast.info('Retrying step');
   };
@@ -148,7 +161,12 @@ export const AgentControls: React.FC<AgentControlsProps> = ({ agentExecutor, onP
         )}
 
         {isCompleted && (
-          <IconButton title="Close Agent Panel" size="sm" className="text-gray-600 hover:bg-gray-100" onClick={handleClose}>
+          <IconButton
+            title="Close Agent Panel"
+            size="sm"
+            className="text-gray-600 hover:bg-gray-100"
+            onClick={handleClose}
+          >
             <div className="i-ph:x text-sm" />
           </IconButton>
         )}

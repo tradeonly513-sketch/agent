@@ -6,7 +6,7 @@ import { ThemeSwitch } from '~/components/ui/ThemeSwitch';
 import { ControlPanel } from '~/components/@settings/core/ControlPanel';
 import { SettingsButton } from '~/components/ui/SettingsButton';
 import { Button } from '~/components/ui/Button';
-import { type ChatHistoryItem, chatId, db, deleteById, getAll, useChatHistory } from '~/lib/persistence';
+import { type ChatHistoryItem, chatId, getDb, deleteById, getAll, useChatHistory } from '~/lib/persistence';
 import { cubicEasingFn } from '~/utils/easings';
 import { HistoryItem } from './HistoryItem';
 import { binDates } from './date-binning';
@@ -79,7 +79,9 @@ export const Menu = () => {
     searchFields: ['description'],
   });
 
-  const loadEntries = useCallback(() => {
+  const loadEntries = useCallback(async () => {
+    const db = await getDb();
+
     if (db) {
       getAll(db)
         .then((list) => list.filter((item) => item.urlId && item.description))
@@ -88,27 +90,26 @@ export const Menu = () => {
     }
   }, []);
 
-  const deleteChat = useCallback(
-    async (id: string): Promise<void> => {
-      if (!db) {
-        throw new Error('Database not available');
-      }
+  const deleteChat = useCallback(async (id: string): Promise<void> => {
+    const db = await getDb();
 
-      // Delete chat snapshot from localStorage
-      try {
-        const snapshotKey = `snapshot:${id}`;
-        localStorage.removeItem(snapshotKey);
-        console.log('Removed snapshot for chat:', id);
-      } catch (snapshotError) {
-        console.error(`Error deleting snapshot for chat ${id}:`, snapshotError);
-      }
+    if (!db) {
+      throw new Error('Database not available');
+    }
 
-      // Delete the chat from the database
-      await deleteById(db, id);
-      console.log('Successfully deleted chat:', id);
-    },
-    [db],
-  );
+    // Delete chat snapshot from localStorage
+    try {
+      const snapshotKey = `snapshot:${id}`;
+      localStorage.removeItem(snapshotKey);
+      console.log('Removed snapshot for chat:', id);
+    } catch (snapshotError) {
+      console.error(`Error deleting snapshot for chat ${id}:`, snapshotError);
+    }
+
+    // Delete the chat from the database
+    await deleteById(db, id);
+    console.log('Successfully deleted chat:', id);
+  }, []);
 
   const deleteItem = useCallback(
     (event: React.UIEvent, item: ChatHistoryItem) => {
@@ -150,6 +151,8 @@ export const Menu = () => {
 
   const deleteSelectedItems = useCallback(
     async (itemsToDeleteIds: string[]) => {
+      const db = await getDb();
+
       if (!db || itemsToDeleteIds.length === 0) {
         console.log('Bulk delete skipped: No DB or no items to delete.');
         return;
@@ -199,7 +202,7 @@ export const Menu = () => {
         window.location.pathname = '/';
       }
     },
-    [deleteChat, loadEntries, db],
+    [deleteChat, loadEntries],
   );
 
   const closeDialog = () => {

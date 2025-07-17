@@ -498,12 +498,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               )}
               <div className="flex flex-col gap-5">
                 {!chatStarted && agentMode === 'agent' && onTemplateSelect && (
-                  <TaskTemplates
-                    onSelectTemplate={onTemplateSelect}
-                    className="mb-6"
-                  />
+                  <TaskTemplates onSelectTemplate={onTemplateSelect} className="mb-6" />
                 )}
-                {!chatStarted && agentMode === 'chat' &&
+                {!chatStarted &&
+                  agentMode === 'chat' &&
                   ExamplePrompts((event, messageInput) => {
                     if (isStreaming) {
                       handleStop?.();

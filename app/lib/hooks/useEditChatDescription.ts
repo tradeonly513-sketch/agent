@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import {
   chatId as chatIdStore,
-  db,
+  getDb,
   description as descriptionStore,
   getMessages,
   updateChatDescription,
@@ -64,6 +64,8 @@ export function useEditChatDescription({
   }, []);
 
   const fetchLatestDescription = useCallback(async () => {
+    const db = await getDb();
+
     if (!db || !chatId) {
       return initialDescription;
     }
@@ -75,7 +77,7 @@ export function useEditChatDescription({
       console.error('Failed to fetch latest description:', error);
       return initialDescription;
     }
-  }, [db, chatId, initialDescription]);
+  }, [chatId, initialDescription]);
 
   const handleBlur = useCallback(async () => {
     const latestDescription = await fetchLatestDescription();
@@ -118,6 +120,8 @@ export function useEditChatDescription({
       }
 
       try {
+        const db = await getDb();
+
         if (!db) {
           toast.error('Chat persistence is not available');
           return;
@@ -141,7 +145,7 @@ export function useEditChatDescription({
 
       toggleEditMode();
     },
-    [currentDescription, db, chatId, initialDescription, customChatId],
+    [currentDescription, chatId, initialDescription, customChatId],
   );
 
   const handleKeyDown = useCallback(

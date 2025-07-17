@@ -32,12 +32,12 @@ export class AgentExecutor {
       maxSteps: 10,
       stepTimeout: 60000, // 60 seconds
       model: DEFAULT_MODEL,
-      provider: DEFAULT_PROVIDER.name,
+      provider: DEFAULT_PROVIDER,
       ...options,
     };
   }
 
-  async executeTask(description: string, context?: Record<string, any>): Promise<AgentTask> {
+  async executeTask(_description: string, _context?: Record<string, any>): Promise<AgentTask> {
     if (this._isRunning) {
       throw new Error('Agent is already running a task');
     }
@@ -63,13 +63,17 @@ export class AgentExecutor {
     try {
       // Parse the task into steps using LLM
       console.log('🤖 Agent: Parsing task into steps...');
+
       const steps = await this._parseTaskIntoSteps(description, context);
       task.steps = steps;
       task.status = 'running';
       task.updatedAt = Date.now();
       this._options.onTaskUpdate?.(task);
 
-      console.log(`🤖 Agent: Task parsed into ${steps.length} steps:`, steps.map(s => s.title));
+      console.log(
+        `🤖 Agent: Task parsed into ${steps.length} steps:`,
+        steps.map((s) => s.title),
+      );
 
       // Execute steps sequentially
       for (let i = 0; i < steps.length; i++) {
@@ -80,7 +84,7 @@ export class AgentExecutor {
 
         // Wait for resume if paused
         while (this._isPaused && !this._abortController?.signal.aborted) {
-          await new Promise<void>(resolve => {
+          await new Promise<void>((resolve) => {
             const stepId = `${task.id}-${i}`;
             this._stepCallbacks.set(stepId, resolve);
           });
@@ -106,8 +110,10 @@ export class AgentExecutor {
               this._options.onStepError(step, new Error(step.error || 'Step failed'));
             }
 
-            // For now, continue to next step instead of stopping entirely
-            // User can use controls to stop if needed
+            /*
+             * For now, continue to next step instead of stopping entirely
+             * User can use controls to stop if needed
+             */
             console.warn(`Step ${i + 1} failed: ${step.error}`);
           }
         } catch (error) {
@@ -139,17 +145,18 @@ export class AgentExecutor {
     return task;
   }
 
-  private async _parseTaskIntoSteps(description: string, context?: Record<string, any>): Promise<AgentStep[]> {
-    // For now, use intelligent fallback parsing instead of LLM
-    // This avoids client-server issues and still provides good functionality
+  private async _parseTaskIntoSteps(_description: string, context?: Record<string, any>): Promise<AgentStep[]> {
+    /*
+     * For now, use intelligent fallback parsing instead of LLM
+     * This avoids client-server issues and still provides good functionality
+     */
     console.log('🤖 Agent: Parsing task using intelligent fallback...');
 
     return this._getIntelligentSteps(description, context);
   }
 
-  private _getIntelligentSteps(description: string, context?: Record<string, any>): AgentStep[] {
+  private _getIntelligentSteps(_description: string, _context?: Record<string, any>): AgentStep[] {
     const lowerDesc = description.toLowerCase();
-    const steps: AgentStep[] = [];
 
     // React/Vue/Frontend App patterns
     if (lowerDesc.includes('react') || lowerDesc.includes('vue') || lowerDesc.includes('frontend')) {
@@ -174,12 +181,23 @@ export class AgentExecutor {
     }
 
     // File operations
-    if (lowerDesc.includes('create') && (lowerDesc.includes('file') || lowerDesc.includes('html') || lowerDesc.includes('css') || lowerDesc.includes('js'))) {
+    if (
+      lowerDesc.includes('create') &&
+      (lowerDesc.includes('file') ||
+        lowerDesc.includes('html') ||
+        lowerDesc.includes('css') ||
+        lowerDesc.includes('js'))
+    ) {
       return this._getFileCreationSteps(description);
     }
 
     // Python/Data Science patterns
-    if (lowerDesc.includes('python') || lowerDesc.includes('data') || lowerDesc.includes('csv') || lowerDesc.includes('analysis')) {
+    if (
+      lowerDesc.includes('python') ||
+      lowerDesc.includes('data') ||
+      lowerDesc.includes('csv') ||
+      lowerDesc.includes('analysis')
+    ) {
       return this._getPythonDataSteps(description);
     }
 
@@ -202,7 +220,7 @@ export class AgentExecutor {
     return this._getGenericSteps(description);
   }
 
-  private _getReactTodoSteps(description: string): AgentStep[] {
+  private _getReactTodoSteps(__description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -242,7 +260,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getExpressApiSteps(description: string): AgentStep[] {
+  private _getExpressApiSteps(__description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -282,7 +300,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getFileCreationSteps(description: string): AgentStep[] {
+  private _getFileCreationSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -308,7 +326,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getDashboardSteps(description: string): AgentStep[] {
+  private _getDashboardSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -341,7 +359,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getFrontendAppSteps(description: string): AgentStep[] {
+  private _getFrontendAppSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -374,7 +392,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getFlaskApiSteps(description: string): AgentStep[] {
+  private _getFlaskApiSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -407,7 +425,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getGenericApiSteps(description: string): AgentStep[] {
+  private _getGenericApiSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -440,7 +458,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getPythonDataSteps(description: string): AgentStep[] {
+  private _getPythonDataSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -473,7 +491,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getWebScrapingSteps(description: string): AgentStep[] {
+  private _getWebScrapingSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -506,7 +524,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getCliToolSteps(description: string): AgentStep[] {
+  private _getCliToolSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -539,7 +557,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getGameSteps(description: string): AgentStep[] {
+  private _getGameSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -572,7 +590,7 @@ export class AgentExecutor {
     ];
   }
 
-  private _getGenericSteps(description: string): AgentStep[] {
+  private _getGenericSteps(_description: string): AgentStep[] {
     return [
       {
         id: generateId(),
@@ -643,13 +661,14 @@ export class AgentExecutor {
 
           try {
             console.log(`🔧 Agent: Using tool ${toolCall.name} with params:`, toolCall.parameters);
+
             const toolResult = await toolRegistry.execute(toolCall);
             toolCall.result = toolResult;
             step.toolCalls.push(toolCall);
 
-            console.log(`✅ Agent: Tool ${toolCall.name} completed successfully`);
+            console.log(`�?Agent: Tool ${toolCall.name} completed successfully`);
           } catch (error) {
-            console.error(`❌ Agent: Tool ${toolCall.name} failed:`, error);
+            console.error(`�?Agent: Tool ${toolCall.name} failed:`, error);
             toolCall.error = error instanceof Error ? error.message : 'Unknown error';
             step.toolCalls.push(toolCall);
             throw new Error(`Tool execution failed: ${toolCall.error}`);
@@ -661,26 +680,25 @@ export class AgentExecutor {
         // Analysis or planning step
         step.output = `Completed: ${step.description}`;
       }
-
     } catch (error) {
-      console.error('❌ Agent: Step execution failed:', error);
+      console.error('�?Agent: Step execution failed:', error);
       step.output = `Step failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       throw error;
     }
   }
 
-  private _extractTitle(description: string): string {
+  private _extractTitle(_description: string): string {
     // Extract a title from the description
     const words = description.split(' ').slice(0, 6);
     return words.join(' ') + (description.split(' ').length > 6 ? '...' : '');
   }
 
-  private _determineToolCalls(step: AgentStep, task: AgentTask): Array<{name: string, parameters: any}> {
+  private _determineToolCalls(step: AgentStep, task: AgentTask): Array<{ name: string; parameters: any }> {
     const stepTitle = step.title.toLowerCase();
     const stepDesc = step.description.toLowerCase();
     const taskDesc = task.description.toLowerCase();
 
-    const toolCalls: Array<{name: string, parameters: any}> = [];
+    const toolCalls: Array<{ name: string; parameters: any }> = [];
 
     // File creation patterns
     if (stepTitle.includes('create') || stepTitle.includes('setup') || stepTitle.includes('initialize')) {
@@ -710,7 +728,7 @@ export class AgentExecutor {
     return toolCalls;
   }
 
-  private _generateStepSummary(step: AgentStep, toolCalls: Array<{name: string, parameters: any}>): string {
+  private _generateStepSummary(step: AgentStep, toolCalls: Array<{ name: string; parameters: any }>): string {
     return StepHelpers.generateStepSummary(step, toolCalls);
   }
 
@@ -743,6 +761,7 @@ export class AgentExecutor {
   retryCurrentStep(): void {
     if (this._currentTask && this._currentTask.steps[this._currentTask.currentStepIndex]) {
       const currentStep = this._currentTask.steps[this._currentTask.currentStepIndex];
+
       if (currentStep.status === 'failed') {
         currentStep.status = 'pending';
         currentStep.error = undefined;
@@ -761,16 +780,21 @@ export class AgentExecutor {
     }
 
     const task = this._currentTask;
-    const completedSteps = task.steps.filter(s => s.status === 'completed').length;
-    const failedSteps = task.steps.filter(s => s.status === 'failed').length;
-    const skippedSteps = task.steps.filter(s => s.status === 'skipped').length;
+    const completedSteps = task.steps.filter((s) => s.status === 'completed').length;
+    const failedSteps = task.steps.filter((s) => s.status === 'failed').length;
+    const skippedSteps = task.steps.filter((s) => s.status === 'skipped').length;
 
     let summary = `Task: ${task.title}\n`;
     summary += `Status: ${task.status}\n`;
     summary += `Progress: ${completedSteps}/${task.steps.length} completed`;
 
-    if (failedSteps > 0) summary += `, ${failedSteps} failed`;
-    if (skippedSteps > 0) summary += `, ${skippedSteps} skipped`;
+    if (failedSteps > 0) {
+      summary += `, ${failedSteps} failed`;
+    }
+
+    if (skippedSteps > 0) {
+      summary += `, ${skippedSteps} skipped`;
+    }
 
     return summary;
   }

@@ -13,6 +13,11 @@ export function useIndexedDB() {
       try {
         setIsLoading(true);
 
+        // Check if indexedDB is available
+        if (typeof indexedDB === 'undefined') {
+          throw new Error('IndexedDB is not available in this environment');
+        }
+
         const request = indexedDB.open('boltDB', 1);
 
         request.onupgradeneeded = (event) => {

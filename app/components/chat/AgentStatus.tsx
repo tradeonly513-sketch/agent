@@ -16,8 +16,8 @@ export const AgentStatus: React.FC<AgentStatusProps> = ({ className }) => {
   }
 
   const { currentTask, isPaused } = agentState;
-  const completedSteps = currentTask.steps.filter(s => s.status === 'completed').length;
-  const failedSteps = currentTask.steps.filter(s => s.status === 'failed').length;
+  const completedSteps = currentTask.steps.filter((s) => s.status === 'completed').length;
+  const failedSteps = currentTask.steps.filter((s) => s.status === 'failed').length;
   const totalSteps = currentTask.steps.length;
 
   return (
