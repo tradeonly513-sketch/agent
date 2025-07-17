@@ -7,7 +7,6 @@ interface WindowEnv {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   INTERCOM_APP_ID: string;
-  INTERCOM_ACCESS_TOKEN: string;
 }
 
 declare global {

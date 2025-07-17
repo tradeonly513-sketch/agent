@@ -26,7 +26,6 @@ interface LoaderData {
     SUPABASE_URL: string;
     SUPABASE_ANON_KEY: string;
     INTERCOM_APP_ID: string;
-    INTERCOM_ACCESS_TOKEN: string;
   };
 }
 
@@ -59,14 +58,12 @@ export const loader: LoaderFunction = async () => {
   const supabaseUrl = process.env.SUPABASE_URL as string;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY as string;
   const publicIntercomAppId = process.env.INTERCOM_APP_ID as string;
-  const intercomAccessToken = process.env.INTERCOM_ACCESS_TOKEN as string;
 
   return json<LoaderData>({
     ENV: {
       SUPABASE_URL: supabaseUrl,
       SUPABASE_ANON_KEY: supabaseAnonKey,
       INTERCOM_APP_ID: publicIntercomAppId,
-      INTERCOM_ACCESS_TOKEN: intercomAccessToken,
     },
   });
 };
