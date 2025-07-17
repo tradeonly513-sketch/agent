@@ -16,7 +16,7 @@ import Cookies from 'js-cookie';
 import { debounce } from '~/utils/debounce';
 import { useSettings } from '~/lib/hooks/useSettings';
 import type { ProviderInfo } from '~/types/model';
-import { useSearchParams } from '@remix-run/react';
+import { useSearchParams, useNavigate } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
@@ -125,6 +125,7 @@ export const ChatImpl = memo(
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [fakeLoading, setFakeLoading] = useState(false);
     const files = useStore(workbenchStore.files);
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
@@ -266,8 +267,10 @@ export const ChatImpl = memo(
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 
     useEffect(() => {
-      chatStore.setKey('started', initialMessages.length > 0);
-    }, []);
+      const shouldStart = initialMessages.length > 0 || window.location.pathname.startsWith('/chat/');
+      chatStore.setKey('started', shouldStart);
+      setChatStarted(shouldStart);
+    }, [initialMessages]);
 
     useEffect(() => {
       processSampledMessages({
@@ -501,55 +504,7 @@ export const ChatImpl = memo(
         }
       }
 
-      // Handle Agent mode
-      if (agentState.mode === 'agent') {
-        try {
-          agentStore.setKey('isActive', true);
-          agentStore.setKey('isPaused', false);
-
-          // Start agent task execution (no LLM call needed)
-          toast.info('Starting agent task execution...');
-
-          const task = await agentExecutor.executeTask(messageContent);
-
-          agentStore.setKey('currentTask', task);
-          agentStore.setKey('taskHistory', [...agentState.taskHistory, task]);
-
-          // Keep Agent active to show results, but mark as completed
-          agentStore.setKey('isActive', true); // Keep active to show results
-
-          // Show completion message without triggering LLM
-          const completedSteps = task.steps.filter((s) => s.status === 'completed').length;
-          const failedSteps = task.steps.filter((s) => s.status === 'failed').length;
-          const skippedSteps = task.steps.filter((s) => s.status === 'skipped').length;
-
-          let statusMessage = `Agent Task Completed: ${task.title}`;
-          statusMessage += `\nProgress: ${completedSteps}/${task.steps.length} steps completed`;
-
-          if (failedSteps > 0) {
-            statusMessage += ` (${failedSteps} failed)`;
-          }
-
-          if (skippedSteps > 0) {
-            statusMessage += ` (${skippedSteps} skipped)`;
-          }
-
-          // Show detailed completion message
-          toast.success(statusMessage + '\n\nCheck the file tree on the left to see created files!', {
-            autoClose: 8000, // Show longer to give user time to check files
-          });
-        } catch (error) {
-          console.error('Agent execution failed:', error);
-          toast.error('Agent task failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
-          agentStore.setKey('isActive', false);
-        }
-
-        setInput('');
-        textareaRef.current?.blur();
-
-        return;
-      }
-
+      // Initialize finalMessageContent first
       let finalMessageContent = messageContent;
 
       if (selectedElement) {
@@ -559,12 +514,52 @@ export const ChatImpl = memo(
         finalMessageContent = messageContent + elementInfo;
       }
 
-      runAnimation();
+      // Handle Agent mode - Enhanced Chat mode with Agent capabilities
+      if (agentState.mode === 'agent') {
+        // Show workbench immediately for Agent mode
+        workbenchStore.setShowWorkbench(true);
+
+        // Add agent prefix to the message to trigger agent behavior in LLM
+        const agentPrompt = `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
+
+User Request: ${messageContent}
+
+Instructions:
+1. Create all necessary files for a complete project
+2. Include proper project structure and dependencies
+3. Write clean, well-documented code
+4. Ensure the project is ready to run
+5. Use modern best practices
+
+Please proceed to create the project step by step.`;
+
+        finalMessageContent = agentPrompt;
+
+        // Force navigation to chat page for Agent mode
+        // This ensures proper page transition and workbench display
+        if (typeof window !== 'undefined' && window.location.pathname === '/') {
+          // Generate a new chat ID for Agent mode
+          const agentChatId = `agent-${Date.now()}`;
+          const url = new URL(window.location.href);
+          url.pathname = `/chat/${agentChatId}`;
+          window.history.replaceState({}, '', url);
+
+          // Force update chatStarted state after URL change
+          setChatStarted(true);
+          chatStore.setKey('started', true);
+        }
+      }
+
+      // Only run animation if not already run by Agent mode
+      if (agentState.mode !== 'agent') {
+        await runAnimation();
+      }
 
       if (!chatStarted) {
         setFakeLoading(true);
 
-        if (autoSelectTemplate) {
+        // Skip template selection for Agent mode
+        if (autoSelectTemplate && agentState.mode !== 'agent') {
           const { template, title } = await selectStarterTemplate({
             message: finalMessageContent,
             model,
@@ -632,15 +627,42 @@ export const ChatImpl = memo(
         const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
         const attachments = uploadedFiles.length > 0 ? await filesToAttachments(uploadedFiles) : undefined;
 
-        setMessages([
-          {
-            id: `${new Date().getTime()}`,
-            role: 'user',
-            content: userMessageText,
-            parts: createMessageParts(userMessageText, imageDataList),
-            experimental_attachments: attachments,
-          },
-        ]);
+        const userMessage = {
+          id: `${new Date().getTime()}`,
+          role: 'user' as const,
+          content: userMessageText,
+          parts: createMessageParts(userMessageText, imageDataList),
+          experimental_attachments: attachments,
+        };
+
+        // Handle Agent mode message setup
+        if (agentState.mode === 'agent') {
+          // Add Agent indicator message first, then user message
+          const agentIndicator: Message = {
+            id: `agent-indicator-${Date.now()}`,
+            role: 'assistant',
+            content: `🤖 **Agent Mode** - Creating project: "${messageContent}"
+
+<details>
+<summary>View technical details</summary>
+
+**Status:** Analyzing request and generating project files
+**Mode:** Intelligent Development Agent
+**Task:** ${messageContent}
+
+The agent will create all necessary files and project structure automatically.
+</details>`,
+          };
+
+          setMessages([agentIndicator, userMessage]);
+
+          toast.info('🤖 Agent creating your project...', {
+            autoClose: 2000,
+          });
+        } else {
+          // Chat mode - normal behavior
+          setMessages([userMessage]);
+        }
         reload(attachments ? { experimental_attachments: attachments } : undefined);
         setFakeLoading(false);
         setInput('');

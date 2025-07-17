@@ -256,13 +256,19 @@ if __name__ == "__main__":
     if (task.description.toLowerCase().includes('react')) {
       calls.push(
         { name: 'create_folder', parameters: { path: 'src' } },
-        { name: 'create_folder', parameters: { path: 'public' } },
+        {
+          name: 'create_folder',
+          parameters: { path: 'public' },
+        },
         { name: 'create_folder', parameters: { path: 'src/components' } },
       );
     } else if (task.description.toLowerCase().includes('express')) {
       calls.push(
         { name: 'create_folder', parameters: { path: 'routes' } },
-        { name: 'create_folder', parameters: { path: 'middleware' } },
+        {
+          name: 'create_folder',
+          parameters: { path: 'middleware' },
+        },
         { name: 'create_folder', parameters: { path: 'models' } },
       );
     }

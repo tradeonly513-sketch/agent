@@ -186,7 +186,11 @@ export class ClientAgentExecutor {
     return this._currentTask;
   }
 
-  async executeTask(description: string, context?: Record<string, any>): Promise<AgentTask> {
+  async executeTask(description: string, callbacks?: {
+    onStepStart?: (step: AgentStep) => void;
+    onStepComplete?: (step: AgentStep) => void;
+    onTaskComplete?: (task: AgentTask) => void;
+  }): Promise<AgentTask> {
     if (this._isRunning) {
       throw new Error('Agent is already running a task');
     }
@@ -202,7 +206,7 @@ export class ClientAgentExecutor {
       currentStepIndex: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      context: context || {},
+      context: {},
     };
 
     this._currentTask = task;
@@ -213,7 +217,7 @@ export class ClientAgentExecutor {
       // Parse the task into steps
       console.log('🤖 Agent: Parsing task into steps...');
 
-      const steps = this._parseTaskIntoSteps(description, context);
+      const steps = this._parseTaskIntoSteps(description, {});
       task.steps = steps;
       task.status = 'running';
       task.updatedAt = Date.now();
@@ -251,17 +255,25 @@ export class ClientAgentExecutor {
         const step = steps[i];
 
         try {
+          // Call step start callback
+          callbacks?.onStepStart?.(step);
+
           await this._executeStep(step, task);
+
+          // Call step complete callback
+          callbacks?.onStepComplete?.(step);
 
           if (step.status === 'failed') {
             this._options.onStepError?.(step, new Error(step.error || 'Step failed'));
             console.warn(`Step ${i + 1} failed: ${step.error}`);
+            // Continue with next step instead of breaking
           }
         } catch (error) {
           step.status = 'failed';
           step.error = error instanceof Error ? error.message : 'Unknown error';
           this._options.onStepError?.(step, error instanceof Error ? error : new Error('Unknown error'));
           console.error(`Step ${i + 1} error:`, error);
+          // Continue with next step instead of breaking
         }
 
         task.updatedAt = Date.now();
@@ -271,6 +283,7 @@ export class ClientAgentExecutor {
       if (task.status === 'running') {
         task.status = 'completed';
         this._options.onTaskComplete?.(task);
+        callbacks?.onTaskComplete?.(task);
       }
     } catch (error) {
       task.status = 'failed';
@@ -573,15 +586,26 @@ export class ClientAgentExecutor {
 
     step.status = 'running';
     step.timestamp = Date.now();
-    this._options.onStepStart?.(step);
 
     try {
-      // Simulate step execution
+      // Get tool calls for this step
       const toolCalls = this._determineToolCalls(step, task);
       step.toolCalls = [];
 
       if (toolCalls.length > 0) {
+        console.log(`🔧 Agent: Found ${toolCalls.length} tool calls for step "${step.title}"`);
+
         for (const toolCallData of toolCalls) {
+          // Check for abort signal
+          if (this._abortController?.signal.aborted) {
+            throw new Error('Task aborted');
+          }
+
+          // Wait if paused
+          while (this._isPaused && !this._abortController?.signal.aborted) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
           const toolCall: ToolCall = {
             id: generateSimpleId(),
             name: toolCallData.name,
@@ -590,7 +614,7 @@ export class ClientAgentExecutor {
           };
 
           try {
-            console.log(`🔧 Agent: Using tool ${toolCall.name}`);
+            console.log(`🔧 Agent: Using tool ${toolCall.name} with parameters:`, toolCall.parameters);
 
             const toolResult = await this._toolRegistry.execute(toolCall);
             toolCall.result = toolResult;
@@ -600,20 +624,22 @@ export class ClientAgentExecutor {
             console.error(`❌ Agent: Tool ${toolCall.name} failed:`, error);
             toolCall.error = error instanceof Error ? error.message : 'Unknown error';
             step.toolCalls.push(toolCall);
-            throw new Error(`Tool execution failed: ${toolCall.error}`);
+            // Don't throw immediately, continue with other tools
+            console.warn(`⚠️ Agent: Continuing despite tool failure: ${toolCall.error}`);
           }
         }
 
-        step.output = `Completed: ${step.description}\n\nActions performed:\n${toolCalls.map((call, i) => `${i + 1}. Used ${call.name}`).join('\n')}`;
+        step.output = `Completed: ${step.description}\n\nActions performed:\n${step.toolCalls.map((call, i) => `${i + 1}. ${call.name}(${call.parameters?.path || ''}) - ${call.error ? 'Failed' : 'Success'}`).join('\n')}`;
       } else {
-        // Analysis or planning step
+        // Analysis or planning step without tools
+        console.log(`📋 Agent: Step "${step.title}" is a planning/analysis step (no tools)`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate thinking time
         await new Promise((resolve) => setTimeout(resolve, 1000));
         step.output = `Completed: ${step.description}`;
       }
 
       step.status = 'completed';
       step.timestamp = Date.now();
-      this._options.onStepComplete?.(step);
     } catch (error) {
       console.error('❌ Agent: Step execution failed:', error);
       step.status = 'failed';
@@ -744,6 +770,67 @@ export class ClientAgentExecutor {
             parameters: {
               path: 'src/index.js',
               content: this._generateReactIndex(),
+            },
+          },
+        );
+      } else if (stepTitle.includes('state') || stepTitle.includes('management')) {
+        // State management step - create additional components
+        toolCalls.push(
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'src/components/TodoItem.js',
+              content: this._generateTodoItemComponent(),
+            },
+          },
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'src/components/TodoList.js',
+              content: this._generateTodoListComponent(),
+            },
+          },
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'src/components/TodoFilter.js',
+              content: this._generateTodoFilterComponent(),
+            },
+          },
+        );
+      } else if (stepTitle.includes('styling') || stepTitle.includes('css')) {
+        // Styling step - create CSS files
+        toolCalls.push(
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'src/App.css',
+              content: this._generateReactAppCSS(),
+            },
+          },
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'src/index.css',
+              content: this._generateReactIndexCSS(),
+            },
+          },
+        );
+      } else if (stepTitle.includes('test') || stepTitle.includes('functionality')) {
+        // Testing step - create test files and documentation
+        toolCalls.push(
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'README.md',
+              content: this._generateReactReadme(),
+            },
+          },
+          {
+            name: 'create_file',
+            parameters: {
+              path: 'src/utils/localStorage.js',
+              content: this._generateLocalStorageUtils(),
             },
           },
         );
@@ -1643,5 +1730,532 @@ if __name__ == "__main__":
         this.resume();
       }
     }
+  }
+
+  // Additional React component generators
+  private _generateTodoItemComponent(): string {
+    return `import React from 'react';
+
+const TodoItem = ({ todo, onToggle, onDelete, onEdit }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editText, setEditText] = React.useState(todo.text);
+
+  const handleEdit = () => {
+    if (isEditing) {
+      onEdit(todo.id, editText);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  return (
+    <div className={\`todo-item \${todo.completed ? 'completed' : ''}\`}>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={() => onToggle(todo.id)}
+        className="todo-checkbox"
+      />
+
+      {isEditing ? (
+        <input
+          type="text"
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleEdit()}
+          className="todo-edit-input"
+          autoFocus
+        />
+      ) : (
+        <span className="todo-text">{todo.text}</span>
+      )}
+
+      <div className="todo-actions">
+        <button onClick={handleEdit} className="edit-btn">
+          {isEditing ? '✓' : '✏️'}
+        </button>
+        <button onClick={() => onDelete(todo.id)} className="delete-btn">
+          🗑️
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default TodoItem;`;
+  }
+
+  private _generateTodoListComponent(): string {
+    return `import React from 'react';
+import TodoItem from './TodoItem';
+
+const TodoList = ({ todos, onToggle, onDelete, onEdit }) => {
+  if (todos.length === 0) {
+    return (
+      <div className="empty-state">
+        <p>No todos yet. Add one above!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="todo-list">
+      {todos.map(todo => (
+        <TodoItem
+          key={todo.id}
+          todo={todo}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onEdit={onEdit}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default TodoList;`;
+  }
+
+  private _generateTodoFilterComponent(): string {
+    return `import React from 'react';
+
+const TodoFilter = ({ filter, onFilterChange, todosCount }) => {
+  const filters = [
+    { key: 'all', label: 'All', count: todosCount.total },
+    { key: 'active', label: 'Active', count: todosCount.active },
+    { key: 'completed', label: 'Completed', count: todosCount.completed }
+  ];
+
+  return (
+    <div className="todo-filter">
+      <div className="filter-buttons">
+        {filters.map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => onFilterChange(key)}
+            className={\`filter-btn \${filter === key ? 'active' : ''}\`}
+          >
+            {label} ({count})
+          </button>
+        ))}
+      </div>
+
+      <div className="todo-stats">
+        <span className="stats-text">
+          {todosCount.active} of {todosCount.total} tasks remaining
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export default TodoFilter;`;
+  }
+
+  private _generateReactAppCSS(): string {
+    return `.app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.app-title {
+  color: #2c3e50;
+  font-size: 2.5rem;
+  font-weight: 300;
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.todo-input-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.todo-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.todo-input:focus {
+  border-color: #3498db;
+}
+
+.add-btn {
+  padding: 12px 24px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-btn:hover {
+  background: #2980b9;
+}
+
+.add-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.todo-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ecf0f1;
+  transition: background-color 0.2s ease;
+}
+
+.todo-item:hover {
+  background-color: #f8f9fa;
+}
+
+.todo-item:last-child {
+  border-bottom: none;
+}
+
+.todo-item.completed {
+  opacity: 0.6;
+}
+
+.todo-checkbox {
+  margin-right: 15px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.todo-text {
+  flex: 1;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.todo-item.completed .todo-text {
+  text-decoration: line-through;
+  color: #7f8c8d;
+}
+
+.todo-edit-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #3498db;
+  border-radius: 4px;
+  font-size: 16px;
+  outline: none;
+}
+
+.todo-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn, .delete-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.edit-btn {
+  background: #f39c12;
+  color: white;
+}
+
+.edit-btn:hover {
+  background: #e67e22;
+}
+
+.delete-btn {
+  background: #e74c3c;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.todo-filter {
+  padding: 20px;
+  background: #ecf0f1;
+  border-top: 1px solid #bdc3c7;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 2px solid #bdc3c7;
+  background: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: #3498db;
+}
+
+.filter-btn.active {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.todo-stats {
+  text-align: center;
+}
+
+.stats-text {
+  color: #7f8c8d;
+  font-size: 14px;
+}`;
+  }
+
+  private _generateReactIndexCSS(): string {
+    return `* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 50px;
+}`;
+  }
+
+  private _generateReactReadme(): string {
+    return `# React Todo Application
+
+A modern, feature-rich todo application built with React and modern hooks.
+
+## Features
+
+- ✅ Add new todos
+- ✅ Delete todos
+- ✅ Edit existing todos
+- ✅ Mark todos as complete/incomplete
+- ✅ Filter todos by status (all, active, completed)
+- ✅ Persist data in localStorage
+- ✅ Responsive design
+- ✅ Modern React hooks
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (version 14 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository or extract the files
+2. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
+
+3. Start the development server:
+   \`\`\`bash
+   npm start
+   \`\`\`
+
+4. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+
+## Usage
+
+- **Add Todo**: Type in the input field and click "Add Todo" or press Enter
+- **Complete Todo**: Click the checkbox next to any todo item
+- **Edit Todo**: Click the edit button (✏️) next to any todo item
+- **Delete Todo**: Click the delete button (🗑️) next to any todo item
+- **Filter Todos**: Use the filter buttons to show All, Active, or Completed todos
+
+## Technical Details
+
+### Components
+
+- **App.js**: Main application component with state management
+- **TodoItem.js**: Individual todo item component
+- **TodoList.js**: List container for todo items
+- **TodoFilter.js**: Filter and statistics component
+
+### State Management
+
+The application uses React's built-in \`useState\` and \`useEffect\` hooks for state management:
+
+- Todos are stored in component state
+- Data persists to localStorage automatically
+- Filter state is managed separately
+
+### Styling
+
+- Modern CSS with flexbox layout
+- Responsive design that works on mobile and desktop
+- Smooth transitions and hover effects
+- Clean, minimalist design
+
+## Browser Support
+
+This application works in all modern browsers including:
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+
+## License
+
+This project is open source and available under the MIT License.
+`;
+  }
+
+  private _generateLocalStorageUtils(): string {
+    return `// localStorage utility functions for todo persistence
+
+const STORAGE_KEY = 'react-todo-app-data';
+
+/**
+ * Save todos to localStorage
+ * @param {Array} todos - Array of todo objects
+ */
+export const saveTodos = (todos) => {
+  try {
+    const serializedTodos = JSON.stringify(todos);
+    localStorage.setItem(STORAGE_KEY, serializedTodos);
+  } catch (error) {
+    console.error('Error saving todos to localStorage:', error);
+  }
+};
+
+/**
+ * Load todos from localStorage
+ * @returns {Array} Array of todo objects or empty array if none found
+ */
+export const loadTodos = () => {
+  try {
+    const serializedTodos = localStorage.getItem(STORAGE_KEY);
+    if (serializedTodos === null) {
+      return [];
+    }
+    return JSON.parse(serializedTodos);
+  } catch (error) {
+    console.error('Error loading todos from localStorage:', error);
+    return [];
+  }
+};
+
+/**
+ * Clear all todos from localStorage
+ */
+export const clearTodos = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error('Error clearing todos from localStorage:', error);
+  }
+};
+
+/**
+ * Check if localStorage is available
+ * @returns {boolean} True if localStorage is available
+ */
+export const isLocalStorageAvailable = () => {
+  try {
+    const test = '__localStorage_test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Get storage usage statistics
+ * @returns {Object} Object with storage statistics
+ */
+export const getStorageStats = () => {
+  if (!isLocalStorageAvailable()) {
+    return { available: false };
+  }
+
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    const size = data ? new Blob([data]).size : 0;
+    const todos = loadTodos();
+
+    return {
+      available: true,
+      size: size,
+      count: todos.length,
+      lastModified: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error getting storage stats:', error);
+    return { available: true, error: error.message };
+  }
+};
+`;
   }
 }
