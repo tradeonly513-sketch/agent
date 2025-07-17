@@ -71,7 +71,7 @@ export class BmadExecutor {
       await Promise.race([commandPromise, timeoutPromise]);
     } catch (error) {
       console.error('BMad command execution error:', error);
-      this._handleError(new Error(`Command execution failed: ${error}`));
+      this.handleError(new Error(`Command execution failed: ${error}`));
     }
   }
 
@@ -81,25 +81,25 @@ export class BmadExecutor {
   private async _executeCommandInternal(command: BmadCommandType, args: string[]): Promise<void> {
     switch (command) {
       case 'help':
-        await this._handleHelpCommand(args);
+        await this.handleHelpCommand(args);
         break;
       case 'agent':
-        await this._handleAgentCommand(args);
+        await this.handleAgentCommand(args);
         break;
       case 'task':
-        await this._handleTaskCommand(args);
+        await this.handleTaskCommand(args);
         break;
       case 'status':
-        await this._handleStatusCommand();
+        await this.handleStatusCommand();
         break;
       case 'exit':
-        await this._handleExitCommand();
+        await this.handleExitCommand();
         break;
       case 'yolo':
-        await this._handleYoloCommand();
+        await this.handleYoloCommand();
         break;
       default:
-        this._output(`Unknown command: ${command}. Type *help for available commands.`);
+        this.output(`Unknown command: ${command}. Type *help for available commands.`);
     }
   }
 
@@ -125,7 +125,7 @@ export class BmadExecutor {
       helpText += '*exit ............... Exit BMad system\n\n';
 
       helpText += 'Available Agents:\n';
-      this.availableAgents.forEach((agent) => {
+      this._availableAgents.forEach((agent) => {
         helpText += `*agent ${agent.agent.id}: ${agent.agent.title}\n`;
         helpText += `  ${agent.agent.whenToUse}\n\n`;
       });
@@ -141,7 +141,7 @@ export class BmadExecutor {
     if (args.length === 0) {
       // List available agents
       let output = 'Available Agents:\n';
-      this.availableAgents.forEach((agent, id) => {
+      this._availableAgents.forEach((agent, id) => {
         output += `${id}: ${agent.agent.title} - ${agent.agent.whenToUse}\n`;
       });
       this.output(output);
@@ -150,7 +150,7 @@ export class BmadExecutor {
     }
 
     const agentId = args[0];
-    const agent = this.availableAgents.get(agentId);
+    const agent = this._availableAgents.get(agentId);
 
     if (!agent) {
       this.output(`Agent '${agentId}' not found. Use *agent to list available agents.`);
@@ -159,7 +159,7 @@ export class BmadExecutor {
 
     // Activate agent
     bmadActions.setCurrentAgent(agent);
-    this.options.onAgentActivated?.(agent);
+    this._options.onAgentActivated?.(agent);
 
     // Execute activation instructions
     const activationInstructions = BmadParser.extractActivationInstructions(agent);
@@ -196,7 +196,7 @@ export class BmadExecutor {
     }
 
     const taskId = args[0];
-    const task = this.availableTasks.get(taskId);
+    const task = this._availableTasks.get(taskId);
 
     if (!task) {
       this.output(`Task '${taskId}' not found.`);
@@ -289,7 +289,7 @@ export class BmadExecutor {
       return;
     }
 
-    this.options.onTaskStarted?.(task);
+    this._options.onTaskStarted?.(task);
 
     const context: BmadExecutionContext = {
       currentAgent,
@@ -312,8 +312,8 @@ export class BmadExecutor {
       this.output(`Step ${i + 1}: ${instruction}`);
 
       // If task requires elicitation, wait for user input
-      if (task.elicit && this.options.onUserInputRequired) {
-        const userInput = await this.options.onUserInputRequired('Please provide your input for this step:');
+      if (task.elicit && this._options.onUserInputRequired) {
+        const userInput = await this._options.onUserInputRequired('Please provide your input for this step:');
         this.output(`User input: ${userInput}`);
       }
 
@@ -322,7 +322,7 @@ export class BmadExecutor {
     }
 
     this.output(`Task completed: ${task.title}`);
-    this.options.onTaskCompleted?.(task);
+    this._options.onTaskCompleted?.(task);
 
     bmadActions.updateExecutionContext({ activeTask: undefined });
   }
@@ -333,7 +333,7 @@ export class BmadExecutor {
   private getTasksForAgent(agent: BmadAgentConfig): BmadTask[] {
     const agentTasks = agent.dependencies?.tasks || [];
     return agentTasks
-      .map((taskId) => this.availableTasks.get(taskId))
+      .map((taskId) => this._availableTasks.get(taskId))
       .filter((task) => task !== undefined) as BmadTask[];
   }
 
@@ -346,18 +346,18 @@ export class BmadExecutor {
       const orchestratorYaml = await this.loadAgentYaml('orchestrator');
 
       if (orchestratorYaml) {
-        this.availableAgents.set('bmad-orchestrator', orchestratorYaml);
+        this._availableAgents.set('bmad-orchestrator', orchestratorYaml);
       }
 
       // Load dev agent from YAML
       const devYaml = await this.loadAgentYaml('dev');
 
       if (devYaml) {
-        this.availableAgents.set('dev', devYaml);
+        this._availableAgents.set('dev', devYaml);
       }
 
       // Fallback to hardcoded agents if YAML loading fails
-      if (this.availableAgents.size === 0) {
+      if (this._availableAgents.size === 0) {
         this.loadFallbackAgents();
       }
     } catch (error) {
@@ -514,8 +514,8 @@ dependencies:
       },
     };
 
-    this.availableAgents.set('bmad-orchestrator', orchestratorAgent);
-    this.availableAgents.set('dev', devAgent);
+    this._availableAgents.set('bmad-orchestrator', orchestratorAgent);
+    this._availableAgents.set('dev', devAgent);
   }
 
   /**
@@ -552,21 +552,21 @@ dependencies:
       outputs: ['Validation report'],
     };
 
-    this.availableTasks.set('create-doc', createDocTask);
-    this.availableTasks.set('execute-checklist', executeChecklistTask);
+    this._availableTasks.set('create-doc', createDocTask);
+    this._availableTasks.set('execute-checklist', executeChecklistTask);
   }
 
   /**
    * Output message
    */
   private output(message: string): void {
-    this.options.onOutput?.(message);
+    this._options.onOutput?.(message);
   }
 
   /**
    * Handle error
    */
   private handleError(error: Error): void {
-    this.options.onError?.(error);
+    this._options.onError?.(error);
   }
 }
