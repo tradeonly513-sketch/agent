@@ -168,7 +168,6 @@ export const defaultTools: Tool[] = [
     },
     execute: async ({ command, workingDirectory: _workingDirectory }) => {
       try {
-
         // For now, simulate command execution since direct terminal access is complex
         console.log(`🔧 Simulating command execution: ${command}`);
 

@@ -32,6 +32,9 @@ import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
 import { agentStore } from '~/lib/stores/chat';
 import { ClientAgentExecutor } from '~/lib/agent/client-executor';
 
+import { BmadExecutor } from '~/lib/agent/bmad-executor';
+import { bmadStore, bmadActions } from '~/lib/stores/bmad-store';
+
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
   exit: 'animated fadeOutRight',
@@ -128,7 +131,7 @@ export const ChatImpl = memo(
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
-    const navigate = useNavigate();
+
     const [fakeLoading, setFakeLoading] = useState(false);
     const files = useStore(workbenchStore.files);
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
@@ -188,6 +191,60 @@ export const ChatImpl = memo(
           },
         }),
     );
+
+    // BMad system state and executor
+    const bmadState = useStore(bmadStore);
+    const [bmadExecutor] = useState(
+      () =>
+        new BmadExecutor({
+          onAgentActivated: (agent) => {
+            console.log('BMad agent activated:', agent);
+            toast.success(`Agent ${agent.agent.name} activated`);
+          },
+          onTaskStarted: (task) => {
+            console.log('BMad task started:', task);
+            toast.info(`Task started: ${task.title}`);
+          },
+          onTaskCompleted: (task) => {
+            console.log('BMad task completed:', task);
+            toast.success(`Task completed: ${task.title}`);
+          },
+          onUserInputRequired: async (prompt) => {
+            // This would integrate with a modal or input system
+            return new Promise((resolve) => {
+              const userInput = window.prompt(prompt);
+              resolve(userInput || '');
+            });
+          },
+          onOutput: (message) => {
+            // Add BMad output to chat messages only if BMad is active
+            if (bmadState.isActive) {
+              const bmadMessage: Message = {
+                id: `bmad-${Date.now()}`,
+                role: 'assistant',
+                content: `[BMad] ${message}`,
+                createdAt: new Date(),
+              };
+              setMessages((prev) => [...prev, bmadMessage]);
+            }
+          },
+          onError: (error) => {
+            console.error('BMad error:', error);
+            toast.error(`BMad error: ${error.message}`);
+          },
+        }),
+    );
+
+    // Initialize BMad system only when needed
+    useEffect(() => {
+      if (bmadState.isActive) {
+        bmadExecutor.initialize().catch((error) => {
+          console.error('BMad initialization failed:', error);
+
+          // Don't show error toast to avoid disrupting normal chat flow
+        });
+      }
+    }, [bmadExecutor, bmadState.isActive]);
 
     const {
       messages,
@@ -270,8 +327,8 @@ export const ChatImpl = memo(
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 
     useEffect(() => {
-      const shouldStart = initialMessages.length > 0 ||
-        (typeof window !== 'undefined' && window.location.pathname.startsWith('/chat/'));
+      const shouldStart =
+        initialMessages.length > 0 || (typeof window !== 'undefined' && window.location.pathname.startsWith('/chat/'));
       chatStore.setKey('started', shouldStart);
       setChatStarted(shouldStart);
     }, [initialMessages]);
@@ -477,6 +534,22 @@ export const ChatImpl = memo(
         return;
       }
 
+      // Handle BMad commands (starting with *) - only if BMad is active
+      if (messageContent.startsWith('*') && bmadState.isActive) {
+        try {
+          await bmadExecutor.executeCommand(messageContent);
+          setInput('');
+
+          return;
+        } catch (error) {
+          console.error('BMad command error:', error);
+          toast.error(`BMad command failed: ${error}`);
+          setInput('');
+
+          return;
+        }
+      }
+
       // Handle quick commands
       if (messageContent.startsWith('/')) {
         const command = messageContent.toLowerCase();
@@ -490,6 +563,19 @@ export const ChatImpl = memo(
         } else if (command === '/chat') {
           handleAgentModeChange('chat');
           toast.success('Switched to Chat mode');
+          setInput('');
+
+          return;
+        } else if (command === '/bmad') {
+          // Toggle BMad system
+          if (bmadState.isActive) {
+            bmadActions.deactivate();
+            toast.info('BMad system deactivated');
+          } else {
+            bmadActions.activate();
+            toast.success('BMad system activated. Type *help for commands.');
+          }
+
           setInput('');
 
           return;
@@ -521,9 +607,30 @@ export const ChatImpl = memo(
         finalMessageContent = messageContent + elementInfo;
       }
 
+      /*
+       * Handle navigation and workbench display for all modes
+       * Force navigation to chat page if on homepage
+       */
+      if (typeof window !== 'undefined' && window.location.pathname === '/') {
+        // Generate a new chat ID
+        const chatId = `chat-${Date.now()}`;
+        const url = new URL(window.location.href);
+        url.pathname = `/chat/${chatId}`;
+        window.history.replaceState({}, '', url);
+
+        // Force update chatStarted state after URL change
+        setTimeout(() => {
+          setChatStarted(true);
+          chatStore.setKey('started', true);
+
+          // Show workbench for all modes when starting a new chat
+          workbenchStore.setShowWorkbench(true);
+        }, 0);
+      }
+
       // Handle Agent mode - Enhanced Chat mode with Agent capabilities
       if (agentState.mode === 'agent') {
-        // Show workbench immediately for Agent mode
+        // Ensure workbench is shown for Agent mode
         workbenchStore.setShowWorkbench(true);
 
         // Add agent prefix to the message to trigger agent behavior in LLM
@@ -541,22 +648,10 @@ Instructions:
 Please proceed to create the project step by step.`;
 
         finalMessageContent = agentPrompt;
-
-        // Force navigation to chat page for Agent mode
-        // This ensures proper page transition and workbench display
-        if (typeof window !== 'undefined' && window.location.pathname === '/') {
-          // Generate a new chat ID for Agent mode
-          const agentChatId = `agent-${Date.now()}`;
-          const url = new URL(window.location.href);
-          url.pathname = `/chat/${agentChatId}`;
-          window.history.replaceState({}, '', url);
-
-          // Force update chatStarted state after URL change
-          // Use setTimeout to avoid potential state race conditions
-          setTimeout(() => {
-            setChatStarted(true);
-            chatStore.setKey('started', true);
-          }, 0);
+      } else {
+        // For chat mode, also show workbench when starting a new conversation
+        if (!chatStarted) {
+          workbenchStore.setShowWorkbench(true);
         }
       }
 
@@ -567,6 +662,9 @@ Please proceed to create the project step by step.`;
 
       if (!chatStarted) {
         setFakeLoading(true);
+
+        // Ensure workbench is shown when starting a new chat
+        workbenchStore.setShowWorkbench(true);
 
         // Skip template selection for Agent mode
         if (autoSelectTemplate && agentState.mode !== 'agent') {
@@ -673,6 +771,7 @@ The agent will create all necessary files and project structure automatically.
           // Chat mode - normal behavior
           setMessages([userMessage]);
         }
+
         reload(attachments ? { experimental_attachments: attachments } : undefined);
         setFakeLoading(false);
         setInput('');
@@ -886,6 +985,8 @@ The agent will create all necessary files and project structure automatically.
         setAgentMode={handleAgentModeChange}
         agentExecutor={agentExecutor}
         onTemplateSelect={handleTemplateSelect}
+        bmadState={bmadState}
+        bmadExecutor={bmadExecutor}
       />
     );
   },

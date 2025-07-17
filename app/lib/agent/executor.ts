@@ -145,7 +145,7 @@ export class AgentExecutor {
     return task;
   }
 
-  private async _parseTaskIntoSteps(_description: string, context?: Record<string, any>): Promise<AgentStep[]> {
+  private async _parseTaskIntoSteps(description: string, context?: Record<string, any>): Promise<AgentStep[]> {
     /*
      * For now, use intelligent fallback parsing instead of LLM
      * This avoids client-server issues and still provides good functionality
@@ -155,7 +155,7 @@ export class AgentExecutor {
     return this._getIntelligentSteps(description, context);
   }
 
-  private _getIntelligentSteps(_description: string, _context?: Record<string, any>): AgentStep[] {
+  private _getIntelligentSteps(description: string, _context?: Record<string, any>): AgentStep[] {
     const lowerDesc = description.toLowerCase();
 
     // React/Vue/Frontend App patterns
@@ -687,7 +687,7 @@ export class AgentExecutor {
     }
   }
 
-  private _extractTitle(_description: string): string {
+  private _extractTitle(description: string): string {
     // Extract a title from the description
     const words = description.split(' ').slice(0, 6);
     return words.join(' ') + (description.split(' ').length > 6 ? '...' : '');

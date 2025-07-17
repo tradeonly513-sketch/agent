@@ -186,11 +186,14 @@ export class ClientAgentExecutor {
     return this._currentTask;
   }
 
-  async executeTask(description: string, callbacks?: {
-    onStepStart?: (step: AgentStep) => void;
-    onStepComplete?: (step: AgentStep) => void;
-    onTaskComplete?: (task: AgentTask) => void;
-  }): Promise<AgentTask> {
+  async executeTask(
+    description: string,
+    callbacks?: {
+      onStepStart?: (step: AgentStep) => void;
+      onStepComplete?: (step: AgentStep) => void;
+      onTaskComplete?: (task: AgentTask) => void;
+    },
+  ): Promise<AgentTask> {
     if (this._isRunning) {
       throw new Error('Agent is already running a task');
     }
@@ -266,6 +269,7 @@ export class ClientAgentExecutor {
           if (step.status === 'failed') {
             this._options.onStepError?.(step, new Error(step.error || 'Step failed'));
             console.warn(`Step ${i + 1} failed: ${step.error}`);
+
             // Continue with next step instead of breaking
           }
         } catch (error) {
@@ -273,6 +277,7 @@ export class ClientAgentExecutor {
           step.error = error instanceof Error ? error.message : 'Unknown error';
           this._options.onStepError?.(step, error instanceof Error ? error : new Error('Unknown error'));
           console.error(`Step ${i + 1} error:`, error);
+
           // Continue with next step instead of breaking
         }
 
@@ -603,7 +608,7 @@ export class ClientAgentExecutor {
 
           // Wait if paused
           while (this._isPaused && !this._abortController?.signal.aborted) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
 
           const toolCall: ToolCall = {
@@ -624,6 +629,7 @@ export class ClientAgentExecutor {
             console.error(`❌ Agent: Tool ${toolCall.name} failed:`, error);
             toolCall.error = error instanceof Error ? error.message : 'Unknown error';
             step.toolCalls.push(toolCall);
+
             // Don't throw immediately, continue with other tools
             console.warn(`⚠️ Agent: Continuing despite tool failure: ${toolCall.error}`);
           }
@@ -633,7 +639,7 @@ export class ClientAgentExecutor {
       } else {
         // Analysis or planning step without tools
         console.log(`📋 Agent: Step "${step.title}" is a planning/analysis step (no tools)`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate thinking time
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate thinking time
         await new Promise((resolve) => setTimeout(resolve, 1000));
         step.output = `Completed: ${step.description}`;
       }

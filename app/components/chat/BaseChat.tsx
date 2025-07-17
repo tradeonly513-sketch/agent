@@ -36,8 +36,11 @@ import LlmErrorAlert from './LLMApiAlert';
 import AgentStatus from './AgentStatus';
 import AgentControls from './AgentControls';
 import TaskTemplates from './TaskTemplates';
+import BmadControls from './BmadControls';
 import type { ChatMode } from '~/types/actions';
 import type { TaskTemplate } from '~/lib/agent/templates';
+import type { BmadState } from '~/types/bmad';
+import type { BmadExecutor } from '~/lib/agent/bmad-executor';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -90,6 +93,8 @@ interface BaseChatProps {
   setAgentMode?: (mode: ChatMode) => void;
   agentExecutor?: any; // AgentExecutor instance
   onTemplateSelect?: (template: TaskTemplate) => void;
+  bmadState?: BmadState;
+  bmadExecutor?: BmadExecutor;
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -143,6 +148,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       setAgentMode,
       agentExecutor,
       onTemplateSelect,
+      bmadState,
+      bmadExecutor,
     },
     ref,
   ) => {
@@ -441,6 +448,20 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     <AgentStatus />
                     <AgentControls agentExecutor={agentExecutor} />
                   </>
+                )}
+                {bmadState?.isActive && bmadExecutor && (
+                  <BmadControls
+                    onOutput={(message) => {
+                      // Add BMad output to chat only if it's a command response
+                      if (message.startsWith('[BMad]') || message.includes('===')) {
+                        sendMessage?.({} as any, message);
+                      }
+                    }}
+                    onAgentChange={(agent) => {
+                      // Handle agent change if needed
+                      console.log('BMad agent changed:', agent);
+                    }}
+                  />
                 )}
                 {progressAnnotations && <ProgressCompilation data={progressAnnotations} />}
                 <ChatBox
