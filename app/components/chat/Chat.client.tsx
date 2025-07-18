@@ -998,8 +998,27 @@ Start creating the project now.`;
               });
 
               if (temResp) {
-                const { assistantMessage, userMessage } = temResp;
+                const { assistantMessage, userMessage, files, totalFiles, templateName } = temResp;
                 const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+
+                // Create files directly using workbench
+                toast.info(`Creating ${totalFiles} files for ${templateName} template...`, {
+                  autoClose: 2000,
+                });
+
+                try {
+                  // Create all files directly in workbench
+                  for (const file of files) {
+                    await workbenchStore.createFile(file.path, file.content);
+                  }
+
+                  toast.success(`✅ Successfully created ${totalFiles} files!`, {
+                    autoClose: 3000,
+                  });
+                } catch (error) {
+                  console.error('Error creating template files:', error);
+                  toast.error('Failed to create some template files. Please try again.');
+                }
 
                 setMessages([
                   {
@@ -1018,7 +1037,7 @@ Start creating the project now.`;
                     role: 'user',
                     content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
                     annotations: ['hidden'],
-                  },
+                  } as any,
                 ]);
 
                 const reloadOptions =

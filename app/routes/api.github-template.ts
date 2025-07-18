@@ -18,6 +18,8 @@ function isCloudflareEnvironment(context: any): boolean {
 async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
   const baseUrl = 'https://api.github.com';
 
+  let treeData: any;
+
   try {
     // Get repository info to find default branch with retry
     const repoResponse = await fetchWithRetry(`${baseUrl}/repos/${repo}`, {
@@ -47,12 +49,12 @@ async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
     if (!treeResponse.ok) {
       throw new Error(`Failed to fetch repository tree: ${treeResponse.status}`);
     }
+
+    treeData = (await treeResponse.json()) as any;
   } catch (error) {
     console.error(`Failed to fetch repository info for ${repo}:`, error);
     throw new Error(`Unable to access repository ${repo}. Please check if the repository exists and is public.`);
   }
-
-  const treeData = (await treeResponse.json()) as any;
 
   // Filter for files only (not directories) and limit size
   const files = treeData.tree.filter((item: any) => {

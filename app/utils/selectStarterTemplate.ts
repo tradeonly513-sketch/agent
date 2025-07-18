@@ -131,7 +131,7 @@ const getGitHubRepoContent = async (repoName: string): Promise<{ name: string; p
   }
 };
 
-export async function getTemplates(templateName: string, title?: string) {
+export async function getTemplates(templateName: string, _title?: string) {
   const template = STARTER_TEMPLATES.find((t) => t.name == templateName);
 
   if (!template) {
@@ -183,19 +183,24 @@ export async function getTemplates(templateName: string, title?: string) {
     filesToImport.ignoreFile = ignoredFiles;
   }
 
+  // Create a simple message without any file content
   const assistantMessage = `
-Bolt is initializing your project with the required files using the ${template.name} template.
-<boltArtifact id="imported-files" title="${title || 'Create initial files'}" type="bundled">
-${filesToImport.files
-  .map(
-    (file) =>
-      `<boltAction type="file" filePath="${file.path}">
-${file.content}
-</boltAction>`,
-  )
-  .join('\n')}
-</boltArtifact>
-`;
+I've successfully initialized your project using the ${template.name} template!
+
+🎉 **Project Setup Complete**
+
+Your project now includes:
+- **${filesToImport.files.length} files** with complete project structure
+- All necessary dependencies and configuration files
+- Ready-to-use development environment
+
+The project structure has been created and you can now:
+1. Install dependencies: \`npm install\`
+2. Start development: \`npm run dev\`
+3. Begin building your application
+
+All files have been created in your workspace. You can explore them in the file tree on the left.`;
+
   let userMessage = ``;
   const templatePromptFile = files.filter((x) => x.path.startsWith('.bolt')).find((x) => x.name == 'prompt');
 
@@ -251,5 +256,8 @@ IMPORTANT: Dont Forget to install the dependencies before running the app by usi
   return {
     assistantMessage,
     userMessage,
+    files: filesToImport.files, // Return the actual files for direct creation
+    totalFiles: filesToImport.files.length,
+    templateName: template.name,
   };
 }
