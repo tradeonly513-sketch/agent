@@ -208,8 +208,38 @@ export async function streamText(props: {
     bufferTokens: 2000, // Add buffer for safety
   });
 
-  const finalSystemPrompt = chatMode === 'build' ? systemPrompt : discussPrompt();
-  const contextFilesContent = chatMode === 'build' && contextFiles ? createFilesContext(contextFiles, true) : undefined;
+  let finalSystemPrompt = chatMode === 'build' ? systemPrompt : discussPrompt();
+  // Note: contextFiles content is already included in systemPrompt above, don't double-count it
+
+  // Log system prompt size for debugging
+  const systemPromptLength = finalSystemPrompt.length;
+  logger.info(`System prompt length: ${systemPromptLength} characters`);
+
+  // Emergency system prompt truncation if it's too large
+  const maxSystemPromptTokens = Math.floor(modelContextWindow * 0.4); // Use max 40% of context for system prompt
+  const estimatedSystemTokens = Math.ceil(systemPromptLength / 4); // Rough estimate: 4 chars per token
+
+  if (estimatedSystemTokens > maxSystemPromptTokens) {
+    logger.warn(`System prompt too large: ${estimatedSystemTokens} tokens > ${maxSystemPromptTokens} limit`);
+
+    // Truncate system prompt to fit within limits
+    const maxSystemPromptChars = maxSystemPromptTokens * 4;
+    const truncatedSystemPrompt = finalSystemPrompt.substring(0, maxSystemPromptChars);
+
+    // Try to truncate at a reasonable boundary (end of a line or sentence)
+    const lastNewline = truncatedSystemPrompt.lastIndexOf('\n');
+    const lastPeriod = truncatedSystemPrompt.lastIndexOf('.');
+    const cutPoint = Math.max(lastNewline, lastPeriod);
+
+    if (cutPoint > maxSystemPromptChars * 0.8) {
+      finalSystemPrompt = truncatedSystemPrompt.substring(0, cutPoint + 1);
+    } else {
+      finalSystemPrompt = truncatedSystemPrompt;
+    }
+
+    finalSystemPrompt += '\n\n[Note: System prompt was truncated to fit context window]';
+    logger.warn(`System prompt truncated from ${systemPromptLength} to ${finalSystemPrompt.length} characters`);
+  }
 
   // Log initial message count and estimated tokens
   const initialMessageCount = processedMessages.length;
@@ -231,7 +261,7 @@ export async function streamText(props: {
     const contextResult = await contextManager.optimizeMessages(
       processedMessages as Message[],
       finalSystemPrompt,
-      contextFilesContent,
+      undefined, // contextFiles content is already included in finalSystemPrompt
     );
 
     logger.info(
