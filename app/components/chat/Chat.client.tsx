@@ -390,6 +390,7 @@ export const ChatImpl = memo(
     useEffect(() => {
       const shouldStart =
         initialMessages.length > 0 || (typeof window !== 'undefined' && window.location.pathname.startsWith('/chat/'));
+
       chatStore.setKey('started', shouldStart);
       setChatStarted(shouldStart);
     }, [initialMessages]);
