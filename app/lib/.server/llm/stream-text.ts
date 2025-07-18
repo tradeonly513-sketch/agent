@@ -115,10 +115,12 @@ export async function streamText(props: {
     }
   }
 
+  // Get model context window first
+  const modelContextWindow = getModelContextWindow(modelDetails.name);
+
   // Ensure completion tokens don't exceed reasonable limits
   const rawMaxTokens = modelDetails && modelDetails.maxTokenAllowed ? modelDetails.maxTokenAllowed : MAX_TOKENS;
   const dynamicMaxTokens = Math.min(rawMaxTokens, MAX_TOKENS, Math.floor(modelContextWindow * 0.3)); // Max 30% of context window
-  const modelContextWindow = getModelContextWindow(modelDetails.name);
   logger.info(
     `Max tokens for model ${modelDetails.name} is ${dynamicMaxTokens} (raw: ${rawMaxTokens}, limit: ${MAX_TOKENS}, 30% of context: ${Math.floor(modelContextWindow * 0.3)})`,
   );
