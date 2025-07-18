@@ -741,7 +741,7 @@ export const ChatImpl = memo(
           // Ensure workbench is shown for Agent mode
           workbenchStore.setShowWorkbench(true);
 
-          // Add agent prefix to the message to trigger agent behavior in LLM
+          // Create the full agent prompt for LLM
           const agentPrompt = `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
 
 User Request: ${messageContent}
@@ -755,6 +755,7 @@ Instructions:
 
 Please proceed to create the project step by step.`;
 
+          // Use the full prompt for LLM processing
           finalMessageContent = agentPrompt;
         } else {
           // For chat mode, also show workbench when starting a new conversation
@@ -853,24 +854,27 @@ Please proceed to create the project step by step.`;
 
           // Handle Agent mode message setup
           if (agentState.mode === 'agent') {
-            // Add Agent indicator message first, then user message
-            const agentIndicator: Message = {
-              id: `agent-indicator-${Date.now()}`,
-              role: 'assistant',
-              content: `🤖 **Agent Mode** - Creating project: "${messageContent}"
+            // Create a simplified user message for display (without the full agent prompt)
+            const displayUserMessage: Message = {
+              id: userMessage.id,
+              role: 'user',
+              content: `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
 
-<details>
-<summary>View technical details</summary>
+User Request: ${messageContent}
 
-**Status:** Analyzing request and generating project files
-**Mode:** Intelligent Development Agent
-**Task:** ${messageContent}
+Instructions:
+1. Create all necessary files for a complete project
+2. Include proper project structure and dependencies
+3. Write clean, well-documented code
+4. Ensure the project is ready to run
+5. Use modern best practices
 
-The agent will create all necessary files and project structure automatically.
-</details>`,
+Please proceed to create the project step by step.`,
+              parts: userMessage.parts,
+              experimental_attachments: userMessage.experimental_attachments,
             };
 
-            setMessages([agentIndicator, userMessage]);
+            setMessages([displayUserMessage]);
 
             toast.info('🤖 Agent creating your project...', {
               autoClose: 2000,

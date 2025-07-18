@@ -6,6 +6,7 @@ import { MODEL_REGEX, PROVIDER_REGEX } from '~/utils/constants';
 import { Markdown } from './Markdown';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import { AgentMessage, isAgentModeMessage } from './AgentMessage';
 
 interface UserMessageProps {
   content: string | Array<{ type: string; text?: string; image?: string }>;
@@ -55,6 +56,15 @@ export function UserMessage({ content }: UserMessageProps) {
   }
 
   const textContent = stripMetadata(content);
+
+  // Check if this is an Agent mode message and render accordingly
+  if (isAgentModeMessage(textContent)) {
+    return (
+      <div className="overflow-hidden pt-[4px]">
+        <AgentMessage content={textContent} />
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden pt-[4px]">
