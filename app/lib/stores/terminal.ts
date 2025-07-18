@@ -2,7 +2,30 @@ import type { WebContainer, WebContainerProcess } from '@webcontainer/api';
 import { atom, type WritableAtom } from 'nanostores';
 import type { ITerminal } from '~/types/terminal';
 import { newBoltShellProcess, newShellProcess } from '~/utils/shell';
-import { coloredText } from '~/utils/terminal';
+
+// 直接定义颜色函数以避免导入问题
+const reset = '\x1b[0m';
+const escapeCodes = {
+  reset,
+  clear: '\x1b[g',
+  red: '\x1b[1;31m',
+  green: '\x1b[1;32m',
+  yellow: '\x1b[1;33m',
+  blue: '\x1b[1;34m',
+  magenta: '\x1b[1;35m',
+  cyan: '\x1b[1;36m',
+  white: '\x1b[1;37m',
+};
+
+const coloredText = {
+  red: (text: string) => `${escapeCodes.red}${text}${reset}`,
+  green: (text: string) => `${escapeCodes.green}${text}${reset}`,
+  yellow: (text: string) => `${escapeCodes.yellow}${text}${reset}`,
+  blue: (text: string) => `${escapeCodes.blue}${text}${reset}`,
+  magenta: (text: string) => `${escapeCodes.magenta}${text}${reset}`,
+  cyan: (text: string) => `${escapeCodes.cyan}${text}${reset}`,
+  white: (text: string) => `${escapeCodes.white}${text}${reset}`,
+};
 
 export class TerminalStore {
   #webcontainer: Promise<WebContainer>;
