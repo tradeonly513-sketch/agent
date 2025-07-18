@@ -184,60 +184,60 @@ async function fetchRepoContentsZip(repo: string, githubToken?: string) {
     if (!zipResponse.ok) {
       throw new Error(`Failed to fetch release zipball: ${zipResponse.status}`);
     }
+
+    // Get the zip content as ArrayBuffer
+    const zipArrayBuffer = await zipResponse.arrayBuffer();
+
+    // Use JSZip to extract the contents
+    const zip = await JSZip.loadAsync(zipArrayBuffer);
+
+    // Find the root folder name
+    let rootFolderName = '';
+    zip.forEach((relativePath) => {
+      if (!rootFolderName && relativePath.includes('/')) {
+        rootFolderName = relativePath.split('/')[0];
+      }
+    });
+
+    // Extract all files
+    const promises = Object.keys(zip.files).map(async (filename) => {
+      const zipEntry = zip.files[filename];
+
+      // Skip directories
+      if (zipEntry.dir) {
+        return null;
+      }
+
+      // Skip the root folder itself
+      if (filename === rootFolderName) {
+        return null;
+      }
+
+      // Remove the root folder from the path
+      let normalizedPath = filename;
+
+      if (rootFolderName && filename.startsWith(rootFolderName + '/')) {
+        normalizedPath = filename.substring(rootFolderName.length + 1);
+      }
+
+      // Get the file content
+      const content = await zipEntry.async('string');
+
+      return {
+        name: normalizedPath.split('/').pop() || '',
+        path: normalizedPath,
+        content,
+      };
+    });
+
+    const results = await Promise.all(promises);
+
+    return results.filter(Boolean);
   } catch (error) {
     console.warn(`Failed to fetch via zipball for ${repo}, falling back to Contents API:`, error);
     // Fallback to Contents API method
     return await fetchRepoContentsCloudflare(repo, githubToken);
   }
-
-  // Get the zip content as ArrayBuffer
-  const zipArrayBuffer = await zipResponse.arrayBuffer();
-
-  // Use JSZip to extract the contents
-  const zip = await JSZip.loadAsync(zipArrayBuffer);
-
-  // Find the root folder name
-  let rootFolderName = '';
-  zip.forEach((relativePath) => {
-    if (!rootFolderName && relativePath.includes('/')) {
-      rootFolderName = relativePath.split('/')[0];
-    }
-  });
-
-  // Extract all files
-  const promises = Object.keys(zip.files).map(async (filename) => {
-    const zipEntry = zip.files[filename];
-
-    // Skip directories
-    if (zipEntry.dir) {
-      return null;
-    }
-
-    // Skip the root folder itself
-    if (filename === rootFolderName) {
-      return null;
-    }
-
-    // Remove the root folder from the path
-    let normalizedPath = filename;
-
-    if (rootFolderName && filename.startsWith(rootFolderName + '/')) {
-      normalizedPath = filename.substring(rootFolderName.length + 1);
-    }
-
-    // Get the file content
-    const content = await zipEntry.async('string');
-
-    return {
-      name: normalizedPath.split('/').pop() || '',
-      path: normalizedPath,
-      content,
-    };
-  });
-
-  const results = await Promise.all(promises);
-
-  return results.filter(Boolean);
 }
 
 // Fallback template for when GitHub is unavailable
