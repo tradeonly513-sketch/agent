@@ -6,6 +6,7 @@ import {
   calculateAvailableTokens,
   getModelContextWindow,
   countMessageTokens,
+  countTokens,
 } from './token-counter';
 import {
   DEFAULT_MAX_CONTEXT_TOKENS,
@@ -28,10 +29,12 @@ export interface ContextManagementOptions {
 
 export interface ContextManagementResult {
   messages: Message[];
+  systemPrompt: string;
   totalTokens: number;
   truncated: boolean;
   removedMessages: number;
-  strategy: 'none' | 'truncate-old' | 'sliding-window' | 'summarize';
+  strategy: 'none' | 'truncate-old' | 'sliding-window' | 'summarize' | 'system-prompt-truncation';
+  systemPromptTruncated: boolean;
 }
 
 /**
@@ -61,7 +64,21 @@ export class ContextManager {
     systemPrompt: string,
     contextFiles?: string,
   ): Promise<ContextManagementResult> {
-    const systemTokens = countSystemTokens(systemPrompt, contextFiles, this.options.model);
+    // First, check if system prompt needs truncation (40% of context window max)
+    const maxSystemPromptTokens = Math.floor(this.options.maxContextTokens * 0.4);
+    let finalSystemPrompt = systemPrompt;
+    let systemPromptTruncated = false;
+
+    const initialSystemTokens = countSystemTokens(systemPrompt, contextFiles, this.options.model);
+
+    if (initialSystemTokens > maxSystemPromptTokens) {
+      logger.warn(`System prompt too large: ${initialSystemTokens} tokens > ${maxSystemPromptTokens} limit (40% of context window)`);
+      finalSystemPrompt = this.truncateSystemPrompt(systemPrompt, maxSystemPromptTokens);
+      systemPromptTruncated = true;
+      logger.info(`System prompt truncated to ${maxSystemPromptTokens} tokens`);
+    }
+
+    const systemTokens = countSystemTokens(finalSystemPrompt, contextFiles, this.options.model);
     const availableTokens = calculateAvailableTokens(
       this.options.model,
       systemTokens,
@@ -78,31 +95,33 @@ export class ContextManager {
     if (currentTokens <= availableTokens) {
       return {
         messages: currentMessages,
+        systemPrompt: finalSystemPrompt,
         totalTokens: currentTokens,
-        truncated: false,
+        truncated: systemPromptTruncated,
         removedMessages: 0,
-        strategy: 'none',
+        strategy: systemPromptTruncated ? 'system-prompt-truncation' : 'none',
+        systemPromptTruncated,
       };
     }
 
     logger.warn(`Messages exceed available tokens: ${currentTokens} > ${availableTokens}`);
 
     // Strategy 1: Remove old messages (sliding window)
-    const slidingWindowResult = this.applySlidingWindow(currentMessages, availableTokens);
+    const slidingWindowResult = this.applySlidingWindow(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
 
     if (slidingWindowResult.totalTokens <= availableTokens) {
       return slidingWindowResult;
     }
 
     // Strategy 2: Aggressive truncation
-    const truncationResult = this.applyAggressiveTruncation(currentMessages, availableTokens);
+    const truncationResult = this.applyAggressiveTruncation(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
 
     if (truncationResult.totalTokens <= availableTokens) {
       return truncationResult;
     }
 
     // Strategy 3: Emergency fallback - keep only the last user message
-    const emergencyResult = this.applyEmergencyTruncation(currentMessages, availableTokens);
+    const emergencyResult = this.applyEmergencyTruncation(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
 
     // Final safety check - if still too large, apply extreme truncation
     if (emergencyResult.totalTokens > availableTokens) {
@@ -118,7 +137,7 @@ export class ContextManager {
   /**
    * Apply sliding window approach - remove oldest messages first
    */
-  private applySlidingWindow(messages: Message[], availableTokens: number): ContextManagementResult {
+  private applySlidingWindow(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
     const workingMessages = [...messages];
     let removedCount = 0;
 
@@ -176,17 +195,19 @@ export class ContextManager {
 
     return {
       messages: workingMessages,
+      systemPrompt: finalSystemPrompt,
       totalTokens: countMessagesTokens(workingMessages, this.options.model),
-      truncated: removedCount > 0,
+      truncated: removedCount > 0 || systemPromptTruncated,
       removedMessages: removedCount,
       strategy: 'sliding-window',
+      systemPromptTruncated,
     };
   }
 
   /**
    * Apply aggressive truncation - remove messages more aggressively
    */
-  private applyAggressiveTruncation(messages: Message[], availableTokens: number): ContextManagementResult {
+  private applyAggressiveTruncation(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
     const workingMessages = [...messages];
     let removedCount = 0;
 
@@ -209,17 +230,19 @@ export class ContextManager {
 
     return {
       messages: workingMessages,
+      systemPrompt: finalSystemPrompt,
       totalTokens: countMessagesTokens(workingMessages, this.options.model),
-      truncated: removedCount > 0,
+      truncated: removedCount > 0 || systemPromptTruncated,
       removedMessages: removedCount,
       strategy: 'truncate-old',
+      systemPromptTruncated,
     };
   }
 
   /**
    * Emergency truncation - keep only the absolute minimum
    */
-  private applyEmergencyTruncation(messages: Message[], availableTokens: number): ContextManagementResult {
+  private applyEmergencyTruncation(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
     const workingMessages = [...messages];
     let removedCount = 0;
 
@@ -256,10 +279,12 @@ export class ContextManager {
 
     return {
       messages: workingMessages,
+      systemPrompt: finalSystemPrompt,
       totalTokens: countMessagesTokens(workingMessages, this.options.model),
       truncated: true,
       removedMessages: removedCount,
       strategy: 'truncate-old',
+      systemPromptTruncated,
     };
   }
 
@@ -290,10 +315,12 @@ export class ContextManager {
 
     return {
       messages: [minimalMessage],
+      systemPrompt: finalSystemPrompt,
       totalTokens: countMessagesTokens([minimalMessage], this.options.model),
       truncated: true,
       removedMessages: messages.length - 1,
       strategy: 'truncate-old',
+      systemPromptTruncated,
     };
   }
 
@@ -322,5 +349,58 @@ export class ContextManager {
       ...message,
       content: truncatedContent,
     };
+  }
+
+  /**
+   * Truncate system prompt to fit within token limit
+   */
+  private truncateSystemPrompt(systemPrompt: string, maxTokens: number): string {
+    const currentTokens = countTokens(systemPrompt, this.options.model);
+
+    if (currentTokens <= maxTokens) {
+      return systemPrompt;
+    }
+
+    logger.warn(`Truncating system prompt from ${currentTokens} to ${maxTokens} tokens`);
+
+    // Calculate approximate character ratio
+    const ratio = maxTokens / currentTokens;
+    const targetLength = Math.floor(systemPrompt.length * ratio * 0.9); // 90% to be safe
+
+    // Try to truncate at sentence boundaries
+    let truncated = systemPrompt.substring(0, targetLength);
+
+    // Find the last complete sentence
+    const lastSentence = truncated.lastIndexOf('.');
+    const lastNewline = truncated.lastIndexOf('\n');
+    const lastBoundary = Math.max(lastSentence, lastNewline);
+
+    if (lastBoundary > targetLength * 0.7) {
+      // If we found a good boundary, use it
+      truncated = truncated.substring(0, lastBoundary + 1);
+    }
+
+    // Add truncation notice
+    const truncationNotice = '\n\n[System prompt truncated to fit context window]';
+    const noticeTokens = countTokens(truncationNotice, this.options.model);
+
+    // Make sure we have room for the notice
+    if (countTokens(truncated, this.options.model) + noticeTokens > maxTokens) {
+      // Reduce further to make room for notice
+      const adjustedRatio = (maxTokens - noticeTokens) / currentTokens;
+      const adjustedLength = Math.floor(systemPrompt.length * adjustedRatio * 0.9);
+      truncated = systemPrompt.substring(0, adjustedLength);
+
+      // Try to find boundary again
+      const adjustedLastSentence = truncated.lastIndexOf('.');
+      const adjustedLastNewline = truncated.lastIndexOf('\n');
+      const adjustedLastBoundary = Math.max(adjustedLastSentence, adjustedLastNewline);
+
+      if (adjustedLastBoundary > adjustedLength * 0.7) {
+        truncated = truncated.substring(0, adjustedLastBoundary + 1);
+      }
+    }
+
+    return truncated + truncationNotice;
   }
 }

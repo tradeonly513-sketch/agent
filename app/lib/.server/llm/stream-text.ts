@@ -275,6 +275,11 @@ export async function streamText(props: {
       );
     }
 
+    if (contextResult.systemPromptTruncated) {
+      logger.warn('System prompt was truncated to fit within 40% of context window');
+      finalSystemPrompt = contextResult.systemPrompt; // Use the truncated system prompt
+    }
+
     processedMessages = contextResult.messages;
     logger.info(`Final message count after optimization: ${processedMessages.length}`);
   } catch (error) {
