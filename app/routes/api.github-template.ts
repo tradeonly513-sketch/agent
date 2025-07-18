@@ -18,33 +18,38 @@ function isCloudflareEnvironment(context: any): boolean {
 async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
   const baseUrl = 'https://api.github.com';
 
-  // Get repository info to find default branch
-  const repoResponse = await fetch(`${baseUrl}/repos/${repo}`, {
-    headers: {
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'bolt.diy-app',
-      ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
-    },
-  });
+  try {
+    // Get repository info to find default branch with retry
+    const repoResponse = await fetchWithRetry(`${baseUrl}/repos/${repo}`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'bolt.diy-app',
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+      },
+    });
 
-  if (!repoResponse.ok) {
-    throw new Error(`Repository not found: ${repo}`);
-  }
+    if (!repoResponse.ok) {
+      throw new Error(`Repository not found: ${repo} (${repoResponse.status})`);
+    }
 
-  const repoData = (await repoResponse.json()) as any;
-  const defaultBranch = repoData.default_branch;
+    const repoData = (await repoResponse.json()) as any;
+    const defaultBranch = repoData.default_branch;
 
-  // Get the tree recursively
-  const treeResponse = await fetch(`${baseUrl}/repos/${repo}/git/trees/${defaultBranch}?recursive=1`, {
-    headers: {
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'bolt.diy-app',
-      ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
-    },
-  });
+    // Get the tree recursively with retry
+    const treeResponse = await fetchWithRetry(`${baseUrl}/repos/${repo}/git/trees/${defaultBranch}?recursive=1`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'bolt.diy-app',
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+      },
+    });
 
-  if (!treeResponse.ok) {
-    throw new Error(`Failed to fetch repository tree: ${treeResponse.status}`);
+    if (!treeResponse.ok) {
+      throw new Error(`Failed to fetch repository tree: ${treeResponse.status}`);
+    }
+  } catch (error) {
+    console.error(`Failed to fetch repository info for ${repo}:`, error);
+    throw new Error(`Unable to access repository ${repo}. Please check if the repository exists and is public.`);
   }
 
   const treeData = (await treeResponse.json()) as any;
@@ -81,13 +86,13 @@ async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
     const batch = files.slice(i, i + batchSize);
     const batchPromises = batch.map(async (file: any) => {
       try {
-        const contentResponse = await fetch(`${baseUrl}/repos/${repo}/contents/${file.path}`, {
+        const contentResponse = await fetchWithRetry(`${baseUrl}/repos/${repo}/contents/${file.path}`, {
           headers: {
             Accept: 'application/vnd.github.v3+json',
             'User-Agent': 'bolt.diy-app',
             ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
           },
-        });
+        }, 2); // Fewer retries for individual files
 
         if (!contentResponse.ok) {
           console.warn(`Failed to fetch ${file.path}: ${contentResponse.status}`);
@@ -120,35 +125,69 @@ async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
   return fileContents;
 }
 
+// Helper function for retrying fetch requests
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      });
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`Fetch attempt ${attempt}/${maxRetries} failed for ${url}:`, error);
+
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error('All fetch attempts failed');
+}
+
 // Your existing method for non-Cloudflare environments
 async function fetchRepoContentsZip(repo: string, githubToken?: string) {
   const baseUrl = 'https://api.github.com';
 
-  // Get the latest release
-  const releaseResponse = await fetch(`${baseUrl}/repos/${repo}/releases/latest`, {
-    headers: {
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'bolt.diy-app',
-      ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
-    },
-  });
+  try {
+    // Get the latest release with retry
+    const releaseResponse = await fetchWithRetry(`${baseUrl}/repos/${repo}/releases/latest`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'bolt.diy-app',
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+      },
+    });
 
-  if (!releaseResponse.ok) {
-    throw new Error(`GitHub API error: ${releaseResponse.status} - ${releaseResponse.statusText}`);
-  }
+    if (!releaseResponse.ok) {
+      // If no releases, try to get the default branch archive
+      console.warn(`No releases found for ${repo}, trying default branch archive`);
+      return await fetchRepoContentsCloudflare(repo, githubToken);
+    }
 
-  const releaseData = (await releaseResponse.json()) as any;
-  const zipballUrl = releaseData.zipball_url;
+    const releaseData = (await releaseResponse.json()) as any;
+    const zipballUrl = releaseData.zipball_url;
 
-  // Fetch the zipball
-  const zipResponse = await fetch(zipballUrl, {
-    headers: {
-      ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
-    },
-  });
+    // Fetch the zipball with retry
+    const zipResponse = await fetchWithRetry(zipballUrl, {
+      headers: {
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+      },
+    });
 
-  if (!zipResponse.ok) {
-    throw new Error(`Failed to fetch release zipball: ${zipResponse.status}`);
+    if (!zipResponse.ok) {
+      throw new Error(`Failed to fetch release zipball: ${zipResponse.status}`);
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch via zipball for ${repo}, falling back to Contents API:`, error);
+    // Fallback to Contents API method
+    return await fetchRepoContentsCloudflare(repo, githubToken);
   }
 
   // Get the zip content as ArrayBuffer
@@ -201,6 +240,104 @@ async function fetchRepoContentsZip(repo: string, githubToken?: string) {
   return results.filter(Boolean);
 }
 
+// Fallback template for when GitHub is unavailable
+function getDefaultTemplate() {
+  return [
+    {
+      name: 'package.json',
+      path: 'package.json',
+      content: JSON.stringify({
+        name: 'bolt-project',
+        version: '1.0.0',
+        type: 'module',
+        scripts: {
+          dev: 'vite',
+          build: 'vite build',
+          preview: 'vite preview'
+        },
+        dependencies: {
+          react: '^18.2.0',
+          'react-dom': '^18.2.0'
+        },
+        devDependencies: {
+          '@types/react': '^18.2.0',
+          '@types/react-dom': '^18.2.0',
+          '@vitejs/plugin-react': '^4.0.0',
+          typescript: '^5.0.0',
+          vite: '^4.4.0'
+        }
+      }, null, 2)
+    },
+    {
+      name: 'index.html',
+      path: 'index.html',
+      content: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bolt Project</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`
+    },
+    {
+      name: 'vite.config.ts',
+      path: 'vite.config.ts',
+      content: `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})`
+    },
+    {
+      name: 'main.tsx',
+      path: 'src/main.tsx',
+      content: `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)`
+    },
+    {
+      name: 'App.tsx',
+      path: 'src/App.tsx',
+      content: `import { useState } from 'react'
+import './App.css'
+
+function App() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <div className="App">
+      <h1>Welcome to Bolt!</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default App`
+    }
+  ];
+}
+
 export async function loader({ request, context }: { request: Request; context: any }) {
   const url = new URL(request.url);
   const repo = url.searchParams.get('repo');
@@ -230,10 +367,24 @@ export async function loader({ request, context }: { request: Request; context: 
     console.error('Repository:', repo);
     console.error('Error details:', error instanceof Error ? error.message : String(error));
 
+    // If it's a network error or GitHub is unavailable, provide a fallback
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes('fetch failed') ||
+        errorMessage.includes('ECONNRESET') ||
+        errorMessage.includes('network') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('Client network socket disconnected')) {
+
+      console.log('Network error detected, providing fallback template');
+
+      return json(getDefaultTemplate());
+    }
+
     return json(
       {
         error: 'Failed to fetch template files',
-        details: error instanceof Error ? error.message : String(error),
+        details: errorMessage,
       },
       { status: 500 },
     );
