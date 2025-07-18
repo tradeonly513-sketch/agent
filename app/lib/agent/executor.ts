@@ -1,7 +1,7 @@
 import type { AgentTask, AgentStep, ToolCall } from '~/types/actions';
 import { toolRegistry } from './tools';
 import { generateId } from 'ai';
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from '~/lib/constants';
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from '~/utils/constants';
 import { StepHelpers } from './step-helpers';
 
 export interface AgentExecutorOptions {
@@ -32,7 +32,7 @@ export class AgentExecutor {
       maxSteps: 10,
       stepTimeout: 60000, // 60 seconds
       model: DEFAULT_MODEL,
-      provider: DEFAULT_PROVIDER,
+      provider: DEFAULT_PROVIDER.name,
       ...options,
     };
   }

@@ -165,6 +165,16 @@ export const ChatImpl = memo(
       });
     }, []);
 
+    // 验证模型和提供商匹配
+    const validateModelProvider = useCallback((selectedModel: string, selectedProvider: ProviderInfo): boolean => {
+      const modelExists = selectedProvider.staticModels?.some(m => m.name === selectedModel);
+      if (!modelExists) {
+        console.warn(`Model ${selectedModel} not found in provider ${selectedProvider.name}`);
+        return false;
+      }
+      return true;
+    }, []);
+
     /*
      * const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
      * const [showContextDisplay, setShowContextDisplay] = useState(false);
@@ -345,7 +355,15 @@ export const ChatImpl = memo(
             toast.error('Message validation error. Cleaned up and retrying...', {
               autoClose: 3000,
             });
-          } else {
+          }
+          // 检查是否是API密钥错误
+          else if (e.message && e.message.includes('Missing API key')) {
+            console.error('API key missing for provider:', provider?.name);
+            toast.error(`Missing API key for ${provider?.name}. Please configure your API key in Settings or switch to a different provider.`, {
+              autoClose: 8000,
+            });
+          }
+          else {
             toast.error('Agent encountered an error. Please try a simpler request or switch to Chat mode.', {
               autoClose: 5000,
             });
@@ -490,6 +508,28 @@ export const ChatImpl = memo(
         retryCount: agentRetryCount,
       });
     }, [agentState.mode]);
+
+    // 初始化检查：确保模型和提供商匹配
+    useEffect(() => {
+      if (!validateModelProvider(model, provider)) {
+        console.warn(`Initial model/provider mismatch: ${model} not found in ${provider.name}`);
+
+        // 尝试找到一个匹配的模型
+        const firstModel = provider.staticModels?.[0];
+        if (firstModel) {
+          console.log(`Switching to first available model: ${firstModel.name}`);
+          setModel(firstModel.name);
+          Cookies.set('selectedModel', firstModel.name);
+        } else {
+          // 如果当前提供商没有模型，切换到默认提供商
+          console.log(`No models found in ${provider.name}, switching to default provider`);
+          setProvider(DEFAULT_PROVIDER as ProviderInfo);
+          setModel(DEFAULT_MODEL);
+          Cookies.set('selectedProvider', DEFAULT_PROVIDER.name);
+          Cookies.set('selectedModel', DEFAULT_MODEL);
+        }
+      }
+    }, [model, provider, validateModelProvider]);
 
     useEffect(() => {
       const prompt = searchParams.get('prompt');
@@ -859,6 +899,20 @@ export const ChatImpl = memo(
             workbenchStore.setShowWorkbench(true);
           }, 0);
         }
+
+        // 验证模型和提供商匹配
+        if (!validateModelProvider(model, provider)) {
+          toast.error(`Model ${model} is not compatible with provider ${provider.name}. Please select a different model or provider.`, {
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        console.log('Sending message with:', {
+          model,
+          provider: provider.name,
+          mode: agentState.mode,
+        });
 
         // Handle Agent mode - Enhanced Chat mode with Agent capabilities
         if (agentState.mode === 'agent') {
