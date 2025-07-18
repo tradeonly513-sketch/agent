@@ -30,26 +30,55 @@ export class TerminalStore {
   async attachBoltTerminal(terminal: ITerminal) {
     try {
       console.log('Attaching bolt terminal...');
+      terminal.write(coloredText.blue('Initializing bolt shell...\n'));
 
-      const wc = await this.#webcontainer;
+      // Check if WebContainer is available
+      const wc = await Promise.race([
+        this.#webcontainer,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('WebContainer loading timeout')), 15000)
+        )
+      ]) as any;
+
+      if (!wc) {
+        throw new Error('WebContainer is not available');
+      }
+
+      console.log('WebContainer ready, initializing bolt terminal...');
 
       // 添加超时机制
       const initPromise = this.#boltTerminal.init(wc, terminal);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Terminal initialization timeout')), 10000);
+        setTimeout(() => reject(new Error('Terminal initialization timeout')), 15000);
       });
 
       await Promise.race([initPromise, timeoutPromise]);
       console.log('Bolt terminal attached successfully');
+      terminal.write(coloredText.green('Bolt shell ready!\n'));
     } catch (error: any) {
       console.error('Failed to attach bolt terminal:', error);
-      terminal.write(coloredText.red('Failed to spawn bolt shell\n\n') + error.message);
+      terminal.write(coloredText.red('Failed to spawn bolt shell\n\n') + error.message + '\n');
 
-      // 尝试重新初始化
-      setTimeout(() => {
-        console.log('Retrying bolt terminal initialization...');
-        this.attachBoltTerminal(terminal).catch(console.error);
-      }, 3000);
+      // Show more helpful error message
+      if (error.message.includes('WebContainer')) {
+        terminal.write(coloredText.yellow('WebContainer is still loading. Please wait...\n'));
+      } else if (error.message.includes('timeout')) {
+        terminal.write(coloredText.yellow('Terminal initialization is taking longer than expected.\n'));
+      }
+
+      // 尝试重新初始化，但限制重试次数
+      const retryCount = (this as any)._boltRetryCount || 0;
+      if (retryCount < 3) {
+        (this as any)._boltRetryCount = retryCount + 1;
+        terminal.write(coloredText.blue(`Retrying... (attempt ${retryCount + 1}/3)\n`));
+
+        setTimeout(() => {
+          console.log('Retrying bolt terminal initialization...');
+          this.attachBoltTerminal(terminal).catch(console.error);
+        }, 3000);
+      } else {
+        terminal.write(coloredText.red('Maximum retry attempts reached. Please refresh the page.\n'));
+      }
 
       return;
     }
@@ -58,27 +87,57 @@ export class TerminalStore {
   async attachTerminal(terminal: ITerminal) {
     try {
       console.log('Attaching new terminal...');
+      terminal.write(coloredText.blue('Initializing shell...\n'));
 
-      const wc = await this.#webcontainer;
+      // Check if WebContainer is available
+      const wc = await Promise.race([
+        this.#webcontainer,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('WebContainer loading timeout')), 15000)
+        )
+      ]) as any;
+
+      if (!wc) {
+        throw new Error('WebContainer is not available');
+      }
 
       // 添加超时机制
       const shellPromise = newShellProcess(wc, terminal);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Shell process timeout')), 8000);
+        setTimeout(() => reject(new Error('Shell process timeout')), 10000);
       });
 
       const shellProcess = (await Promise.race([shellPromise, timeoutPromise])) as WebContainerProcess;
       this.#terminals.push({ terminal, process: shellProcess });
       console.log('Terminal attached successfully');
+      terminal.write(coloredText.green('Shell ready!\n'));
     } catch (error: any) {
       console.error('Failed to attach terminal:', error);
-      terminal.write(coloredText.red('Failed to spawn shell\n\n') + error.message);
+      terminal.write(coloredText.red('Failed to spawn shell\n\n') + error.message + '\n');
 
-      // 尝试重新初始化
-      setTimeout(() => {
-        console.log('Retrying terminal initialization...');
-        this.attachTerminal(terminal).catch(console.error);
-      }, 3000);
+      // Show more helpful error message
+      if (error.message.includes('WebContainer')) {
+        terminal.write(coloredText.yellow('WebContainer is still loading. Please wait...\n'));
+      } else if (error.message.includes('timeout')) {
+        terminal.write(coloredText.yellow('Shell initialization is taking longer than expected.\n'));
+      }
+
+      // 尝试重新初始化，但限制重试次数
+      const terminalId = (terminal as any).id || 'unknown';
+      const retryKey = `_terminalRetryCount_${terminalId}`;
+      const retryCount = (this as any)[retryKey] || 0;
+
+      if (retryCount < 3) {
+        (this as any)[retryKey] = retryCount + 1;
+        terminal.write(coloredText.blue(`Retrying... (attempt ${retryCount + 1}/3)\n`));
+
+        setTimeout(() => {
+          console.log('Retrying terminal initialization...');
+          this.attachTerminal(terminal).catch(console.error);
+        }, 3000);
+      } else {
+        terminal.write(coloredText.red('Maximum retry attempts reached. Please refresh the page.\n'));
+      }
 
       return;
     }
