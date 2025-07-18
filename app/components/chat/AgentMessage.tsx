@@ -19,8 +19,8 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ content, userRequest
     return <div className="whitespace-pre-wrap">{content}</div>;
   }
 
-  // Extract user request from the content
-  const userRequestMatch = content.match(/User Request: (.*?)\n\nInstructions:/s);
+  // Extract user request from the content (updated for new format)
+  const userRequestMatch = content.match(/Create a complete, working project for: (.*?)\n\nRequirements:/s);
   const extractedUserRequest = userRequestMatch ? userRequestMatch[1].trim() : userRequest;
 
   return (
@@ -70,23 +70,19 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ content, userRequest
           <div className="text-xs text-bolt-elements-textTertiary space-y-1">
             <div className="flex items-start gap-1.5">
               <span className="text-green-500 mt-0.5 text-xs">•</span>
-              <span>Create complete project files</span>
+              <span>Generate all necessary files with proper structure</span>
             </div>
             <div className="flex items-start gap-1.5">
               <span className="text-green-500 mt-0.5 text-xs">•</span>
-              <span>Include proper structure & dependencies</span>
+              <span>Include dependencies and setup instructions</span>
             </div>
             <div className="flex items-start gap-1.5">
               <span className="text-green-500 mt-0.5 text-xs">•</span>
-              <span>Write clean, documented code</span>
+              <span>Write clean, documented, production-ready code</span>
             </div>
             <div className="flex items-start gap-1.5">
               <span className="text-green-500 mt-0.5 text-xs">•</span>
-              <span>Ensure project is ready to run</span>
-            </div>
-            <div className="flex items-start gap-1.5">
-              <span className="text-green-500 mt-0.5 text-xs">•</span>
-              <span>Use modern best practices</span>
+              <span>Ensure project runs without errors</span>
             </div>
           </div>
         </div>
@@ -100,13 +96,13 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ content, userRequest
  * Utility function to check if a message is an Agent mode message
  */
 export const isAgentModeMessage = (content: string): boolean => {
-  return content.includes('[AGENT MODE]') && content.includes('User Request:');
+  return content.includes('[AGENT MODE]') && content.includes('Create a complete, working project for:');
 };
 
 /**
  * Utility function to extract user request from Agent mode message
  */
 export const extractUserRequest = (content: string): string | null => {
-  const match = content.match(/User Request: (.*?)\n\nInstructions:/s);
+  const match = content.match(/Create a complete, working project for: (.*?)\n\nRequirements:/s);
   return match ? match[1].trim() : null;
 };

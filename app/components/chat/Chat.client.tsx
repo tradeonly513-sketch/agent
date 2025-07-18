@@ -140,6 +140,7 @@ export const ChatImpl = memo(
 
     const [fakeLoading, setFakeLoading] = useState(false);
     const [lastMessageTime, setLastMessageTime] = useState<number>(0);
+    const [agentRetryCount, setAgentRetryCount] = useState(0);
 
     /*
      * const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
@@ -310,6 +311,14 @@ export const ChatImpl = memo(
         console.error('Chat error:', e);
         setFakeLoading(false);
 
+        // Agent模式的特殊错误处理
+        if (agentState.mode === 'agent') {
+          console.error('Agent mode error:', e);
+          toast.error('Agent encountered an error. Please try a simpler request or switch to Chat mode.', {
+            autoClose: 5000,
+          });
+        }
+
         // 确保状态正确重置
         setTimeout(() => {
           if (isLoading) {
@@ -347,17 +356,41 @@ export const ChatImpl = memo(
       let timeoutId: NodeJS.Timeout;
 
       if (isLoading || fakeLoading) {
-        // 如果加载状态持续超过30秒，自动重置
+        // Agent模式需要更长的处理时间，普通模式30秒，Agent模式90秒
+        const timeoutDuration = agentState.mode === 'agent' ? 90000 : 30000;
+
         timeoutId = setTimeout(() => {
-          console.warn('Chat loading timeout, resetting state...');
+          console.warn(`Chat loading timeout (${agentState.mode} mode), resetting state...`);
           setFakeLoading(false);
 
           if (isLoading) {
             stop();
           }
 
-          toast.warning('Request timeout. Please try again.');
-        }, 30000);
+          // Agent模式的重试逻辑
+          if (agentState.mode === 'agent' && agentRetryCount < 2) {
+            setAgentRetryCount(prev => prev + 1);
+            toast.warning(`Agent timeout. Retrying... (${agentRetryCount + 1}/3)`, {
+              autoClose: 3000,
+            });
+
+            // 延迟重试，给系统时间恢复
+            setTimeout(() => {
+              console.log('Agent retry attempt:', agentRetryCount + 1);
+            }, 2000);
+          } else {
+            // 重置重试计数
+            setAgentRetryCount(0);
+
+            const message = agentState.mode === 'agent'
+              ? 'Agent request failed after retries. Please try a simpler request or switch to Chat mode.'
+              : 'Request timeout. Please try again.';
+
+            toast.error(message, {
+              autoClose: 5000,
+            });
+          }
+        }, timeoutDuration);
       }
 
       return () => {
@@ -365,7 +398,25 @@ export const ChatImpl = memo(
           clearTimeout(timeoutId);
         }
       };
-    }, [isLoading, fakeLoading, stop]);
+    }, [isLoading, fakeLoading, stop, agentState.mode]);
+
+    // Agent模式特殊监控
+    useEffect(() => {
+      if (agentState.mode === 'agent' && isLoading) {
+        console.log('Agent mode: Request started, monitoring for timeout...');
+
+        // 添加额外的状态检查
+        const checkInterval = setInterval(() => {
+          if (isLoading && !fakeLoading) {
+            console.log('Agent mode: Still processing request...');
+          }
+        }, 10000); // 每10秒检查一次
+
+        return () => {
+          clearInterval(checkInterval);
+        };
+      }
+    }, [agentState.mode, isLoading, fakeLoading]);
 
     useEffect(() => {
       const prompt = searchParams.get('prompt');
@@ -741,19 +792,16 @@ export const ChatImpl = memo(
           // Ensure workbench is shown for Agent mode
           workbenchStore.setShowWorkbench(true);
 
-          // Create the full agent prompt for LLM
-          const agentPrompt = `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
+          // Create optimized agent prompt for LLM - shorter but effective
+          const agentPrompt = `[AGENT MODE] Create a complete, working project for: ${messageContent}
 
-User Request: ${messageContent}
+Requirements:
+- Generate all necessary files with proper structure
+- Include dependencies and setup instructions
+- Write clean, documented, production-ready code
+- Ensure project runs without errors
 
-Instructions:
-1. Create all necessary files for a complete project
-2. Include proper project structure and dependencies
-3. Write clean, well-documented code
-4. Ensure the project is ready to run
-5. Use modern best practices
-
-Please proceed to create the project step by step.`;
+Start creating the project now.`;
 
           // Use the full prompt for LLM processing
           finalMessageContent = agentPrompt;
@@ -854,30 +902,27 @@ Please proceed to create the project step by step.`;
 
           // Handle Agent mode message setup
           if (agentState.mode === 'agent') {
-            // Create a simplified user message for display (without the full agent prompt)
+            // Create a display message that matches our optimized prompt
             const displayUserMessage: Message = {
               id: userMessage.id,
               role: 'user',
-              content: `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
+              content: `[AGENT MODE] Create a complete, working project for: ${messageContent}
 
-User Request: ${messageContent}
+Requirements:
+- Generate all necessary files with proper structure
+- Include dependencies and setup instructions
+- Write clean, documented, production-ready code
+- Ensure project runs without errors
 
-Instructions:
-1. Create all necessary files for a complete project
-2. Include proper project structure and dependencies
-3. Write clean, well-documented code
-4. Ensure the project is ready to run
-5. Use modern best practices
-
-Please proceed to create the project step by step.`,
+Start creating the project now.`,
               parts: userMessage.parts,
               experimental_attachments: userMessage.experimental_attachments,
             };
 
             setMessages([displayUserMessage]);
 
-            toast.info('🤖 Agent creating your project...', {
-              autoClose: 2000,
+            toast.info('🤖 Agent analyzing your request...', {
+              autoClose: 3000,
             });
           } else {
             // Chat mode - normal behavior
