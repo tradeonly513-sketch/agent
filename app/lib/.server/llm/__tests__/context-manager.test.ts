@@ -122,12 +122,14 @@ describe('ContextManager', () => {
       },
     ];
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     expect(result.messages).toHaveLength(1);
     expect(result.totalTokens).toBeGreaterThan(0);
   });
+
+
 });
 
 describe('Token counting integration', () => {
@@ -161,8 +163,12 @@ describe('Token counting integration', () => {
 
     const gpt4Tokens = countMessagesTokens(messages, 'gpt-4');
     const claudeTokens = countMessagesTokens(messages, 'claude-3-sonnet-20240229');
-    
+    const deepseekTokens = countMessagesTokens(messages, 'deepseek-chat');
+
     expect(gpt4Tokens).toBeGreaterThan(0);
     expect(claudeTokens).toBeGreaterThan(0);
+    expect(deepseekTokens).toBeGreaterThan(0);
   });
+
+
 });

@@ -193,14 +193,21 @@ export async function streamText(props: {
   }
 
   // Apply context management to prevent token overflow
+  logger.info(`Starting context management for model: ${modelDetails.name}, context window: ${modelContextWindow}, completion tokens: ${dynamicMaxTokens}`);
+
   const contextManager = new ContextManager({
     model: modelDetails.name,
     maxContextTokens: modelContextWindow,
     completionTokens: dynamicMaxTokens,
+    bufferTokens: 2000, // Add buffer for safety
   });
 
   const finalSystemPrompt = chatMode === 'build' ? systemPrompt : discussPrompt();
   const contextFilesContent = chatMode === 'build' && contextFiles ? createFilesContext(contextFiles, true) : undefined;
+
+  // Log initial message count and estimated tokens
+  const initialMessageCount = processedMessages.length;
+  logger.info(`Initial message count: ${initialMessageCount}`);
 
   try {
     const contextResult = await contextManager.optimizeMessages(
@@ -209,16 +216,18 @@ export async function streamText(props: {
       contextFilesContent
     );
 
-    logger.info(`Context optimization result: ${contextResult.strategy}, removed ${contextResult.removedMessages} messages, ${contextResult.totalTokens} tokens`);
+    logger.info(`Context optimization result: strategy=${contextResult.strategy}, removed=${contextResult.removedMessages} messages, final_tokens=${contextResult.totalTokens}, truncated=${contextResult.truncated}`);
 
     if (contextResult.truncated) {
-      logger.warn(`Messages were truncated to fit context window. Strategy: ${contextResult.strategy}`);
+      logger.warn(`Messages were truncated to fit context window. Strategy: ${contextResult.strategy}, removed ${contextResult.removedMessages} out of ${initialMessageCount} messages`);
     }
 
     processedMessages = contextResult.messages;
+    logger.info(`Final message count after optimization: ${processedMessages.length}`);
   } catch (error) {
     logger.error('Context optimization failed:', error);
     // Continue with original messages but log the error
+    logger.warn('Continuing with original messages - this may cause context overflow');
   }
 
   logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);

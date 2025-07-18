@@ -141,6 +141,19 @@ export function getModelContextWindow(model: string): number {
     'llama-2-70b-chat': 4096,
     'llama-3-70b-instruct': 8192,
     'mixtral-8x7b-instruct': 32768,
+
+    // Deepseek models
+    'deepseek-chat': 65536,
+    'deepseek-coder': 65536,
+    'deepseek-v2': 65536,
+
+    // Additional popular models
+    'claude-instant-1': 100000,
+    'claude-2': 100000,
+    'claude-2.1': 200000,
+    'gpt-3.5-turbo-1106': 16385,
+    'gpt-4-1106-preview': 128000,
+    'gpt-4-vision-preview': 128000,
   };
 
   // Check for exact match first
@@ -148,16 +161,19 @@ export function getModelContextWindow(model: string): number {
     return contextWindows[model];
   }
 
-  // Check for partial matches
+  // Check for partial matches (case insensitive)
+  const lowerModel = model.toLowerCase();
   for (const [modelName, contextWindow] of Object.entries(contextWindows)) {
-    if (model.includes(modelName) || modelName.includes(model)) {
+    const lowerModelName = modelName.toLowerCase();
+    if (lowerModel.includes(lowerModelName) || lowerModelName.includes(lowerModel)) {
+      logger.info(`Found partial match for model ${model} -> ${modelName} with context window ${contextWindow}`);
       return contextWindow;
     }
   }
 
-  // Default fallback
-  logger.warn(`Unknown model ${model}, using default context window of 65536`);
-  return 65536;
+  // Default fallback - use a conservative estimate
+  logger.warn(`Unknown model ${model}, using default context window of 32768`);
+  return 32768;
 }
 
 /**
