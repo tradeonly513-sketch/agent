@@ -41,8 +41,11 @@ import type { ChatMode } from '~/types/actions';
 import type { TaskTemplate } from '~/lib/agent/templates';
 import type { BmadState } from '~/types/bmad';
 import type { BmadExecutor } from '~/lib/agent/bmad-executor';
-// import { CommandAutoComplete } from './CommandAutoComplete';
-// import { ContextDisplay, ContextIndicator } from './ContextDisplay';
+
+/*
+ * import { CommandAutoComplete } from './CommandAutoComplete';
+ * import { ContextDisplay, ContextIndicator } from './ContextDisplay';
+ */
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -97,14 +100,17 @@ interface BaseChatProps {
   onTemplateSelect?: (template: TaskTemplate) => void;
   bmadState?: BmadState;
   bmadExecutor?: BmadExecutor;
-  // showCommandAutoComplete?: boolean;
-  // onCommandSelect?: (command: string) => void;
-  // onCommandAutoCompleteClose?: () => void;
-  // contextFiles?: Array<{ path: string; content: string }>;
-  // onRemoveContextFile?: (path: string) => void;
-  // onClearContext?: () => void;
-  // showContextDisplay?: boolean;
-  // onToggleContextDisplay?: () => void;
+
+  /*
+   * showCommandAutoComplete?: boolean;
+   * onCommandSelect?: (command: string) => void;
+   * onCommandAutoCompleteClose?: () => void;
+   * contextFiles?: Array<{ path: string; content: string }>;
+   * onRemoveContextFile?: (path: string) => void;
+   * onClearContext?: () => void;
+   * showContextDisplay?: boolean;
+   * onToggleContextDisplay?: () => void;
+   */
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -160,14 +166,17 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       onTemplateSelect,
       bmadState,
       bmadExecutor,
-      // showCommandAutoComplete = false,
-      // onCommandSelect,
-      // onCommandAutoCompleteClose,
-      // contextFiles = [],
-      // onRemoveContextFile,
-      // onClearContext,
-      // showContextDisplay = false,
-      // onToggleContextDisplay,
+
+      /*
+       * showCommandAutoComplete = false,
+       * onCommandSelect,
+       * onCommandAutoCompleteClose,
+       * contextFiles = [],
+       * onRemoveContextFile,
+       * onClearContext,
+       * showContextDisplay = false,
+       * onToggleContextDisplay,
+       */
     },
     ref,
   ) => {
@@ -547,9 +556,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   setSelectedElement={setSelectedElement}
                   agentMode={agentMode}
                   setAgentMode={setAgentMode}
-                  // showCommandAutoComplete={showCommandAutoComplete}
-                  // onCommandSelect={onCommandSelect}
-                  // onCommandAutoCompleteClose={onCommandAutoCompleteClose}
+
+                  /*
+                   * showCommandAutoComplete={showCommandAutoComplete}
+                   * onCommandSelect={onCommandSelect}
+                   * onCommandAutoCompleteClose={onCommandAutoCompleteClose}
+                   */
                 />
               </div>
             </StickToBottom>

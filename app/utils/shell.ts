@@ -48,6 +48,7 @@ export async function newShellProcess(webcontainer: WebContainer, terminal: ITer
         input.write(data);
       } catch (error) {
         console.warn('Terminal input write error:', error);
+
         // 尝试重新连接
         setTimeout(() => {
           if (isInteractive) {
@@ -148,6 +149,7 @@ export class BoltShell {
           input.write(data);
         } catch (error) {
           console.warn('BoltShell input write error:', error);
+
           // 尝试重新连接
           setTimeout(() => {
             if (isInteractive && this.#shellInputStream) {
@@ -216,6 +218,7 @@ export class BoltShell {
     // 检查终端连接状态
     if (!this.#shellInputStream) {
       console.warn('Shell input stream not available, attempting to reconnect...');
+
       try {
         if (this.#webcontainer && this.#terminal) {
           await this.init(this.#webcontainer, this.#terminal);

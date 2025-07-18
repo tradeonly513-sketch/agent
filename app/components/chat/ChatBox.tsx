@@ -20,6 +20,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import type { ChatMode } from '~/types/actions';
+
 // import { CommandAutoComplete } from './CommandAutoComplete';
 
 interface ChatBoxProps {
@@ -65,9 +66,12 @@ interface ChatBoxProps {
   setDesignScheme?: (scheme: DesignScheme) => void;
   selectedElement?: ElementInfo | null;
   setSelectedElement?: ((element: ElementInfo | null) => void) | undefined;
-  // showCommandAutoComplete?: boolean;
-  // onCommandSelect?: (command: string) => void;
-  // onCommandAutoCompleteClose?: () => void;
+
+  /*
+   * showCommandAutoComplete?: boolean;
+   * onCommandSelect?: (command: string) => void;
+   * onCommandAutoCompleteClose?: () => void;
+   */
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {

@@ -30,6 +30,7 @@ export class TerminalStore {
   async attachBoltTerminal(terminal: ITerminal) {
     try {
       console.log('Attaching bolt terminal...');
+
       const wc = await this.#webcontainer;
 
       // 添加超时机制
@@ -57,6 +58,7 @@ export class TerminalStore {
   async attachTerminal(terminal: ITerminal) {
     try {
       console.log('Attaching new terminal...');
+
       const wc = await this.#webcontainer;
 
       // 添加超时机制
@@ -65,7 +67,7 @@ export class TerminalStore {
         setTimeout(() => reject(new Error('Shell process timeout')), 8000);
       });
 
-      const shellProcess = await Promise.race([shellPromise, timeoutPromise]) as WebContainerProcess;
+      const shellProcess = (await Promise.race([shellPromise, timeoutPromise])) as WebContainerProcess;
       this.#terminals.push({ terminal, process: shellProcess });
       console.log('Terminal attached successfully');
     } catch (error: any) {

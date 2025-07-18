@@ -20,13 +20,13 @@ export function ContextDisplay({ files, onRemoveFile, onClearAll, className = ''
   }
 
   return (
-    <div className={`bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-lg p-3 ${className}`}>
+    <div
+      className={`bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-lg p-3 ${className}`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="i-ph:files text-bolt-elements-textSecondary"></div>
-          <span className="text-sm font-medium text-bolt-elements-textPrimary">
-            Context ({files.length} files)
-          </span>
+          <span className="text-sm font-medium text-bolt-elements-textPrimary">Context ({files.length} files)</span>
         </div>
         <div className="flex items-center gap-1">
           <IconButton
@@ -55,9 +55,7 @@ export function ContextDisplay({ files, onRemoveFile, onClearAll, className = ''
                 <span className="text-xs font-mono text-bolt-elements-textSecondary truncate" title={file.path}>
                   {file.path}
                 </span>
-                <span className="text-xs text-bolt-elements-textTertiary">
-                  ({file.content.length} chars)
-                </span>
+                <span className="text-xs text-bolt-elements-textTertiary">({file.content.length} chars)</span>
               </div>
               <IconButton
                 title={`Remove ${file.path} from context`}

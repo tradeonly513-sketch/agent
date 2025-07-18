@@ -16,7 +16,7 @@ import Cookies from 'js-cookie';
 import { debounce } from '~/utils/debounce';
 import { useSettings } from '~/lib/hooks/useSettings';
 import type { ProviderInfo } from '~/types/model';
-import { useSearchParams, useNavigate } from '@remix-run/react';
+import { useSearchParams } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
@@ -34,9 +34,12 @@ import { ClientAgentExecutor } from '~/lib/agent/client-executor';
 
 import { BmadExecutor } from '~/lib/agent/bmad-executor';
 import { bmadStore, bmadActions } from '~/lib/stores/bmad-store';
-// import { CommandAutoComplete } from './CommandAutoComplete';
-// import { useCommandProcessor, hasCommands } from '~/lib/hooks/useCommandProcessor';
-// import { ContextDisplay, ContextIndicator } from './ContextDisplay';
+
+/*
+ * import { CommandAutoComplete } from './CommandAutoComplete';
+ * import { useCommandProcessor, hasCommands } from '~/lib/hooks/useCommandProcessor';
+ * import { ContextDisplay, ContextIndicator } from './ContextDisplay';
+ */
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -137,20 +140,25 @@ export const ChatImpl = memo(
 
     const [fakeLoading, setFakeLoading] = useState(false);
     const [lastMessageTime, setLastMessageTime] = useState<number>(0);
-    // const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
-    // const [showContextDisplay, setShowContextDisplay] = useState(false);
+
+    /*
+     * const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
+     * const [showContextDisplay, setShowContextDisplay] = useState(false);
+     */
     const files = useStore(workbenchStore.files);
 
-    // 指令处理器
-    // const commandProcessor = useCommandProcessor({
-    //   workingDirectory: '/home/project',
-    //   onCommandExecuted: (result) => {
-    //     console.log('Command executed:', result);
-    //   },
-    //   onInputModified: (newInput) => {
-    //     setInput(newInput);
-    //   }
-    // });
+    /*
+     * 指令处理器
+     * const commandProcessor = useCommandProcessor({
+     *   workingDirectory: '/home/project',
+     *   onCommandExecuted: (result) => {
+     *     console.log('Command executed:', result);
+     *   },
+     *   onInputModified: (newInput) => {
+     *     setInput(newInput);
+     *   }
+     * });
+     */
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
     const deployAlert = useStore(workbenchStore.deployAlert);
@@ -343,9 +351,11 @@ export const ChatImpl = memo(
         timeoutId = setTimeout(() => {
           console.warn('Chat loading timeout, resetting state...');
           setFakeLoading(false);
+
           if (isLoading) {
             stop();
           }
+
           toast.warning('Request timeout. Please try again.');
         }, 30000);
       }
@@ -574,7 +584,7 @@ export const ChatImpl = memo(
     };
 
     const sendMessage = async (_event: React.UIEvent, messageInput?: string) => {
-      let messageContent = messageInput || input;
+      const messageContent = messageInput || input;
 
       if (!messageContent?.trim()) {
         return;
@@ -584,145 +594,154 @@ export const ChatImpl = memo(
       if (isLoading) {
         console.log('Message sending in progress, aborting current request...');
         abort();
+
         return;
       }
 
       // 防止快速重复点击
       const now = Date.now();
+
       if (now - lastMessageTime < 1000) {
         console.log('Message sent too quickly, ignoring...');
         return;
       }
+
       setLastMessageTime(now);
 
       // 添加发送前的状态检查
       try {
-        // 首先处理聊天指令 (@, #, help)
-        // if (hasCommands(messageContent)) {
-        //   const commandResult = await commandProcessor.processInput(messageContent);
-        //
-        //   if (!commandResult.shouldContinue) {
-        //     // 指令执行完成，不继续聊天流程
-        //     setInput('');
-        //     return;
-        //   }
-        //
-        //   // 如果指令修改了输入内容，使用修改后的内容
-        //   if (commandResult.modifiedInput) {
-        //     messageContent = commandResult.modifiedInput;
-        //   }
-        // }
+        /*
+         * 首先处理聊天指令 (@, #, help)
+         * if (hasCommands(messageContent)) {
+         *   const commandResult = await commandProcessor.processInput(messageContent);
+         *
+         *   if (!commandResult.shouldContinue) {
+         *     // 指令执行完成，不继续聊天流程
+         *     setInput('');
+         *     return;
+         *   }
+         *
+         *   // 如果指令修改了输入内容，使用修改后的内容
+         *   if (commandResult.modifiedInput) {
+         *     messageContent = commandResult.modifiedInput;
+         *   }
+         * }
+         */
 
-        // 添加上下文文件到消息中
-        // const contextFiles = commandProcessor.getContextFiles();
-        // if (contextFiles.length > 0) {
-        //   let contextContent = '\n\n**Context Files:**\n';
-        //   for (const file of contextFiles) {
-        //     const ext = file.path.split('.').pop()?.toLowerCase() || '';
-        //     contextContent += `\n**${file.path}**\n\`\`\`${ext}\n${file.content}\n\`\`\`\n`;
-        //   }
-        //   messageContent = messageContent + contextContent;
-        // }
+        /*
+         * 添加上下文文件到消息中
+         * const contextFiles = commandProcessor.getContextFiles();
+         * if (contextFiles.length > 0) {
+         *   let contextContent = '\n\n**Context Files:**\n';
+         *   for (const file of contextFiles) {
+         *     const ext = file.path.split('.').pop()?.toLowerCase() || '';
+         *     contextContent += `\n**${file.path}**\n\`\`\`${ext}\n${file.content}\n\`\`\`\n`;
+         *   }
+         *   messageContent = messageContent + contextContent;
+         * }
+         */
 
         // Handle BMad commands (starting with *) - only if BMad is active
         if (messageContent.startsWith('*') && bmadState.isActive) {
           try {
             await bmadExecutor.executeCommand(messageContent);
             setInput('');
+
             return;
           } catch (error) {
             console.error('BMad command error:', error);
             toast.error(`BMad command failed: ${error}`);
             setInput('');
+
             return;
           }
         }
 
-      // Handle quick commands
-      if (messageContent.startsWith('/')) {
-        const command = messageContent.toLowerCase();
+        // Handle quick commands
+        if (messageContent.startsWith('/')) {
+          const command = messageContent.toLowerCase();
 
-        if (command === '/agent') {
-          handleAgentModeChange('agent');
-          toast.success('Switched to Agent mode');
-          setInput('');
+          if (command === '/agent') {
+            handleAgentModeChange('agent');
+            toast.success('Switched to Agent mode');
+            setInput('');
 
-          return;
-        } else if (command === '/chat') {
-          handleAgentModeChange('chat');
-          toast.success('Switched to Chat mode');
-          setInput('');
+            return;
+          } else if (command === '/chat') {
+            handleAgentModeChange('chat');
+            toast.success('Switched to Chat mode');
+            setInput('');
 
-          return;
-        } else if (command === '/bmad') {
-          // Toggle BMad system
-          if (bmadState.isActive) {
-            bmadActions.deactivate();
-            toast.info('BMad system deactivated');
-          } else {
-            bmadActions.activate();
-            toast.success('BMad system activated. Type *help for commands.');
+            return;
+          } else if (command === '/bmad') {
+            // Toggle BMad system
+            if (bmadState.isActive) {
+              bmadActions.deactivate();
+              toast.info('BMad system deactivated');
+            } else {
+              bmadActions.activate();
+              toast.success('BMad system activated. Type *help for commands.');
+            }
+
+            setInput('');
+
+            return;
+          } else if (command === '/status' && agentState.currentTask) {
+            const task = agentState.currentTask;
+            const statusMessage = `Current task: ${task.title}\nStatus: ${task.status}\nStep: ${task.currentStepIndex + 1}/${task.steps.length}`;
+            toast.info(statusMessage);
+            setInput('');
+
+            return;
+          } else if (command === '/stop' && agentState.isActive) {
+            agentExecutor.abort();
+            agentStore.setKey('isActive', false);
+            agentStore.setKey('currentTask', undefined);
+            toast.info('Agent task stopped');
+            setInput('');
+
+            return;
           }
-
-          setInput('');
-
-          return;
-        } else if (command === '/status' && agentState.currentTask) {
-          const task = agentState.currentTask;
-          const statusMessage = `Current task: ${task.title}\nStatus: ${task.status}\nStep: ${task.currentStepIndex + 1}/${task.steps.length}`;
-          toast.info(statusMessage);
-          setInput('');
-
-          return;
-        } else if (command === '/stop' && agentState.isActive) {
-          agentExecutor.abort();
-          agentStore.setKey('isActive', false);
-          agentStore.setKey('currentTask', undefined);
-          toast.info('Agent task stopped');
-          setInput('');
-
-          return;
         }
-      }
 
-      // Initialize finalMessageContent first
-      let finalMessageContent = messageContent;
+        // Initialize finalMessageContent first
+        let finalMessageContent = messageContent;
 
-      if (selectedElement) {
-        console.log('Selected Element:', selectedElement);
+        if (selectedElement) {
+          console.log('Selected Element:', selectedElement);
 
-        const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
-        finalMessageContent = messageContent + elementInfo;
-      }
+          const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
+          finalMessageContent = messageContent + elementInfo;
+        }
 
-      /*
-       * Handle navigation and workbench display for all modes
-       * Force navigation to chat page if on homepage
-       */
-      if (typeof window !== 'undefined' && window.location.pathname === '/') {
-        // Generate a new chat ID
-        const chatId = `chat-${Date.now()}`;
-        const url = new URL(window.location.href);
-        url.pathname = `/chat/${chatId}`;
-        window.history.replaceState({}, '', url);
+        /*
+         * Handle navigation and workbench display for all modes
+         * Force navigation to chat page if on homepage
+         */
+        if (typeof window !== 'undefined' && window.location.pathname === '/') {
+          // Generate a new chat ID
+          const chatId = `chat-${Date.now()}`;
+          const url = new URL(window.location.href);
+          url.pathname = `/chat/${chatId}`;
+          window.history.replaceState({}, '', url);
 
-        // Force update chatStarted state after URL change
-        setTimeout(() => {
-          setChatStarted(true);
-          chatStore.setKey('started', true);
+          // Force update chatStarted state after URL change
+          setTimeout(() => {
+            setChatStarted(true);
+            chatStore.setKey('started', true);
 
-          // Show workbench for all modes when starting a new chat
+            // Show workbench for all modes when starting a new chat
+            workbenchStore.setShowWorkbench(true);
+          }, 0);
+        }
+
+        // Handle Agent mode - Enhanced Chat mode with Agent capabilities
+        if (agentState.mode === 'agent') {
+          // Ensure workbench is shown for Agent mode
           workbenchStore.setShowWorkbench(true);
-        }, 0);
-      }
 
-      // Handle Agent mode - Enhanced Chat mode with Agent capabilities
-      if (agentState.mode === 'agent') {
-        // Ensure workbench is shown for Agent mode
-        workbenchStore.setShowWorkbench(true);
-
-        // Add agent prefix to the message to trigger agent behavior in LLM
-        const agentPrompt = `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
+          // Add agent prefix to the message to trigger agent behavior in LLM
+          const agentPrompt = `[AGENT MODE] You are an intelligent development agent. Please analyze the following request and create a complete, working project with all necessary files. Be thorough and create production-ready code.
 
 User Request: ${messageContent}
 
@@ -735,109 +754,109 @@ Instructions:
 
 Please proceed to create the project step by step.`;
 
-        finalMessageContent = agentPrompt;
-      } else {
-        // For chat mode, also show workbench when starting a new conversation
-        if (!chatStarted) {
-          workbenchStore.setShowWorkbench(true);
-        }
-      }
-
-      // Only run animation if not already run by Agent mode
-      if (agentState.mode !== 'agent') {
-        await runAnimation();
-      }
-
-      if (!chatStarted) {
-        setFakeLoading(true);
-
-        // Ensure workbench is shown when starting a new chat
-        workbenchStore.setShowWorkbench(true);
-
-        // Skip template selection for Agent mode
-        if (autoSelectTemplate && agentState.mode !== 'agent') {
-          const { template, title } = await selectStarterTemplate({
-            message: finalMessageContent,
-            model,
-            provider,
-          });
-
-          if (template !== 'blank') {
-            const temResp = await getTemplates(template, title).catch((e) => {
-              if (e.message.includes('rate limit')) {
-                toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
-              } else {
-                toast.warning('Failed to import starter template\n Continuing with blank template');
-              }
-
-              return null;
-            });
-
-            if (temResp) {
-              const { assistantMessage, userMessage } = temResp;
-              const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-
-              setMessages([
-                {
-                  id: `1-${new Date().getTime()}`,
-                  role: 'user',
-                  content: userMessageText,
-                  parts: createMessageParts(userMessageText, imageDataList),
-                },
-                {
-                  id: `2-${new Date().getTime()}`,
-                  role: 'assistant',
-                  content: assistantMessage,
-                },
-                {
-                  id: `3-${new Date().getTime()}`,
-                  role: 'user',
-                  content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
-                  annotations: ['hidden'],
-                },
-              ]);
-
-              const reloadOptions =
-                uploadedFiles.length > 0
-                  ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
-                  : undefined;
-
-              reload(reloadOptions);
-              setInput('');
-              Cookies.remove(PROMPT_COOKIE_KEY);
-
-              setUploadedFiles([]);
-              setImageDataList([]);
-
-              resetEnhancer();
-
-              textareaRef.current?.blur();
-              setFakeLoading(false);
-
-              return;
-            }
+          finalMessageContent = agentPrompt;
+        } else {
+          // For chat mode, also show workbench when starting a new conversation
+          if (!chatStarted) {
+            workbenchStore.setShowWorkbench(true);
           }
         }
 
-        // If autoSelectTemplate is disabled or template selection failed, proceed with normal message
-        const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-        const attachments = uploadedFiles.length > 0 ? await filesToAttachments(uploadedFiles) : undefined;
+        // Only run animation if not already run by Agent mode
+        if (agentState.mode !== 'agent') {
+          await runAnimation();
+        }
 
-        const userMessage = {
-          id: `${new Date().getTime()}`,
-          role: 'user' as const,
-          content: userMessageText,
-          parts: createMessageParts(userMessageText, imageDataList),
-          experimental_attachments: attachments,
-        };
+        if (!chatStarted) {
+          setFakeLoading(true);
 
-        // Handle Agent mode message setup
-        if (agentState.mode === 'agent') {
-          // Add Agent indicator message first, then user message
-          const agentIndicator: Message = {
-            id: `agent-indicator-${Date.now()}`,
-            role: 'assistant',
-            content: `🤖 **Agent Mode** - Creating project: "${messageContent}"
+          // Ensure workbench is shown when starting a new chat
+          workbenchStore.setShowWorkbench(true);
+
+          // Skip template selection for Agent mode
+          if (autoSelectTemplate && agentState.mode !== 'agent') {
+            const { template, title } = await selectStarterTemplate({
+              message: finalMessageContent,
+              model,
+              provider,
+            });
+
+            if (template !== 'blank') {
+              const temResp = await getTemplates(template, title).catch((e) => {
+                if (e.message.includes('rate limit')) {
+                  toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
+                } else {
+                  toast.warning('Failed to import starter template\n Continuing with blank template');
+                }
+
+                return null;
+              });
+
+              if (temResp) {
+                const { assistantMessage, userMessage } = temResp;
+                const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+
+                setMessages([
+                  {
+                    id: `1-${new Date().getTime()}`,
+                    role: 'user',
+                    content: userMessageText,
+                    parts: createMessageParts(userMessageText, imageDataList),
+                  },
+                  {
+                    id: `2-${new Date().getTime()}`,
+                    role: 'assistant',
+                    content: assistantMessage,
+                  },
+                  {
+                    id: `3-${new Date().getTime()}`,
+                    role: 'user',
+                    content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
+                    annotations: ['hidden'],
+                  },
+                ]);
+
+                const reloadOptions =
+                  uploadedFiles.length > 0
+                    ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+                    : undefined;
+
+                reload(reloadOptions);
+                setInput('');
+                Cookies.remove(PROMPT_COOKIE_KEY);
+
+                setUploadedFiles([]);
+                setImageDataList([]);
+
+                resetEnhancer();
+
+                textareaRef.current?.blur();
+                setFakeLoading(false);
+
+                return;
+              }
+            }
+          }
+
+          // If autoSelectTemplate is disabled or template selection failed, proceed with normal message
+          const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+          const attachments = uploadedFiles.length > 0 ? await filesToAttachments(uploadedFiles) : undefined;
+
+          const userMessage = {
+            id: `${new Date().getTime()}`,
+            role: 'user' as const,
+            content: userMessageText,
+            parts: createMessageParts(userMessageText, imageDataList),
+            experimental_attachments: attachments,
+          };
+
+          // Handle Agent mode message setup
+          if (agentState.mode === 'agent') {
+            // Add Agent indicator message first, then user message
+            const agentIndicator: Message = {
+              id: `agent-indicator-${Date.now()}`,
+              role: 'assistant',
+              content: `🤖 **Agent Mode** - Creating project: "${messageContent}"
 
 <details>
 <summary>View technical details</summary>
@@ -848,20 +867,78 @@ Please proceed to create the project step by step.`;
 
 The agent will create all necessary files and project structure automatically.
 </details>`,
-          };
+            };
 
-          setMessages([agentIndicator, userMessage]);
+            setMessages([agentIndicator, userMessage]);
 
-          toast.info('🤖 Agent creating your project...', {
-            autoClose: 2000,
-          });
-        } else {
-          // Chat mode - normal behavior
-          setMessages([userMessage]);
+            toast.info('🤖 Agent creating your project...', {
+              autoClose: 2000,
+            });
+          } else {
+            // Chat mode - normal behavior
+            setMessages([userMessage]);
+          }
+
+          reload(attachments ? { experimental_attachments: attachments } : undefined);
+          setFakeLoading(false);
+          setInput('');
+          Cookies.remove(PROMPT_COOKIE_KEY);
+
+          setUploadedFiles([]);
+          setImageDataList([]);
+
+          resetEnhancer();
+
+          textareaRef.current?.blur();
+
+          return;
         }
 
-        reload(attachments ? { experimental_attachments: attachments } : undefined);
-        setFakeLoading(false);
+        if (error != null) {
+          setMessages(messages.slice(0, -1));
+        }
+
+        const modifiedFiles = workbenchStore.getModifiedFiles();
+
+        chatStore.setKey('aborted', false);
+
+        if (modifiedFiles !== undefined) {
+          const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
+          const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
+
+          const attachmentOptions =
+            uploadedFiles.length > 0
+              ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+              : undefined;
+
+          append(
+            {
+              role: 'user',
+              content: messageText,
+              parts: createMessageParts(messageText, imageDataList),
+            },
+            attachmentOptions,
+          );
+
+          workbenchStore.resetAllFileModifications();
+        } else {
+          const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+
+          const attachmentOptions =
+            uploadedFiles.length > 0
+              ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+              : undefined;
+
+          append(
+            {
+              role: 'user',
+              content: messageText,
+              parts: createMessageParts(messageText, imageDataList),
+            },
+            attachmentOptions,
+          );
+        }
+
         setInput('');
         Cookies.remove(PROMPT_COOKIE_KEY);
 
@@ -871,61 +948,6 @@ The agent will create all necessary files and project structure automatically.
         resetEnhancer();
 
         textareaRef.current?.blur();
-
-        return;
-      }
-
-      if (error != null) {
-        setMessages(messages.slice(0, -1));
-      }
-
-      const modifiedFiles = workbenchStore.getModifiedFiles();
-
-      chatStore.setKey('aborted', false);
-
-      if (modifiedFiles !== undefined) {
-        const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
-
-        const attachmentOptions =
-          uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
-
-        append(
-          {
-            role: 'user',
-            content: messageText,
-            parts: createMessageParts(messageText, imageDataList),
-          },
-          attachmentOptions,
-        );
-
-        workbenchStore.resetAllFileModifications();
-      } else {
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-
-        const attachmentOptions =
-          uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
-
-        append(
-          {
-            role: 'user',
-            content: messageText,
-            parts: createMessageParts(messageText, imageDataList),
-          },
-          attachmentOptions,
-        );
-      }
-
-      setInput('');
-      Cookies.remove(PROMPT_COOKIE_KEY);
-
-      setUploadedFiles([]);
-      setImageDataList([]);
-
-      resetEnhancer();
-
-      textareaRef.current?.blur();
-
       } catch (error) {
         // 确保在任何错误情况下都能重置状态
         console.error('Error in sendMessage:', error);
@@ -947,10 +969,12 @@ The agent will create all necessary files and project structure automatically.
     const onTextareaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       handleInputChange(event);
 
-      // 检查是否显示指令自动完成
-      // const value = event.target.value;
-      // const shouldShow = hasCommands(value) && value.trim().length > 0;
-      // setShowCommandAutoComplete(shouldShow);
+      /*
+       * 检查是否显示指令自动完成
+       * const value = event.target.value;
+       * const shouldShow = hasCommands(value) && value.trim().length > 0;
+       * setShowCommandAutoComplete(shouldShow);
+       */
     };
 
     /**
@@ -1093,27 +1117,30 @@ The agent will create all necessary files and project structure automatically.
         onTemplateSelect={handleTemplateSelect}
         bmadState={bmadState}
         bmadExecutor={bmadExecutor}
-        // showCommandAutoComplete={showCommandAutoComplete}
-        // onCommandSelect={(command) => {
-        //   setInput(command);
-        //   setShowCommandAutoComplete(false);
-        //   textareaRef.current?.focus();
-        // }}
-        // onCommandAutoCompleteClose={() => {
-        //   setShowCommandAutoComplete(false);
-        // }}
-        // contextFiles={commandProcessor.getContextFiles()}
-        // onRemoveContextFile={(path) => {
-        //   // 通过执行 #context remove 命令来移除文件
-        //   commandProcessor.processInput(`#context remove ${path}`);
-        // }}
-        // onClearContext={() => {
-        //   commandProcessor.clearContext();
-        // }}
-        // showContextDisplay={showContextDisplay}
-        // onToggleContextDisplay={() => {
-        //   setShowContextDisplay(!showContextDisplay);
-        // }}
+
+        /*
+         * showCommandAutoComplete={showCommandAutoComplete}
+         * onCommandSelect={(command) => {
+         *   setInput(command);
+         *   setShowCommandAutoComplete(false);
+         *   textareaRef.current?.focus();
+         * }}
+         * onCommandAutoCompleteClose={() => {
+         *   setShowCommandAutoComplete(false);
+         * }}
+         * contextFiles={commandProcessor.getContextFiles()}
+         * onRemoveContextFile={(path) => {
+         *   // 通过执行 #context remove 命令来移除文件
+         *   commandProcessor.processInput(`#context remove ${path}`);
+         * }}
+         * onClearContext={() => {
+         *   commandProcessor.clearContext();
+         * }}
+         * showContextDisplay={showContextDisplay}
+         * onToggleContextDisplay={() => {
+         *   setShowContextDisplay(!showContextDisplay);
+         * }}
+         */
       />
     );
   },

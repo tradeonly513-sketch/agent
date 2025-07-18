@@ -1,9 +1,4 @@
-import type {
-  ParsedCommand,
-  AtCommandType,
-  HashCommandType,
-  HelpCommandType
-} from '~/types/commands';
+import type { ParsedCommand, AtCommandType, HashCommandType, HelpCommandType } from '~/types/commands';
 
 /**
  * 聊天指令解析器
@@ -56,28 +51,28 @@ export class CommandParser {
       case 'file':
         data = {
           type: 'file',
-          target: args.join(' ')
+          target: args.join(' '),
         };
         break;
 
       case 'folder':
         data = {
           type: 'folder',
-          target: args.join(' ')
+          target: args.join(' '),
         };
         break;
 
       case 'search':
         data = {
           type: 'search',
-          query: args.join(' ')
+          query: args.join(' '),
         };
         break;
 
       case 'help':
       case '':
         data = {
-          type: 'help'
+          type: 'help',
         };
         break;
 
@@ -85,7 +80,7 @@ export class CommandParser {
         // 如果没有明确的子命令，尝试作为文件路径
         data = {
           type: 'file',
-          target: input.slice(1).trim()
+          target: input.slice(1).trim(),
         };
     }
 
@@ -94,7 +89,7 @@ export class CommandParser {
       command,
       args,
       originalInput: input,
-      data
+      data,
     };
   }
 
@@ -119,7 +114,7 @@ export class CommandParser {
         data = {
           type: 'file',
           target: args.join(' '),
-          action: 'add'
+          action: 'add',
         };
         break;
 
@@ -127,35 +122,38 @@ export class CommandParser {
         data = {
           type: 'folder',
           target: args.join(' '),
-          action: 'add'
+          action: 'add',
         };
         break;
 
-      case 'context':
+      case 'context': {
         const action = args[0]?.toLowerCase();
+
         if (action === 'clear') {
           data = {
             type: 'context',
-            action: 'remove'
+            action: 'remove',
           };
         } else if (action === 'remove' && args[1]) {
           data = {
             type: 'context',
             action: 'remove',
-            target: args.slice(1).join(' ')
+            target: args.slice(1).join(' '),
           };
         } else {
           data = {
             type: 'context',
-            action: 'list'
+            action: 'list',
           };
         }
+
         break;
+      }
 
       case 'help':
       case '':
         data = {
-          type: 'help'
+          type: 'help',
         };
         break;
 
@@ -164,7 +162,7 @@ export class CommandParser {
         data = {
           type: 'file',
           target: input.slice(1).trim(),
-          action: 'add'
+          action: 'add',
         };
     }
 
@@ -173,7 +171,7 @@ export class CommandParser {
       command,
       args,
       originalInput: input,
-      data
+      data,
     };
   }
 
@@ -195,6 +193,7 @@ export class CommandParser {
       data = { category: 'all' };
     } else {
       const target = args[0];
+
       if (target === '@') {
         data = { category: 'at' };
       } else if (target === '#') {
@@ -202,7 +201,7 @@ export class CommandParser {
       } else {
         data = {
           category: 'general',
-          command: target
+          command: target,
         };
       }
     }
@@ -212,7 +211,7 @@ export class CommandParser {
       command: 'help',
       args,
       originalInput: input,
-      data
+      data,
     };
   }
 
@@ -221,21 +220,20 @@ export class CommandParser {
    */
   static hasCommand(input: string): boolean {
     const trimmed = input.trim();
-    return trimmed.startsWith('@') ||
-           trimmed.startsWith('#') ||
-           trimmed.toLowerCase().startsWith('help');
+    return trimmed.startsWith('@') || trimmed.startsWith('#') || trimmed.toLowerCase().startsWith('help');
   }
 
   /**
    * 提取指令和普通文本
    */
-  static extractCommands(input: string): { commands: ParsedCommand[], text: string } {
+  static extractCommands(input: string): { commands: ParsedCommand[]; text: string } {
     const lines = input.split('\n');
     const commands: ParsedCommand[] = [];
     const textLines: string[] = [];
 
     for (const line of lines) {
       const command = this.parse(line);
+
       if (command) {
         commands.push(command);
       } else {
@@ -245,7 +243,7 @@ export class CommandParser {
 
     return {
       commands,
-      text: textLines.join('\n').trim()
+      text: textLines.join('\n').trim(),
     };
   }
 }

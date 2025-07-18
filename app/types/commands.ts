@@ -44,7 +44,7 @@ export interface AtCommandType {
   query?: string;
 }
 
-// # 命令类型  
+// # 命令类型
 export interface HashCommandType {
   type: 'file' | 'folder' | 'context' | 'help';
   target?: string;

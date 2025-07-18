@@ -21,9 +21,7 @@ export default function TestChatPage() {
       <Header />
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-bolt-elements-textPrimary mb-4">
-            Chat Page Layout Test
-          </h2>
+          <h2 className="text-xl font-semibold text-bolt-elements-textPrimary mb-4">Chat Page Layout Test</h2>
           <div className="bg-bolt-elements-background-depth-2 p-4 rounded-lg text-left">
             <h3 className="font-medium text-bolt-elements-textPrimary mb-2">验证项目:</h3>
             <ul className="text-sm text-bolt-elements-textSecondary space-y-1">
@@ -34,9 +32,7 @@ export default function TestChatPage() {
               <li>✅ 左侧对话框顶部对齐</li>
             </ul>
           </div>
-          <p className="text-xs text-bolt-elements-textTertiary mt-4">
-            访问 /chat/test 查看实际聊天页面效果
-          </p>
+          <p className="text-xs text-bolt-elements-textTertiary mt-4">访问 /chat/test 查看实际聊天页面效果</p>
         </div>
       </div>
       <ClientOnly fallback={<BaseChat />}>{() => <Chat />}</ClientOnly>

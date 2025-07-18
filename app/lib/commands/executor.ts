@@ -5,7 +5,7 @@ import type {
   FileReference,
   AtCommandType,
   HashCommandType,
-  HelpCommandType
+  HelpCommandType,
 } from '~/types/commands';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { toast } from 'react-toastify';
@@ -34,14 +34,14 @@ export class CommandExecutor {
         default:
           return {
             success: false,
-            message: `Unknown command type: ${command.type}`
+            message: `Unknown command type: ${command.type}`,
           };
       }
     } catch (error) {
       console.error('Command execution error:', error);
       return {
         success: false,
-        message: `Command execution failed: ${error}`
+        message: `Command execution failed: ${error}`,
       };
     }
   }
@@ -66,7 +66,7 @@ export class CommandExecutor {
       default:
         return {
           success: false,
-          message: 'Invalid @ command'
+          message: 'Invalid @ command',
         };
     }
   }
@@ -99,7 +99,7 @@ export class CommandExecutor {
       default:
         return {
           success: false,
-          message: 'Invalid # command'
+          message: 'Invalid # command',
         };
     }
   }
@@ -135,7 +135,7 @@ export class CommandExecutor {
       if (!file || file.type !== 'file') {
         return {
           success: false,
-          message: `File not found: ${filePath}`
+          message: `File not found: ${filePath}`,
         };
       }
 
@@ -152,12 +152,12 @@ export class CommandExecutor {
         message: `File referenced: ${filePath}`,
         data: { filePath: normalizedPath, content: file.content },
         shouldContinue: true,
-        modifiedInput: fileContent
+        modifiedInput: fileContent,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to reference file: ${error}`
+        message: `Failed to reference file: ${error}`,
       };
     }
   }
@@ -172,17 +172,13 @@ export class CommandExecutor {
 
       // 查找文件夹下的所有文件
       const folderFiles = Object.entries(files)
-        .filter(([path, file]) =>
-          path.startsWith(normalizedPath) &&
-          file?.type === 'file' &&
-          !this.isIgnoredFile(path)
-        )
+        .filter(([path, file]) => path.startsWith(normalizedPath) && file?.type === 'file' && !this.isIgnoredFile(path))
         .slice(0, 20); // 限制文件数量
 
       if (folderFiles.length === 0) {
         return {
           success: false,
-          message: `No files found in folder: ${folderPath}`
+          message: `No files found in folder: ${folderPath}`,
         };
       }
 
@@ -204,12 +200,12 @@ export class CommandExecutor {
         success: true,
         message: `Folder referenced: ${folderPath} (${folderFiles.length} files)`,
         shouldContinue: true,
-        modifiedInput: folderContent
+        modifiedInput: folderContent,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to reference folder: ${error}`
+        message: `Failed to reference folder: ${error}`,
       };
     }
   }
@@ -238,12 +234,13 @@ export class CommandExecutor {
       if (searchResults.length === 0) {
         return {
           success: false,
-          message: `No files found containing: "${query}"`
+          message: `No files found containing: "${query}"`,
         };
       }
 
       // 按匹配数量排序，取前10个结果
       searchResults.sort((a, b) => b.matches - a.matches);
+
       const topResults = searchResults.slice(0, 10);
 
       // 构建搜索结果
@@ -271,12 +268,12 @@ export class CommandExecutor {
         success: true,
         message: `Search completed: ${searchResults.length} files found`,
         shouldContinue: true,
-        modifiedInput: searchContent
+        modifiedInput: searchContent,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Search failed: ${error}`
+        message: `Search failed: ${error}`,
       };
     }
   }
@@ -292,7 +289,7 @@ export class CommandExecutor {
       if (!file || file.type !== 'file') {
         return {
           success: false,
-          message: `File not found: ${filePath}`
+          message: `File not found: ${filePath}`,
         };
       }
 
@@ -301,7 +298,7 @@ export class CommandExecutor {
         content: file.content,
         type: 'file',
         size: file.content.length,
-        lastModified: new Date()
+        lastModified: new Date(),
       };
 
       this.contextFiles.set(normalizedPath, fileRef);
@@ -311,12 +308,12 @@ export class CommandExecutor {
       return {
         success: true,
         message: `File added to context: ${filePath}`,
-        shouldContinue: false
+        shouldContinue: false,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to add file to context: ${error}`
+        message: `Failed to add file to context: ${error}`,
       };
     }
   }
@@ -329,21 +326,19 @@ export class CommandExecutor {
       const normalizedPath = this.normalizePath(folderPath, context.workingDirectory);
       const files = workbenchStore.files.get();
 
-      const folderFiles = Object.entries(files)
-        .filter(([path, file]) =>
-          path.startsWith(normalizedPath) &&
-          file?.type === 'file' &&
-          !this.isIgnoredFile(path)
-        );
+      const folderFiles = Object.entries(files).filter(
+        ([path, file]) => path.startsWith(normalizedPath) && file?.type === 'file' && !this.isIgnoredFile(path),
+      );
 
       if (folderFiles.length === 0) {
         return {
           success: false,
-          message: `No files found in folder: ${folderPath}`
+          message: `No files found in folder: ${folderPath}`,
         };
       }
 
       let addedCount = 0;
+
       for (const [path, file] of folderFiles) {
         if (file && file.type === 'file') {
           const fileRef: FileReference = {
@@ -351,7 +346,7 @@ export class CommandExecutor {
             content: file.content,
             type: 'file',
             size: file.content.length,
-            lastModified: new Date()
+            lastModified: new Date(),
           };
 
           this.contextFiles.set(path, fileRef);
@@ -364,12 +359,12 @@ export class CommandExecutor {
       return {
         success: true,
         message: `Added ${addedCount} files from folder to context: ${folderPath}`,
-        shouldContinue: false
+        shouldContinue: false,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to add folder to context: ${error}`
+        message: `Failed to add folder to context: ${error}`,
       };
     }
   }
@@ -382,12 +377,12 @@ export class CommandExecutor {
       return {
         success: true,
         message: 'Context is empty',
-        shouldContinue: false
+        shouldContinue: false,
       };
     }
 
     const contextList = Array.from(this.contextFiles.values())
-      .map(file => `- ${file.path} (${file.size} chars)`)
+      .map((file) => `- ${file.path} (${file.size} chars)`)
       .join('\n');
 
     const message = `Current context (${this.contextFiles.size} files):\n${contextList}`;
@@ -397,7 +392,7 @@ export class CommandExecutor {
     return {
       success: true,
       message,
-      shouldContinue: false
+      shouldContinue: false,
     };
   }
 
@@ -412,7 +407,7 @@ export class CommandExecutor {
       filePath,
       normalizedPath,
       filePath.replace(/^\/+/, ''),
-      `/home/project/${filePath.replace(/^\/+/, '')}`
+      `/home/project/${filePath.replace(/^\/+/, '')}`,
     ];
 
     let removed = false;
@@ -430,7 +425,7 @@ export class CommandExecutor {
     if (!removed) {
       return {
         success: false,
-        message: `File not found in context: ${filePath}`
+        message: `File not found in context: ${filePath}`,
       };
     }
 
@@ -439,7 +434,7 @@ export class CommandExecutor {
     return {
       success: true,
       message: `Removed from context: ${removedPath}`,
-      shouldContinue: false
+      shouldContinue: false,
     };
   }
 
@@ -455,7 +450,7 @@ export class CommandExecutor {
     return {
       success: true,
       message: `Cleared ${count} files from context`,
-      shouldContinue: false
+      shouldContinue: false,
     };
   }
 
@@ -480,7 +475,7 @@ export class CommandExecutor {
     return {
       success: true,
       message: help,
-      shouldContinue: false
+      shouldContinue: false,
     };
   }
 
@@ -506,7 +501,7 @@ export class CommandExecutor {
     return {
       success: true,
       message: help,
-      shouldContinue: false
+      shouldContinue: false,
     };
   }
 
@@ -543,7 +538,7 @@ export class CommandExecutor {
     return {
       success: true,
       message: help,
-      shouldContinue: false
+      shouldContinue: false,
     };
   }
 
@@ -575,60 +570,60 @@ export class CommandExecutor {
   private static getFileExtension(filePath: string): string {
     const ext = filePath.split('.').pop()?.toLowerCase();
     const langMap: Record<string, string> = {
-      'js': 'javascript',
-      'jsx': 'jsx',
-      'ts': 'typescript',
-      'tsx': 'tsx',
-      'py': 'python',
-      'rb': 'ruby',
-      'php': 'php',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
-      'cs': 'csharp',
-      'go': 'go',
-      'rs': 'rust',
-      'swift': 'swift',
-      'kt': 'kotlin',
-      'scala': 'scala',
-      'html': 'html',
-      'css': 'css',
-      'scss': 'scss',
-      'sass': 'sass',
-      'less': 'less',
-      'json': 'json',
-      'xml': 'xml',
-      'yaml': 'yaml',
-      'yml': 'yaml',
-      'toml': 'toml',
-      'ini': 'ini',
-      'cfg': 'ini',
-      'conf': 'ini',
-      'sh': 'bash',
-      'bash': 'bash',
-      'zsh': 'bash',
-      'fish': 'bash',
-      'ps1': 'powershell',
-      'bat': 'batch',
-      'cmd': 'batch',
-      'sql': 'sql',
-      'md': 'markdown',
-      'mdx': 'mdx',
-      'tex': 'latex',
-      'r': 'r',
-      'R': 'r',
-      'matlab': 'matlab',
-      'm': 'matlab',
-      'pl': 'perl',
-      'pm': 'perl',
-      'lua': 'lua',
-      'vim': 'vim',
-      'dockerfile': 'dockerfile',
-      'makefile': 'makefile',
-      'cmake': 'cmake',
-      'gradle': 'gradle',
-      'properties': 'properties',
-      'env': 'bash'
+      js: 'javascript',
+      jsx: 'jsx',
+      ts: 'typescript',
+      tsx: 'tsx',
+      py: 'python',
+      rb: 'ruby',
+      php: 'php',
+      java: 'java',
+      cpp: 'cpp',
+      c: 'c',
+      cs: 'csharp',
+      go: 'go',
+      rs: 'rust',
+      swift: 'swift',
+      kt: 'kotlin',
+      scala: 'scala',
+      html: 'html',
+      css: 'css',
+      scss: 'scss',
+      sass: 'sass',
+      less: 'less',
+      json: 'json',
+      xml: 'xml',
+      yaml: 'yaml',
+      yml: 'yaml',
+      toml: 'toml',
+      ini: 'ini',
+      cfg: 'ini',
+      conf: 'ini',
+      sh: 'bash',
+      bash: 'bash',
+      zsh: 'bash',
+      fish: 'bash',
+      ps1: 'powershell',
+      bat: 'batch',
+      cmd: 'batch',
+      sql: 'sql',
+      md: 'markdown',
+      mdx: 'mdx',
+      tex: 'latex',
+      r: 'r',
+      R: 'r',
+      matlab: 'matlab',
+      m: 'matlab',
+      pl: 'perl',
+      pm: 'perl',
+      lua: 'lua',
+      vim: 'vim',
+      dockerfile: 'dockerfile',
+      makefile: 'makefile',
+      cmake: 'cmake',
+      gradle: 'gradle',
+      properties: 'properties',
+      env: 'bash',
     };
 
     return langMap[ext || ''] || ext || '';
@@ -652,9 +647,9 @@ export class CommandExecutor {
       /\.DS_Store$/,
       /package-lock\.json$/,
       /yarn\.lock$/,
-      /pnpm-lock\.yaml$/
+      /pnpm-lock\.yaml$/,
     ];
 
-    return ignoredPatterns.some(pattern => pattern.test(filePath));
+    return ignoredPatterns.some((pattern) => pattern.test(filePath));
   }
 }

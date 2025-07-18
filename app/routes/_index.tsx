@@ -24,16 +24,10 @@ export default function Index() {
       <Header />
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-bolt-elements-textPrimary mb-4">
-            Welcome to Bolt.DIY
-          </h1>
-          <p className="text-bolt-elements-textSecondary mb-8">
-            Your AI-powered development assistant
-          </p>
+          <h1 className="text-4xl font-bold text-bolt-elements-textPrimary mb-4">Welcome to Bolt.DIY</h1>
+          <p className="text-bolt-elements-textSecondary mb-8">Your AI-powered development assistant</p>
           <div className="bg-bolt-elements-background-depth-2 p-6 rounded-lg">
-            <p className="text-sm text-bolt-elements-textSecondary">
-              Loading chat interface...
-            </p>
+            <p className="text-sm text-bolt-elements-textSecondary">Loading chat interface...</p>
           </div>
         </div>
       </div>

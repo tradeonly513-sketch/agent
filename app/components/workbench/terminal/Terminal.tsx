@@ -92,6 +92,7 @@ export const Terminal = memo(
           };
         } catch (error) {
           console.error('Terminal initialization error:', error);
+
           // 显示错误信息
           if (element) {
             element.innerHTML = `<div style="color: red; padding: 10px;">Terminal initialization failed: ${error}</div>`;
