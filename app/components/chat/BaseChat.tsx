@@ -33,6 +33,7 @@ import { ChatBox } from './ChatBox';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
+import { workbenchStore } from '~/lib/stores/workbench';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -81,6 +82,8 @@ interface BaseChatProps {
   selectedElement?: ElementInfo | null;
   setSelectedElement?: (element: ElementInfo | null) => void;
   addToolResult?: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
+  // Add a handler for terminal errors
+  onTerminalError?: (error: string) => void;
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -130,6 +133,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       addToolResult = () => {
         throw new Error('addToolResult not implemented');
       },
+      onTerminalError,
     },
     ref,
   ) => {
@@ -226,6 +230,26 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           });
       }
     }, [providerList, provider]);
+
+    // Listen for terminal errors
+    useEffect(() => {
+      const unsub = workbenchStore.onTerminalError((err) => {
+        if (onTerminalError) onTerminalError(err);
+        // Set the error text into the chat input field
+        if (handleInputChange) {
+          const syntheticEvent = {
+            target: { value: err  + "Please fix this error"},
+          } as React.ChangeEvent<HTMLTextAreaElement>;
+          handleInputChange(syntheticEvent);
+        }
+        // After setting input, send the message
+        if (handleSendMessage) {
+          handleSendMessage({} as React.UIEvent, err);
+        }
+     
+      });
+      return () => unsub();
+    }, [onTerminalError]);
 
     const onApiKeysChange = async (providerName: string, apiKey: string) => {
       const newApiKeys = { ...apiKeys, [providerName]: apiKey };
@@ -338,6 +362,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         }
       }
     };
+
+
 
     const baseChat = (
       <div
