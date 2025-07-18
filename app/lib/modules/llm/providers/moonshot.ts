@@ -21,21 +21,21 @@ export default class MoonshotProvider extends BaseProvider {
       name: 'kimi-k2-0711-preview',
       label: 'Kimi K2 Preview',
       provider: 'Moonshot',
-      maxTokenAllowed: 128000,
+      maxTokenAllowed: 8000, // Reasonable completion token limit
     },
     {
       name: 'moonshot-v1-8k',
       label: 'Moonshot v1 8K',
       provider: 'Moonshot',
-      maxTokenAllowed: 8000,
+      maxTokenAllowed: 2000, // 25% of context window
     },
     {
       name: 'moonshot-v1-32k',
       label: 'Moonshot v1 32K',
       provider: 'Moonshot',
-      maxTokenAllowed: 32000,
+      maxTokenAllowed: 8000, // 25% of context window
     },
-    { name: 'moonshot-v1-128k', label: 'Moonshot v1 128K', provider: 'Moonshot', maxTokenAllowed: 128000 },
+    { name: 'moonshot-v1-128k', label: 'Moonshot v1 128K', provider: 'Moonshot', maxTokenAllowed: 8000 }, // Reasonable limit
   ];
 
   async getDynamicModels(

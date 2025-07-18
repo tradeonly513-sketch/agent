@@ -86,32 +86,62 @@ export async function streamText(props: {
     return message;
   });
 
-  const provider = PROVIDER_LIST.find((p) => p.name === currentProvider) || DEFAULT_PROVIDER;
-  const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
-  let modelDetails = staticModels.find((m) => m.name === currentModel);
+  // Find the correct provider for the selected model
+  let provider = PROVIDER_LIST.find((p) => p.name === currentProvider);
+  let modelDetails: any = null;
 
-  if (!modelDetails) {
-    const modelsList = [
-      ...(provider.staticModels || []),
-      ...(await LLMManager.getInstance().getModelListFromProvider(provider, {
-        apiKeys,
-        providerSettings,
-        serverEnv: serverEnv as any,
-      })),
-    ];
-
-    if (!modelsList.length) {
-      throw new Error(`No models found for provider ${provider.name}`);
-    }
-
-    modelDetails = modelsList.find((m) => m.name === currentModel);
+  // First, try to find the model in the specified provider
+  if (provider) {
+    const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
+    modelDetails = staticModels.find((m) => m.name === currentModel);
 
     if (!modelDetails) {
-      // Fallback to first model
+      const modelsList = [
+        ...(provider.staticModels || []),
+        ...(await LLMManager.getInstance().getModelListFromProvider(provider, {
+          apiKeys,
+          providerSettings,
+          serverEnv: serverEnv as any,
+        })),
+      ];
+
+      modelDetails = modelsList.find((m) => m.name === currentModel);
+    }
+  }
+
+  // If model not found in specified provider, search across all providers
+  if (!modelDetails) {
+    logger.warn(`Model [${currentModel}] not found in provider [${currentProvider}]. Searching across all providers...`);
+
+    for (const candidateProvider of PROVIDER_LIST) {
+      const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(candidateProvider);
+      const foundModel = staticModels.find((m) => m.name === currentModel);
+
+      if (foundModel) {
+        logger.info(`Found model [${currentModel}] in provider [${candidateProvider.name}]. Switching provider.`);
+        provider = candidateProvider;
+        modelDetails = foundModel;
+        currentProvider = candidateProvider.name;
+        break;
+      }
+    }
+  }
+
+  // Final fallback
+  if (!provider) {
+    provider = DEFAULT_PROVIDER;
+  }
+
+  if (!modelDetails) {
+    const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
+    if (staticModels.length > 0) {
       logger.warn(
-        `MODEL [${currentModel}] not found in provider [${provider.name}]. Falling back to first model. ${modelsList[0].name}`,
+        `MODEL [${currentModel}] not found anywhere. Falling back to first model in provider [${provider.name}]: ${staticModels[0].name}`,
       );
-      modelDetails = modelsList[0];
+      modelDetails = staticModels[0];
+      currentModel = staticModels[0].name;
+    } else {
+      throw new Error(`No models found for provider ${provider.name}`);
     }
   }
 
@@ -125,6 +155,30 @@ export async function streamText(props: {
     `Max tokens for model ${modelDetails.name} is ${dynamicMaxTokens} (raw: ${rawMaxTokens}, limit: ${MAX_TOKENS}, 30% of context: ${Math.floor(modelContextWindow * 0.3)})`,
   );
   logger.info(`Model context window: ${modelContextWindow} tokens`);
+
+  // Validate API key for the selected provider
+  logger.info(`Validating API key for provider: ${provider.name}`);
+  try {
+    // Check if provider has API key configuration
+    if (provider.config?.apiTokenKey) {
+      const apiTokenKey = provider.config.apiTokenKey;
+      const hasApiKey = !!(
+        apiKeys?.[provider.name] ||
+        (serverEnv as any)?.[apiTokenKey] ||
+        process.env[apiTokenKey]
+      );
+
+      if (!hasApiKey) {
+        logger.error(`Missing API key for provider: ${provider.name} (key: ${apiTokenKey})`);
+        throw new Error(`Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`);
+      } else {
+        logger.info(`API key found for provider: ${provider.name}`);
+      }
+    }
+  } catch (error) {
+    logger.error(`API key validation failed for provider ${provider.name}:`, error);
+    throw error;
+  }
 
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
