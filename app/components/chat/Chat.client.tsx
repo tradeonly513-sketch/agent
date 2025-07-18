@@ -153,10 +153,12 @@ export const ChatImpl = memo(
         // 对于assistant消息，确保有内容
         if (msg.role === 'assistant') {
           const hasContent = msg.content && msg.content.trim() !== '';
+
           if (!hasContent) {
             console.warn(`Filtering out empty assistant message at index ${index}:`, msg);
             return false;
           }
+
           return true;
         }
 
@@ -167,11 +169,13 @@ export const ChatImpl = memo(
 
     // 验证模型和提供商匹配
     const validateModelProvider = useCallback((selectedModel: string, selectedProvider: ProviderInfo): boolean => {
-      const modelExists = selectedProvider.staticModels?.some(m => m.name === selectedModel);
+      const modelExists = selectedProvider.staticModels?.some((m) => m.name === selectedModel);
+
       if (!modelExists) {
         console.warn(`Model ${selectedModel} not found in provider ${selectedProvider.name}`);
         return false;
       }
+
       return true;
     }, []);
 
@@ -345,7 +349,11 @@ export const ChatImpl = memo(
         setFakeLoading(false);
 
         // Handle context length errors specifically
-        if (e.message?.includes('context length') || e.message?.includes('maximum context') || e.message?.includes('token')) {
+        if (
+          e.message?.includes('context length') ||
+          e.message?.includes('maximum context') ||
+          e.message?.includes('token')
+        ) {
           toast.error('Conversation too long! Please start a new chat or enable context optimization in settings.', {
             autoClose: 8000,
           });
@@ -359,7 +367,7 @@ export const ChatImpl = memo(
           // 检查是否是空消息错误
           if (e.message && e.message.includes('must not be empty')) {
             console.error('Empty message detected, cleaning up messages...');
-            setMessages(prevMessages => validateMessages(prevMessages));
+            setMessages((prevMessages) => validateMessages(prevMessages));
             toast.error('Message validation error. Cleaned up and retrying...', {
               autoClose: 3000,
             });
@@ -367,11 +375,13 @@ export const ChatImpl = memo(
           // 检查是否是API密钥错误
           else if (e.message && e.message.includes('Missing API key')) {
             console.error('API key missing for provider:', provider?.name);
-            toast.error(`Missing API key for ${provider?.name}. Please configure your API key in Settings or switch to a different provider.`, {
-              autoClose: 8000,
-            });
-          }
-          else {
+            toast.error(
+              `Missing API key for ${provider?.name}. Please configure your API key in Settings or switch to a different provider.`,
+              {
+                autoClose: 8000,
+              },
+            );
+          } else {
             toast.error('Agent encountered an error. Please try a simpler request or switch to Chat mode.', {
               autoClose: 5000,
             });
@@ -434,7 +444,7 @@ export const ChatImpl = memo(
 
           // Agent模式的重试逻辑
           if (isAgentMode && agentRetryCount < 2) {
-            setAgentRetryCount(prev => prev + 1);
+            setAgentRetryCount((prev) => prev + 1);
             toast.warning(`Agent timeout. Retrying... (${agentRetryCount + 1}/3)`, {
               autoClose: 3000,
             });
@@ -469,6 +479,7 @@ export const ChatImpl = memo(
     useEffect(() => {
       if (messages.length > 0) {
         const validatedMessages = validateMessages(messages);
+
         if (validatedMessages.length !== messages.length) {
           console.log('Cleaned up invalid messages:', {
             original: messages.length,
@@ -524,6 +535,7 @@ export const ChatImpl = memo(
 
         // 尝试找到一个匹配的模型
         const firstModel = provider.staticModels?.[0];
+
         if (firstModel) {
           console.log(`Switching to first available model: ${firstModel.name}`);
           setModel(firstModel.name);
@@ -910,9 +922,12 @@ export const ChatImpl = memo(
 
         // 验证模型和提供商匹配
         if (!validateModelProvider(model, provider)) {
-          toast.error(`Model ${model} is not compatible with provider ${provider.name}. Please select a different model or provider.`, {
-            autoClose: 5000,
-          });
+          toast.error(
+            `Model ${model} is not compatible with provider ${provider.name}. Please select a different model or provider.`,
+            {
+              autoClose: 5000,
+            },
+          );
           return;
         }
 
@@ -1068,6 +1083,7 @@ Start creating the project now.`,
                 validatedCount: validatedMessages.length,
                 newTotal: validatedMessages.length + 1,
               });
+
               return [...validatedMessages, displayUserMessage];
             });
 

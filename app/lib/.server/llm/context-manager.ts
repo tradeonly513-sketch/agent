@@ -59,21 +59,21 @@ export class ContextManager {
   async optimizeMessages(
     messages: Message[],
     systemPrompt: string,
-    contextFiles?: string
+    contextFiles?: string,
   ): Promise<ContextManagementResult> {
     const systemTokens = countSystemTokens(systemPrompt, contextFiles, this.options.model);
     const availableTokens = calculateAvailableTokens(
       this.options.model,
       systemTokens,
       this.options.completionTokens,
-      this.options.bufferTokens
+      this.options.bufferTokens,
     );
 
     logger.info(`Context optimization: ${availableTokens} tokens available for messages`);
 
     // First, try without any optimization
-    let currentMessages = [...messages];
-    let currentTokens = countMessagesTokens(currentMessages, this.options.model);
+    const currentMessages = [...messages];
+    const currentTokens = countMessagesTokens(currentMessages, this.options.model);
 
     if (currentTokens <= availableTokens) {
       return {
@@ -89,12 +89,14 @@ export class ContextManager {
 
     // Strategy 1: Remove old messages (sliding window)
     const slidingWindowResult = this.applySlidingWindow(currentMessages, availableTokens);
+
     if (slidingWindowResult.totalTokens <= availableTokens) {
       return slidingWindowResult;
     }
 
     // Strategy 2: Aggressive truncation
     const truncationResult = this.applyAggressiveTruncation(currentMessages, availableTokens);
+
     if (truncationResult.totalTokens <= availableTokens) {
       return truncationResult;
     }
@@ -104,7 +106,9 @@ export class ContextManager {
 
     // Final safety check - if still too large, apply extreme truncation
     if (emergencyResult.totalTokens > availableTokens) {
-      logger.warn(`Even emergency truncation failed. Applying extreme truncation. Current: ${emergencyResult.totalTokens}, Available: ${availableTokens}`);
+      logger.warn(
+        `Even emergency truncation failed. Applying extreme truncation. Current: ${emergencyResult.totalTokens}, Available: ${availableTokens}`,
+      );
       return this.applyExtremeTruncation(currentMessages, availableTokens);
     }
 
@@ -124,6 +128,7 @@ export class ContextManager {
 
     if (this.options.preserveLastUserMessage && lastUserMessageIndex !== -1) {
       preserveIndices.add(lastUserMessageIndex);
+
       // Also preserve the assistant response if it exists
       if (lastUserMessageIndex + 1 < workingMessages.length) {
         preserveIndices.add(lastUserMessageIndex + 1);
@@ -133,20 +138,23 @@ export class ContextManager {
     // Remove messages from the beginning, but preserve important ones
     while (workingMessages.length > 0) {
       const currentTokens = countMessagesTokens(workingMessages, this.options.model);
-      
+
       if (currentTokens <= availableTokens) {
         break;
       }
 
       // Find the first message we can remove
       let removedMessage = false;
+
       for (let i = 0; i < workingMessages.length; i++) {
         if (!preserveIndices.has(i)) {
           workingMessages.splice(i, 1);
           removedCount++;
           removedMessage = true;
+
           // Update preserve indices after removal
           const newPreserveIndices = new Set<number>();
+
           for (const index of preserveIndices) {
             if (index > i) {
               newPreserveIndices.add(index - 1);
@@ -155,7 +163,7 @@ export class ContextManager {
             }
           }
           preserveIndices.clear();
-          newPreserveIndices.forEach(idx => preserveIndices.add(idx));
+          newPreserveIndices.forEach((idx) => preserveIndices.add(idx));
           break;
         }
       }
@@ -184,7 +192,7 @@ export class ContextManager {
 
     // Keep only the last few messages
     const lastUserMessageIndex = this.findLastUserMessageIndex(workingMessages);
-    
+
     if (lastUserMessageIndex !== -1) {
       // Keep the last user message and any subsequent assistant response
       const keepFromIndex = Math.max(0, lastUserMessageIndex - 2); // Keep 2 messages before last user message
@@ -217,7 +225,7 @@ export class ContextManager {
 
     // Find the last user message
     const lastUserMessageIndex = this.findLastUserMessageIndex(workingMessages);
-    
+
     if (lastUserMessageIndex !== -1) {
       // Keep only the last user message
       const lastUserMessage = workingMessages[lastUserMessageIndex];
@@ -229,6 +237,7 @@ export class ContextManager {
       const lastMessage = workingMessages[workingMessages.length - 1];
       removedCount = workingMessages.length - 1;
       workingMessages.splice(0, workingMessages.length);
+
       if (lastMessage) {
         workingMessages.push(lastMessage);
       }
@@ -237,6 +246,7 @@ export class ContextManager {
     // If still too large, truncate the content of the remaining message
     if (workingMessages.length > 0) {
       const currentTokens = countMessagesTokens(workingMessages, this.options.model);
+
       if (currentTokens > availableTokens) {
         const message = workingMessages[0];
         const targetTokens = Math.floor(availableTokens * 0.8); // Use 80% of available tokens

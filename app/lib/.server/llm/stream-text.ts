@@ -10,7 +10,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import { ContextManager } from './context-manager';
-import { countSystemTokens, getModelContextWindow } from './token-counter';
+import { getModelContextWindow } from './token-counter';
 import type { DesignScheme } from '~/types/design-scheme';
 
 export type Messages = Message[];
@@ -193,7 +193,13 @@ export async function streamText(props: {
   }
 
   // Apply context management to prevent token overflow
-  logger.info(`Starting context management for model: ${modelDetails.name}, context window: ${modelContextWindow}, completion tokens: ${dynamicMaxTokens}`);
+  logger.info(
+    `Starting context management for model: ${modelDetails.name}, context window: ${modelContextWindow}, completion tokens: ${dynamicMaxTokens}`,
+  );
+  logger.info(`Chat mode: ${chatMode}, Provider: ${provider.name}`);
+
+  // Force context management to be applied - this is critical for preventing overflow
+  logger.warn(`CONTEXT MANAGEMENT: This is a critical step to prevent token overflow errors`);
 
   const contextManager = new ContextManager({
     model: modelDetails.name,
@@ -209,28 +215,79 @@ export async function streamText(props: {
   const initialMessageCount = processedMessages.length;
   logger.info(`Initial message count: ${initialMessageCount}`);
 
+  // Log a sample of message content for debugging
+  if (processedMessages.length > 0) {
+    const firstMessage = processedMessages[0];
+    const lastMessage = processedMessages[processedMessages.length - 1];
+    logger.info(
+      `First message preview: ${typeof firstMessage.content === 'string' ? firstMessage.content.substring(0, 100) : '[non-string content]'}...`,
+    );
+    logger.info(
+      `Last message preview: ${typeof lastMessage.content === 'string' ? lastMessage.content.substring(0, 100) : '[non-string content]'}...`,
+    );
+  }
+
   try {
     const contextResult = await contextManager.optimizeMessages(
       processedMessages as Message[],
       finalSystemPrompt,
-      contextFilesContent
+      contextFilesContent,
     );
 
-    logger.info(`Context optimization result: strategy=${contextResult.strategy}, removed=${contextResult.removedMessages} messages, final_tokens=${contextResult.totalTokens}, truncated=${contextResult.truncated}`);
+    logger.info(
+      `Context optimization result: strategy=${contextResult.strategy}, removed=${contextResult.removedMessages} messages, final_tokens=${contextResult.totalTokens}, truncated=${contextResult.truncated}`,
+    );
 
     if (contextResult.truncated) {
-      logger.warn(`Messages were truncated to fit context window. Strategy: ${contextResult.strategy}, removed ${contextResult.removedMessages} out of ${initialMessageCount} messages`);
+      logger.warn(
+        `Messages were truncated to fit context window. Strategy: ${contextResult.strategy}, removed ${contextResult.removedMessages} out of ${initialMessageCount} messages`,
+      );
     }
 
     processedMessages = contextResult.messages;
     logger.info(`Final message count after optimization: ${processedMessages.length}`);
   } catch (error) {
     logger.error('Context optimization failed:', error);
-    // Continue with original messages but log the error
-    logger.warn('Continuing with original messages - this may cause context overflow');
+
+    // Emergency fallback: if context optimization fails, apply simple truncation
+    try {
+      logger.warn('Applying emergency message truncation as fallback');
+
+      const maxMessages = Math.floor(modelContextWindow / 1000); // Very rough estimate: 1000 tokens per message
+
+      if (processedMessages.length > maxMessages) {
+        const originalLength = processedMessages.length;
+
+        // Keep the last user message and some recent context
+        const keepCount = Math.max(1, Math.min(maxMessages, 10));
+        processedMessages = processedMessages.slice(-keepCount);
+        logger.warn(`Emergency truncation: kept ${keepCount} out of ${originalLength} messages`);
+      }
+    } catch (fallbackError) {
+      logger.error('Emergency fallback also failed:', fallbackError);
+    }
+
+    logger.warn('Continuing with processed messages - context overflow may still occur');
+  }
+
+  // Final safety check: if we still have too many messages, apply emergency truncation
+  const estimatedTokensPerMessage = 500; // Conservative estimate
+  const maxSafeMessages = Math.floor((modelContextWindow - dynamicMaxTokens - 5000) / estimatedTokensPerMessage);
+
+  if (processedMessages.length > maxSafeMessages) {
+    logger.warn(`EMERGENCY TRUNCATION: ${processedMessages.length} messages exceed safe limit of ${maxSafeMessages}`);
+
+    const originalLength = processedMessages.length;
+
+    // Keep the last few messages including the last user message
+    processedMessages = processedMessages.slice(-Math.max(1, maxSafeMessages));
+    logger.warn(`Emergency truncation applied: kept ${processedMessages.length} out of ${originalLength} messages`);
   }
 
   logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);
+  logger.info(
+    `Final message count: ${processedMessages.length}, estimated tokens: ${processedMessages.length * estimatedTokensPerMessage}`,
+  );
 
   // console.log(systemPrompt, processedMessages);
 

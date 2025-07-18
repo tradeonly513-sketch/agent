@@ -11,7 +11,13 @@ interface CommandAutoCompleteProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
-export function CommandAutoComplete({ input, onSelect, onClose, visible, textareaRef: _textareaRef }: CommandAutoCompleteProps) {
+export function CommandAutoComplete({
+  input,
+  onSelect,
+  onClose,
+  visible,
+  textareaRef: _textareaRef,
+}: CommandAutoCompleteProps) {
   const [suggestions, setSuggestions] = useState<Array<CommandSuggestion | { type: 'file' | 'folder'; path: string }>>(
     [],
   );

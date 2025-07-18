@@ -13,53 +13,91 @@ export default function ApiKeyTestPage() {
   return (
     <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1 p-8">
       <h1 className="text-2xl font-bold text-bolt-elements-textPrimary mb-6">API Key Configuration Test</h1>
-      
+
       <div className="max-w-4xl space-y-6">
         <div className="bg-bolt-elements-background-depth-2 p-4 rounded-lg">
           <h2 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">🔧 API Key Fixes:</h2>
           <ul className="space-y-2 text-sm text-bolt-elements-textSecondary">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Default Model Changed:</strong> From claude-3-5-sonnet-latest to gpt-4o (OpenAI)</span>
+              <span>
+                <strong>Default Model Changed:</strong> From claude-3-5-sonnet-latest to gpt-4o (OpenAI)
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Provider Validation:</strong> Check model/provider compatibility before sending</span>
+              <span>
+                <strong>Provider Validation:</strong> Check model/provider compatibility before sending
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>API Key Error Detection:</strong> Clear error messages for missing API keys</span>
+              <span>
+                <strong>API Key Error Detection:</strong> Clear error messages for missing API keys
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Auto-Fallback:</strong> Automatic fallback to compatible model/provider</span>
+              <span>
+                <strong>Auto-Fallback:</strong> Automatic fallback to compatible model/provider
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Empty Message Filter:</strong> Prevent empty assistant messages</span>
+              <span>
+                <strong>Empty Message Filter:</strong> Prevent empty assistant messages
+              </span>
             </li>
           </ul>
         </div>
 
         <div className="bg-bolt-elements-background-depth-2 p-4 rounded-lg">
           <h2 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">🔑 API Key Configuration Guide:</h2>
-          
+
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-bolt-elements-textSecondary mb-2">OpenAI (Recommended Default):</h3>
+              <h3 className="text-sm font-medium text-bolt-elements-textSecondary mb-2">
+                OpenAI (Recommended Default):
+              </h3>
               <div className="bg-bolt-elements-background-depth-1 p-3 rounded text-xs text-bolt-elements-textTertiary">
-                <p><strong>Model:</strong> gpt-4o</p>
-                <p><strong>API Key:</strong> Get from <a href="https://platform.openai.com/api-keys" target="_blank" className="text-blue-500 hover:underline">OpenAI Platform</a></p>
-                <p><strong>Setup:</strong> Settings → Cloud Providers → OpenAI → Enter API Key</p>
+                <p>
+                  <strong>Model:</strong> gpt-4o
+                </p>
+                <p>
+                  <strong>API Key:</strong> Get from{' '}
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    className="text-blue-500 hover:underline"
+                  >
+                    OpenAI Platform
+                  </a>
+                </p>
+                <p>
+                  <strong>Setup:</strong> Settings → Cloud Providers → OpenAI → Enter API Key
+                </p>
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-bolt-elements-textSecondary mb-2">Anthropic (Claude):</h3>
               <div className="bg-bolt-elements-background-depth-1 p-3 rounded text-xs text-bolt-elements-textTertiary">
-                <p><strong>Model:</strong> claude-3-5-sonnet-latest</p>
-                <p><strong>API Key:</strong> Get from <a href="https://console.anthropic.com/settings/keys" target="_blank" className="text-blue-500 hover:underline">Anthropic Console</a></p>
-                <p><strong>Setup:</strong> Settings → Cloud Providers → Anthropic → Enter API Key</p>
+                <p>
+                  <strong>Model:</strong> claude-3-5-sonnet-latest
+                </p>
+                <p>
+                  <strong>API Key:</strong> Get from{' '}
+                  <a
+                    href="https://console.anthropic.com/settings/keys"
+                    target="_blank"
+                    className="text-blue-500 hover:underline"
+                  >
+                    Anthropic Console
+                  </a>
+                </p>
+                <p>
+                  <strong>Setup:</strong> Settings → Cloud Providers → Anthropic → Enter API Key
+                </p>
               </div>
             </div>
 

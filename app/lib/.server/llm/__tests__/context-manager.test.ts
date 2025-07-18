@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { Message } from 'ai';
-import { ContextManager } from '../context-manager';
-import { countMessagesTokens } from '../token-counter';
+import { ContextManager } from '~/lib/.server/llm/context-manager';
+import { countMessagesTokens } from '~/lib/.server/llm/token-counter';
 
 describe('ContextManager', () => {
   let contextManager: ContextManager;
-  
+
   beforeEach(() => {
     contextManager = new ContextManager({
       model: 'gpt-4',
@@ -17,6 +17,7 @@ describe('ContextManager', () => {
 
   const createTestMessages = (count: number): Message[] => {
     const messages: Message[] = [];
+
     for (let i = 0; i < count; i++) {
       messages.push({
         id: `msg-${i}`,
@@ -24,15 +25,16 @@ describe('ContextManager', () => {
         content: `This is test message ${i}. `.repeat(50), // Make it longer to test token limits
       });
     }
+
     return messages;
   };
 
   it('should not truncate messages when within token limit', async () => {
     const messages = createTestMessages(3);
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     expect(result.truncated).toBe(false);
     expect(result.messages).toHaveLength(3);
     expect(result.strategy).toBe('none');
@@ -42,9 +44,9 @@ describe('ContextManager', () => {
   it('should apply sliding window when messages exceed token limit', async () => {
     const messages = createTestMessages(20); // Create many messages to exceed limit
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     expect(result.truncated).toBe(true);
     expect(result.messages.length).toBeLessThan(20);
     expect(result.strategy).toBe('sliding-window');
@@ -54,15 +56,15 @@ describe('ContextManager', () => {
   it('should preserve the last user message', async () => {
     const messages = createTestMessages(20);
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     // Find the last user message in original messages
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-    
+    const lastUserMessage = messages.filter((m) => m.role === 'user').pop();
+
     // Check if it's preserved in the result
-    const preservedUserMessages = result.messages.filter(m => m.role === 'user');
-    expect(preservedUserMessages.some(m => m.content === lastUserMessage?.content)).toBe(true);
+    const preservedUserMessages = result.messages.filter((m) => m.role === 'user');
+    expect(preservedUserMessages.some((m) => m.content === lastUserMessage?.content)).toBe(true);
   });
 
   it('should handle emergency truncation when aggressive truncation is not enough', async () => {
@@ -79,11 +81,11 @@ describe('ContextManager', () => {
         content: 'Very long response. '.repeat(2000),
       },
     ];
-    
+
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     expect(result.truncated).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.totalTokens).toBeLessThanOrEqual(5692); // Available tokens for this test setup
@@ -92,9 +94,9 @@ describe('ContextManager', () => {
   it('should calculate available tokens correctly', async () => {
     const messages = createTestMessages(5);
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     expect(result.totalTokens).toBeGreaterThan(0);
     expect(typeof result.totalTokens).toBe('number');
   });
@@ -102,9 +104,9 @@ describe('ContextManager', () => {
   it('should handle empty messages array', async () => {
     const messages: Message[] = [];
     const systemPrompt = 'You are a helpful assistant.';
-    
+
     const result = await contextManager.optimizeMessages(messages, systemPrompt);
-    
+
     expect(result.messages).toHaveLength(0);
     expect(result.truncated).toBe(false);
     expect(result.strategy).toBe('none');
@@ -117,8 +119,8 @@ describe('ContextManager', () => {
         role: 'user',
         content: [
           { type: 'text', text: 'Hello' },
-          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,/9j/4AAQ...' } }
-        ],
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,/9j/4AAQ...' } },
+        ] as any, // Type assertion to handle complex content types
       },
     ];
     const systemPrompt = 'You are a helpful assistant.';
@@ -128,8 +130,6 @@ describe('ContextManager', () => {
     expect(result.messages).toHaveLength(1);
     expect(result.totalTokens).toBeGreaterThan(0);
   });
-
-
 });
 
 describe('Token counting integration', () => {
@@ -169,6 +169,4 @@ describe('Token counting integration', () => {
     expect(claudeTokens).toBeGreaterThan(0);
     expect(deepseekTokens).toBeGreaterThan(0);
   });
-
-
 });
