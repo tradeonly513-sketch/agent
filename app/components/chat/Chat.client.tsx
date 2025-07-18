@@ -344,6 +344,14 @@ export const ChatImpl = memo(
         console.error('Chat error:', e);
         setFakeLoading(false);
 
+        // Handle context length errors specifically
+        if (e.message?.includes('context length') || e.message?.includes('maximum context') || e.message?.includes('token')) {
+          toast.error('Conversation too long! Please start a new chat or enable context optimization in settings.', {
+            autoClose: 8000,
+          });
+          return;
+        }
+
         // Agent模式的特殊错误处理
         if (agentState.mode === 'agent') {
           console.error('Agent mode error:', e);

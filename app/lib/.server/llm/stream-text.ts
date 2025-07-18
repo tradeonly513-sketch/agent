@@ -9,6 +9,8 @@ import { LLMManager } from '~/lib/modules/llm/manager';
 import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
+import { ContextManager } from './context-manager';
+import { countSystemTokens, getModelContextWindow } from './token-counter';
 import type { DesignScheme } from '~/types/design-scheme';
 
 export type Messages = Message[];
@@ -114,9 +116,11 @@ export async function streamText(props: {
   }
 
   const dynamicMaxTokens = modelDetails && modelDetails.maxTokenAllowed ? modelDetails.maxTokenAllowed : MAX_TOKENS;
+  const modelContextWindow = getModelContextWindow(modelDetails.name);
   logger.info(
     `Max tokens for model ${modelDetails.name} is ${dynamicMaxTokens} based on ${modelDetails.maxTokenAllowed} or ${MAX_TOKENS}`,
   );
+  logger.info(`Model context window: ${modelContextWindow} tokens`);
 
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
@@ -188,6 +192,35 @@ export async function streamText(props: {
     console.log('No locked files found from any source for prompt.');
   }
 
+  // Apply context management to prevent token overflow
+  const contextManager = new ContextManager({
+    model: modelDetails.name,
+    maxContextTokens: modelContextWindow,
+    completionTokens: dynamicMaxTokens,
+  });
+
+  const finalSystemPrompt = chatMode === 'build' ? systemPrompt : discussPrompt();
+  const contextFilesContent = chatMode === 'build' && contextFiles ? createFilesContext(contextFiles, true) : undefined;
+
+  try {
+    const contextResult = await contextManager.optimizeMessages(
+      processedMessages as Message[],
+      finalSystemPrompt,
+      contextFilesContent
+    );
+
+    logger.info(`Context optimization result: ${contextResult.strategy}, removed ${contextResult.removedMessages} messages, ${contextResult.totalTokens} tokens`);
+
+    if (contextResult.truncated) {
+      logger.warn(`Messages were truncated to fit context window. Strategy: ${contextResult.strategy}`);
+    }
+
+    processedMessages = contextResult.messages;
+  } catch (error) {
+    logger.error('Context optimization failed:', error);
+    // Continue with original messages but log the error
+  }
+
   logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);
 
   // console.log(systemPrompt, processedMessages);
@@ -199,7 +232,7 @@ export async function streamText(props: {
       apiKeys,
       providerSettings,
     }),
-    system: chatMode === 'build' ? systemPrompt : discussPrompt(),
+    system: finalSystemPrompt,
     maxTokens: dynamicMaxTokens,
     messages: convertToCoreMessages(processedMessages as any),
     ...options,
