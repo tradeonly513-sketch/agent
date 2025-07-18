@@ -57,7 +57,6 @@ export default defineConfig((config) => {
       'SUPABASE_URL',
       'SUPABASE_ANON_KEY',
       'INTERCOM_APP_ID',
-      'INTERCOM_ACCESS_TOKEN',
     ],
     css: {
       preprocessorOptions: {
