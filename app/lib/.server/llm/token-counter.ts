@@ -170,6 +170,13 @@ export function getModelContextWindow(model: string): number {
     'deepseek-coder': 65536,
     'deepseek-v2': 65536,
 
+    // Moonshot (Kimi) models
+    'moonshot-v1-8k': 8192,
+    'moonshot-v1-32k': 32768,
+    'moonshot-v1-128k': 128000,
+    'kimi-k2-0711-preview': 128000,
+    'kimi-k1-0711-preview': 32768,
+
     // Additional popular models
     'claude-instant-1': 100000,
     'claude-2': 100000,

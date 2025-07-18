@@ -128,7 +128,7 @@ export class ContextManager {
       logger.warn(
         `Even emergency truncation failed. Applying extreme truncation. Current: ${emergencyResult.totalTokens}, Available: ${availableTokens}`,
       );
-      return this.applyExtremeTruncation(currentMessages, availableTokens);
+      return this.applyExtremeTruncation(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
     }
 
     return emergencyResult;
@@ -303,7 +303,7 @@ export class ContextManager {
   /**
    * Extreme truncation - last resort when everything else fails
    */
-  private applyExtremeTruncation(messages: Message[], availableTokens: number): ContextManagementResult {
+  private applyExtremeTruncation(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
     logger.warn('Applying extreme truncation - this is a last resort');
 
     // Create a minimal message that fits
