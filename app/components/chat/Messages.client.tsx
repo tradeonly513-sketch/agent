@@ -68,6 +68,7 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
                   key={index}
                   className={classNames('flex gap-4 py-3 w-full rounded-lg', {
                     'mt-4': !isFirst,
+                    'pt-2': isFirst, // 为第一条消息添加顶部间距
                   })}
                 >
                   <div className="grid grid-col-1 w-full">
