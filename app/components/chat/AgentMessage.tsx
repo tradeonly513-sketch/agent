@@ -32,16 +32,15 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ content, userRequest
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={classNames(
-            "ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors",
+            'ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors',
             isExpanded
-              ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-              : "text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              : 'text-blue-500 hover:text-blue-700 hover:bg-blue-100',
           )}
         >
-          <div className={classNames(
-            "transition-transform duration-200 text-xs",
-            isExpanded ? "rotate-180" : "rotate-0"
-          )}>
+          <div
+            className={classNames('transition-transform duration-200 text-xs', isExpanded ? 'rotate-180' : 'rotate-0')}
+          >
             ▼
           </div>
         </button>
@@ -87,7 +86,6 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ content, userRequest
           </div>
         </div>
       )}
-
     </div>
   );
 };

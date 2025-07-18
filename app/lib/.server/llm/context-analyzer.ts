@@ -1,11 +1,6 @@
 import type { Message } from 'ai';
 import { createScopedLogger } from '~/utils/logger';
-import {
-  countMessagesTokens,
-  countSystemTokens,
-  getModelContextWindow,
-  countMessageTokens,
-} from './token-counter';
+import { countMessagesTokens, countSystemTokens, getModelContextWindow, countMessageTokens } from './token-counter';
 
 const logger = createScopedLogger('context-analyzer');
 
@@ -24,7 +19,7 @@ export interface ContextAnalysis {
 
 export interface MessageTokenBreakdown {
   messageId: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'data';
   tokens: number;
   contentPreview: string;
   isLarge: boolean;
@@ -47,19 +42,15 @@ export class ContextAnalyzer {
   /**
    * Analyze the current context usage
    */
-  analyzeContext(
-    messages: Message[],
-    systemPrompt: string,
-    contextFiles?: string
-  ): ContextAnalysis {
+  analyzeContext(messages: Message[], systemPrompt: string, contextFiles?: string): ContextAnalysis {
     const systemTokens = countSystemTokens(systemPrompt, undefined, this.model);
     const contextFilesTokens = contextFiles ? countSystemTokens('', contextFiles, this.model) : 0;
     const messageTokens = countMessagesTokens(messages, this.model);
     const totalTokens = systemTokens + contextFilesTokens + messageTokens;
-    
+
     const availableTokens = Math.max(0, this.maxContextTokens - totalTokens - this.completionTokens);
     const utilizationPercentage = (totalTokens / this.maxContextTokens) * 100;
-    
+
     const isNearLimit = utilizationPercentage > 80;
     const isOverLimit = totalTokens + this.completionTokens > this.maxContextTokens;
 
@@ -70,7 +61,7 @@ export class ContextAnalyzer {
       contextFilesTokens,
       messageBreakdown,
       isNearLimit,
-      isOverLimit
+      isOverLimit,
     );
 
     return {
@@ -113,10 +104,12 @@ export class ContextAnalyzer {
     if (typeof content === 'string') {
       return content.length > 100 ? content.substring(0, 100) + '...' : content;
     } else if (Array.isArray(content)) {
-      const textParts = content.filter(part => part.type === 'text').map(part => part.text);
+      const textParts = content.filter((part) => part.type === 'text').map((part) => part.text);
       const preview = textParts.join(' ');
+
       return preview.length > 100 ? preview.substring(0, 100) + '...' : preview;
     }
+
     return '[Non-text content]';
   }
 
@@ -129,7 +122,7 @@ export class ContextAnalyzer {
     contextFilesTokens: number,
     messageBreakdown: MessageTokenBreakdown[],
     isNearLimit: boolean,
-    isOverLimit: boolean
+    isOverLimit: boolean,
   ): string[] {
     const recommendations: string[] = [];
 
@@ -142,9 +135,12 @@ export class ContextAnalyzer {
     }
 
     // Analyze message distribution
-    const largeMessages = messageBreakdown.filter(m => m.isLarge);
+    const largeMessages = messageBreakdown.filter((m) => m.isLarge);
+
     if (largeMessages.length > 0) {
-      recommendations.push(`📝 ${largeMessages.length} large messages detected. Consider breaking them into smaller parts.`);
+      recommendations.push(
+        `📝 ${largeMessages.length} large messages detected. Consider breaking them into smaller parts.`,
+      );
     }
 
     // Context files recommendations
@@ -177,8 +173,9 @@ export class ContextAnalyzer {
    */
   getUsageSummary(analysis: ContextAnalysis): string {
     const { totalTokens, availableTokens, utilizationPercentage, isOverLimit, isNearLimit } = analysis;
-    
+
     let status = '✅ Normal';
+
     if (isOverLimit) {
       status = '🚨 Over Limit';
     } else if (isNearLimit) {
@@ -210,7 +207,9 @@ Breakdown:
         { name: 'System Prompt', tokens: analysis.systemTokens },
       ].sort((a, b) => b.tokens - a.tokens);
 
-      suggestions.push(`Primary optimization target: ${tokenSources[0].name} (${tokenSources[0].tokens.toLocaleString()} tokens)`);
+      suggestions.push(
+        `Primary optimization target: ${tokenSources[0].name} (${tokenSources[0].tokens.toLocaleString()} tokens)`,
+      );
 
       if (tokenSources[0].name === 'Messages') {
         suggestions.push('Consider enabling automatic message truncation');

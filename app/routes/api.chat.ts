@@ -87,7 +87,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     const modelContextWindow = getModelContextWindow(currentModel);
     const currentMessageTokens = countMessagesTokens(messages, currentModel);
 
-    logger.info(`Model: ${currentModel}, Context Window: ${modelContextWindow}, Current Message Tokens: ${currentMessageTokens}`);
+    logger.info(
+      `Model: ${currentModel}, Context Window: ${modelContextWindow}, Current Message Tokens: ${currentMessageTokens}`,
+    );
 
     let lastChunk: string | undefined = undefined;
 
@@ -410,11 +412,16 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     }
 
     // Handle context length errors specifically
-    if (error.message?.includes('context length') || error.message?.includes('maximum context') || error.message?.includes('token')) {
+    if (
+      error.message?.includes('context length') ||
+      error.message?.includes('maximum context') ||
+      error.message?.includes('token')
+    ) {
       return new Response(
         JSON.stringify({
           ...errorResponse,
-          message: 'The conversation is too long for the current model. Please start a new conversation or try enabling context optimization.',
+          message:
+            'The conversation is too long for the current model. Please start a new conversation or try enabling context optimization.',
           statusCode: 413,
           isRetryable: true,
           contextError: true,

@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconButton } from '~/components/ui/IconButton';
-import { WithTooltip } from '~/components/ui/Tooltip';
+import WithTooltip from '~/components/ui/Tooltip';
 
 interface ContextUsage {
   totalTokens: number;
@@ -22,26 +22,50 @@ export const ContextIndicator = memo(({ usage, className = '' }: ContextIndicato
   const [showDetails, setShowDetails] = useState(false);
 
   const getStatusColor = () => {
-    if (usage.isOverLimit) return 'text-red-500';
-    if (usage.isNearLimit) return 'text-yellow-500';
+    if (usage.isOverLimit) {
+      return 'text-red-500';
+    }
+
+    if (usage.isNearLimit) {
+      return 'text-yellow-500';
+    }
+
     return 'text-green-500';
   };
 
   const getStatusIcon = () => {
-    if (usage.isOverLimit) return 'i-ph:warning-circle-fill';
-    if (usage.isNearLimit) return 'i-ph:warning-fill';
+    if (usage.isOverLimit) {
+      return 'i-ph:warning-circle-fill';
+    }
+
+    if (usage.isNearLimit) {
+      return 'i-ph:warning-fill';
+    }
+
     return 'i-ph:check-circle-fill';
   };
 
   const getStatusText = () => {
-    if (usage.isOverLimit) return 'Over Limit';
-    if (usage.isNearLimit) return 'Near Limit';
+    if (usage.isOverLimit) {
+      return 'Over Limit';
+    }
+
+    if (usage.isNearLimit) {
+      return 'Near Limit';
+    }
+
     return 'Normal';
   };
 
   const getProgressBarColor = () => {
-    if (usage.isOverLimit) return 'bg-red-500';
-    if (usage.isNearLimit) return 'bg-yellow-500';
+    if (usage.isOverLimit) {
+      return 'bg-red-500';
+    }
+
+    if (usage.isNearLimit) {
+      return 'bg-yellow-500';
+    }
+
     return 'bg-green-500';
   };
 
@@ -70,12 +94,8 @@ export const ContextIndicator = memo(({ usage, className = '' }: ContextIndicato
             <div className="space-y-3">
               {/* Header */}
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-bolt-elements-textPrimary">
-                  Context Usage
-                </h3>
-                <span className={`text-xs font-medium ${getStatusColor()}`}>
-                  {getStatusText()}
-                </span>
+                <h3 className="text-sm font-semibold text-bolt-elements-textPrimary">Context Usage</h3>
+                <span className={`text-xs font-medium ${getStatusColor()}`}>{getStatusText()}</span>
               </div>
 
               {/* Progress Bar */}
@@ -101,9 +121,7 @@ export const ContextIndicator = memo(({ usage, className = '' }: ContextIndicato
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-bolt-elements-background-depth-2 rounded p-2">
                   <div className="text-bolt-elements-textSecondary">Messages</div>
-                  <div className="font-medium text-bolt-elements-textPrimary">
-                    {usage.messageCount}
-                  </div>
+                  <div className="font-medium text-bolt-elements-textPrimary">{usage.messageCount}</div>
                 </div>
                 <div className="bg-bolt-elements-background-depth-2 rounded p-2">
                   <div className="text-bolt-elements-textSecondary">Available</div>
@@ -116,9 +134,7 @@ export const ContextIndicator = memo(({ usage, className = '' }: ContextIndicato
               {/* Recommendations */}
               {usage.recommendations && usage.recommendations.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-bolt-elements-textPrimary">
-                    Recommendations
-                  </h4>
+                  <h4 className="text-xs font-medium text-bolt-elements-textPrimary">Recommendations</h4>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
                     {usage.recommendations.slice(0, 3).map((rec, index) => (
                       <div
@@ -170,9 +186,11 @@ export const ContextIndicator = memo(({ usage, className = '' }: ContextIndicato
 ContextIndicator.displayName = 'ContextIndicator';
 
 // Hook to calculate context usage from messages
-export function useContextUsage(messages: any[], model: string = 'gpt-4') {
-  // This would be implemented to calculate actual token usage
-  // For now, return mock data
+export function useContextUsage(messages: any[], _model: string = 'gpt-4') {
+  /*
+   * This would be implemented to calculate actual token usage
+   * For now, return mock data
+   */
   const mockUsage: ContextUsage = {
     totalTokens: 45000,
     maxTokens: 65536,

@@ -13,37 +13,47 @@ export default function AgentTimeoutTestPage() {
   return (
     <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1 p-8">
       <h1 className="text-2xl font-bold text-bolt-elements-textPrimary mb-6">Agent Timeout Optimization Test</h1>
-      
+
       <div className="max-w-4xl space-y-6">
         <div className="bg-bolt-elements-background-depth-2 p-4 rounded-lg">
           <h2 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">🔧 Timeout Optimizations:</h2>
           <ul className="space-y-2 text-sm text-bolt-elements-textSecondary">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Extended Timeout:</strong> Agent mode timeout increased from 30s to 90s</span>
+              <span>
+                <strong>Extended Timeout:</strong> Agent mode timeout increased from 30s to 90s
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Optimized Prompts:</strong> Reduced Agent prompt length by 60%</span>
+              <span>
+                <strong>Optimized Prompts:</strong> Reduced Agent prompt length by 60%
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Retry Mechanism:</strong> Auto-retry up to 3 times on timeout</span>
+              <span>
+                <strong>Retry Mechanism:</strong> Auto-retry up to 3 times on timeout
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Status Monitoring:</strong> Real-time status checks every 10 seconds</span>
+              <span>
+                <strong>Status Monitoring:</strong> Real-time status checks every 10 seconds
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span><strong>Error Recovery:</strong> Improved error handling and state reset</span>
+              <span>
+                <strong>Error Recovery:</strong> Improved error handling and state reset
+              </span>
             </li>
           </ul>
         </div>
 
         <div className="bg-bolt-elements-background-depth-2 p-4 rounded-lg">
           <h2 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">📝 Prompt Optimization:</h2>
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-medium text-bolt-elements-textSecondary mb-2">Before (Long Prompt):</h3>

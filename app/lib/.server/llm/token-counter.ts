@@ -16,16 +16,18 @@ function getEncoder(model: string) {
   }
 
   let encoder;
+
   try {
     // Try to get model-specific encoder first
     encoder = encoding_for_model(model as any);
-  } catch (error) {
+  } catch (_error) {
     try {
       // Fallback to cl100k_base for most modern models (GPT-4, Claude, etc.)
       logger.warn(`No specific encoder for model ${model}, using cl100k_base fallback`);
       encoder = get_encoding('cl100k_base');
     } catch (fallbackError) {
       logger.error(`Failed to get any encoder for model ${model}:`, fallbackError);
+
       // Return null to trigger fallback token counting
       return null;
     }
@@ -34,6 +36,7 @@ function getEncoder(model: string) {
   if (encoder) {
     encoderCache.set(model, encoder);
   }
+
   return encoder;
 }
 
@@ -47,16 +50,21 @@ export function countTokens(text: string, model: string = 'gpt-4'): number {
 
   try {
     const encoder = getEncoder(model);
+
     if (!encoder) {
       throw new Error('Failed to get encoder');
     }
+
     const tokens = encoder.encode(text);
+
     return tokens.length;
-  } catch (error) {
-    logger.warn(`Error counting tokens for model ${model}:`, error);
+  } catch (_error) {
+    logger.warn(`Error counting tokens for model ${model}:`, _error);
+
     // Fallback: rough estimation (1 token ≈ 4 characters for English)
     const estimatedTokens = Math.ceil(text.length / 4);
     logger.info(`Using fallback token estimation: ${estimatedTokens} tokens for ${text.length} characters`);
+
     return estimatedTokens;
   }
 }
@@ -71,7 +79,7 @@ export function countMessageTokens(message: Message, model: string = 'gpt-4'): n
   if (typeof message.content === 'string') {
     totalTokens += countTokens(message.content, model);
   } else if (Array.isArray(message.content)) {
-    for (const part of message.content) {
+    for (const part of message.content as any[]) {
       if (part.type === 'text' && part.text) {
         totalTokens += countTokens(part.text, model);
       }
@@ -82,8 +90,10 @@ export function countMessageTokens(message: Message, model: string = 'gpt-4'): n
     }
   }
 
-  // Add overhead for message formatting (role, etc.)
-  // OpenAI format adds ~4 tokens per message for formatting
+  /*
+   * Add overhead for message formatting (role, etc.)
+   * OpenAI format adds ~4 tokens per message for formatting
+   */
   totalTokens += 4;
 
   return totalTokens;
@@ -176,8 +186,10 @@ export function getModelContextWindow(model: string): number {
 
   // Check for partial matches (case insensitive)
   const lowerModel = model.toLowerCase();
+
   for (const [modelName, contextWindow] of Object.entries(contextWindows)) {
     const lowerModelName = modelName.toLowerCase();
+
     if (lowerModel.includes(lowerModelName) || lowerModelName.includes(lowerModel)) {
       logger.info(`Found partial match for model ${model} -> ${modelName} with context window ${contextWindow}`);
       return contextWindow;
@@ -186,6 +198,7 @@ export function getModelContextWindow(model: string): number {
 
   // Default fallback - use a conservative estimate
   logger.warn(`Unknown model ${model}, using default context window of 32768`);
+
   return 32768;
 }
 
@@ -196,11 +209,11 @@ export function calculateAvailableTokens(
   model: string,
   systemPromptTokens: number,
   completionTokens: number = 4000,
-  bufferTokens: number = 1000
+  bufferTokens: number = 1000,
 ): number {
   const maxContextTokens = getModelContextWindow(model);
   const availableTokens = maxContextTokens - systemPromptTokens - completionTokens - bufferTokens;
-  
+
   return Math.max(0, availableTokens);
 }
 
@@ -211,7 +224,7 @@ export function cleanupEncoders(): void {
   for (const encoder of encoderCache.values()) {
     try {
       encoder.free?.();
-    } catch (error) {
+    } catch (_error) {
       // Ignore cleanup errors
     }
   }
