@@ -41,14 +41,15 @@ export class ContextManager {
   private options: Required<ContextManagementOptions>;
 
   constructor(options: ContextManagementOptions) {
+    const defaultMaxTokens = getModelContextWindow(options.model);
     this.options = {
-      maxContextTokens: getModelContextWindow(options.model),
       completionTokens: MIN_COMPLETION_TOKENS,
       bufferTokens: CONTEXT_BUFFER_TOKENS,
       preserveSystemMessage: true,
       preserveLastUserMessage: true,
       summarizationThreshold: 10,
-      ...options,
+      maxContextTokens: defaultMaxTokens,
+      ...options, // This will override defaults with provided options
     };
   }
 
@@ -100,6 +101,13 @@ export class ContextManager {
 
     // Strategy 3: Emergency fallback - keep only the last user message
     const emergencyResult = this.applyEmergencyTruncation(currentMessages, availableTokens);
+
+    // Final safety check - if still too large, apply extreme truncation
+    if (emergencyResult.totalTokens > availableTokens) {
+      logger.warn(`Even emergency truncation failed. Applying extreme truncation. Current: ${emergencyResult.totalTokens}, Available: ${availableTokens}`);
+      return this.applyExtremeTruncation(currentMessages, availableTokens);
+    }
+
     return emergencyResult;
   }
 
@@ -255,6 +263,28 @@ export class ContextManager {
       }
     }
     return -1;
+  }
+
+  /**
+   * Extreme truncation - last resort when everything else fails
+   */
+  private applyExtremeTruncation(messages: Message[], availableTokens: number): ContextManagementResult {
+    logger.warn('Applying extreme truncation - this is a last resort');
+
+    // Create a minimal message that fits
+    const minimalMessage: Message = {
+      id: 'emergency-' + Date.now(),
+      role: 'user',
+      content: 'Please continue with the previous conversation context.',
+    };
+
+    return {
+      messages: [minimalMessage],
+      totalTokens: countMessagesTokens([minimalMessage], this.options.model),
+      truncated: true,
+      removedMessages: messages.length - 1,
+      strategy: 'truncate-old',
+    };
   }
 
   /**
