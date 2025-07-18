@@ -222,8 +222,9 @@ export async function streamText(props: {
   if (estimatedSystemTokens > maxSystemPromptTokens) {
     logger.warn(`System prompt too large: ${estimatedSystemTokens} tokens > ${maxSystemPromptTokens} limit`);
 
-    // Truncate system prompt to fit within limits
-    const maxSystemPromptChars = maxSystemPromptTokens * 4;
+    // Reserve space for the truncation note
+    const truncationNote = '\n\n[Note: System prompt was truncated to fit context window]';
+    const maxSystemPromptChars = (maxSystemPromptTokens * 4) - truncationNote.length;
     const truncatedSystemPrompt = finalSystemPrompt.substring(0, maxSystemPromptChars);
 
     // Try to truncate at a reasonable boundary (end of a line or sentence)
@@ -237,7 +238,7 @@ export async function streamText(props: {
       finalSystemPrompt = truncatedSystemPrompt;
     }
 
-    finalSystemPrompt += '\n\n[Note: System prompt was truncated to fit context window]';
+    finalSystemPrompt += truncationNote;
     logger.warn(`System prompt truncated from ${systemPromptLength} to ${finalSystemPrompt.length} characters`);
   }
 
