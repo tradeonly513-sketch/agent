@@ -142,6 +142,29 @@ export const ChatImpl = memo(
     const [lastMessageTime, setLastMessageTime] = useState<number>(0);
     const [agentRetryCount, setAgentRetryCount] = useState(0);
 
+    // 验证消息数组，确保没有空的assistant消息
+    const validateMessages = useCallback((messages: Message[]): Message[] => {
+      return messages.filter((msg, index) => {
+        // 保留所有用户消息
+        if (msg.role === 'user') {
+          return true;
+        }
+
+        // 对于assistant消息，确保有内容
+        if (msg.role === 'assistant') {
+          const hasContent = msg.content && msg.content.trim() !== '';
+          if (!hasContent) {
+            console.warn(`Filtering out empty assistant message at index ${index}:`, msg);
+            return false;
+          }
+          return true;
+        }
+
+        // 保留其他类型的消息
+        return true;
+      });
+    }, []);
+
     /*
      * const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
      * const [showContextDisplay, setShowContextDisplay] = useState(false);
@@ -314,9 +337,19 @@ export const ChatImpl = memo(
         // Agent模式的特殊错误处理
         if (agentState.mode === 'agent') {
           console.error('Agent mode error:', e);
-          toast.error('Agent encountered an error. Please try a simpler request or switch to Chat mode.', {
-            autoClose: 5000,
-          });
+
+          // 检查是否是空消息错误
+          if (e.message && e.message.includes('must not be empty')) {
+            console.error('Empty message detected, cleaning up messages...');
+            setMessages(prevMessages => validateMessages(prevMessages));
+            toast.error('Message validation error. Cleaned up and retrying...', {
+              autoClose: 3000,
+            });
+          } else {
+            toast.error('Agent encountered an error. Please try a simpler request or switch to Chat mode.', {
+              autoClose: 5000,
+            });
+          }
         }
 
         // 确保状态正确重置
@@ -356,11 +389,17 @@ export const ChatImpl = memo(
       let timeoutId: NodeJS.Timeout;
 
       if (isLoading || fakeLoading) {
+        // 捕获当前的模式状态，避免在timeout回调中读取可能已经改变的状态
+        const currentMode = agentState.mode;
+        const isAgentMode = currentMode === 'agent';
+
         // Agent模式需要更长的处理时间，普通模式30秒，Agent模式90秒
-        const timeoutDuration = agentState.mode === 'agent' ? 90000 : 30000;
+        const timeoutDuration = isAgentMode ? 90000 : 30000;
+
+        console.log(`Setting timeout for ${currentMode} mode: ${timeoutDuration}ms`);
 
         timeoutId = setTimeout(() => {
-          console.warn(`Chat loading timeout (${agentState.mode} mode), resetting state...`);
+          console.warn(`Chat loading timeout (${currentMode} mode), resetting state...`);
           setFakeLoading(false);
 
           if (isLoading) {
@@ -368,7 +407,7 @@ export const ChatImpl = memo(
           }
 
           // Agent模式的重试逻辑
-          if (agentState.mode === 'agent' && agentRetryCount < 2) {
+          if (isAgentMode && agentRetryCount < 2) {
             setAgentRetryCount(prev => prev + 1);
             toast.warning(`Agent timeout. Retrying... (${agentRetryCount + 1}/3)`, {
               autoClose: 3000,
@@ -382,7 +421,7 @@ export const ChatImpl = memo(
             // 重置重试计数
             setAgentRetryCount(0);
 
-            const message = agentState.mode === 'agent'
+            const message = isAgentMode
               ? 'Agent request failed after retries. Please try a simpler request or switch to Chat mode.'
               : 'Request timeout. Please try again.';
 
@@ -398,17 +437,41 @@ export const ChatImpl = memo(
           clearTimeout(timeoutId);
         }
       };
-    }, [isLoading, fakeLoading, stop, agentState.mode]);
+    }, [isLoading, fakeLoading, stop, agentState.mode, agentRetryCount]);
+
+    // 消息验证和清理
+    useEffect(() => {
+      if (messages.length > 0) {
+        const validatedMessages = validateMessages(messages);
+        if (validatedMessages.length !== messages.length) {
+          console.log('Cleaned up invalid messages:', {
+            original: messages.length,
+            cleaned: validatedMessages.length,
+          });
+          setMessages(validatedMessages);
+        }
+      }
+    }, [messages, validateMessages, setMessages]);
 
     // Agent模式特殊监控
     useEffect(() => {
       if (agentState.mode === 'agent' && isLoading) {
-        console.log('Agent mode: Request started, monitoring for timeout...');
+        console.log('Agent mode: Request started, monitoring for timeout...', {
+          mode: agentState.mode,
+          isLoading,
+          fakeLoading,
+          retryCount: agentRetryCount,
+        });
 
         // 添加额外的状态检查
         const checkInterval = setInterval(() => {
           if (isLoading && !fakeLoading) {
-            console.log('Agent mode: Still processing request...');
+            console.log('Agent mode: Still processing request...', {
+              mode: agentState.mode,
+              isLoading,
+              fakeLoading,
+              retryCount: agentRetryCount,
+            });
           }
         }, 10000); // 每10秒检查一次
 
@@ -416,7 +479,17 @@ export const ChatImpl = memo(
           clearInterval(checkInterval);
         };
       }
-    }, [agentState.mode, isLoading, fakeLoading]);
+    }, [agentState.mode, isLoading, fakeLoading, agentRetryCount]);
+
+    // 监控Agent模式变化
+    useEffect(() => {
+      console.log('Agent mode changed:', {
+        mode: agentState.mode,
+        isLoading,
+        fakeLoading,
+        retryCount: agentRetryCount,
+      });
+    }, [agentState.mode]);
 
     useEffect(() => {
       const prompt = searchParams.get('prompt');
@@ -789,6 +862,11 @@ export const ChatImpl = memo(
 
         // Handle Agent mode - Enhanced Chat mode with Agent capabilities
         if (agentState.mode === 'agent') {
+          console.log('Sending message in Agent mode:', {
+            mode: agentState.mode,
+            messageContent: messageContent.substring(0, 100) + '...',
+          });
+
           // Ensure workbench is shown for Agent mode
           workbenchStore.setShowWorkbench(true);
 
@@ -919,14 +997,28 @@ Start creating the project now.`,
               experimental_attachments: userMessage.experimental_attachments,
             };
 
-            setMessages([displayUserMessage]);
+            // 在连续对话中，追加消息而不是替换整个数组
+            setMessages((prevMessages) => {
+              // 使用验证函数确保消息有效
+              const validatedMessages = validateMessages(prevMessages);
+              console.log('Agent mode: Adding message to conversation', {
+                previousCount: prevMessages.length,
+                validatedCount: validatedMessages.length,
+                newTotal: validatedMessages.length + 1,
+              });
+              return [...validatedMessages, displayUserMessage];
+            });
 
             toast.info('🤖 Agent analyzing your request...', {
               autoClose: 3000,
             });
           } else {
             // Chat mode - normal behavior
-            setMessages([userMessage]);
+            setMessages((prevMessages) => {
+              // 使用验证函数确保消息有效
+              const validatedMessages = validateMessages(prevMessages);
+              return [...validatedMessages, userMessage];
+            });
           }
 
           reload(attachments ? { experimental_attachments: attachments } : undefined);
