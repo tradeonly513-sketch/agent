@@ -20,12 +20,20 @@ function getEncoder(model: string) {
     // Try to get model-specific encoder first
     encoder = encoding_for_model(model as any);
   } catch (error) {
-    // Fallback to cl100k_base for most modern models (GPT-4, Claude, etc.)
-    logger.warn(`No specific encoder for model ${model}, using cl100k_base`);
-    encoder = get_encoding('cl100k_base');
+    try {
+      // Fallback to cl100k_base for most modern models (GPT-4, Claude, etc.)
+      logger.warn(`No specific encoder for model ${model}, using cl100k_base fallback`);
+      encoder = get_encoding('cl100k_base');
+    } catch (fallbackError) {
+      logger.error(`Failed to get any encoder for model ${model}:`, fallbackError);
+      // Return null to trigger fallback token counting
+      return null;
+    }
   }
 
-  encoderCache.set(model, encoder);
+  if (encoder) {
+    encoderCache.set(model, encoder);
+  }
   return encoder;
 }
 
@@ -39,12 +47,17 @@ export function countTokens(text: string, model: string = 'gpt-4'): number {
 
   try {
     const encoder = getEncoder(model);
+    if (!encoder) {
+      throw new Error('Failed to get encoder');
+    }
     const tokens = encoder.encode(text);
     return tokens.length;
   } catch (error) {
-    logger.error('Error counting tokens:', error);
+    logger.warn(`Error counting tokens for model ${model}:`, error);
     // Fallback: rough estimation (1 token ≈ 4 characters for English)
-    return Math.ceil(text.length / 4);
+    const estimatedTokens = Math.ceil(text.length / 4);
+    logger.info(`Using fallback token estimation: ${estimatedTokens} tokens for ${text.length} characters`);
+    return estimatedTokens;
   }
 }
 
