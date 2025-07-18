@@ -259,6 +259,24 @@ export async function streamText(props: {
   }
 
   try {
+    // Log detailed information before optimization
+    const systemPromptLength = finalSystemPrompt.length;
+    const systemPromptTokens = Math.ceil(systemPromptLength / 4); // Rough estimate
+    const messageTokens = processedMessages.reduce((total, msg) => {
+      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+      return total + Math.ceil(content.length / 4);
+    }, 0);
+    const estimatedTotal = systemPromptTokens + messageTokens + dynamicMaxTokens + 2000;
+
+    logger.warn(`PRE-OPTIMIZATION ANALYSIS:`);
+    logger.warn(`  System prompt: ${systemPromptLength} chars (~${systemPromptTokens} tokens)`);
+    logger.warn(`  Messages: ${processedMessages.length} messages (~${messageTokens} tokens)`);
+    logger.warn(`  Completion: ${dynamicMaxTokens} tokens`);
+    logger.warn(`  Buffer: 2000 tokens`);
+    logger.warn(`  Estimated total: ${estimatedTotal} tokens`);
+    logger.warn(`  Context limit: ${modelContextWindow} tokens`);
+    logger.warn(`  Will overflow: ${estimatedTotal > modelContextWindow ? 'YES' : 'NO'}`);
+
     const contextResult = await contextManager.optimizeMessages(
       processedMessages as Message[],
       finalSystemPrompt,
@@ -277,11 +295,27 @@ export async function streamText(props: {
 
     if (contextResult.systemPromptTruncated) {
       logger.warn('System prompt was truncated to fit within 40% of context window');
+      logger.warn(`  Original system prompt: ${systemPromptLength} chars`);
+      logger.warn(`  Truncated system prompt: ${contextResult.systemPrompt.length} chars`);
       finalSystemPrompt = contextResult.systemPrompt; // Use the truncated system prompt
     }
 
     processedMessages = contextResult.messages;
     logger.info(`Final message count after optimization: ${processedMessages.length}`);
+
+    // Log post-optimization analysis
+    const finalSystemTokens = Math.ceil(finalSystemPrompt.length / 4);
+    const finalMessageTokens = processedMessages.reduce((total, msg) => {
+      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+      return total + Math.ceil(content.length / 4);
+    }, 0);
+    const finalEstimatedTotal = finalSystemTokens + finalMessageTokens + dynamicMaxTokens + 2000;
+
+    logger.warn(`POST-OPTIMIZATION ANALYSIS:`);
+    logger.warn(`  Final system prompt: ${finalSystemPrompt.length} chars (~${finalSystemTokens} tokens)`);
+    logger.warn(`  Final messages: ${processedMessages.length} messages (~${finalMessageTokens} tokens)`);
+    logger.warn(`  Final estimated total: ${finalEstimatedTotal} tokens`);
+    logger.warn(`  Still will overflow: ${finalEstimatedTotal > modelContextWindow ? 'YES' : 'NO'}`);
   } catch (error) {
     logger.error('Context optimization failed:', error);
 
