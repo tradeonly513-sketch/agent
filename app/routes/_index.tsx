@@ -3,7 +3,7 @@ import { ClientOnly } from 'remix-utils/client-only';
 import { BaseChat } from '~/components/chat/BaseChat';
 import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
-import BackgroundRays from '~/components/ui/BackgroundRays';
+import BackgroundRays from '~/components/ui/BackgroundRays/index';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Bolt' }, { name: 'description', content: 'Talk with Bolt, an AI assistant from StackBlitz' }];
@@ -22,6 +22,21 @@ export default function Index() {
     <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1">
       <BackgroundRays />
       <Header />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-bolt-elements-textPrimary mb-4">
+            Welcome to Bolt.DIY
+          </h1>
+          <p className="text-bolt-elements-textSecondary mb-8">
+            Your AI-powered development assistant
+          </p>
+          <div className="bg-bolt-elements-background-depth-2 p-6 rounded-lg">
+            <p className="text-sm text-bolt-elements-textSecondary">
+              Loading chat interface...
+            </p>
+          </div>
+        </div>
+      </div>
       <ClientOnly fallback={<BaseChat />}>{() => <Chat />}</ClientOnly>
     </div>
   );

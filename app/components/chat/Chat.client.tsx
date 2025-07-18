@@ -34,9 +34,9 @@ import { ClientAgentExecutor } from '~/lib/agent/client-executor';
 
 import { BmadExecutor } from '~/lib/agent/bmad-executor';
 import { bmadStore, bmadActions } from '~/lib/stores/bmad-store';
-import { CommandAutoComplete } from './CommandAutoComplete';
-import { useCommandProcessor, hasCommands } from '~/lib/hooks/useCommandProcessor';
-import { ContextDisplay, ContextIndicator } from './ContextDisplay';
+// import { CommandAutoComplete } from './CommandAutoComplete';
+// import { useCommandProcessor, hasCommands } from '~/lib/hooks/useCommandProcessor';
+// import { ContextDisplay, ContextIndicator } from './ContextDisplay';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -137,20 +137,20 @@ export const ChatImpl = memo(
 
     const [fakeLoading, setFakeLoading] = useState(false);
     const [lastMessageTime, setLastMessageTime] = useState<number>(0);
-    const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
-    const [showContextDisplay, setShowContextDisplay] = useState(false);
+    // const [showCommandAutoComplete, setShowCommandAutoComplete] = useState(false);
+    // const [showContextDisplay, setShowContextDisplay] = useState(false);
     const files = useStore(workbenchStore.files);
 
     // 指令处理器
-    const commandProcessor = useCommandProcessor({
-      workingDirectory: '/home/project',
-      onCommandExecuted: (result) => {
-        console.log('Command executed:', result);
-      },
-      onInputModified: (newInput) => {
-        setInput(newInput);
-      }
-    });
+    // const commandProcessor = useCommandProcessor({
+    //   workingDirectory: '/home/project',
+    //   onCommandExecuted: (result) => {
+    //     console.log('Command executed:', result);
+    //   },
+    //   onInputModified: (newInput) => {
+    //     setInput(newInput);
+    //   }
+    // });
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
     const deployAlert = useStore(workbenchStore.deployAlert);
@@ -598,31 +598,31 @@ export const ChatImpl = memo(
       // 添加发送前的状态检查
       try {
         // 首先处理聊天指令 (@, #, help)
-        if (hasCommands(messageContent)) {
-          const commandResult = await commandProcessor.processInput(messageContent);
+        // if (hasCommands(messageContent)) {
+        //   const commandResult = await commandProcessor.processInput(messageContent);
+        //
+        //   if (!commandResult.shouldContinue) {
+        //     // 指令执行完成，不继续聊天流程
+        //     setInput('');
+        //     return;
+        //   }
+        //
+        //   // 如果指令修改了输入内容，使用修改后的内容
+        //   if (commandResult.modifiedInput) {
+        //     messageContent = commandResult.modifiedInput;
+        //   }
+        // }
 
-          if (!commandResult.shouldContinue) {
-            // 指令执行完成，不继续聊天流程
-            setInput('');
-            return;
-          }
-
-          // 如果指令修改了输入内容，使用修改后的内容
-          if (commandResult.modifiedInput) {
-            messageContent = commandResult.modifiedInput;
-          }
-      }
-
-      // 添加上下文文件到消息中
-      const contextFiles = commandProcessor.getContextFiles();
-      if (contextFiles.length > 0) {
-        let contextContent = '\n\n**Context Files:**\n';
-        for (const file of contextFiles) {
-          const ext = file.path.split('.').pop()?.toLowerCase() || '';
-          contextContent += `\n**${file.path}**\n\`\`\`${ext}\n${file.content}\n\`\`\`\n`;
-        }
-        messageContent = messageContent + contextContent;
-        }
+        // 添加上下文文件到消息中
+        // const contextFiles = commandProcessor.getContextFiles();
+        // if (contextFiles.length > 0) {
+        //   let contextContent = '\n\n**Context Files:**\n';
+        //   for (const file of contextFiles) {
+        //     const ext = file.path.split('.').pop()?.toLowerCase() || '';
+        //     contextContent += `\n**${file.path}**\n\`\`\`${ext}\n${file.content}\n\`\`\`\n`;
+        //   }
+        //   messageContent = messageContent + contextContent;
+        // }
 
         // Handle BMad commands (starting with *) - only if BMad is active
         if (messageContent.startsWith('*') && bmadState.isActive) {
@@ -948,9 +948,9 @@ The agent will create all necessary files and project structure automatically.
       handleInputChange(event);
 
       // 检查是否显示指令自动完成
-      const value = event.target.value;
-      const shouldShow = hasCommands(value) && value.trim().length > 0;
-      setShowCommandAutoComplete(shouldShow);
+      // const value = event.target.value;
+      // const shouldShow = hasCommands(value) && value.trim().length > 0;
+      // setShowCommandAutoComplete(shouldShow);
     };
 
     /**
@@ -1093,27 +1093,27 @@ The agent will create all necessary files and project structure automatically.
         onTemplateSelect={handleTemplateSelect}
         bmadState={bmadState}
         bmadExecutor={bmadExecutor}
-        showCommandAutoComplete={showCommandAutoComplete}
-        onCommandSelect={(command) => {
-          setInput(command);
-          setShowCommandAutoComplete(false);
-          textareaRef.current?.focus();
-        }}
-        onCommandAutoCompleteClose={() => {
-          setShowCommandAutoComplete(false);
-        }}
-        contextFiles={commandProcessor.getContextFiles()}
-        onRemoveContextFile={(path) => {
-          // 通过执行 #context remove 命令来移除文件
-          commandProcessor.processInput(`#context remove ${path}`);
-        }}
-        onClearContext={() => {
-          commandProcessor.clearContext();
-        }}
-        showContextDisplay={showContextDisplay}
-        onToggleContextDisplay={() => {
-          setShowContextDisplay(!showContextDisplay);
-        }}
+        // showCommandAutoComplete={showCommandAutoComplete}
+        // onCommandSelect={(command) => {
+        //   setInput(command);
+        //   setShowCommandAutoComplete(false);
+        //   textareaRef.current?.focus();
+        // }}
+        // onCommandAutoCompleteClose={() => {
+        //   setShowCommandAutoComplete(false);
+        // }}
+        // contextFiles={commandProcessor.getContextFiles()}
+        // onRemoveContextFile={(path) => {
+        //   // 通过执行 #context remove 命令来移除文件
+        //   commandProcessor.processInput(`#context remove ${path}`);
+        // }}
+        // onClearContext={() => {
+        //   commandProcessor.clearContext();
+        // }}
+        // showContextDisplay={showContextDisplay}
+        // onToggleContextDisplay={() => {
+        //   setShowContextDisplay(!showContextDisplay);
+        // }}
       />
     );
   },
