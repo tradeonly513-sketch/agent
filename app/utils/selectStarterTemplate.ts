@@ -183,23 +183,33 @@ export async function getTemplates(templateName: string, _title?: string) {
     filesToImport.ignoreFile = ignoredFiles;
   }
 
-  // Create a simple message without any file content
+  // Create optimized message with essential files only
+  const essentialFiles = filesToImport.files.filter(file =>
+    file.name === 'package.json' ||
+    file.name === 'index.html' ||
+    file.path === 'src/main.tsx' ||
+    file.path === 'src/main.ts' ||
+    file.path === 'src/App.tsx' ||
+    file.path === 'src/App.ts' ||
+    file.name === 'vite.config.ts' ||
+    file.name === 'vite.config.js'
+  );
+
   const assistantMessage = `
-I've successfully initialized your project using the ${template.name} template!
+I'll help you create a project using the ${template.name} template. Let me start by setting up the essential files and structure.
 
-🎉 **Project Setup Complete**
+<boltArtifact id="project-setup" title="Project Setup - ${template.name}" type="bundled">
+${essentialFiles
+  .map(
+    (file) =>
+      `<boltAction type="file" filePath="${file.path}">
+${file.content}
+</boltAction>`,
+  )
+  .join('\n')}
+</boltArtifact>
 
-Your project now includes:
-- **${filesToImport.files.length} files** with complete project structure
-- All necessary dependencies and configuration files
-- Ready-to-use development environment
-
-The project structure has been created and you can now:
-1. Install dependencies: \`npm install\`
-2. Start development: \`npm run dev\`
-3. Begin building your application
-
-All files have been created in your workspace. You can explore them in the file tree on the left.`;
+Now I'll create the remaining ${filesToImport.files.length - essentialFiles.length} files to complete your project structure.`;
 
   let userMessage = ``;
   const templatePromptFile = files.filter((x) => x.path.startsWith('.bolt')).find((x) => x.name == 'prompt');
@@ -256,7 +266,7 @@ IMPORTANT: Dont Forget to install the dependencies before running the app by usi
   return {
     assistantMessage,
     userMessage,
-    files: filesToImport.files, // Return the actual files for direct creation
+    remainingFiles: filesToImport.files.filter(file => !essentialFiles.includes(file)),
     totalFiles: filesToImport.files.length,
     templateName: template.name,
   };

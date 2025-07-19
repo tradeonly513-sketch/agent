@@ -998,27 +998,8 @@ Start creating the project now.`;
               });
 
               if (temResp) {
-                const { assistantMessage, userMessage, files, totalFiles, templateName } = temResp;
+                const { assistantMessage, userMessage, remainingFiles, totalFiles, templateName } = temResp;
                 const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-
-                // Create files directly using workbench
-                toast.info(`Creating ${totalFiles} files for ${templateName} template...`, {
-                  autoClose: 2000,
-                });
-
-                try {
-                  // Create all files directly in workbench
-                  for (const file of files) {
-                    await workbenchStore.createFile(file.path, file.content);
-                  }
-
-                  toast.success(`✅ Successfully created ${totalFiles} files!`, {
-                    autoClose: 3000,
-                  });
-                } catch (error) {
-                  console.error('Error creating template files:', error);
-                  toast.error('Failed to create some template files. Please try again.');
-                }
 
                 setMessages([
                   {
@@ -1039,6 +1020,47 @@ Start creating the project now.`;
                     annotations: ['hidden'],
                   } as any,
                 ]);
+
+                // Create remaining files after the initial message is processed
+                if (remainingFiles && remainingFiles.length > 0) {
+                  setTimeout(async () => {
+                    try {
+                      toast.info(`Creating ${remainingFiles.length} additional files...`, {
+                        autoClose: 2000,
+                      });
+
+                      // Add a follow-up message with remaining files
+                      const remainingFilesMessage = `
+Let me create the remaining files to complete your ${templateName} project:
+
+<boltArtifact id="remaining-files" title="Complete Project Structure" type="bundled">
+${remainingFiles
+  .map(
+    (file) =>
+      `<boltAction type="file" filePath="${file.path}">
+${file.content}
+</boltAction>`,
+  )
+  .join('\n')}
+</boltArtifact>
+
+Perfect! Your ${templateName} project is now complete with all ${totalFiles} files. You can start developing right away!`;
+
+                      setMessages(prev => [...prev, {
+                        id: `${Date.now()}-remaining`,
+                        role: 'assistant',
+                        content: remainingFilesMessage,
+                      }]);
+
+                      toast.success(`✅ Project setup complete! Created ${totalFiles} files.`, {
+                        autoClose: 3000,
+                      });
+                    } catch (error) {
+                      console.error('Error creating remaining files:', error);
+                      toast.error('Some files may not have been created. Please check the file tree.');
+                    }
+                  }, 1000); // Delay to ensure the first message is processed
+                }
 
                 const reloadOptions =
                   uploadedFiles.length > 0

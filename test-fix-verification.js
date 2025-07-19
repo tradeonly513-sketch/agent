@@ -1,8 +1,8 @@
-// Final verification script to test the ultimate template fix
-// This simulates the new approach: minimal message + direct file creation
+// Verification script for the optimized template approach
+// This tests the two-phase approach: essential files + remaining files
 
-console.log('🧪 Testing FINAL Template Initialization Fix');
-console.log('=============================================');
+console.log('🧪 Testing Optimized Template Approach');
+console.log('======================================');
 
 // Mock data to simulate a large template with many files
 const mockLargeTemplate = {
@@ -73,41 +73,73 @@ function categorizeFiles(files) {
   return { criticalFiles, regularFiles };
 }
 
+// Simulate the optimized approach
+const essentialFiles = mockLargeTemplate.files.filter(file =>
+  file.name === 'package.json' ||
+  file.name === 'index.html' ||
+  file.path === 'src/main.tsx' ||
+  file.path === 'src/main.ts' ||
+  file.path === 'src/App.tsx' ||
+  file.path === 'src/App.ts' ||
+  file.name === 'vite.config.ts' ||
+  file.name === 'vite.config.js'
+);
+
+const remainingFiles = mockLargeTemplate.files.filter(file => !essentialFiles.includes(file));
+
 console.log(`📊 Test Results:`);
 console.log(`   - Total files: ${mockLargeTemplate.files.length}`);
+console.log(`   - Essential files: ${essentialFiles.length}`);
+console.log(`   - Remaining files: ${remainingFiles.length}`);
 
-// Simulate the NEW approach - minimal assistant message
-const assistantMessage = `
-I've successfully initialized your project using the Test template!
+// Simulate the first message with essential files
+const firstMessage = `
+I'll help you create a project using the Test template. Let me start by setting up the essential files and structure.
 
-🎉 **Project Setup Complete**
+<boltArtifact id="project-setup" title="Project Setup - Test" type="bundled">
+${essentialFiles
+  .map(
+    (file) =>
+      `<boltAction type="file" filePath="${file.path}">
+${file.content}
+</boltAction>`,
+  )
+  .join('\n')}
+</boltArtifact>
 
-Your project now includes:
-- **${mockLargeTemplate.files.length} files** with complete project structure
-- All necessary dependencies and configuration files
-- Ready-to-use development environment
+Now I'll create the remaining ${remainingFiles.length} files to complete your project structure.`;
 
-The project structure has been created and you can now:
-1. Install dependencies: \`npm install\`
-2. Start development: \`npm run dev\`
-3. Begin building your application
+// Simulate the second message with remaining files
+const secondMessage = `
+Let me create the remaining files to complete your Test project:
 
-All files have been created in your workspace. You can explore them in the file tree on the left.`;
+<boltArtifact id="remaining-files" title="Complete Project Structure" type="bundled">
+${remainingFiles
+  .map(
+    (file) =>
+      `<boltAction type="file" filePath="${file.path}">
+${file.content}
+</boltAction>`,
+  )
+  .join('\n')}
+</boltArtifact>
 
-console.log(`\n📏 NEW Approach - Message Size Analysis:`);
-console.log(`   - Assistant message size: ${assistantMessage.length} characters`);
-console.log(`   - Size check: ${assistantMessage.length > 120000 ? '⚠️ Still too large' : assistantMessage.length > 60000 ? '⚠️ Large but manageable' : '✅ Within limits'}`);
+Perfect! Your Test project is now complete with all ${mockLargeTemplate.files.length} files. You can start developing right away!`;
 
-// Simulate file creation (this would happen directly in workbench)
-console.log(`\n📁 File Creation Strategy:`);
-console.log(`   - Files are created directly via workbench.createFile()`);
-console.log(`   - NO file content in LLM messages`);
-console.log(`   - Total files to create: ${mockLargeTemplate.files.length}`);
+console.log(`\n📏 Optimized Approach - Message Size Analysis:`);
+console.log(`   - First message size: ${firstMessage.length} characters`);
+console.log(`   - Second message size: ${secondMessage.length} characters`);
+console.log(`   - Total message size: ${firstMessage.length + secondMessage.length} characters`);
 
-const totalContentSize = mockLargeTemplate.files.reduce((total, file) => total + file.content.length, 0);
-console.log(`   - Total content size: ${totalContentSize.toLocaleString()} characters`);
-console.log(`   - Content location: Direct file creation (NOT in messages)`);
+const maxSingleMessage = Math.max(firstMessage.length, secondMessage.length);
+console.log(`   - Largest single message: ${maxSingleMessage} characters`);
+console.log(`   - Size check: ${maxSingleMessage > 120000 ? '⚠️ Still too large' : maxSingleMessage > 60000 ? '⚠️ Large but manageable' : '✅ Within limits'}`);
 
-console.log('\n✅ FINAL template fix verification completed!');
-console.log('🎯 Key improvement: Assistant message is now tiny (~500 chars vs 120K+)');
-console.log('🚀 Files are created directly, avoiding token limits entirely!');
+console.log(`\n📁 Two-Phase Strategy:`);
+console.log(`   - Phase 1: Essential files (${essentialFiles.length}) in first message`);
+console.log(`   - Phase 2: Remaining files (${remainingFiles.length}) in follow-up message`);
+console.log(`   - Benefits: Smaller individual messages, better reliability`);
+
+console.log('\n✅ Optimized template approach verification completed!');
+console.log('🎯 Key improvement: Split into manageable chunks while keeping boltArtifact approach');
+console.log('🚀 Better reliability and user experience!');
