@@ -55,11 +55,14 @@ export class TerminalStore {
       console.log('Attaching bolt terminal...');
       terminal.write(coloredText.blue('Initializing bolt shell...\n'));
 
-      // Check if WebContainer is available
+      // 检查WebContainer状态
+      terminal.write(coloredText.yellow('Waiting for WebContainer to be ready...\n'));
+
+      // Check if WebContainer is available with longer timeout
       const wc = await Promise.race([
         this.#webcontainer,
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('WebContainer loading timeout')), 15000)
+          setTimeout(() => reject(new Error('WebContainer loading timeout')), 30000)
         )
       ]) as any;
 
@@ -68,11 +71,12 @@ export class TerminalStore {
       }
 
       console.log('WebContainer ready, initializing bolt terminal...');
+      terminal.write(coloredText.green('WebContainer ready! Starting bolt shell...\n'));
 
-      // 添加超时机制
+      // 添加超时机制，增加超时时间
       const initPromise = this.#boltTerminal.init(wc, terminal);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Terminal initialization timeout')), 15000);
+        setTimeout(() => reject(new Error('Terminal initialization timeout')), 30000);
       });
 
       await Promise.race([initPromise, timeoutPromise]);
@@ -98,7 +102,7 @@ export class TerminalStore {
         setTimeout(() => {
           console.log('Retrying bolt terminal initialization...');
           this.attachBoltTerminal(terminal).catch(console.error);
-        }, 3000);
+        }, 5000); // 增加重试间隔
       } else {
         terminal.write(coloredText.red('Maximum retry attempts reached. Please refresh the page.\n'));
       }
@@ -112,11 +116,11 @@ export class TerminalStore {
       console.log('Attaching new terminal...');
       terminal.write(coloredText.blue('Initializing shell...\n'));
 
-      // Check if WebContainer is available
+      // Check if WebContainer is available with longer timeout
       const wc = await Promise.race([
         this.#webcontainer,
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('WebContainer loading timeout')), 15000)
+          setTimeout(() => reject(new Error('WebContainer loading timeout')), 30000)
         )
       ]) as any;
 
@@ -124,10 +128,10 @@ export class TerminalStore {
         throw new Error('WebContainer is not available');
       }
 
-      // 添加超时机制
+      // 添加超时机制，增加超时时间
       const shellPromise = newShellProcess(wc, terminal);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Shell process timeout')), 10000);
+        setTimeout(() => reject(new Error('Shell process timeout')), 20000);
       });
 
       const shellProcess = (await Promise.race([shellPromise, timeoutPromise])) as WebContainerProcess;
@@ -157,7 +161,7 @@ export class TerminalStore {
         setTimeout(() => {
           console.log('Retrying terminal initialization...');
           this.attachTerminal(terminal).catch(console.error);
-        }, 3000);
+        }, 5000); // 增加重试间隔
       } else {
         terminal.write(coloredText.red('Maximum retry attempts reached. Please refresh the page.\n'));
       }
