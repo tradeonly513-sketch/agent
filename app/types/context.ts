@@ -7,6 +7,19 @@ export type ContextAnnotation =
       type: 'chatSummary';
       summary: string;
       chatId: string;
+    }
+  | {
+      type: 'contextEngine';
+      strategy: 'none' | 'semantic-retrieval' | 'compression' | 'hybrid';
+      originalTokens: number;
+      optimizedTokens: number;
+      compressionRatio: number;
+      metadata: {
+        intent: any;
+        nodesRetrieved: number;
+        indexedFiles: number;
+        processingTime: number;
+      };
     };
 
 export type ProgressAnnotation = {

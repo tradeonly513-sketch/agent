@@ -30,6 +30,8 @@ import type { Attachment, FileUIPart, TextUIPart } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import { useRequestOptimization, shouldOptimizeRequest } from '~/lib/hooks/useRequestOptimization';
 import { useProviderValidation } from '~/lib/hooks/useProviderValidation';
+
+// import { useContextEngine } from '~/lib/hooks/useContextEngine';
 import { SmartDefaults } from '~/lib/utils/smart-defaults';
 import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
 import { agentStore } from '~/lib/stores/chat';
@@ -358,6 +360,21 @@ export const ChatImpl = memo(
       removeRedundantArtifacts: true,
     });
 
+    /*
+     * Context Engine hook for intelligent context management
+     * TODO: Re-enable when context engine is fixed for client-side usage
+     * const contextEngine = useContextEngine({
+     *   autoOptimize: true,
+     *   enableDebugLogs: true,
+     *   enableSmartRetrieval: true,
+     *   enableCompression: true,
+     *   maxContextRatio: 0.75,
+     *   compressionThreshold: 8000,
+     *   semanticThreshold: 0.7,
+     *   maxRetrievedNodes: 40,
+     * });
+     */
+
     // Custom fetch function with request optimization
     const optimizedFetch = useCallback(
       async (url: string, options: RequestInit) => {
@@ -399,12 +416,15 @@ export const ChatImpl = memo(
             signal: controller.signal,
           });
           clearTimeout(timeoutId);
+
           return response;
         } catch (error) {
           clearTimeout(timeoutId);
+
           if (error instanceof Error && error.name === 'AbortError') {
             throw new Error('Request timeout. Please check your internet connection and try again.');
           }
+
           throw error;
         }
       },
@@ -586,8 +606,10 @@ export const ChatImpl = memo(
         const currentMode = agentState.mode;
         const isAgentMode = currentMode === 'agent';
 
-        // Agent模式需要更长的处理时间，但不要太长以避免用户等待
-        // 普通模式30秒，Agent模式60秒（减少从90秒）
+        /*
+         * Agent模式需要更长的处理时间，但不要太长以避免用户等待
+         * 普通模式30秒，Agent模式60秒（减少从90秒）
+         */
         const timeoutDuration = isAgentMode ? 60000 : 30000;
 
         console.log(`Setting timeout for ${currentMode} mode: ${timeoutDuration}ms`);
@@ -613,11 +635,13 @@ export const ChatImpl = memo(
 
               // 获取最后一个用户消息并重新发送
               const lastUserMessage = messages.findLast((msg) => msg.role === 'user');
+
               if (lastUserMessage) {
                 console.log('Retrying with last user message:', lastUserMessage.content.substring(0, 100));
                 sendMessage(new Event('retry') as any, lastUserMessage.content);
               } else {
                 console.warn('No user message found for retry');
+
                 // 如果没有找到用户消息，发送一个继续请求
                 sendMessage(new Event('retry') as any, '继续');
               }
@@ -1360,7 +1384,7 @@ Start creating the project now.`,
           console.log('Preparing message with current state:', {
             model,
             provider: provider.name,
-            isModelValid: validateModelProvider(model, provider)
+            isModelValid: validateModelProvider(model, provider),
           });
 
           const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
@@ -1455,8 +1479,11 @@ Start creating the project now.`,
       // 立即检查并更新模型，确保模型和provider匹配
       if (!validateModelProvider(model, newProvider)) {
         const firstModel = newProvider.staticModels?.[0];
+
         if (firstModel) {
-          console.log(`Provider changed to ${newProvider.name}, switching to first available model: ${firstModel.name}`);
+          console.log(
+            `Provider changed to ${newProvider.name}, switching to first available model: ${firstModel.name}`,
+          );
           setModel(firstModel.name);
           Cookies.set('selectedModel', firstModel.name, { expires: 30 });
         }

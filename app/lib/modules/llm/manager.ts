@@ -253,14 +253,16 @@ export class LLMManager {
          * by checking if we have cached models for them
          */
         const localProviders = ['ollama', 'lmstudio'];
+
         if (localProviders.includes(provider.name.toLowerCase())) {
           // Check if we have successfully cached models for this local provider
           const staticModels = this.getStaticModelListFromProvider(provider);
-          const cachedModels = provider.getModelsFromCache?.({
-            apiKeys: userApiKeys || {},
-            providerSettings: {},
-            serverEnv: this._env,
-          }) || [];
+          const cachedModels =
+            provider.getModelsFromCache?.({
+              apiKeys: userApiKeys || {},
+              providerSettings: {},
+              serverEnv: this._env,
+            }) || [];
 
           // Local provider is considered configured if it has models available
           const hasModels = staticModels.length > 0 || cachedModels.length > 0;
@@ -279,6 +281,7 @@ export class LLMManager {
       // Check user-provided API keys first (from UI)
       if (userApiKeys && userApiKeys[provider.name]) {
         const userApiKey = userApiKeys[provider.name];
+
         if (userApiKey && userApiKey.trim().length > 0) {
           return true;
         }
