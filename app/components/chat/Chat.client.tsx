@@ -1356,6 +1356,13 @@ Start creating the project now.`,
 
           workbenchStore.resetAllFileModifications();
         } else {
+          // 添加调试日志，确保我们发送正确的模型和provider
+          console.log('Preparing message with current state:', {
+            model,
+            provider: provider.name,
+            isModelValid: validateModelProvider(model, provider)
+          });
+
           const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
 
           const attachmentOptions =
@@ -1444,6 +1451,16 @@ Start creating the project now.`,
     const handleProviderChange = (newProvider: ProviderInfo) => {
       setProvider(newProvider);
       Cookies.set('selectedProvider', newProvider.name, { expires: 30 });
+
+      // 立即检查并更新模型，确保模型和provider匹配
+      if (!validateModelProvider(model, newProvider)) {
+        const firstModel = newProvider.staticModels?.[0];
+        if (firstModel) {
+          console.log(`Provider changed to ${newProvider.name}, switching to first available model: ${firstModel.name}`);
+          setModel(firstModel.name);
+          Cookies.set('selectedModel', firstModel.name, { expires: 30 });
+        }
+      }
     };
 
     const handleAgentModeChange = (newMode: ChatMode) => {
