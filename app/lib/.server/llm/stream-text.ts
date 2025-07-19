@@ -247,7 +247,49 @@ export async function streamText(props: {
 
       if (!hasApiKey) {
         logger.error(`Missing API key for provider: ${provider.name} (key: ${apiTokenKey})`);
-        throw new Error(`Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`);
+
+        // Try to find an alternative configured provider with the same or similar model
+        logger.warn(`Attempting to find alternative configured provider for model: ${currentModel}`);
+
+        const llmManager = LLMManager.getInstance();
+        const configuredProviders = llmManager.getConfiguredProviders();
+        const modelMapper = new ModelMapper();
+
+        // Determine context based on chat mode
+        const context = chatMode === 'build' ? 'coding' : 'chat';
+
+        // Use smart model mapping to find the best alternative
+        const mappingResult = await modelMapper.findBestModel(currentModel, configuredProviders, context);
+
+        if (mappingResult) {
+          logger.info(`Found alternative: ${mappingResult.model.name} in ${mappingResult.provider.name}`);
+          provider = mappingResult.provider;
+          modelDetails = mappingResult.model;
+          currentProvider = mappingResult.provider.name;
+          currentModel = mappingResult.model.name;
+
+          // Validate the alternative provider's API key
+          if (mappingResult.provider.config?.apiTokenKey) {
+            const altApiTokenKey = mappingResult.provider.config.apiTokenKey;
+            const hasAltApiKey = !!(
+              apiKeys?.[mappingResult.provider.name] ||
+              (serverEnv as any)?.[altApiTokenKey] ||
+              process.env[altApiTokenKey]
+            );
+
+            if (!hasAltApiKey) {
+              logger.error(`Alternative provider ${mappingResult.provider.name} also missing API key`);
+              throw new Error(`Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`);
+            } else {
+              logger.info(`Alternative provider ${mappingResult.provider.name} has valid API key`);
+            }
+          } else {
+            // Local provider, no API key needed
+            logger.info(`Alternative provider ${mappingResult.provider.name} is local, no API key needed`);
+          }
+        } else {
+          throw new Error(`Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`);
+        }
       } else {
         logger.info(`API key found for provider: ${provider.name}`);
       }
