@@ -33,18 +33,21 @@ if (!import.meta.env.SSR) {
           });
 
           console.log('WebContainer booted successfully');
+
           return wc;
         } catch (error) {
           console.error('WebContainer boot failed:', error);
 
           // Retry with different configuration
           console.log('Retrying WebContainer boot with fallback configuration...');
+
           try {
             const wc = await WebContainer.boot({
               workdirName: WORK_DIR_NAME,
               forwardPreviewErrors: true,
             });
             console.log('WebContainer booted successfully with fallback configuration');
+
             return wc;
           } catch (retryError) {
             console.error('WebContainer boot retry failed:', retryError);
@@ -61,6 +64,7 @@ if (!import.meta.env.SSR) {
           // Try to load inspector script with error handling
           try {
             const response = await fetch('/inspector-script.js');
+
             if (response.ok) {
               const inspectorScript = await response.text();
               await webcontainer.setPreviewScript(inspectorScript);
@@ -91,9 +95,11 @@ if (!import.meta.env.SSR) {
           });
 
           console.log('WebContainer initialization completed successfully');
+
           return webcontainer;
         } catch (setupError) {
           console.error('WebContainer setup failed:', setupError);
+
           // Return the webcontainer even if setup fails
           return webcontainer;
         }

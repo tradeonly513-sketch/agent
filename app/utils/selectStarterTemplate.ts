@@ -184,15 +184,16 @@ export async function getTemplates(templateName: string, _title?: string) {
   }
 
   // Create optimized message with essential files only
-  const essentialFiles = filesToImport.files.filter(file =>
-    file.name === 'package.json' ||
-    file.name === 'index.html' ||
-    file.path === 'src/main.tsx' ||
-    file.path === 'src/main.ts' ||
-    file.path === 'src/App.tsx' ||
-    file.path === 'src/App.ts' ||
-    file.name === 'vite.config.ts' ||
-    file.name === 'vite.config.js'
+  const essentialFiles = filesToImport.files.filter(
+    (file) =>
+      file.name === 'package.json' ||
+      file.name === 'index.html' ||
+      file.path === 'src/main.tsx' ||
+      file.path === 'src/main.ts' ||
+      file.path === 'src/App.tsx' ||
+      file.path === 'src/App.ts' ||
+      file.name === 'vite.config.ts' ||
+      file.name === 'vite.config.js',
   );
 
   const assistantMessage = `
@@ -266,7 +267,7 @@ IMPORTANT: Dont Forget to install the dependencies before running the app by usi
   return {
     assistantMessage,
     userMessage,
-    remainingFiles: filesToImport.files.filter(file => !essentialFiles.includes(file)),
+    remainingFiles: filesToImport.files.filter((file) => !essentialFiles.includes(file)),
     totalFiles: filesToImport.files.length,
     templateName: template.name,
   };

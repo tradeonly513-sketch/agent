@@ -74,7 +74,7 @@ export class ContextOptimizer {
     const compressionRatio = originalTokens > 0 ? optimizedTokens / originalTokens : 1;
 
     logger.info(
-      `Context optimization complete: ${originalTokens} → ${optimizedTokens} tokens (${(compressionRatio * 100).toFixed(1)}%)`
+      `Context optimization complete: ${originalTokens} → ${optimizedTokens} tokens (${(compressionRatio * 100).toFixed(1)}%)`,
     );
 
     return {
@@ -95,27 +95,32 @@ export class ContextOptimizer {
 
     // Extract file paths from recent messages to avoid removing them from older ones
     const recentFilePaths = new Set<string>();
-    recentMessages.forEach(msg => {
+    recentMessages.forEach((msg) => {
       if (typeof msg.content === 'string') {
         const filePathMatches = msg.content.match(/filePath="([^"]+)"/g);
-        filePathMatches?.forEach(match => {
+        filePathMatches?.forEach((match) => {
           const path = match.match(/filePath="([^"]+)"/)?.[1];
-          if (path) recentFilePaths.add(path);
+
+          if (path) {
+            recentFilePaths.add(path);
+          }
         });
       }
     });
 
     // Process older messages
-    const processedOlderMessages = olderMessages.map(msg => {
-      if (typeof msg.content !== 'string') return msg;
+    const processedOlderMessages = olderMessages.map((msg) => {
+      if (typeof msg.content !== 'string') {
+        return msg;
+      }
 
       let content = msg.content;
 
       // Remove boltArtifacts for files that appear in recent messages
-      recentFilePaths.forEach(filePath => {
+      recentFilePaths.forEach((filePath) => {
         const artifactRegex = new RegExp(
           `<boltArtifact[^>]*>.*?<boltAction[^>]*filePath="${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>.*?</boltAction>.*?</boltArtifact>`,
-          'gs'
+          'gs',
         );
         content = content.replace(artifactRegex, `[File ${filePath} content removed - see recent messages]`);
       });
@@ -123,7 +128,7 @@ export class ContextOptimizer {
       // Compress large package-lock.json content
       content = content.replace(
         /<boltAction[^>]*filePath="[^"]*package-lock\.json"[^>]*>[\s\S]*?<\/boltAction>/g,
-        '<boltAction type="file" filePath="package-lock.json">[package-lock.json content compressed]</boltAction>'
+        '<boltAction type="file" filePath="package-lock.json">[package-lock.json content compressed]</boltAction>',
       );
 
       return { ...msg, content };
@@ -139,8 +144,10 @@ export class ContextOptimizer {
     const recentMessages = messages.slice(-this.options.preserveRecentMessages);
     const olderMessages = messages.slice(0, -this.options.preserveRecentMessages);
 
-    const processedOlderMessages = olderMessages.map(msg => {
-      if (typeof msg.content !== 'string') return msg;
+    const processedOlderMessages = olderMessages.map((msg) => {
+      if (typeof msg.content !== 'string') {
+        return msg;
+      }
 
       let content = msg.content;
 
@@ -153,10 +160,12 @@ export class ContextOptimizer {
             const start = fileContent.substring(0, 200);
             const end = fileContent.substring(fileContent.length - 200);
             const compressed = `${start}\n\n[... ${fileContent.length - 400} characters compressed ...]\n\n${end}`;
+
             return `<boltAction type="file" filePath="${filePath}">${compressed}</boltAction>`;
           }
+
           return match;
-        }
+        },
       );
 
       return { ...msg, content };
@@ -177,8 +186,10 @@ export class ContextOptimizer {
     const olderMessages = messages.slice(0, -this.options.preserveRecentMessages);
 
     // Group older messages and create summaries
-    const compressedOlderMessages = olderMessages.map(msg => {
-      if (typeof msg.content !== 'string') return msg;
+    const compressedOlderMessages = olderMessages.map((msg) => {
+      if (typeof msg.content !== 'string') {
+        return msg;
+      }
 
       let content = msg.content;
 
@@ -203,9 +214,11 @@ export class ContextOptimizer {
    */
   private removeDuplicateInformation(messages: Message[]): Message[] {
     const seenContent = new Set<string>();
-    
-    return messages.map(msg => {
-      if (typeof msg.content !== 'string') return msg;
+
+    return messages.map((msg) => {
+      if (typeof msg.content !== 'string') {
+        return msg;
+      }
 
       let content = msg.content;
 
@@ -213,10 +226,12 @@ export class ContextOptimizer {
       const boltActions = content.match(/<boltAction[^>]*>[\s\S]*?<\/boltAction>/g) || [];
       const uniqueActions = new Map<string, string>();
 
-      boltActions.forEach(action => {
+      boltActions.forEach((action) => {
         const filePathMatch = action.match(/filePath="([^"]+)"/);
+
         if (filePathMatch) {
           const filePath = filePathMatch[1];
+
           // Keep the most recent version of each file
           uniqueActions.set(filePath, action);
         }
@@ -226,11 +241,13 @@ export class ContextOptimizer {
       if (uniqueActions.size > 0) {
         // Remove all boltActions first
         content = content.replace(/<boltAction[^>]*>[\s\S]*?<\/boltAction>/g, '');
-        
+
         // Add unique actions back
         const uniqueActionsStr = Array.from(uniqueActions.values()).join('\n');
-        content = content.replace(/<boltArtifact([^>]*)>([\s\S]*?)<\/boltArtifact>/g, 
-          `<boltArtifact$1>$2\n${uniqueActionsStr}</boltArtifact>`);
+        content = content.replace(
+          /<boltArtifact([^>]*)>([\s\S]*?)<\/boltArtifact>/g,
+          `<boltArtifact$1>$2\n${uniqueActionsStr}</boltArtifact>`,
+        );
       }
 
       return { ...msg, content };

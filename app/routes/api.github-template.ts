@@ -88,13 +88,17 @@ async function fetchRepoContentsCloudflare(repo: string, githubToken?: string) {
     const batch = files.slice(i, i + batchSize);
     const batchPromises = batch.map(async (file: any) => {
       try {
-        const contentResponse = await fetchWithRetry(`${baseUrl}/repos/${repo}/contents/${file.path}`, {
-          headers: {
-            Accept: 'application/vnd.github.v3+json',
-            'User-Agent': 'bolt.diy-app',
-            ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+        const contentResponse = await fetchWithRetry(
+          `${baseUrl}/repos/${repo}/contents/${file.path}`,
+          {
+            headers: {
+              Accept: 'application/vnd.github.v3+json',
+              'User-Agent': 'bolt.diy-app',
+              ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+            },
           },
-        }, 2); // Fewer retries for individual files
+          2,
+        ); // Fewer retries for individual files
 
         if (!contentResponse.ok) {
           console.warn(`Failed to fetch ${file.path}: ${contentResponse.status}`);
@@ -145,7 +149,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s
         const delay = Math.pow(2, attempt - 1) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -237,6 +241,7 @@ async function fetchRepoContentsZip(repo: string, githubToken?: string) {
     return results.filter(Boolean);
   } catch (error) {
     console.warn(`Failed to fetch via zipball for ${repo}, falling back to Contents API:`, error);
+
     // Fallback to Contents API method
     return await fetchRepoContentsCloudflare(repo, githubToken);
   }
@@ -248,27 +253,31 @@ function getDefaultTemplate() {
     {
       name: 'package.json',
       path: 'package.json',
-      content: JSON.stringify({
-        name: 'bolt-project',
-        version: '1.0.0',
-        type: 'module',
-        scripts: {
-          dev: 'vite',
-          build: 'vite build',
-          preview: 'vite preview'
+      content: JSON.stringify(
+        {
+          name: 'bolt-project',
+          version: '1.0.0',
+          type: 'module',
+          scripts: {
+            dev: 'vite',
+            build: 'vite build',
+            preview: 'vite preview',
+          },
+          dependencies: {
+            react: '^18.2.0',
+            'react-dom': '^18.2.0',
+          },
+          devDependencies: {
+            '@types/react': '^18.2.0',
+            '@types/react-dom': '^18.2.0',
+            '@vitejs/plugin-react': '^4.0.0',
+            typescript: '^5.0.0',
+            vite: '^4.4.0',
+          },
         },
-        dependencies: {
-          react: '^18.2.0',
-          'react-dom': '^18.2.0'
-        },
-        devDependencies: {
-          '@types/react': '^18.2.0',
-          '@types/react-dom': '^18.2.0',
-          '@vitejs/plugin-react': '^4.0.0',
-          typescript: '^5.0.0',
-          vite: '^4.4.0'
-        }
-      }, null, 2)
+        null,
+        2,
+      ),
     },
     {
       name: 'index.html',
@@ -285,7 +294,7 @@ function getDefaultTemplate() {
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-</html>`
+</html>`,
     },
     {
       name: 'vite.config.ts',
@@ -295,7 +304,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-})`
+})`,
     },
     {
       name: 'main.tsx',
@@ -309,7 +318,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-)`
+)`,
     },
     {
       name: 'App.tsx',
@@ -335,8 +344,8 @@ function App() {
   )
 }
 
-export default App`
-    }
+export default App`,
+    },
   ];
 }
 
@@ -372,17 +381,20 @@ export async function loader({ request, context }: { request: Request; context: 
     // If it's a network error, GitHub is unavailable, or repository doesn't exist, provide a fallback
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    if (errorMessage.includes('fetch failed') ||
-        errorMessage.includes('ECONNRESET') ||
-        errorMessage.includes('network') ||
-        errorMessage.includes('timeout') ||
-        errorMessage.includes('Client network socket disconnected') ||
-        errorMessage.includes('Repository not found') ||
-        errorMessage.includes('Unable to access repository') ||
-        errorMessage.includes('404') ||
-        errorMessage.includes('Not Found') ||
-        repo.includes('nonexistent') || // For testing
-        repo.includes('test-fallback')) { // For testing
+    if (
+      errorMessage.includes('fetch failed') ||
+      errorMessage.includes('ECONNRESET') ||
+      errorMessage.includes('network') ||
+      errorMessage.includes('timeout') ||
+      errorMessage.includes('Client network socket disconnected') ||
+      errorMessage.includes('Repository not found') ||
+      errorMessage.includes('Unable to access repository') ||
+      errorMessage.includes('404') ||
+      errorMessage.includes('Not Found') ||
+      repo.includes('nonexistent') || // For testing
+      repo.includes('test-fallback')
+    ) {
+      // For testing
 
       console.log('Network error or repository not found, providing fallback template');
 

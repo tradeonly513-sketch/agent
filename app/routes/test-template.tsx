@@ -13,8 +13,9 @@ export default function TestTemplate() {
 
     try {
       console.log(`Testing template: ${templateName}`);
+
       const templateResult = await getTemplates(templateName, 'Test Project');
-      
+
       if (templateResult) {
         const { assistantMessage, userMessage, totalFiles, criticalFilesCount, regularFilesCount } = templateResult;
 
@@ -26,7 +27,7 @@ export default function TestTemplate() {
           criticalFilesCount,
           regularFilesCount,
         });
-        
+
         console.log('✅ Template test successful:', {
           totalFiles,
           criticalFilesCount,
@@ -44,13 +45,7 @@ export default function TestTemplate() {
     }
   };
 
-  const templates = [
-    'Vite React',
-    'NextJS Shadcn',
-    'Vite Shadcn',
-    'Remix Typescript',
-    'Expo App'
-  ];
+  const templates = ['Vite React', 'NextJS Shadcn', 'Vite Shadcn', 'Remix Typescript', 'Expo App'];
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -88,7 +83,7 @@ export default function TestTemplate() {
       {result && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
           <h3 className="font-bold text-lg mb-4">Test Results for {result.templateName}</h3>
-          
+
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <strong>Total Files:</strong> {result.totalFiles}
@@ -117,7 +112,8 @@ export default function TestTemplate() {
           </div>
 
           <div>
-            <strong>Strategy:</strong> Files are categorized into critical and regular files, then created in two artifacts for better reliability.
+            <strong>Strategy:</strong> Files are categorized into critical and regular files, then created in two
+            artifacts for better reliability.
           </div>
         </div>
       )}

@@ -213,23 +213,31 @@ export const ChatImpl = memo(
     const [llmErrorAlert, setLlmErrorAlert] = useState<LlmErrorAlertType | undefined>(undefined);
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
+
       if (savedModel) {
         // Check if saved model is available in configured providers
         const smartDefaults = SmartDefaults.getInstance();
-        if (smartDefaults.isModelAvailable(savedModel)) {
+        const userApiKeys = getApiKeysFromCookies();
+
+        if (smartDefaults.isModelAvailable(savedModel, userApiKeys)) {
           return savedModel;
         }
       }
+
       // Use smart default selection
       const smartDefaults = SmartDefaults.getInstance();
-      const defaults = smartDefaults.getSmartDefaults();
+      const userApiKeys = getApiKeysFromCookies();
+      const defaults = smartDefaults.getSmartDefaults(userApiKeys);
+
       return defaults.model;
     });
     const [provider, setProvider] = useState(() => {
       const savedProvider = Cookies.get('selectedProvider');
+
       // If we have a saved provider and it exists in the list, use it
       if (savedProvider && PROVIDER_LIST.find((p) => p.name === savedProvider)) {
         const savedProviderInfo = PROVIDER_LIST.find((p) => p.name === savedProvider) as ProviderInfo;
+
         // Check if this provider is actually configured
         const parsedKeys = getApiKeysFromCookies();
         const apiKey = parsedKeys[savedProviderInfo.name];
@@ -243,7 +251,9 @@ export const ChatImpl = memo(
 
       // Use smart default selection
       const smartDefaults = SmartDefaults.getInstance();
-      const defaults = smartDefaults.getSmartDefaults();
+      const userApiKeys = getApiKeysFromCookies();
+      const defaults = smartDefaults.getSmartDefaults(userApiKeys);
+
       return defaults.provider;
     });
     const { showChat } = useStore(chatStore);
@@ -349,34 +359,38 @@ export const ChatImpl = memo(
     });
 
     // Custom fetch function with request optimization
-    const optimizedFetch = useCallback(async (url: string, options: RequestInit) => {
-      if (url === '/api/chat' && options.method === 'POST' && options.body) {
-        try {
-          const requestData = JSON.parse(options.body as string);
+    const optimizedFetch = useCallback(
+      async (url: string, options: RequestInit) => {
+        if (url === '/api/chat' && options.method === 'POST' && options.body) {
+          try {
+            const requestData = JSON.parse(options.body as string);
 
-          // Check if request needs optimization
-          if (shouldOptimizeRequest(requestData.messages, requestData.files, 300)) {
-            const optimizationResult = optimizeRequest(requestData.messages, requestData.files);
+            // Check if request needs optimization
+            if (shouldOptimizeRequest(requestData.messages, requestData.files, 300)) {
+              const optimizationResult = optimizeRequest(requestData.messages, requestData.files);
 
-            // Log optimization results
-            console.log(
-              `Request optimized: ${(optimizationResult.originalSize / 1024).toFixed(1)}KB → ` +
-              `${(optimizationResult.optimizedSize / 1024).toFixed(1)}KB ` +
-              `(${(optimizationResult.compressionRatio * 100).toFixed(1)}%)`
-            );
+              // Log optimization results
+              console.log(
+                `Request optimized: ${(optimizationResult.originalSize / 1024).toFixed(1)}KB → ` +
+                  `${(optimizationResult.optimizedSize / 1024).toFixed(1)}KB ` +
+                  `(${(optimizationResult.compressionRatio * 100).toFixed(1)}%)`,
+              );
 
-            // Use optimized messages
-            requestData.messages = optimizationResult.messages;
-            options.body = JSON.stringify(requestData);
+              // Use optimized messages
+              requestData.messages = optimizationResult.messages;
+              options.body = JSON.stringify(requestData);
+            }
+          } catch (error) {
+            console.warn('Failed to optimize request:', error);
+
+            // Continue with original request if optimization fails
           }
-        } catch (error) {
-          console.warn('Failed to optimize request:', error);
-          // Continue with original request if optimization fails
         }
-      }
 
-      return fetch(url, options);
-    }, [optimizeRequest]);
+        return fetch(url, options);
+      },
+      [optimizeRequest],
+    );
 
     const {
       messages,
@@ -430,7 +444,10 @@ export const ChatImpl = memo(
           let errorMessage = `❌ Missing API key for ${providerName} provider.`;
 
           if (hasAlternatives) {
-            const alternatives = configuredProviders.map(p => p.name).slice(0, 3).join(', ');
+            const alternatives = configuredProviders
+              .map((p) => p.name)
+              .slice(0, 3)
+              .join(', ');
             errorMessage += ` Try switching to: ${alternatives}`;
           } else {
             errorMessage += ' Please configure your API key in Settings.';
@@ -668,7 +685,7 @@ export const ChatImpl = memo(
 
     const { enhancingPrompt, promptEnhanced, enhancePrompt, resetEnhancer } = usePromptEnhancer();
     const { parsedMessages, parseMessages } = useMessageParser();
-    const { validationResult, showProviderConfigurationHelp, isProviderConfigured } = useProviderValidation();
+    const { validationResult, showProviderConfigurationHelp } = useProviderValidation();
 
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 
@@ -1079,8 +1096,8 @@ Start creating the project now.`;
           // Ensure workbench is shown when starting a new chat
           workbenchStore.setShowWorkbench(true);
 
-          // Skip template selection for Agent mode
-          if (autoSelectTemplate && agentState.mode !== 'agent') {
+          // Enable template selection for both chat and agent modes
+          if (autoSelectTemplate) {
             const { template, title } = await selectStarterTemplate({
               message: finalMessageContent,
               model,
@@ -1147,11 +1164,14 @@ ${file.content}
 
 Perfect! Your ${templateName} project is now complete with all ${totalFiles} files. You can start developing right away!`;
 
-                      setMessages(prev => [...prev, {
-                        id: `${Date.now()}-remaining`,
-                        role: 'assistant',
-                        content: remainingFilesMessage,
-                      }]);
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          id: `${Date.now()}-remaining`,
+                          role: 'assistant',
+                          content: remainingFilesMessage,
+                        },
+                      ]);
 
                       toast.success(`✅ Project setup complete! Created ${totalFiles} files.`, {
                         autoClose: 3000,

@@ -21,13 +21,16 @@ interface OptimizationResult {
  * Reduces request body size before sending to API
  */
 export function useRequestOptimization(options: Partial<RequestOptimizationOptions> = {}) {
-  const config = useMemo(() => ({
-    maxRequestSizeKB: 200, // 200KB max request size
-    preserveRecentMessages: 3,
-    compressFileContent: true,
-    removeRedundantArtifacts: true,
-    ...options,
-  }), [options]);
+  const config = useMemo(
+    () => ({
+      maxRequestSizeKB: 200, // 200KB max request size
+      preserveRecentMessages: 3,
+      compressFileContent: true,
+      removeRedundantArtifacts: true,
+      ...options,
+    }),
+    [options],
+  );
 
   const optimizeRequest = useMemo(() => {
     return (messages: Message[], files?: any): OptimizationResult => {
@@ -56,7 +59,7 @@ export function useRequestOptimization(options: Partial<RequestOptimizationOptio
 
       console.log(
         `Request optimization: ${(originalSize / 1024).toFixed(1)}KB → ${(optimizedSize / 1024).toFixed(1)}KB ` +
-        `(${(compressionRatio * 100).toFixed(1)}%) using: ${strategies.join(', ')}`
+          `(${(compressionRatio * 100).toFixed(1)}%) using: ${strategies.join(', ')}`,
       );
 
       return {
@@ -76,35 +79,42 @@ export function useRequestOptimization(options: Partial<RequestOptimizationOptio
  * Remove redundant boltArtifact content from older messages
  */
 function removeRedundantArtifacts(messages: Message[], preserveCount: number): Message[] {
-  if (messages.length <= preserveCount) return messages;
+  if (messages.length <= preserveCount) {
+    return messages;
+  }
 
   const recentMessages = messages.slice(-preserveCount);
   const olderMessages = messages.slice(0, -preserveCount);
 
   // Extract file paths from recent messages
   const recentFilePaths = new Set<string>();
-  recentMessages.forEach(msg => {
+  recentMessages.forEach((msg) => {
     if (typeof msg.content === 'string') {
       const filePathMatches = msg.content.match(/filePath="([^"]+)"/g);
-      filePathMatches?.forEach(match => {
+      filePathMatches?.forEach((match) => {
         const path = match.match(/filePath="([^"]+)"/)?.[1];
-        if (path) recentFilePaths.add(path);
+
+        if (path) {
+          recentFilePaths.add(path);
+        }
       });
     }
   });
 
   // Process older messages to remove redundant content
-  const processedOlderMessages = olderMessages.map(msg => {
-    if (typeof msg.content !== 'string') return msg;
+  const processedOlderMessages = olderMessages.map((msg) => {
+    if (typeof msg.content !== 'string') {
+      return msg;
+    }
 
     let content = msg.content;
 
     // Remove boltArtifacts for files that appear in recent messages
-    recentFilePaths.forEach(filePath => {
+    recentFilePaths.forEach((filePath) => {
       const escapedPath = filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const artifactRegex = new RegExp(
         `<boltArtifact[^>]*>.*?<boltAction[^>]*filePath="${escapedPath}"[^>]*>.*?</boltAction>.*?</boltArtifact>`,
-        'gs'
+        'gs',
       );
       content = content.replace(artifactRegex, `[File ${filePath} - see recent messages]`);
     });
@@ -122,15 +132,17 @@ function compressFileContent(messages: Message[], preserveCount: number): Messag
   const recentMessages = messages.slice(-preserveCount);
   const olderMessages = messages.slice(0, -preserveCount);
 
-  const processedOlderMessages = olderMessages.map(msg => {
-    if (typeof msg.content !== 'string') return msg;
+  const processedOlderMessages = olderMessages.map((msg) => {
+    if (typeof msg.content !== 'string') {
+      return msg;
+    }
 
     let content = msg.content;
 
     // Compress package-lock.json and other large files
     content = content.replace(
       /<boltAction[^>]*filePath="[^"]*package-lock\.json"[^>]*>[\s\S]*?<\/boltAction>/g,
-      '<boltAction type="file" filePath="package-lock.json">[package-lock.json compressed]</boltAction>'
+      '<boltAction type="file" filePath="package-lock.json">[package-lock.json compressed]</boltAction>',
     );
 
     // Compress other large file contents (> 2000 characters)
@@ -141,10 +153,12 @@ function compressFileContent(messages: Message[], preserveCount: number): Messag
           const start = fileContent.substring(0, 300);
           const end = fileContent.substring(fileContent.length - 300);
           const compressed = `${start}\n\n[... ${fileContent.length - 600} chars compressed ...]\n\n${end}`;
+
           return `<boltAction type="file" filePath="${filePath}">${compressed}</boltAction>`;
         }
+
         return match;
-      }
+      },
     );
 
     return { ...msg, content };
@@ -157,8 +171,10 @@ function compressFileContent(messages: Message[], preserveCount: number): Messag
  * Clean up message formatting and remove excessive whitespace
  */
 function cleanupMessages(messages: Message[]): Message[] {
-  return messages.map(msg => {
-    if (typeof msg.content !== 'string') return msg;
+  return messages.map((msg) => {
+    if (typeof msg.content !== 'string') {
+      return msg;
+    }
 
     let content = msg.content;
 
@@ -171,10 +187,7 @@ function cleanupMessages(messages: Message[]): Message[] {
     content = content.replace(/<div class="__boltThought__">[\s\S]*?<\/div>/g, '[thought removed]');
 
     // Compress repetitive model/provider info
-    content = content.replace(
-      /(\[Model: [^\]]+\]\s*\[Provider: [^\]]+\]\s*)+/g,
-      '[Model/Provider info]'
-    );
+    content = content.replace(/(\[Model: [^\]]+\]\s*\[Provider: [^\]]+\]\s*)+/g, '[Model/Provider info]');
 
     return { ...msg, content: content.trim() };
   });

@@ -72,7 +72,9 @@ export class ContextManager {
     const initialSystemTokens = countSystemTokens(systemPrompt, contextFiles, this.options.model);
 
     if (initialSystemTokens > maxSystemPromptTokens) {
-      logger.warn(`System prompt too large: ${initialSystemTokens} tokens > ${maxSystemPromptTokens} limit (40% of context window)`);
+      logger.warn(
+        `System prompt too large: ${initialSystemTokens} tokens > ${maxSystemPromptTokens} limit (40% of context window)`,
+      );
       finalSystemPrompt = this.truncateSystemPrompt(systemPrompt, maxSystemPromptTokens);
       systemPromptTruncated = true;
       logger.info(`System prompt truncated to ${maxSystemPromptTokens} tokens`);
@@ -107,21 +109,36 @@ export class ContextManager {
     logger.warn(`Messages exceed available tokens: ${currentTokens} > ${availableTokens}`);
 
     // Strategy 1: Remove old messages (sliding window)
-    const slidingWindowResult = this.applySlidingWindow(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
+    const slidingWindowResult = this.applySlidingWindow(
+      currentMessages,
+      availableTokens,
+      finalSystemPrompt,
+      systemPromptTruncated,
+    );
 
     if (slidingWindowResult.totalTokens <= availableTokens) {
       return slidingWindowResult;
     }
 
     // Strategy 2: Aggressive truncation
-    const truncationResult = this.applyAggressiveTruncation(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
+    const truncationResult = this.applyAggressiveTruncation(
+      currentMessages,
+      availableTokens,
+      finalSystemPrompt,
+      systemPromptTruncated,
+    );
 
     if (truncationResult.totalTokens <= availableTokens) {
       return truncationResult;
     }
 
     // Strategy 3: Emergency fallback - keep only the last user message
-    const emergencyResult = this.applyEmergencyTruncation(currentMessages, availableTokens, finalSystemPrompt, systemPromptTruncated);
+    const emergencyResult = this.applyEmergencyTruncation(
+      currentMessages,
+      availableTokens,
+      finalSystemPrompt,
+      systemPromptTruncated,
+    );
 
     // Final safety check - if still too large, apply extreme truncation
     if (emergencyResult.totalTokens > availableTokens) {
@@ -137,7 +154,12 @@ export class ContextManager {
   /**
    * Apply sliding window approach - remove oldest messages first
    */
-  private applySlidingWindow(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
+  private applySlidingWindow(
+    messages: Message[],
+    availableTokens: number,
+    finalSystemPrompt: string,
+    systemPromptTruncated: boolean,
+  ): ContextManagementResult {
     const workingMessages = [...messages];
     let removedCount = 0;
 
@@ -207,7 +229,12 @@ export class ContextManager {
   /**
    * Apply aggressive truncation - remove messages more aggressively
    */
-  private applyAggressiveTruncation(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
+  private applyAggressiveTruncation(
+    messages: Message[],
+    availableTokens: number,
+    finalSystemPrompt: string,
+    systemPromptTruncated: boolean,
+  ): ContextManagementResult {
     const workingMessages = [...messages];
     let removedCount = 0;
 
@@ -242,7 +269,12 @@ export class ContextManager {
   /**
    * Emergency truncation - keep only the absolute minimum
    */
-  private applyEmergencyTruncation(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
+  private applyEmergencyTruncation(
+    messages: Message[],
+    availableTokens: number,
+    finalSystemPrompt: string,
+    systemPromptTruncated: boolean,
+  ): ContextManagementResult {
     const workingMessages = [...messages];
     let removedCount = 0;
 
@@ -303,7 +335,12 @@ export class ContextManager {
   /**
    * Extreme truncation - last resort when everything else fails
    */
-  private applyExtremeTruncation(messages: Message[], availableTokens: number, finalSystemPrompt: string, systemPromptTruncated: boolean): ContextManagementResult {
+  private applyExtremeTruncation(
+    messages: Message[],
+    availableTokens: number,
+    finalSystemPrompt: string,
+    systemPromptTruncated: boolean,
+  ): ContextManagementResult {
     logger.warn('Applying extreme truncation - this is a last resort');
 
     // Create a minimal message that fits

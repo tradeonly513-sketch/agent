@@ -15,16 +15,16 @@ const MODEL_MAPPINGS: Record<string, string[]> = {
   'gpt-4o-mini': ['claude-3-haiku-20240307', 'gemini-1.5-flash', 'llama-3.1-8b-instant'],
   'gpt-4': ['claude-3-opus-20240229', 'gemini-1.5-pro', 'llama-3.1-70b-versatile'],
   'gpt-3.5-turbo': ['claude-3-haiku-20240307', 'gemini-1.5-flash', 'llama-3.1-8b-instant'],
-  
+
   // Claude models -> alternatives
   'claude-3-5-sonnet-20241022': ['gpt-4o', 'gemini-1.5-pro', 'llama-3.1-70b-versatile'],
   'claude-3-opus-20240229': ['gpt-4', 'gemini-1.5-pro', 'llama-3.1-70b-versatile'],
   'claude-3-haiku-20240307': ['gpt-4o-mini', 'gemini-1.5-flash', 'llama-3.1-8b-instant'],
-  
+
   // Google models -> alternatives
   'gemini-1.5-pro': ['gpt-4o', 'claude-3-5-sonnet-20241022', 'llama-3.1-70b-versatile'],
   'gemini-1.5-flash': ['gpt-4o-mini', 'claude-3-haiku-20240307', 'llama-3.1-8b-instant'],
-  
+
   // Meta models -> alternatives
   'llama-3.1-70b-versatile': ['gpt-4o', 'claude-3-5-sonnet-20241022', 'gemini-1.5-pro'],
   'llama-3.1-8b-instant': ['gpt-4o-mini', 'claude-3-haiku-20240307', 'gemini-1.5-flash'],
@@ -34,17 +34,17 @@ const MODEL_MAPPINGS: Record<string, string[]> = {
  * Provider-specific model preferences for common use cases
  */
 const PROVIDER_PREFERENCES: Record<string, { coding: string[]; chat: string[]; fast: string[] }> = {
-  'Moonshot': {
+  Moonshot: {
     coding: ['moonshot-v1-32k', 'moonshot-v1-8k'],
     chat: ['moonshot-v1-8k', 'moonshot-v1-32k'],
     fast: ['moonshot-v1-8k'],
   },
-  'Ollama': {
+  Ollama: {
     coding: ['llama3.1:70b', 'codellama:34b', 'llama3.1:8b'],
     chat: ['llama3.1:8b', 'llama3.1:70b'],
     fast: ['llama3.1:8b', 'phi3:mini'],
   },
-  'LMStudio': {
+  LMStudio: {
     coding: ['llama-3.1-70b', 'codellama-34b', 'llama-3.1-8b'],
     chat: ['llama-3.1-8b', 'llama-3.1-70b'],
     fast: ['llama-3.1-8b', 'phi-3-mini'],
@@ -75,13 +75,14 @@ export class ModelMapper {
   async findBestModel(
     requestedModel: string,
     configuredProviders: BaseProvider[],
-    context: 'coding' | 'chat' | 'fast' = 'chat'
+    context: 'coding' | 'chat' | 'fast' = 'chat',
   ): Promise<ModelMappingResult | null> {
     logger.info(`Finding best model for: ${requestedModel} (context: ${context})`);
 
     // First, try exact match in configured providers
     for (const provider of configuredProviders) {
       const exactMatch = await this.findExactModel(requestedModel, provider);
+
       if (exactMatch) {
         logger.info(`Found exact match: ${requestedModel} in ${provider.name}`);
         return {
@@ -96,9 +97,11 @@ export class ModelMapper {
 
     // Second, try mapped alternatives in configured providers
     const alternatives = MODEL_MAPPINGS[requestedModel] || [];
+
     for (const alternative of alternatives) {
       for (const provider of configuredProviders) {
         const mappedModel = await this.findExactModel(alternative, provider);
+
         if (mappedModel) {
           logger.info(`Found mapped alternative: ${alternative} in ${provider.name} for ${requestedModel}`);
           return {
@@ -115,10 +118,13 @@ export class ModelMapper {
     // Third, try provider-specific preferences
     for (const provider of configuredProviders) {
       const preferences = PROVIDER_PREFERENCES[provider.name];
+
       if (preferences) {
         const preferredModels = preferences[context] || preferences.chat;
+
         for (const preferredModel of preferredModels) {
           const model = await this.findExactModel(preferredModel, provider);
+
           if (model) {
             logger.info(`Found preferred model: ${preferredModel} in ${provider.name} for context ${context}`);
             return {
@@ -136,6 +142,7 @@ export class ModelMapper {
     // Fourth, fallback to first available model in any configured provider
     for (const provider of configuredProviders) {
       const models = this.llmManager.getStaticModelListFromProvider(provider);
+
       if (models.length > 0) {
         logger.warn(`Fallback to first available model: ${models[0].name} in ${provider.name}`);
         return {
@@ -149,6 +156,7 @@ export class ModelMapper {
     }
 
     logger.error(`No suitable model found for: ${requestedModel}`);
+
     return null;
   }
 
@@ -158,7 +166,7 @@ export class ModelMapper {
   private async findExactModel(modelName: string, provider: BaseProvider): Promise<ModelInfo | null> {
     try {
       const staticModels = this.llmManager.getStaticModelListFromProvider(provider);
-      return staticModels.find(m => m.name === modelName) || null;
+      return staticModels.find((m) => m.name === modelName) || null;
     } catch (error) {
       logger.warn(`Error finding model ${modelName} in provider ${provider.name}:`, error);
       return null;

@@ -61,6 +61,7 @@ export async function streamText(props: {
   } = props;
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
+
   // Apply context optimization before processing
   const contextOptimizer = new ContextOptimizer({
     maxTokens: getModelContextWindow(currentModel) * 0.6, // Use 60% of context window for messages
@@ -74,7 +75,7 @@ export async function streamText(props: {
 
   logger.info(
     `Context optimization: ${optimizationResult.originalTokens} → ${optimizationResult.optimizedTokens} tokens ` +
-    `(${(optimizationResult.compressionRatio * 100).toFixed(1)}%) using strategies: ${optimizationResult.strategy.join(', ')}`
+      `(${(optimizationResult.compressionRatio * 100).toFixed(1)}%) using strategies: ${optimizationResult.strategy.join(', ')}`,
   );
 
   let processedMessages = optimizationResult.messages.map((message) => {
@@ -128,7 +129,7 @@ export async function streamText(props: {
     logger.warn(`Model [${currentModel}] not found in provider [${currentProvider}]. Using smart model mapping...`);
 
     const llmManager = LLMManager.getInstance();
-    const configuredProviders = llmManager.getConfiguredProviders();
+    const configuredProviders = llmManager.getConfiguredProviders(apiKeys);
     const modelMapper = new ModelMapper();
 
     // Determine context based on chat mode
@@ -161,7 +162,9 @@ export async function streamText(props: {
         const foundModel = staticModels.find((m) => m.name === currentModel);
 
         if (foundModel) {
-          logger.warn(`Found model [${currentModel}] in unconfigured provider [${candidateProvider.name}]. This may require API key configuration.`);
+          logger.warn(
+            `Found model [${currentModel}] in unconfigured provider [${candidateProvider.name}]. This may require API key configuration.`,
+          );
           provider = candidateProvider;
           modelDetails = foundModel;
           currentProvider = candidateProvider.name;
@@ -174,7 +177,7 @@ export async function streamText(props: {
   // Final fallback - try to get a configured provider
   if (!provider) {
     const llmManager = LLMManager.getInstance();
-    const configuredProviders = llmManager.getConfiguredProviders();
+    const configuredProviders = llmManager.getConfiguredProviders(apiKeys);
 
     if (configuredProviders.length > 0) {
       provider = configuredProviders[0];
@@ -190,6 +193,7 @@ export async function streamText(props: {
 
     // Try to find a model in the current provider first
     const staticModels = llmManager.getStaticModelListFromProvider(provider);
+
     if (staticModels.length > 0) {
       logger.warn(
         `MODEL [${currentModel}] not found anywhere. Falling back to first model in provider [${provider.name}]: ${staticModels[0].name}`,
@@ -203,6 +207,7 @@ export async function streamText(props: {
 
       for (const configuredProvider of configuredProviders) {
         const configuredModels = llmManager.getStaticModelListFromProvider(configuredProvider);
+
         if (configuredModels.length > 0) {
           logger.warn(
             `No models in provider [${provider.name}]. Switching to configured provider [${configuredProvider.name}] with model: ${configuredModels[0].name}`,
@@ -235,15 +240,12 @@ export async function streamText(props: {
 
   // Validate API key for the selected provider
   logger.info(`Validating API key for provider: ${provider.name}`);
+
   try {
     // Check if provider has API key configuration
     if (provider.config?.apiTokenKey) {
       const apiTokenKey = provider.config.apiTokenKey;
-      const hasApiKey = !!(
-        apiKeys?.[provider.name] ||
-        (serverEnv as any)?.[apiTokenKey] ||
-        process.env[apiTokenKey]
-      );
+      const hasApiKey = !!(apiKeys?.[provider.name] || (serverEnv as any)?.[apiTokenKey] || process.env[apiTokenKey]);
 
       if (!hasApiKey) {
         logger.error(`Missing API key for provider: ${provider.name} (key: ${apiTokenKey})`);
@@ -252,7 +254,7 @@ export async function streamText(props: {
         logger.warn(`Attempting to find alternative configured provider for model: ${currentModel}`);
 
         const llmManager = LLMManager.getInstance();
-        const configuredProviders = llmManager.getConfiguredProviders();
+        const configuredProviders = llmManager.getConfiguredProviders(apiKeys);
         const modelMapper = new ModelMapper();
 
         // Determine context based on chat mode
@@ -279,7 +281,9 @@ export async function streamText(props: {
 
             if (!hasAltApiKey) {
               logger.error(`Alternative provider ${mappingResult.provider.name} also missing API key`);
-              throw new Error(`Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`);
+              throw new Error(
+                `Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`,
+              );
             } else {
               logger.info(`Alternative provider ${mappingResult.provider.name} has valid API key`);
             }
@@ -288,7 +292,9 @@ export async function streamText(props: {
             logger.info(`Alternative provider ${mappingResult.provider.name} is local, no API key needed`);
           }
         } else {
-          throw new Error(`Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`);
+          throw new Error(
+            `Missing API key for ${provider.name} provider. Please configure your API key in Settings or switch to a different provider.`,
+          );
         }
       } else {
         logger.info(`API key found for provider: ${provider.name}`);
@@ -386,6 +392,7 @@ export async function streamText(props: {
   });
 
   let finalSystemPrompt = chatMode === 'build' ? systemPrompt : discussPrompt();
+
   // Note: contextFiles content is already included in systemPrompt above, don't double-count it
 
   // Log system prompt size for debugging
@@ -401,7 +408,7 @@ export async function streamText(props: {
 
     // Reserve space for the truncation note
     const truncationNote = '\n\n[Note: System prompt was truncated to fit context window]';
-    const maxSystemPromptChars = (maxSystemPromptTokens * 4) - truncationNote.length;
+    const maxSystemPromptChars = maxSystemPromptTokens * 4 - truncationNote.length;
     const truncatedSystemPrompt = finalSystemPrompt.substring(0, maxSystemPromptChars);
 
     // Try to truncate at a reasonable boundary (end of a line or sentence)

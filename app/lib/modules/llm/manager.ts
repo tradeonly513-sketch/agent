@@ -202,10 +202,10 @@ export class LLMManager {
     return [...(provider.staticModels || [])];
   }
 
-  getDefaultProvider(): BaseProvider {
+  getDefaultProvider(userApiKeys?: Record<string, string>): BaseProvider {
     // First try to find a provider with a valid API key
     for (const provider of this._providers.values()) {
-      if (this.isProviderConfigured(provider)) {
+      if (this.isProviderConfigured(provider, userApiKeys)) {
         logger.info(`Using configured provider as default: ${provider.name}`);
         return provider;
       }
@@ -213,22 +213,24 @@ export class LLMManager {
 
     // If no provider has API key, return the first one (will show error to user)
     const firstProvider = this._providers.values().next().value;
+
     if (!firstProvider) {
       throw new Error('No providers registered');
     }
 
     logger.warn(`No configured providers found, defaulting to: ${firstProvider.name}`);
+
     return firstProvider;
   }
 
   /**
    * Get all providers that are properly configured
    */
-  getConfiguredProviders(): BaseProvider[] {
+  getConfiguredProviders(userApiKeys?: Record<string, string>): BaseProvider[] {
     const configuredProviders: BaseProvider[] = [];
 
     for (const provider of this._providers.values()) {
-      if (this.isProviderConfigured(provider)) {
+      if (this.isProviderConfigured(provider, userApiKeys)) {
         configuredProviders.push(provider);
       }
     }
@@ -239,18 +241,31 @@ export class LLMManager {
   /**
    * Check if a provider is properly configured with API key
    */
-  private isProviderConfigured(provider: BaseProvider): boolean {
+  private isProviderConfigured(provider: BaseProvider, userApiKeys?: Record<string, string>): boolean {
     try {
       // Check if the provider has the required API key in environment
       const apiKeyEnvVar = provider.config.apiTokenKey;
+
       if (!apiKeyEnvVar) {
-        // Provider doesn't require API key (like local providers)
-        // Check if it's a local provider like Ollama or LMStudio
+        /*
+         * Provider doesn't require API key (like local providers)
+         * Check if it's a local provider like Ollama or LMStudio
+         */
         const localProviders = ['ollama', 'lmstudio'];
         return localProviders.includes(provider.name.toLowerCase());
       }
 
+      // Check user-provided API keys first (from UI)
+      if (userApiKeys && userApiKeys[provider.name]) {
+        const userApiKey = userApiKeys[provider.name];
+        if (userApiKey && userApiKey.trim().length > 0) {
+          return true;
+        }
+      }
+
+      // Fallback to environment variables
       const apiKey = this._env[apiKeyEnvVar];
+
       return !!(apiKey && apiKey.trim().length > 0);
     } catch (error) {
       logger.warn(`Error checking provider configuration for ${provider.name}:`, error);

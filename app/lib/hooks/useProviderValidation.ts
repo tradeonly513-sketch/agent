@@ -33,7 +33,7 @@ export function useProviderValidation() {
       // Check each provider for API key configuration
       for (const provider of PROVIDER_LIST) {
         const isConfigured = await checkProviderConfiguration(provider);
-        
+
         if (isConfigured) {
           configuredProviders.push(provider);
         } else if (provider.config?.apiTokenKey) {
@@ -42,7 +42,7 @@ export function useProviderValidation() {
       }
 
       // Check if default provider is configured
-      const isDefaultConfigured = configuredProviders.some(p => p.name === DEFAULT_PROVIDER.name);
+      const isDefaultConfigured = configuredProviders.some((p) => p.name === DEFAULT_PROVIDER.name);
 
       const result: ProviderValidationResult = {
         isValid: isDefaultConfigured,
@@ -57,12 +57,11 @@ export function useProviderValidation() {
       if (!isDefaultConfigured && configuredProviders.length > 0) {
         console.warn(
           `Default provider ${DEFAULT_PROVIDER.name} is not configured. ` +
-          `Recommended: ${configuredProviders[0].name}`
+            `Recommended: ${configuredProviders[0].name}`,
         );
       } else if (configuredProviders.length === 0) {
         console.warn('No providers are configured with API keys');
       }
-
     } catch (error) {
       console.error('Provider validation failed:', error);
     }
@@ -72,6 +71,7 @@ export function useProviderValidation() {
     try {
       // Local providers don't need API keys
       const localProviders = ['ollama', 'lmstudio'];
+
       if (localProviders.includes(provider.name.toLowerCase())) {
         return true;
       }
@@ -81,12 +81,15 @@ export function useProviderValidation() {
         return false;
       }
 
-      // Check if API key is available (this is a simplified check)
-      // In a real implementation, you might want to make a test API call
+      /*
+       * Check if API key is available (this is a simplified check)
+       * In a real implementation, you might want to make a test API call
+       */
       const apiKeyEnvVar = provider.config.apiTokenKey;
-      
+
       // Check localStorage for API keys (client-side storage)
       const storedApiKeys = localStorage.getItem('apiKeys');
+
       if (storedApiKeys) {
         const apiKeys = JSON.parse(storedApiKeys);
         return !!(apiKeys[provider.name] && apiKeys[provider.name].trim().length > 0);
@@ -103,14 +106,13 @@ export function useProviderValidation() {
     const { configuredProviders, missingKeys } = validationResult;
 
     if (configuredProviders.length === 0) {
-      toast.error(
-        '⚠️ No AI providers are configured! Please add API keys in Settings to use the chat feature.',
-        { autoClose: 10000 }
-      );
+      toast.error('⚠️ No AI providers are configured! Please add API keys in Settings to use the chat feature.', {
+        autoClose: 10000,
+      });
     } else if (missingKeys.length > 0) {
       toast.info(
         `💡 You can configure additional providers: ${missingKeys.slice(0, 3).join(', ')}${missingKeys.length > 3 ? '...' : ''}`,
-        { autoClose: 8000 }
+        { autoClose: 8000 },
       );
     }
   };
@@ -120,7 +122,7 @@ export function useProviderValidation() {
   };
 
   const isProviderConfigured = (providerName: string): boolean => {
-    return validationResult.configuredProviders.some(p => p.name === providerName);
+    return validationResult.configuredProviders.some((p) => p.name === providerName);
   };
 
   return {
