@@ -29,6 +29,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { Attachment, FileUIPart, TextUIPart } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import { useRequestOptimization, shouldOptimizeRequest } from '~/lib/hooks/useRequestOptimization';
+import { useProviderValidation } from '~/lib/hooks/useProviderValidation';
 import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
 import { agentStore } from '~/lib/stores/chat';
 import { ClientAgentExecutor } from '~/lib/agent/client-executor';
@@ -388,6 +389,36 @@ export const ChatImpl = memo(
         console.error('Chat error:', e);
         setFakeLoading(false);
 
+        // Handle API key errors specifically
+        if (e.message?.includes('Missing API key')) {
+          const providerMatch = e.message.match(/Missing API key for (\w+) provider/);
+          const providerName = providerMatch ? providerMatch[1] : 'current';
+
+          // Show configured alternatives if available
+          const configuredProviders = validationResult.configuredProviders;
+          const hasAlternatives = configuredProviders.length > 0;
+
+          let errorMessage = `❌ Missing API key for ${providerName} provider.`;
+
+          if (hasAlternatives) {
+            const alternatives = configuredProviders.map(p => p.name).slice(0, 3).join(', ');
+            errorMessage += ` Try switching to: ${alternatives}`;
+          } else {
+            errorMessage += ' Please configure your API key in Settings.';
+          }
+
+          toast.error(errorMessage, {
+            autoClose: 12000,
+          });
+
+          // Show additional help after a delay
+          setTimeout(() => {
+            showProviderConfigurationHelp();
+          }, 1000);
+
+          return;
+        }
+
         // Handle context length errors specifically
         if (
           e.message?.includes('context length') ||
@@ -608,6 +639,7 @@ export const ChatImpl = memo(
 
     const { enhancingPrompt, promptEnhanced, enhancePrompt, resetEnhancer } = usePromptEnhancer();
     const { parsedMessages, parseMessages } = useMessageParser();
+    const { validationResult, showProviderConfigurationHelp, isProviderConfigured } = useProviderValidation();
 
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 

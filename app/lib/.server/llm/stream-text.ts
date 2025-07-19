@@ -140,9 +140,18 @@ export async function streamText(props: {
     }
   }
 
-  // Final fallback
+  // Final fallback - try to get a configured provider
   if (!provider) {
-    provider = DEFAULT_PROVIDER;
+    const llmManager = LLMManager.getInstance();
+    const configuredProviders = llmManager.getConfiguredProviders();
+
+    if (configuredProviders.length > 0) {
+      provider = configuredProviders[0];
+      logger.info(`Using first configured provider as fallback: ${provider.name}`);
+    } else {
+      provider = DEFAULT_PROVIDER;
+      logger.warn(`No configured providers found, using default: ${provider.name}`);
+    }
   }
 
   if (!modelDetails) {
