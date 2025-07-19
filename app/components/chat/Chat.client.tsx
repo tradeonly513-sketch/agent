@@ -30,6 +30,7 @@ import type { Attachment, FileUIPart, TextUIPart } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import { useRequestOptimization, shouldOptimizeRequest } from '~/lib/hooks/useRequestOptimization';
 import { useProviderValidation } from '~/lib/hooks/useProviderValidation';
+import { SmartDefaults } from '~/lib/utils/smart-defaults';
 import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
 import { agentStore } from '~/lib/stores/chat';
 import { ClientAgentExecutor } from '~/lib/agent/client-executor';
@@ -212,26 +213,38 @@ export const ChatImpl = memo(
     const [llmErrorAlert, setLlmErrorAlert] = useState<LlmErrorAlertType | undefined>(undefined);
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
-      return savedModel || DEFAULT_MODEL;
+      if (savedModel) {
+        // Check if saved model is available in configured providers
+        const smartDefaults = SmartDefaults.getInstance();
+        if (smartDefaults.isModelAvailable(savedModel)) {
+          return savedModel;
+        }
+      }
+      // Use smart default selection
+      const smartDefaults = SmartDefaults.getInstance();
+      const defaults = smartDefaults.getSmartDefaults();
+      return defaults.model;
     });
     const [provider, setProvider] = useState(() => {
       const savedProvider = Cookies.get('selectedProvider');
       // If we have a saved provider and it exists in the list, use it
       if (savedProvider && PROVIDER_LIST.find((p) => p.name === savedProvider)) {
-        return PROVIDER_LIST.find((p) => p.name === savedProvider) as ProviderInfo;
+        const savedProviderInfo = PROVIDER_LIST.find((p) => p.name === savedProvider) as ProviderInfo;
+        // Check if this provider is actually configured
+        const parsedKeys = getApiKeysFromCookies();
+        const apiKey = parsedKeys[savedProviderInfo.name];
+        const isConfigured = apiKey && apiKey.trim() !== '';
+        const isLocal = ['Ollama', 'LMStudio'].includes(savedProviderInfo.name);
+
+        if (isConfigured || isLocal) {
+          return savedProviderInfo;
+        }
       }
-      // Otherwise, try to find the first provider with API key configured
-      const parsedKeys = getApiKeysFromCookies();
-      const configuredProvider = PROVIDER_LIST.find((p) => {
-        const apiKey = parsedKeys[p.name];
-        return apiKey && apiKey.trim() !== '';
-      });
-      // If we found a configured provider, use it
-      if (configuredProvider) {
-        return configuredProvider as ProviderInfo;
-      }
-      // As a last resort, use the default provider
-      return DEFAULT_PROVIDER as ProviderInfo;
+
+      // Use smart default selection
+      const smartDefaults = SmartDefaults.getInstance();
+      const defaults = smartDefaults.getSmartDefaults();
+      return defaults.provider;
     });
     const { showChat } = useStore(chatStore);
     const [animationScope, animate] = useAnimate();
