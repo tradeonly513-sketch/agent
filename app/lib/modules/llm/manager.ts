@@ -249,10 +249,31 @@ export class LLMManager {
       if (!apiKeyEnvVar) {
         /*
          * Provider doesn't require API key (like local providers)
-         * Check if it's a local provider like Ollama or LMStudio
+         * For local providers, we need to check if they're actually running
+         * by checking if we have cached models for them
          */
         const localProviders = ['ollama', 'lmstudio'];
-        return localProviders.includes(provider.name.toLowerCase());
+        if (localProviders.includes(provider.name.toLowerCase())) {
+          // Check if we have successfully cached models for this local provider
+          const staticModels = this.getStaticModelListFromProvider(provider);
+          const cachedModels = provider.getModelsFromCache?.({
+            apiKeys: userApiKeys || {},
+            providerSettings: {},
+            serverEnv: this._env,
+          }) || [];
+
+          // Local provider is considered configured if it has models available
+          const hasModels = staticModels.length > 0 || cachedModels.length > 0;
+
+          if (!hasModels) {
+            logger.warn(`Local provider ${provider.name} has no available models, considering it unconfigured`);
+          }
+
+          return hasModels;
+        }
+
+        // For other providers without API key requirement, assume they're configured
+        return true;
       }
 
       // Check user-provided API keys first (from UI)

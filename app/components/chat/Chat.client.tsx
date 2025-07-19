@@ -517,6 +517,21 @@ export const ChatImpl = memo(
                 autoClose: 8000,
               },
             );
+          }
+          // 检查是否是provider模型缺失错误
+          else if (e.message && e.message.includes('No models found for provider')) {
+            const providerMatch = e.message.match(/No models found for provider (\w+)/);
+            const providerName = providerMatch ? providerMatch[1] : 'current';
+            console.error(`No models found for provider: ${providerName}`);
+            toast.error(
+              `Provider ${providerName} is not available or not running. Please switch to a different provider.`,
+              {
+                autoClose: 8000,
+              },
+            );
+
+            // 重置重试计数，避免无限重试
+            setAgentRetryCount(0);
           } else {
             toast.error('Agent encountered an error. Please try a simpler request or switch to Chat mode.', {
               autoClose: 5000,
