@@ -28,6 +28,7 @@ import { defaultDesignScheme, type DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { Attachment, FileUIPart, TextUIPart } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
+import { useRequestOptimization, shouldOptimizeRequest } from '~/lib/hooks/useRequestOptimization';
 import type { LlmErrorAlertType, ChatMode } from '~/types/actions';
 import { agentStore } from '~/lib/stores/chat';
 import { ClientAgentExecutor } from '~/lib/agent/client-executor';
@@ -309,6 +310,44 @@ export const ChatImpl = memo(
       }
     }, [bmadExecutor, bmadState.isActive]);
 
+    // Request optimization hook
+    const { optimizeRequest } = useRequestOptimization({
+      maxRequestSizeKB: 300, // 300KB max request size
+      preserveRecentMessages: 3,
+      compressFileContent: true,
+      removeRedundantArtifacts: true,
+    });
+
+    // Custom fetch function with request optimization
+    const optimizedFetch = useCallback(async (url: string, options: RequestInit) => {
+      if (url === '/api/chat' && options.method === 'POST' && options.body) {
+        try {
+          const requestData = JSON.parse(options.body as string);
+
+          // Check if request needs optimization
+          if (shouldOptimizeRequest(requestData.messages, requestData.files, 300)) {
+            const optimizationResult = optimizeRequest(requestData.messages, requestData.files);
+
+            // Log optimization results
+            console.log(
+              `Request optimized: ${(optimizationResult.originalSize / 1024).toFixed(1)}KB → ` +
+              `${(optimizationResult.optimizedSize / 1024).toFixed(1)}KB ` +
+              `(${(optimizationResult.compressionRatio * 100).toFixed(1)}%)`
+            );
+
+            // Use optimized messages
+            requestData.messages = optimizationResult.messages;
+            options.body = JSON.stringify(requestData);
+          }
+        } catch (error) {
+          console.warn('Failed to optimize request:', error);
+          // Continue with original request if optimization fails
+        }
+      }
+
+      return fetch(url, options);
+    }, [optimizeRequest]);
+
     const {
       messages,
       isLoading,
@@ -325,6 +364,7 @@ export const ChatImpl = memo(
       addToolResult,
     } = useChat({
       api: '/api/chat',
+      fetch: optimizedFetch,
       body: {
         apiKeys,
         files,

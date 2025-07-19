@@ -10,6 +10,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import { ContextManager } from './context-manager';
+import { ContextOptimizer } from './context-optimizer';
 import { getModelContextWindow } from './token-counter';
 import type { DesignScheme } from '~/types/design-scheme';
 
@@ -59,7 +60,23 @@ export async function streamText(props: {
   } = props;
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
-  let processedMessages = messages.map((message) => {
+  // Apply context optimization before processing
+  const contextOptimizer = new ContextOptimizer({
+    maxTokens: getModelContextWindow(currentModel) * 0.6, // Use 60% of context window for messages
+    preserveRecentMessages: 3,
+    compressOldMessages: true,
+    removeRedundantContent: true,
+    summarizeFileContent: true,
+  });
+
+  const optimizationResult = await contextOptimizer.optimizeContext(messages, currentModel);
+
+  logger.info(
+    `Context optimization: ${optimizationResult.originalTokens} → ${optimizationResult.optimizedTokens} tokens ` +
+    `(${(optimizationResult.compressionRatio * 100).toFixed(1)}%) using strategies: ${optimizationResult.strategy.join(', ')}`
+  );
+
+  let processedMessages = optimizationResult.messages.map((message) => {
     if (message.role === 'user') {
       const { model, provider, content } = extractPropertiesFromMessage(message);
       currentModel = model;
@@ -68,14 +85,10 @@ export async function streamText(props: {
       return { ...message, content };
     } else if (message.role == 'assistant') {
       let content = message.content;
+
+      // Additional cleanup for assistant messages
       content = content.replace(/<div class=\\"__boltThought__\\">.*?<\/div>/s, '');
       content = content.replace(/<think>.*?<\/think>/s, '');
-
-      // Remove package-lock.json content specifically keeping token usage MUCH lower
-      content = content.replace(
-        /<boltAction type="file" filePath="package-lock\.json">[\s\S]*?<\/boltAction>/g,
-        '[package-lock.json content removed]',
-      );
 
       // Trim whitespace potentially left after removals
       content = content.trim();

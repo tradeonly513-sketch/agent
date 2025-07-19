@@ -78,8 +78,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
   try {
     const mcpService = MCPService.getInstance();
-    const totalMessageContent = messages.reduce((acc, message) => acc + message.content, '');
-    logger.debug(`Total message length: ${totalMessageContent.split(' ').length} words`);
 
     // Get model information for context window calculation
     const lastUserMessage = messages.filter((x) => x.role === 'user').slice(-1)[0];
@@ -87,9 +85,19 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     const modelContextWindow = getModelContextWindow(currentModel);
     const currentMessageTokens = countMessagesTokens(messages, currentModel);
 
+    // Log request size for monitoring
+    const totalMessageContent = messages.reduce((acc, message) => acc + message.content, '');
+    const requestSizeKB = (JSON.stringify({ messages, files }).length / 1024).toFixed(1);
+
+    logger.debug(`Request size: ${requestSizeKB}KB, Message content: ${totalMessageContent.split(' ').length} words`);
     logger.info(
       `Model: ${currentModel}, Context Window: ${modelContextWindow}, Current Message Tokens: ${currentMessageTokens}`,
     );
+
+    // Warn if request is getting large
+    if (parseFloat(requestSizeKB) > 500) {
+      logger.warn(`Large request detected: ${requestSizeKB}KB - consider context optimization`);
+    }
 
     let lastChunk: string | undefined = undefined;
 

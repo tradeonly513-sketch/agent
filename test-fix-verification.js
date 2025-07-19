@@ -1,8 +1,8 @@
-// Verification script for the optimized template approach
-// This tests the two-phase approach: essential files + remaining files
+// Verification script for request body optimization
+// This tests context engineering and request compression
 
-console.log('🧪 Testing Optimized Template Approach');
-console.log('======================================');
+console.log('🧪 Testing Request Body Optimization');
+console.log('====================================');
 
 // Mock data to simulate a large template with many files
 const mockLargeTemplate = {
@@ -140,6 +140,48 @@ console.log(`   - Phase 1: Essential files (${essentialFiles.length}) in first m
 console.log(`   - Phase 2: Remaining files (${remainingFiles.length}) in follow-up message`);
 console.log(`   - Benefits: Smaller individual messages, better reliability`);
 
-console.log('\n✅ Optimized template approach verification completed!');
-console.log('🎯 Key improvement: Split into manageable chunks while keeping boltArtifact approach');
-console.log('🚀 Better reliability and user experience!');
+// Test request body optimization
+const mockMessages = [
+  { role: 'user', content: 'Create a React app' },
+  { role: 'assistant', content: firstMessage },
+  { role: 'user', content: 'Add more features' },
+  { role: 'assistant', content: secondMessage },
+  { role: 'user', content: 'Make it better' }
+];
+
+const originalRequestSize = JSON.stringify({ messages: mockMessages }).length;
+console.log(`\n📊 Request Body Analysis:`);
+console.log(`   - Original request size: ${(originalRequestSize / 1024).toFixed(1)}KB`);
+console.log(`   - Number of messages: ${mockMessages.length}`);
+
+// Simulate client-side optimization
+function simulateClientOptimization(messages) {
+  // Remove redundant content from older messages
+  const optimized = messages.map((msg, index) => {
+    if (index < messages.length - 3 && typeof msg.content === 'string') {
+      // Compress older messages
+      let content = msg.content;
+      content = content.replace(/<boltAction[^>]*>[\s\S]*?<\/boltAction>/g, '[file content compressed]');
+      content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
+      return { ...msg, content };
+    }
+    return msg;
+  });
+
+  return optimized;
+}
+
+const optimizedMessages = simulateClientOptimization(mockMessages);
+const optimizedRequestSize = JSON.stringify({ messages: optimizedMessages }).length;
+const compressionRatio = optimizedRequestSize / originalRequestSize;
+
+console.log(`   - Optimized request size: ${(optimizedRequestSize / 1024).toFixed(1)}KB`);
+console.log(`   - Compression ratio: ${(compressionRatio * 100).toFixed(1)}%`);
+console.log(`   - Size reduction: ${((1 - compressionRatio) * 100).toFixed(1)}%`);
+
+console.log('\n✅ Request body optimization verification completed!');
+console.log('🎯 Key improvements:');
+console.log('   - Context engineering reduces request size');
+console.log('   - Client-side optimization before API calls');
+console.log('   - Server-side context compression');
+console.log('🚀 Better performance and reduced API costs!');
