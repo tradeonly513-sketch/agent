@@ -71,7 +71,13 @@ export async function streamText(props: {
     summarizeFileContent: true,
   });
 
-  const optimizationResult = await contextOptimizer.optimizeContext(messages, currentModel);
+  // Add id to messages for context optimization
+  const messagesWithId = messages.map((msg, index) => ({
+    ...msg,
+    id: `msg-${index}`,
+  }));
+
+  const optimizationResult = await contextOptimizer.optimizeContext(messagesWithId, currentModel);
 
   logger.info(
     `Context optimization: ${optimizationResult.originalTokens} → ${optimizationResult.optimizedTokens} tokens ` +

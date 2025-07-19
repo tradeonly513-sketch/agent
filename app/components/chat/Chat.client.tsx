@@ -411,7 +411,7 @@ export const ChatImpl = memo(
         }, 45000); // 45 seconds timeout
 
         try {
-          const response = await fetch(url, {
+          const response = await fetch(url as string, {
             ...options,
             signal: controller.signal,
           });
@@ -484,7 +484,7 @@ export const ChatImpl = memo(
 
           if (hasAlternatives) {
             const alternatives = configuredProviders
-              .map((p) => p.name)
+              .map((p: any) => p.name)
               .slice(0, 3)
               .join(', ');
             errorMessage += ` Try switching to: ${alternatives}`;
