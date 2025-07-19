@@ -387,7 +387,26 @@ export const ChatImpl = memo(
           }
         }
 
-        return fetch(url, options);
+        // Add timeout for API requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 45000); // 45 seconds timeout
+
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Request timeout. Please check your internet connection and try again.');
+          }
+          throw error;
+        }
       },
       [optimizeRequest],
     );
@@ -532,6 +551,12 @@ export const ChatImpl = memo(
         }
 
         logger.debug('Finished streaming');
+
+        // 成功完成后重置重试计数
+        if (agentRetryCount > 0) {
+          console.log('Resetting agent retry count after successful completion');
+          setAgentRetryCount(0);
+        }
       },
       initialMessages,
       initialInput: Cookies.get(PROMPT_COOKIE_KEY) || '',
@@ -546,8 +571,9 @@ export const ChatImpl = memo(
         const currentMode = agentState.mode;
         const isAgentMode = currentMode === 'agent';
 
-        // Agent模式需要更长的处理时间，普通模式30秒，Agent模式90秒
-        const timeoutDuration = isAgentMode ? 90000 : 30000;
+        // Agent模式需要更长的处理时间，但不要太长以避免用户等待
+        // 普通模式30秒，Agent模式60秒（减少从90秒）
+        const timeoutDuration = isAgentMode ? 60000 : 30000;
 
         console.log(`Setting timeout for ${currentMode} mode: ${timeoutDuration}ms`);
 
@@ -566,9 +592,20 @@ export const ChatImpl = memo(
               autoClose: 3000,
             });
 
-            // 延迟重试，给系统时间恢复
+            // 延迟重试，给系统时间恢复，并实际重新发送请求
             setTimeout(() => {
               console.log('Agent retry attempt:', agentRetryCount + 1);
+
+              // 获取最后一个用户消息并重新发送
+              const lastUserMessage = messages.findLast((msg) => msg.role === 'user');
+              if (lastUserMessage) {
+                console.log('Retrying with last user message:', lastUserMessage.content.substring(0, 100));
+                sendMessage(new Event('retry') as any, lastUserMessage.content);
+              } else {
+                console.warn('No user message found for retry');
+                // 如果没有找到用户消息，发送一个继续请求
+                sendMessage(new Event('retry') as any, '继续');
+              }
             }, 2000);
           } else {
             // 重置重试计数
