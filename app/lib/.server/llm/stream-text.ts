@@ -11,6 +11,7 @@ import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import { ContextManager } from './context-manager';
 import { ContextOptimizer } from './context-optimizer';
+import { ModelMapper } from './model-mapper';
 import { getModelContextWindow } from './token-counter';
 import type { DesignScheme } from '~/types/design-scheme';
 
@@ -122,20 +123,50 @@ export async function streamText(props: {
     }
   }
 
-  // If model not found in specified provider, search across all providers
+  // If model not found in specified provider, use smart model mapping
   if (!modelDetails) {
-    logger.warn(`Model [${currentModel}] not found in provider [${currentProvider}]. Searching across all providers...`);
+    logger.warn(`Model [${currentModel}] not found in provider [${currentProvider}]. Using smart model mapping...`);
 
-    for (const candidateProvider of PROVIDER_LIST) {
-      const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(candidateProvider);
-      const foundModel = staticModels.find((m) => m.name === currentModel);
+    const llmManager = LLMManager.getInstance();
+    const configuredProviders = llmManager.getConfiguredProviders();
+    const modelMapper = new ModelMapper();
 
-      if (foundModel) {
-        logger.info(`Found model [${currentModel}] in provider [${candidateProvider.name}]. Switching provider.`);
-        provider = candidateProvider;
-        modelDetails = foundModel;
-        currentProvider = candidateProvider.name;
-        break;
+    // Determine context based on chat mode
+    const context = chatMode === 'build' ? 'coding' : 'chat';
+
+    // Use smart model mapping to find the best alternative
+    const mappingResult = await modelMapper.findBestModel(currentModel, configuredProviders, context);
+
+    if (mappingResult) {
+      provider = mappingResult.provider;
+      modelDetails = mappingResult.model;
+      currentProvider = mappingResult.provider.name;
+
+      if (mappingResult.isExactMatch) {
+        logger.info(`Found exact model [${currentModel}] in configured provider [${provider.name}]`);
+      } else if (mappingResult.isMapped) {
+        logger.info(`Mapped model [${currentModel}] to [${modelDetails.name}] in provider [${provider.name}]`);
+      }
+    } else {
+      // Fallback: search in all providers (but warn about potential API key issues)
+      logger.warn(`Smart mapping failed. Searching all providers (may require API key configuration)...`);
+
+      for (const candidateProvider of PROVIDER_LIST) {
+        // Skip providers we already checked
+        if (configuredProviders.includes(candidateProvider)) {
+          continue;
+        }
+
+        const staticModels = llmManager.getStaticModelListFromProvider(candidateProvider);
+        const foundModel = staticModels.find((m) => m.name === currentModel);
+
+        if (foundModel) {
+          logger.warn(`Found model [${currentModel}] in unconfigured provider [${candidateProvider.name}]. This may require API key configuration.`);
+          provider = candidateProvider;
+          modelDetails = foundModel;
+          currentProvider = candidateProvider.name;
+          break;
+        }
       }
     }
   }
@@ -155,7 +186,10 @@ export async function streamText(props: {
   }
 
   if (!modelDetails) {
-    const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
+    const llmManager = LLMManager.getInstance();
+
+    // Try to find a model in the current provider first
+    const staticModels = llmManager.getStaticModelListFromProvider(provider);
     if (staticModels.length > 0) {
       logger.warn(
         `MODEL [${currentModel}] not found anywhere. Falling back to first model in provider [${provider.name}]: ${staticModels[0].name}`,
@@ -163,7 +197,28 @@ export async function streamText(props: {
       modelDetails = staticModels[0];
       currentModel = staticModels[0].name;
     } else {
-      throw new Error(`No models found for provider ${provider.name}`);
+      // If current provider has no models, try configured providers
+      const configuredProviders = llmManager.getConfiguredProviders();
+      let foundFallbackModel = false;
+
+      for (const configuredProvider of configuredProviders) {
+        const configuredModels = llmManager.getStaticModelListFromProvider(configuredProvider);
+        if (configuredModels.length > 0) {
+          logger.warn(
+            `No models in provider [${provider.name}]. Switching to configured provider [${configuredProvider.name}] with model: ${configuredModels[0].name}`,
+          );
+          provider = configuredProvider;
+          modelDetails = configuredModels[0];
+          currentModel = configuredModels[0].name;
+          currentProvider = configuredProvider.name;
+          foundFallbackModel = true;
+          break;
+        }
+      }
+
+      if (!foundFallbackModel) {
+        throw new Error(`No models found for provider ${provider.name} and no configured alternatives available`);
+      }
     }
   }
 

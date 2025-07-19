@@ -36,6 +36,7 @@ import { ClientAgentExecutor } from '~/lib/agent/client-executor';
 
 import { BmadExecutor } from '~/lib/agent/bmad-executor';
 import { bmadStore, bmadActions } from '~/lib/stores/bmad-store';
+import { getApiKeysFromCookies } from './APIKeyManager';
 
 /*
  * import { CommandAutoComplete } from './CommandAutoComplete';
@@ -215,7 +216,22 @@ export const ChatImpl = memo(
     });
     const [provider, setProvider] = useState(() => {
       const savedProvider = Cookies.get('selectedProvider');
-      return (PROVIDER_LIST.find((p) => p.name === savedProvider) || DEFAULT_PROVIDER) as ProviderInfo;
+      // If we have a saved provider and it exists in the list, use it
+      if (savedProvider && PROVIDER_LIST.find((p) => p.name === savedProvider)) {
+        return PROVIDER_LIST.find((p) => p.name === savedProvider) as ProviderInfo;
+      }
+      // Otherwise, try to find the first provider with API key configured
+      const parsedKeys = getApiKeysFromCookies();
+      const configuredProvider = PROVIDER_LIST.find((p) => {
+        const apiKey = parsedKeys[p.name];
+        return apiKey && apiKey.trim() !== '';
+      });
+      // If we found a configured provider, use it
+      if (configuredProvider) {
+        return configuredProvider as ProviderInfo;
+      }
+      // As a last resort, use the default provider
+      return DEFAULT_PROVIDER as ProviderInfo;
     });
     const { showChat } = useStore(chatStore);
     const [animationScope, animate] = useAnimate();
