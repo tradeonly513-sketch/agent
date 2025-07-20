@@ -269,9 +269,7 @@ function generateAlphaPalette(hex: string) {
       const alpha = Math.round((opacity / 100) * 255)
         .toString(16)
         .padStart(2, '0');
-
       acc[opacity] = `${hex}${alpha}`;
-
       return acc;
     },
     {} as Record<number, string>,
