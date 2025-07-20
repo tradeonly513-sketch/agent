@@ -1,12 +1,9 @@
 #!/bin/bash
-
 bindings=""
-
 # Function to extract variable names from the TypeScript interface
 extract_env_vars() {
   grep -o '[A-Z_]\+:' worker-configuration.d.ts | sed 's/://'
 }
-
 # First try to read from .env.local if it exists
 if [ -f ".env.local" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
@@ -27,7 +24,5 @@ else
     fi
   done
 fi
-
 bindings=$(echo $bindings | sed 's/[[:space:]]*$//')
-
 echo $bindings
