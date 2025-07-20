@@ -90,9 +90,9 @@ Interested in maintaining and growing the project? Fill out our [Contributor App
   1. Rename `.env.example` to `.env.local`.
   2. Add your API keys:
      ```bash
-     GROQ_API_KEY=XXX
-     HuggingFace_API_KEY=XXX
-     OPENAI_API_KEY=XXX
+     GROQ_API_KEY=XXXX
+     HuggingFace_API_KEY=XXXX 
+     OPENAI_API_KEY=XXXX 
      ...
      ```
   3. Optionally set:
