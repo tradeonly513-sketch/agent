@@ -1,8 +1,6 @@
 const { notarize } = require('@electron/notarize');
-
 exports.default = async function notarizing(context) {
   const { electronPlatformName, appOutDir } = context;
-
   if (electronPlatformName !== 'darwin') {
     return;
   }
@@ -12,7 +10,6 @@ exports.default = async function notarizing(context) {
     console.log('Skipping notarization: identity is null');
     return;
   }
-
   const appName = context.packager.appInfo.productFilename;
   const appBundleId = context.packager.config.appId;
 
