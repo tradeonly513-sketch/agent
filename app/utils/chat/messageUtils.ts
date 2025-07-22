@@ -1,4 +1,4 @@
-import { assert } from '~/lib/replay/ReplayProtocolClient';
+import { assert } from '~/utils/nut';
 import type { Message } from '~/lib/persistence/message';
 
 let gLastChatMessages: Message[] | undefined;
@@ -29,21 +29,4 @@ export function mergeResponseMessage(msg: Message, messages: Message[]): Message
   }
 
   return messages;
-}
-
-export function getRewindMessageIndexAfterReject(messages: Message[], messageId: string): number {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const { id, role, repositoryId } = messages[i];
-
-    if (role == 'user') {
-      return i;
-    }
-
-    if (repositoryId && id != messageId) {
-      return i;
-    }
-  }
-
-  console.error('No rewind message found', messages, messageId);
-  return -1;
 }

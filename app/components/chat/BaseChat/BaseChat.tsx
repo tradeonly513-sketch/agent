@@ -8,7 +8,7 @@ import { Menu } from '~/components/sidebar/Menu.client';
 import { Workbench } from '~/components/workbench/Workbench.client';
 import { classNames } from '~/utils/classNames';
 import { Messages } from '~/components/chat/Messages/Messages.client';
-import { getDiscoveryRating, getMessagesRepositoryId, type Message } from '~/lib/persistence/message';
+import { getDiscoveryRating, type Message } from '~/lib/persistence/message';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { IntroSection } from '~/components/chat/BaseChat/components/IntroSection/IntroSection';
 import { ChatPromptContainer } from '~/components/chat/BaseChat/components/ChatPromptContainer/ChatPromptContainer';
@@ -19,7 +19,7 @@ import type { RejectChangeData } from '~/components/chat/ApproveChange';
 import { type MessageInputProps } from '~/components/chat/MessageInput/MessageInput';
 import { Arboretum } from './components/Arboretum/Arboretum';
 import { useArboretumVisibility } from '~/lib/stores/settings';
-import { ChatMode } from '~/lib/replay/ChatManager';
+import { ChatMode } from '~/lib/replay/SendChatMessage';
 import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 
 export const TEXTAREA_MIN_HEIGHT = 76;
@@ -172,7 +172,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     };
 
     let startPlanningRating = 0;
-    if (!hasPendingMessage && !getLatestAppSummary(messages || []) && !getMessagesRepositoryId(messages || [])) {
+    if (!hasPendingMessage && !getLatestAppSummary(messages || [])) {
       startPlanningRating = getDiscoveryRating(messages || []);
     }
 
