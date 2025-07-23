@@ -10,7 +10,7 @@ export const terminalErrorAtom = atom<string | null>(null);
 // Helper to detect error output
 function detectTerminalError(data: string): string | null {
   // Simple heuristics for npm and runtime errors
-  if (/npm ERR!|Error:|failed|Failed|UnhandledPromiseRejection|Traceback|Exception|Cannot find module|Module not found|SyntaxError|TypeError|ReferenceError|Segmentation fault|EADDRINUSE|ECONNREFUSED|EACCES|EPIPE|ENOSPC|FATAL|panic/i.test(data)) {
+  if (/npm ERR!|npm error|Error:|failed|Failed|UnhandledPromiseRejection|Traceback|Exception|Cannot find module|Module not found|SyntaxError|TypeError|ReferenceError|Segmentation fault|EADDRINUSE|ECONNREFUSED|EACCES|EPIPE|ENOSPC|FATAL|panic/i.test(data)) {
     return data;
   }
   return null;
