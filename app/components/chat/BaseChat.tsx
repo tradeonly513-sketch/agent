@@ -82,6 +82,7 @@ interface BaseChatProps {
   selectedElement?: ElementInfo | null;
   setSelectedElement?: (element: ElementInfo | null) => void;
   addToolResult?: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
+
   // Add a handler for terminal errors
   onTerminalError?: (error: string) => void;
 }
@@ -234,19 +235,25 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     // Listen for terminal errors
     useEffect(() => {
       const unsub = workbenchStore.onTerminalError((err) => {
-        if (onTerminalError) onTerminalError(err);
+        if (onTerminalError) {
+          onTerminalError(err);
+        }
+
         // Set the error text into the chat input field
-        if (handleInputChange) {
-          const syntheticEvent = {
-            target: { value: err  + "Please fix this error"},
-          } as React.ChangeEvent<HTMLTextAreaElement>;
-          handleInputChange(syntheticEvent);
-        }
-        // After setting input, send the message
-        if (handleSendMessage) {
-          handleSendMessage({} as React.UIEvent, err);
-        }
-     
+
+        /*
+         * After setting input, send the message
+         * if (handleSendMessage) {
+         *   handleSendMessage({} as React.UIEvent, err);
+         * }
+         */
+        workbenchStore.actionAlert.set({
+          type: 'TERMINAL_ERROR',
+          title: 'Terminal Error',
+          description: err,
+          content: `Error occurred at ${err}`,
+          source: 'terminal',
+        });
       });
       return () => unsub();
     }, [onTerminalError]);
@@ -362,8 +369,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         }
       }
     };
-
-
 
     const baseChat = (
       <div

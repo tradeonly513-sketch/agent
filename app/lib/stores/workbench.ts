@@ -116,6 +116,7 @@ export class WorkbenchStore {
   get alert() {
     return this.actionAlert;
   }
+
   // Add a method to subscribe to terminal errors
   onTerminalError(callback: (msg: string) => void) {
     return this.#terminalStore.onError(callback);

@@ -26,10 +26,13 @@ export class TerminalStore {
   toggleTerminal(value?: boolean) {
     this.showTerminal.set(value !== undefined ? value : !this.showTerminal.get());
   }
+
   // Allow subscribing to terminal errors
   onError(callback: (msg: string) => void) {
     return terminalErrorAtom.subscribe((err) => {
-      if (err) callback(err);
+      if (err) {
+        callback(err);
+      }
     });
   }
 
