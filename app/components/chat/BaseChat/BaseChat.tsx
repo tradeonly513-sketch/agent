@@ -2,10 +2,11 @@
  * @ts-nocheck
  * Preventing TS checks with files presented in the video for a better presentation.
  */
-import React, { type RefCallback, useCallback, useRef, useState } from 'react';
+import React, { type RefCallback, useCallback, useEffect, useRef, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Menu } from '~/components/sidebar/Menu.client';
 import { Workbench } from '~/components/workbench/Workbench.client';
+import { MobileNav } from '~/components/mobile-nav/MobileNav.client';
 import { classNames } from '~/utils/classNames';
 import { Messages } from '~/components/chat/Messages/Messages.client';
 import { getDiscoveryRating, type Message } from '~/lib/persistence/message';
@@ -21,6 +22,10 @@ import { Arboretum } from './components/Arboretum/Arboretum';
 import { useArboretumVisibility } from '~/lib/stores/settings';
 import { ChatMode } from '~/lib/replay/SendChatMessage';
 import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
+import { workbenchStore } from '~/lib/stores/workbench';
+import { mobileNavStore } from '~/lib/stores/mobileNav';
+import { useStore } from '@nanostores/react';
+import useViewport from '~/lib/hooks';
 
 export const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -80,6 +85,17 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
     const [rejectFormOpen, setRejectFormOpen] = useState(false);
     const { isArboretumVisible } = useArboretumVisibility();
+    const showWorkbench = useStore(workbenchStore.showWorkbench);
+    const mobileActiveTab = useStore(mobileNavStore.activeTab);
+    const isSmallViewport = useViewport(1024);
+
+    useEffect(() => {
+      if (showWorkbench && mobileActiveTab === 'chat') {
+        mobileNavStore.setActiveTab('planning');
+      } else if (!showWorkbench && (mobileActiveTab === 'planning' || mobileActiveTab === 'preview')) {
+        mobileNavStore.setActiveTab('chat');
+      }
+    }, [showWorkbench, mobileActiveTab]);
 
     const onTranscriptChange = useCallback(
       (transcript: string) => {
@@ -203,25 +219,32 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const baseChat = (
       <div
         ref={ref}
-        className={classNames(styles.BaseChat, 'relative flex h-full w-full overflow-hidden p-6')}
+        className={classNames(styles.BaseChat, 'relative flex h-full w-full overflow-hidden')}
         data-chat-visible={showChat}
       >
         <ClientOnly>{() => <Menu />}</ClientOnly>
         <div
           ref={scrollRef}
-          className={classNames('w-full h-full flex flex-col lg:flex-row', {
+          className={classNames('w-full h-full flex flex-col lg:flex-row overflow-hidden', {
             'overflow-y-auto': !chatStarted,
+            'pt-2 pb-15 px-4': isSmallViewport, // Mobile nav is ~80px, so pb-20 (5rem = 80px)
+            'p-6': !isSmallViewport,
           })}
         >
-          <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
+          <div
+            className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full', {
+              'py-2': isSmallViewport,
+            })}
+          >
             {!chatStarted && (
               <>
                 <IntroSection />
               </>
             )}
             <div
-              className={classNames('px-2 sm:px-6', {
+              className={classNames('sm:px-6', {
                 'h-full flex flex-col': chatStarted,
+                'px-2': !isSmallViewport,
               })}
             >
               <ClientOnly>
@@ -264,8 +287,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               </>
             )}
           </div>
-          <ClientOnly>{() => <Workbench chatStarted={chatStarted} messages={messages} />}</ClientOnly>
+          <ClientOnly>
+            {() => <Workbench chatStarted={chatStarted} messages={messages} mobileActiveTab={mobileActiveTab} />}
+          </ClientOnly>
         </div>
+        {isSmallViewport && <ClientOnly>{() => <MobileNav />}</ClientOnly>}
       </div>
     );
 

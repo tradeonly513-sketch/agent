@@ -90,7 +90,7 @@ const inlineThemeCode = stripIndents`
 export const Head = createHead(() => (
   <>
     <meta charSet="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <Meta />
     <Links />
     <script dangerouslySetInnerHTML={{ __html: inlineThemeCode }} />
@@ -179,7 +179,7 @@ export default function App() {
       <ClientOnly>
         <ThemeProvider />
         <AuthProvider data={data} />
-        <main className="h-full min-h-screen">{isLoading ? <div></div> : <Outlet />}</main>
+        <main className="h-full">{isLoading ? <div></div> : <Outlet />}</main>
         <ToastContainer
           closeButton={({ closeToast }) => {
             return (

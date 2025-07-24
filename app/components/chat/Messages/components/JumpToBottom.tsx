@@ -30,7 +30,7 @@ export const JumpToBottom: React.FC<JumpToBottomProps> = ({ onClick, position, v
     <div
       className={classNames(
         'absolute left-0 right-0 flex justify-center pointer-events-none',
-        !position ? 'bottom-5' : '', // Only apply bottom-5 if no custom position is provided
+        !position ? 'bottom-5' : '',
       )}
       style={positionStyle}
     >
