@@ -7,14 +7,13 @@ import { toast } from 'react-toastify';
 import type { Message } from '~/lib/persistence/message';
 import mergeResponseMessage from './functions/mergeResponseMessages';
 import { getExistingAppResponses } from '~/lib/replay/SendChatMessage';
-import { chatStore, isResponseEvent } from '~/lib/stores/chat';
+import { chatStore, doListenAppResponses, isResponseEvent } from '~/lib/stores/chat';
 import { database } from '~/lib/persistence/apps';
 import type { ChatResponse } from '~/lib/persistence/response';
 
 export function Chat() {
   renderLogger.trace('Chat');
 
-  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const { id: appId } = useLoaderData<{ id?: string }>() ?? {};
 
   const [ready, setReady] = useState<boolean>(!appId);
@@ -40,7 +39,12 @@ export function Chat() {
         chatStore.currentAppId.set(appId);
         chatStore.appTitle.set(title);
         chatStore.events.set(eventResponses);
-        setInitialMessages(messages);
+        chatStore.messages.set(messages);
+        chatStore.started.set(chatStore.messages.get().length > 0);
+
+        // Always check for ongoing work when we first start the chat.
+        doListenAppResponses();
+
         setReady(true);
       } catch (error) {
         logStore.logError('Failed to load chat messages', error);
@@ -49,5 +53,5 @@ export function Chat() {
     })();
   }, []);
 
-  return <>{ready && <ChatImplementer initialMessages={initialMessages} />}</>;
+  return <>{ready && <ChatImplementer />}</>;
 }

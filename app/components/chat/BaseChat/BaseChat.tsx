@@ -9,7 +9,7 @@ import { Workbench } from '~/components/workbench/Workbench.client';
 import { MobileNav } from '~/components/mobile-nav/MobileNav.client';
 import { classNames } from '~/utils/classNames';
 import { Messages } from '~/components/chat/Messages/Messages.client';
-import { getDiscoveryRating, type Message } from '~/lib/persistence/message';
+import { type Message } from '~/lib/persistence/message';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { IntroSection } from '~/components/chat/BaseChat/components/IntroSection/IntroSection';
 import { ChatPromptContainer } from '~/components/chat/BaseChat/components/ChatPromptContainer/ChatPromptContainer';
@@ -27,6 +27,7 @@ import { mobileNavStore } from '~/lib/stores/mobileNav';
 import { statusModalStore } from '~/lib/stores/statusModal';
 import { useStore } from '@nanostores/react';
 import useViewport from '~/lib/hooks';
+import { chatStore } from '~/lib/stores/chat';
 import { StatusModal } from '~/components/status-modal/StatusModal';
 
 export const TEXTAREA_MIN_HEIGHT = 76;
@@ -37,10 +38,6 @@ interface BaseChatProps {
   scrollRef?: RefCallback<HTMLDivElement>;
   showChat?: boolean;
   chatStarted?: boolean;
-  hasPendingMessage?: boolean;
-  pendingMessageStatus?: string;
-  messages?: Message[];
-  setMessages?: (messages: Message[]) => void;
   input?: string;
   handleStop?: () => void;
   sendMessage?: (messageInput: string, chatMode?: ChatMode) => void;
@@ -67,8 +64,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       scrollRef,
       showChat = true,
       chatStarted = false,
-      hasPendingMessage = false,
-      pendingMessageStatus = '',
       input = '',
       handleInputChange,
       sendMessage,
@@ -77,14 +72,15 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       setUploadedFiles,
       imageDataList = [],
       setImageDataList,
-      messages,
-      setMessages,
       onApproveChange,
       onRejectChange,
     },
     ref,
   ) => {
-    const appSummary = getLatestAppSummary(messages ?? []);
+    const messages = useStore(chatStore.messages);
+    const hasPendingMessage = useStore(chatStore.hasPendingMessage);
+    const listenResponses = useStore(chatStore.listenResponses);
+    const appSummary = getLatestAppSummary(messages);
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
     const [rejectFormOpen, setRejectFormOpen] = useState(false);
     const { isArboretumVisible } = useArboretumVisibility();
@@ -95,7 +91,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [lastProcessedMessageId, setLastProcessedMessageId] = useState<string | null>(null);
 
     useEffect(() => {
-      if (!hasPendingMessage && appSummary && messages && messages.length > 0) {
+      if (!hasPendingMessage && !listenResponses && appSummary && messages && messages.length > 0) {
         const lastMessage = messages[messages.length - 1];
 
         if (lastMessage.role === 'assistant' && lastMessage.id !== lastProcessedMessageId) {
@@ -106,7 +102,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           }, 1000);
         }
       }
-    }, [hasPendingMessage, appSummary, messages, lastProcessedMessageId]);
+    }, [hasPendingMessage, listenResponses, appSummary, messages, lastProcessedMessageId]);
 
     useEffect(() => {
       if (showWorkbench && mobileActiveTab === 'chat') {
@@ -132,11 +128,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       onTranscriptChange,
     });
 
-    // These refs don't seem like they should be necessary, but we get stale messages
-    // in the onLastMessageCheckboxChange callback for some reason that prevents
-    // multiple checkboxes from being checked otherwise.
-    const messagesRef = useRef<Message[]>([]);
-    messagesRef.current = messages || [];
     const checkedBoxesRef = useRef<string[]>([]);
 
     const handleContinueBuilding = () => {
@@ -146,7 +137,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     };
 
-    const handleSendMessage = (event: React.UIEvent, messageInput: string, chatMode?: ChatMode) => {
+    const handleSendMessage = (messageInput: string, chatMode?: ChatMode) => {
       if (sendMessage) {
         sendMessage(messageInput, chatMode);
         abortListening();
@@ -179,28 +170,25 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     })();
 
     const onLastMessageCheckboxChange = (checkboxText: string, checked: boolean) => {
-      if (messages && setMessages) {
-        const newMessages = messagesRef.current.map((message) => {
-          if (message.type == 'text') {
-            const oldBox = checked ? `[ ]` : `[x]`;
-            const newBox = checked ? `[x]` : `[ ]`;
-            const lines = message.content.split('\n');
-            const matchingLineIndex = lines.findIndex(
-              (line) => line.includes(oldBox) && lineIncludesNoMarkdown(line, checkboxText),
-            );
-            if (matchingLineIndex >= 0) {
-              lines[matchingLineIndex] = lines[matchingLineIndex].replace(oldBox, newBox);
-              return {
-                ...message,
-                content: lines.join('\n').trim(),
-              };
-            }
+      const newMessages = chatStore.messages.get().map((message) => {
+        if (message.type == 'text') {
+          const oldBox = checked ? `[ ]` : `[x]`;
+          const newBox = checked ? `[x]` : `[ ]`;
+          const lines = message.content.split('\n');
+          const matchingLineIndex = lines.findIndex(
+            (line) => line.includes(oldBox) && lineIncludesNoMarkdown(line, checkboxText),
+          );
+          if (matchingLineIndex >= 0) {
+            lines[matchingLineIndex] = lines[matchingLineIndex].replace(oldBox, newBox);
+            return {
+              ...message,
+              content: lines.join('\n').trim(),
+            };
           }
-          return message;
-        });
-        messagesRef.current = newMessages;
-        setMessages(newMessages);
-      }
+        }
+        return message;
+      });
+      chatStore.messages.set(newMessages);
       if (checked) {
         checkedBoxesRef.current = [...checkedBoxesRef.current, checkboxText];
       } else {
@@ -208,22 +196,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     };
 
-    const hasAppSummary = !!getLatestAppSummary(messages || []);
-
-    let startPlanningRating = 0;
-    if (!hasPendingMessage && !hasAppSummary) {
-      startPlanningRating = getDiscoveryRating(messages || []);
-    }
-
     const messageInputProps: MessageInputProps = {
       textareaRef,
       input,
       handleInputChange,
       handleSendMessage,
       handleStop,
-      hasPendingMessage,
-      chatStarted,
-      hasAppSummary,
       uploadedFiles,
       setUploadedFiles,
       imageDataList,
@@ -234,7 +212,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       minHeight: TEXTAREA_MIN_HEIGHT,
       maxHeight: TEXTAREA_MAX_HEIGHT,
       checkedBoxes: checkedBoxesRef.current,
-      startPlanningRating,
     };
 
     const baseChat = (
@@ -272,18 +249,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               <ClientOnly>
                 {() => {
                   return chatStarted ? (
-                    <Messages
-                      ref={messageRef}
-                      messages={messages}
-                      hasPendingMessage={hasPendingMessage}
-                      pendingMessageStatus={pendingMessageStatus}
-                      onLastMessageCheckboxChange={onLastMessageCheckboxChange}
-                    />
+                    <Messages ref={messageRef} onLastMessageCheckboxChange={onLastMessageCheckboxChange} />
                   ) : null;
                 }}
               </ClientOnly>
               <ChatPromptContainer
-                chatStarted={chatStarted}
                 uploadedFiles={uploadedFiles}
                 setUploadedFiles={setUploadedFiles!}
                 imageDataList={imageDataList}
@@ -303,7 +273,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     handleStop?.();
                     return;
                   }
-                  handleSendMessage(event, messageInput, ChatMode.Discovery);
+                  handleSendMessage(messageInput, ChatMode.Discovery);
                 })}
                 {isArboretumVisible && <Arboretum />}
               </>

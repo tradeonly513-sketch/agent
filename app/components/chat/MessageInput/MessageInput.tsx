@@ -6,16 +6,17 @@ import { SendButton } from '~/components/chat/SendButton.client';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
 import { ChatMode } from '~/lib/replay/SendChatMessage';
 import { StartPlanningButton } from '~/components/chat/StartPlanningButton';
+import { chatStore } from '~/lib/stores/chat';
+import { useStore } from '@nanostores/react';
+import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
+import { getDiscoveryRating } from '~/lib/persistence/message';
 
 export interface MessageInputProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
   input?: string;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  handleSendMessage?: (event: React.UIEvent, messageInput: string, mode: ChatMode | undefined) => void;
+  handleSendMessage?: (messageInput: string, mode: ChatMode | undefined) => void;
   handleStop?: () => void;
-  hasPendingMessage?: boolean;
-  chatStarted?: boolean;
-  hasAppSummary?: boolean;
   uploadedFiles?: File[];
   setUploadedFiles?: (files: File[]) => void;
   imageDataList?: string[];
@@ -26,7 +27,6 @@ export interface MessageInputProps {
   minHeight?: number;
   maxHeight?: number;
   checkedBoxes?: string[];
-  startPlanningRating?: number;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
@@ -35,9 +35,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   handleInputChange = () => {},
   handleSendMessage = () => {},
   handleStop = () => {},
-  hasPendingMessage = false,
-  chatStarted = false,
-  hasAppSummary = false,
   uploadedFiles = [],
   setUploadedFiles = () => {},
   imageDataList = [],
@@ -48,8 +45,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   minHeight = 76,
   maxHeight = 200,
   checkedBoxes,
-  startPlanningRating = 0,
 }) => {
+  const hasPendingMessage = useStore(chatStore.hasPendingMessage);
+  const chatStarted = useStore(chatStore.started);
+  const messages = useStore(chatStore.messages);
+  const hasAppSummary = !!getLatestAppSummary(messages || []);
+
+  let startPlanningRating = 0;
+  if (!hasPendingMessage && !hasAppSummary) {
+    startPlanningRating = getDiscoveryRating(messages || []);
+  }
+
   const handleFileUpload = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -169,7 +175,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               return;
             }
 
-            handleSendMessage(event, fullInput, undefined);
+            handleSendMessage(fullInput, undefined);
           }
         }}
         value={input}
@@ -187,34 +193,23 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <>
             <SendButton
               show={(hasPendingMessage || fullInput.length > 0 || uploadedFiles.length > 0) && chatStarted}
-              hasPendingMessage={hasPendingMessage}
-              onClick={(event) => {
+              onClick={() => {
                 if (hasPendingMessage) {
                   handleStop();
                   return;
                 }
 
                 if (fullInput.length > 0 || uploadedFiles.length > 0) {
-                  handleSendMessage(event, fullInput, undefined);
+                  handleSendMessage(fullInput, undefined);
                 }
               }}
             />
             {startPlanningRating > 0 && (
               <StartPlanningButton
-                onClick={(event) => {
+                onClick={() => {
                   const message = (fullInput + '\n\nStart building the app based on these requirements.').trim();
-                  handleSendMessage(event, message, ChatMode.BuildApp);
+                  handleSendMessage(message, ChatMode.BuildApp);
                 }}
-                hasAppSummary={false}
-              />
-            )}
-            {hasAppSummary && !hasPendingMessage && (
-              <StartPlanningButton
-                onClick={(event) => {
-                  const message = 'Continue building the app.';
-                  handleSendMessage(event, message, ChatMode.DevelopApp);
-                }}
-                hasAppSummary={true}
               />
             )}
           </>
