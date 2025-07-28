@@ -8,8 +8,6 @@ import { MessageInput } from '~/components/chat/MessageInput/MessageInput';
 import styles from '~/components/chat/BaseChat/BaseChat.module.scss';
 import { useStore } from '@nanostores/react';
 import { chatStore } from '~/lib/stores/chat';
-import { getDiscoveryRating } from '~/lib/persistence/message';
-import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 
 interface ChatPromptContainerProps {
   uploadedFiles: File[];
@@ -37,14 +35,6 @@ export const ChatPromptContainer: React.FC<ChatPromptContainerProps> = ({
   messageInputProps,
 }) => {
   const chatStarted = useStore(chatStore.started);
-  const hasPendingMessage = useStore(chatStore.hasPendingMessage);
-  const messages = useStore(chatStore.messages);
-  const hasAppSummary = !!getLatestAppSummary(messages || []);
-
-  let startPlanningRating = 0;
-  if (!hasPendingMessage && !hasAppSummary) {
-    startPlanningRating = getDiscoveryRating(messages || []);
-  }
 
   return (
     <div
@@ -107,13 +97,7 @@ export const ChatPromptContainer: React.FC<ChatPromptContainerProps> = ({
           onReject={(data) => onRejectChange?.(approveChangeMessageId, data)}
         />
       )}
-      <div className="flex justify-between items-center"></div>
       {!rejectFormOpen && <MessageInput {...messageInputProps} />}
-      {startPlanningRating > 0 && (
-        <div className="text-sm text-bolt-elements-textPrimary flex justify-end mt-2">
-          Planning {startPlanningRating * 10}% Ready
-        </div>
-      )}
     </div>
   );
 };
