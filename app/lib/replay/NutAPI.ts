@@ -9,6 +9,17 @@ type ResponseCallback = (response: any) => void;
 //
 // Otherwise, the response is returned as a JSON object.
 
+export class NutAPIError extends Error {
+  method: string;
+  status: number;
+
+  constructor(method: string, status: number) {
+    super(`NutAPI error: ${method} ${status}`);
+    this.method = method;
+    this.status = status;
+  }
+}
+
 export async function callNutAPI(method: string, request: any, responseCallback?: ResponseCallback): Promise<any> {
   const userId = await getCurrentUserId();
 
@@ -58,7 +69,7 @@ export async function callNutAPI(method: string, request: any, responseCallback?
     // Use native fetch for non-streaming
     const response = await fetch(url, fetchOptions);
     if (!response.ok) {
-      throw new Error(`NutAPI error: ${response.status}`);
+      throw new NutAPIError(method, response.status);
     }
     return response.json();
   }
