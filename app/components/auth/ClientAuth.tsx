@@ -4,6 +4,8 @@ import { getSupabase } from '~/lib/supabase/client';
 import type { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { SignInForm } from './SignInForm';
 import { SignUpForm } from './SignUpForm';
+import { AuthStateMessage } from './AuthStateMessage';
+import { PasswordResetForm } from './PasswordResetForm';
 
 export function ClientAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +14,9 @@ export function ClientAuth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [usageData, setUsageData] = useState<{ peanuts_used: number; peanuts_refunded: number } | null>(null);
+  const [authState, setAuthState] = useState<'form' | 'success' | 'error' | 'reset'>('form');
+  const [authMessage, setAuthMessage] = useState<string>('');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const addIntercomUser = async (userEmail: string) => {
     try {
@@ -156,6 +161,9 @@ export function ClientAuth() {
           onClick={() => {
             setShowAuthModal(true);
             setIsSignUp(false);
+            setAuthState('form');
+            setAuthMessage('');
+            setShowPasswordReset(false);
           }}
           className="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 font-medium transition-colors shadow-lg"
         >
@@ -166,16 +174,100 @@ export function ClientAuth() {
       {showAuthModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
-          onClick={() => setShowAuthModal(false)}
+          onClick={() => {
+            setShowAuthModal(false);
+            setAuthState('form');
+            setAuthMessage('');
+            setShowPasswordReset(false);
+          }}
         >
           <div
             className="bg-bolt-elements-background-depth-1 p-8 rounded-lg w-full max-w-md mx-auto border border-bolt-elements-borderColor"
             onClick={(e) => e.stopPropagation()}
           >
-            {isSignUp ? (
-              <SignUpForm addIntercomUser={addIntercomUser} onToggleForm={() => setIsSignUp(false)} />
+            {authState === 'success' ? (
+              <AuthStateMessage
+                type="success"
+                title="Check Your Email"
+                message={authMessage}
+                onClose={() => {
+                  setShowAuthModal(false);
+                  setAuthState('form');
+                  setAuthMessage('');
+                }}
+                closeButtonText="Got it"
+              />
+            ) : authState === 'error' ? (
+              <AuthStateMessage
+                type="error"
+                title="Authentication Error"
+                message={authMessage}
+                onClose={() => {
+                  setShowAuthModal(false);
+                  setAuthState('form');
+                  setAuthMessage('');
+                  setShowPasswordReset(false);
+                }}
+                onRetry={() => {
+                  setAuthState('form');
+                  setAuthMessage('');
+                  setShowPasswordReset(false);
+                }}
+                closeButtonText="Close"
+                retryButtonText="Try Again"
+              />
+            ) : isSignUp ? (
+              <SignUpForm
+                addIntercomUser={addIntercomUser}
+                onToggleForm={() => {
+                  setIsSignUp(false);
+                  setAuthState('form');
+                  setAuthMessage('');
+                  setShowPasswordReset(false);
+                }}
+                onSuccess={(message) => {
+                  setAuthState('success');
+                  setAuthMessage(message);
+                }}
+                onError={(message) => {
+                  setAuthState('error');
+                  setAuthMessage(message);
+                }}
+              />
+            ) : showPasswordReset ? (
+              <PasswordResetForm
+                onBack={() => {
+                  setShowPasswordReset(false);
+                  setAuthState('form');
+                  setAuthMessage('');
+                }}
+                onSuccess={(message) => {
+                  setAuthState('success');
+                  setAuthMessage(message);
+                }}
+                onError={(message) => {
+                  setAuthState('error');
+                  setAuthMessage(message);
+                }}
+              />
             ) : (
-              <SignInForm onToggleForm={() => setIsSignUp(true)} />
+              <SignInForm
+                onToggleForm={() => {
+                  setIsSignUp(true);
+                  setAuthState('form');
+                  setAuthMessage('');
+                  setShowPasswordReset(false);
+                }}
+                onError={(message) => {
+                  setAuthState('error');
+                  setAuthMessage(message);
+                }}
+                onForgotPassword={() => {
+                  setShowPasswordReset(true);
+                  setAuthState('form');
+                  setAuthMessage('');
+                }}
+              />
             )}
           </div>
         </div>

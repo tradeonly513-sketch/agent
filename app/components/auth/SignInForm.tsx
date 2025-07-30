@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
 import { getSupabase } from '~/lib/supabase/client';
 import type { AuthError } from '@supabase/supabase-js';
 import { GoogleIcon } from '~/components/icons/google-icon';
 
 interface SignInFormProps {
   onToggleForm: () => void;
+  onError: (message: string) => void;
+  onForgotPassword?: () => void;
 }
 
 const validateEmail = (email: string): boolean => {
@@ -13,7 +14,7 @@ const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-export function SignInForm({ onToggleForm }: SignInFormProps) {
+export function SignInForm({ onToggleForm, onError, onForgotPassword }: SignInFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,11 +31,9 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
       if (error) {
         throw error;
       }
-
-      toast.success('Successfully signed in!');
     } catch (error) {
       const authError = error as AuthError;
-      toast.error(authError.message || 'Failed to sign in');
+      onError(authError.message || 'Failed to sign in');
     } finally {
       setIsProcessing(false);
     }
@@ -44,8 +43,9 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
     const { error } = await getSupabase().auth.signInWithOAuth({
       provider: 'google',
     });
+
     if (error) {
-      toast.error(error.message || 'Failed to sign in with Google');
+      onError(error.message || 'Failed to sign in with Google');
     }
   };
 
@@ -120,6 +120,17 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
           {isProcessing ? 'Processing...' : 'Sign In'}
         </button>
       </form>
+
+      {onForgotPassword && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={onForgotPassword}
+            className="text-green-500 hover:text-green-600 font-medium bg-transparent text-sm"
+          >
+            Forgot password?
+          </button>
+        </div>
+      )}
 
       <p className="mt-6 text-center text-bolt-elements-textSecondary">
         Don't have an account?{' '}
