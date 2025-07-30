@@ -2,12 +2,12 @@ import { toast } from 'react-toastify';
 import ReactModal from 'react-modal';
 import { useState } from 'react';
 import type { DeploySettingsDatabase } from '~/lib/replay/Deploy';
-import { generateRandomId } from '~/utils/nut';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { chatStore } from '~/lib/stores/chat';
 import { database } from '~/lib/persistence/apps';
 import { deployApp, downloadRepository } from '~/lib/replay/Deploy';
 import DeployChatModal from './components/DeployChatModal';
+import { generateRandomId } from '~/utils/nut';
 
 ReactModal.setAppElement('#root');
 
@@ -19,7 +19,7 @@ export enum DeployStatus {
 
 export function DeployChatButton() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deploySettings, setDeploySettings] = useState<DeploySettingsDatabase | null>(null);
+  const [deploySettings, setDeploySettings] = useState<DeploySettingsDatabase>({});
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<DeployStatus>(DeployStatus.NotStarted);
   const [databaseFound, setDatabaseFound] = useState(false);
@@ -89,6 +89,24 @@ export function DeployChatButton() {
     }
   };
 
+  const generateSiteName = () => {
+    const appTitle = chatStore.appTitle.get();
+    if (!appTitle) {
+      return 'my-app';
+    }
+    
+    // Convert to lowercase and replace spaces/special characters with hyphens
+    const siteName = appTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+      || 'nut-app'; // Fallback if result is empty
+
+    return `${siteName}-${generateRandomId()}`;
+  };
+
   const handleDeploy = async () => {
     setError(null);
 
@@ -98,24 +116,27 @@ export function DeployChatButton() {
       return;
     }
 
-    if (!deploySettings?.netlify?.authToken) {
-      setError('Netlify Auth Token is required');
+    if (!deploySettings.netlify) {
+      deploySettings.netlify = {};
+    }
+
+    const { authToken, siteId, accountSlug, siteName } = deploySettings.netlify;
+    if (siteId && accountSlug) {
+      setError('Cannot specify both a Netlify Site ID and a Netlify Account Slug');
+      return;
+    } else if (!siteId && !accountSlug) {
+      setError('Either a Netlify Site ID or a Netlify Account Slug is required');
+      return;
+    } else if (authToken && !accountSlug) {
+      setError('An account slug is required when using an auth token');
+      return;
+    } else if (accountSlug && !authToken) {
+      setError('An auth token is required when using an account slug');
       return;
     }
 
-    if (deploySettings?.netlify?.siteId) {
-      if (deploySettings.netlify.createInfo) {
-        setError('Cannot specify both a Netlify Site ID and a Netlify Account Slug');
-        return;
-      }
-    } else if (!deploySettings?.netlify?.createInfo) {
-      setError('Either a Netlify Site ID or a Netlify Account Slug is required');
-      return;
-    } else {
-      // Add a default site name if one isn't provided.
-      if (!deploySettings.netlify.createInfo?.siteName) {
-        deploySettings.netlify.createInfo.siteName = `nut-app-${generateRandomId()}`;
-      }
+    if (!siteId && !siteName) {
+      deploySettings.netlify.siteName = generateSiteName();
     }
 
     if (
@@ -162,10 +183,13 @@ export function DeployChatButton() {
     let newSettings = deploySettings;
 
     // Update netlify settings so future deployments will reuse the site.
-    if (deploySettings?.netlify?.createInfo && result.netlifySiteId) {
+    if (result.netlifySiteId) {
       newSettings = {
         ...deploySettings,
-        netlify: { authToken: deploySettings.netlify.authToken, siteId: result.netlifySiteId },
+        netlify: {
+          authToken: deploySettings.netlify?.authToken,
+          siteId: result.netlifySiteId,
+        },
       };
     }
 
