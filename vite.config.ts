@@ -14,8 +14,12 @@ export default defineConfig((config) => {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
     build: {
-      target: 'esnext',
-    },
+  target: 'esnext',
+  sourcemap: false,   
+  minify: false,     
+  cssMinify: false,   
+  chunkSizeWarningLimit: 1600
+},
     
 server: {
   host: '0.0.0.0',
