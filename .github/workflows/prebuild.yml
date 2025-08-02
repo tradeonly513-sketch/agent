@@ -54,11 +54,12 @@ jobs:
           mkdir -p /tmp/render-build
               cp package.json pnpm-lock.yaml /tmp/render-build/
           cp -R build /tmp/render-build/build
+          cp server.js /tmp/render-build/
 
           cat > /tmp/render-build/start.sh <<'EOF'
           #!/usr/bin/env bash
           set -e
-          npx --yes @remix-run/serve build/server/index.js
+          node server.js
           EOF
           chmod +x /tmp/render-build/start.sh
 
