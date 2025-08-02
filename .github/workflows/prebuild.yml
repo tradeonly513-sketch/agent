@@ -11,11 +11,12 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # we need full history to create/force-push a branch
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -25,27 +26,42 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: '9.4.0'          # matches your package.json "packageManager": "pnpm@9.4.0"
-          run_install: false
-
-      # 👇 Make extra heap available to all following steps (most reliable on Actions)
-      - name: Increase Node memory
-        run: |
-          echo "NODE_OPTIONS=--max-old-space-size=4096" >> "$GITHUB_ENV"
+          version: 9
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile=false
+        run: pnpm install --frozen-lockfile
 
-      - name: Build (Vite)
+      - name: Increase Node memory
+        run: echo "NODE_OPTIONS=--max-old-space-size=6144" >> $GITHUB_ENV
+
+      - name: Build (Vite/Remix)
         run: pnpm run build
 
-      - name: Verify dist exists
-        run: test -d dist && ls -la dist
+      # 👇 The client build ends up in build/client (not dist)
+      - name: Verify client build exists
+        run: |
+          test -d build/client && ls -la build/client
 
-      - name: Publish dist to render-build branch
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: render-build
-          publish_dir: ./dist
-          force_orphan: true
+      - name: Publish client build to render-build branch
+        run: |
+          OUT=build/client
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # stage files in a temp dir to avoid polluting the worktree
+          rm -rf /tmp/render-build
+          mkdir -p /tmp/render-build
+          cp -R "$OUT"/. /tmp/render-build/
+
+          # create/switch to branch that Render will serve
+          git switch -C render-build
+
+          # wipe branch contents and replace with prebuilt assets
+          git rm -r --cached . >/dev/null 2>&1 || true
+          git clean -fdx || true
+          rm -rf ./* .[^.]* || true
+          cp -R /tmp/render-build/. .
+
+          git add -A
+          git commit -m "Publish prebuilt client from $GITHUB_SHA" || echo "Nothing to commit"
+          git push -f origin render-build
