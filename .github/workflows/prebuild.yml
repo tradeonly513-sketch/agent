@@ -1,12 +1,12 @@
 name: Prebuild for Render
 
 on:
-  workflow_dispatch:        # you can run it manually
-  push:                     # also run on pushes to main
-    branches: [ main ]
+  workflow_dispatch:        # allow manual runs
+  push:
+    branches: [ main ]      # also run on pushes to main
 
 permissions:
-  contents: write           # allow pushing a branch
+  contents: write           # needed to push the build branch
 
 jobs:
   build:
@@ -21,29 +21,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
 
+      # 👇 install pnpm FIRST, and match your repo's packageManager (pnpm@9.4.0)
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: '9.4.0'
+          run_install: false
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile=false
 
       - name: Build (Vite)
         env:
-          CI: true
-          NODE_OPTIONS: "--max-old-space-size=2048"
+          NODE_OPTIONS: --max-old-space-size=1024
         run: pnpm run build
 
       - name: Verify dist exists
         run: test -d dist && ls -la dist
 
-      - name: Publish to render-build branch
+      # Publish ./dist to branch "render-build" (clean, orphan branch)
+      - name: Publish dist to render-build branch
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
           publish_branch: render-build
+          publish_dir: ./dist
           force_orphan: true
-
-
