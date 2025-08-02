@@ -1,11 +1,12 @@
 name: Prebuild for Render
+
 on:
-  workflow_dispatch:      # run manually if you want
+  workflow_dispatch:        # you can run it manually
   push:
-    branches: [ main ]    # also run on pushes to main
+    branches: [ main ]      # also run on pushes to main
 
 permissions:
-  contents: write         # allow this workflow to push to the repo
+  contents: write           # allow pushing branch
 
 jobs:
   build:
@@ -15,13 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # we need history to push branches
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'     # ok even if the project uses pnpm
+          cache: npm
 
       - name: Increase Node memory
         run: echo "NODE_OPTIONS=--max-old-space-size=3072" >> $GITHUB_ENV
@@ -37,42 +38,36 @@ jobs:
             npm install --legacy-peer-deps
           fi
 
-      - name: Build (production)
+      - name: Build
         run: npm run build
 
-      # Collect static assets into /dist no matter how the app outputs
       - name: Prepare static dist
         run: |
           rm -rf dist
           mkdir -p dist
-          # most Vite apps already output to dist/
-          if [ -d dist ]; then echo "dist exists from build"; fi
-          # Remix client assets commonly land in build/client
+          # Remix client assets often end up here
           if [ -d build/client ]; then cp -R build/client/* dist/; fi
-          # public assets
+          # Vite/SPA output (if already in dist) stays
           if [ -d public ]; then cp -R public/* dist/ || true; fi
           if [ -d app/public ]; then cp -R app/public/* dist/ || true; fi
-          # sanity check
-          if [ ! -f dist/index.html ] && [ ! -f dist/200.html ]; then
-            echo "WARNING: No index.html found yet; app may not be purely static."
-          fi
+          # As a fallback, if repo root has index.html, copy it
+          if [ ! -e dist/index.html ] && [ -e index.html ]; then cp index.html dist/; fi
           ls -la dist || true
 
-      # Publish dist to a dedicated branch (render-build)
       - name: Publish dist to render-build branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # use a temp directory so we never touch .git in the checkout
+          rm -rf /tmp/render-dist
+          mkdir -p /tmp/render-dist
+          cp -R dist/* /tmp/render-dist/ || true
+          cd /tmp/render-dist
+          git init
           git config user.name "github-actions"
           git config user.email "actions@users.noreply.github.com"
-          git fetch origin
-          # Create/replace an orphan-only-static branch
-          git checkout --orphan render-build
-          git reset
-          rm -rf .
-          mkdir -p dist
-          # Bring in the dist we just built from previous checkout
-          cp -R $GITHUB_WORKSPACE/dist ./dist
-          git add dist
+          git checkout -b render-build
+          git add .
           git commit -m "build: static dist for Render [skip ci]" || true
-          git push -f origin render-build
-
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" render-build
 
