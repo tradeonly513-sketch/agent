@@ -15,10 +15,11 @@ export default defineConfig((config) => {
     },
     build: {
   target: 'esnext',
-  sourcemap: false,   
-  minify: false,     
-  cssMinify: false,   
-  chunkSizeWarningLimit: 1600
+  sourcemap: false,          
+  minify: false,              
+  rollupOptions: {
+    output: { manualChunks: undefined },
+  },
 },
     
 server: {
