@@ -1,31 +1,21 @@
 name: Prebuild for Render
 
 on:
-  workflow_dispatch: {}         # allow manual runs
-  push:
-    branches: [ main ]          # also run on pushes to main
+  workflow_dispatch:        # you can run it manually
+  push:                     # also run on pushes to main
+    branches: [ main ]
 
 permissions:
-  contents: write               # needed to push the prebuilt branch
-
-concurrency:
-  group: prebuild-${{ github.ref }}
-  cancel-in-progress: true
+  contents: write           # allow pushing a branch
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0        # we are going to create/force-push a branch
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9            # matches current pnpm major used by most Vite templates
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -33,32 +23,27 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Increase Node memory
-        run: |
-          echo "NODE_OPTIONS=--max-old-space-size=1536" >> $GITHUB_ENV
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build (Vite)
         env:
-          # Avoid accidental dev-server behaviors
-          NODE_ENV: production
+          CI: true
+          NODE_OPTIONS: "--max-old-space-size=2048"
         run: pnpm run build
 
-      # At this point Vite should have produced ./dist
       - name: Verify dist exists
-        run: |
-          test -d dist || { echo "dist/ not found; check your build outputDir"; exit 1; }
-          ls -lah dist | head -n 50
+        run: test -d dist && ls -la dist
 
-      - name: Publish dist to render-build branch
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B render-build
-          # keep only dist in this branch
-          find . -mindepth 1 -maxdepth 1 ! -name dist ! -name .git -exec rm -rf {} +
-          git add -f dist
-          git commit -m "Prebuild for Render: ${GITHUB_SHA}" || echo "No changes to commit"
-          git push -f origin render-build
+      - name: Publish to render-build branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: render-build
+          force_orphan: true
+
+
