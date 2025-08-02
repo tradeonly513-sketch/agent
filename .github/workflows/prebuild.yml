@@ -1,12 +1,16 @@
 name: Prebuild for Render
 
 on:
-  workflow_dispatch:        # you can run it manually
+  workflow_dispatch: {}         # allow manual runs
   push:
-    branches: [ main ]      # also run on pushes to main
+    branches: [ main ]          # also run on pushes to main
 
 permissions:
-  contents: write           # allow pushing branch
+  contents: write               # needed to push the prebuilt branch
+
+concurrency:
+  group: prebuild-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -16,58 +20,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0        # we are going to create/force-push a branch
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9            # matches current pnpm major used by most Vite templates
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Increase Node memory
-        run: echo "NODE_OPTIONS=--max-old-space-size=3072" >> $GITHUB_ENV
-
-      - name: Install deps (npm or pnpm)
         run: |
-          if [ -f pnpm-lock.yaml ]; then
-            npm i -g pnpm
-            pnpm install --no-frozen-lockfile
-          elif [ -f package-lock.json ]; then
-            npm ci --legacy-peer-deps
-          else
-            npm install --legacy-peer-deps
-          fi
+          echo "NODE_OPTIONS=--max-old-space-size=1536" >> $GITHUB_ENV
 
-      - name: Build
-        run: npm run build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Prepare static dist
+      - name: Build (Vite)
+        env:
+          # Avoid accidental dev-server behaviors
+          NODE_ENV: production
+        run: pnpm run build
+
+      # At this point Vite should have produced ./dist
+      - name: Verify dist exists
         run: |
-          rm -rf dist
-          mkdir -p dist
-          # Remix client assets often end up here
-          if [ -d build/client ]; then cp -R build/client/* dist/; fi
-          # Vite/SPA output (if already in dist) stays
-          if [ -d public ]; then cp -R public/* dist/ || true; fi
-          if [ -d app/public ]; then cp -R app/public/* dist/ || true; fi
-          # As a fallback, if repo root has index.html, copy it
-          if [ ! -e dist/index.html ] && [ -e index.html ]; then cp index.html dist/; fi
-          ls -la dist || true
+          test -d dist || { echo "dist/ not found; check your build outputDir"; exit 1; }
+          ls -lah dist | head -n 50
 
       - name: Publish dist to render-build branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # use a temp directory so we never touch .git in the checkout
-          rm -rf /tmp/render-dist
-          mkdir -p /tmp/render-dist
-          cp -R dist/* /tmp/render-dist/ || true
-          cd /tmp/render-dist
-          git init
-          git config user.name "github-actions"
-          git config user.email "actions@users.noreply.github.com"
-          git checkout -b render-build
-          git add .
-          git commit -m "build: static dist for Render [skip ci]" || true
-          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" render-build
-
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B render-build
+          # keep only dist in this branch
+          find . -mindepth 1 -maxdepth 1 ! -name dist ! -name .git -exec rm -rf {} +
+          git add -f dist
+          git commit -m "Prebuild for Render: ${GITHUB_SHA}" || echo "No changes to commit"
+          git push -f origin render-build
