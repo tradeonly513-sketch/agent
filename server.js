@@ -5,6 +5,9 @@ const app = express();
 
 // Serve static files from /public if present
 app.use(express.static("public"));
+app.get("/healthz", (_req, res) => {
+  res.type("text/plain").send("ok");
+});
 
 app.all("*", async (req, res, next) => {
   // Load the Remix server build at runtime
