@@ -10,37 +10,51 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # needed so we can push back to repo
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
+          cache: 'npm'   # cache npm; pnpm will still be ok
 
-      - name: Install
-        run: npm ci --legacy-peer-deps
+      - name: Increase Node memory
+        run: echo "NODE_OPTIONS=--max-old-space-size=2048" >> $GITHUB_ENV
+
+      - name: Install deps (supports pnpm or npm)
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            npm i -g pnpm
+            pnpm install --no-frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            npm ci --legacy-peer-deps
+          else
+            npm install --legacy-peer-deps
+          fi
 
       - name: Build
         run: npm run build
 
-      # If your build output is 'dist', change build/client to dist
-      - name: Collect static output
+      # Collect built assets into /dist for Render Static Site
+      - name: Prepare static artifacts
         run: |
-          rm -rf out && mkdir -p out
-          cp -r build/client/* out/
+          rm -rf dist
+          mkdir -p dist
+          if [ -d build/client ]; then cp -R build/client/* dist/; fi
+          if [ -d build/public ]; then cp -R build/public/* dist/; fi
+          if [ -d app/public ]; then cp -R app/public/* dist/; fi
+          # fallback: many Vite apps emit to "dist" already; leave as-is if present
 
-      - name: Publish to stable branch
+      - name: Commit build artifacts
         run: |
-          git config user.email "actions@github.com"
-          git config user.name "github-actions"
-          git checkout -B stable
-          rm -rf ./*
-          cp -r out/* .
-          git add -A
-          git commit -m "Publish prebuilt site" || echo "nothing to commit"
-          git push -f origin stable
+          git config user.name "GitHub Actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f dist
+          git commit -m "chore: add prebuilt dist for Render" || echo "Nothing to commit"
+          git push
 
