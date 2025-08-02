@@ -1,12 +1,12 @@
 name: Prebuild for Render
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:        # allow manual runs
   push:
-    branches: [ main ]
+    branches: [ main ]      # also run on pushes to main
 
 permissions:
-  contents: write
+  contents: write           # we push to render-build
 
 jobs:
   build:
@@ -22,7 +22,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
 
+      # Install pnpm but DON'T set a version (we'll use package.json "packageManager")
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -41,20 +43,18 @@ jobs:
       - name: Verify client build exists
         run: test -d build/client && ls -la build/client
 
-            - name: Verify build exists
-        run: |
-          test -f build/server/index.js
-          test -d build/client
-          ls -la build
+      - name: Verify server build exists
+        run: test -f build/server/index.js && ls -la build/server
 
       - name: Publish runtime bundle to render-build branch
         shell: bash
         run: |
-          # Prepare a minimal runtime tree
-          rm -rf /tmp/render-build && mkdir -p /tmp/render-build
+          set -e
+          rm -rf /tmp/render-build
+          mkdir -p /tmp/render-build
           cp -R build /tmp/render-build/build
 
-          # Tiny start script to run Remix’s production server
+          # Tiny start script to run Remix's production server
           cat > /tmp/render-build/start.sh <<'EOF'
           #!/usr/bin/env bash
           set -e
@@ -62,13 +62,14 @@ jobs:
           EOF
           chmod +x /tmp/render-build/start.sh
 
-          # Force-publish to the render-build branch
+          cd /tmp/render-build
+          git init
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan render-build || git checkout -B render-build
-          git rm -rf . || true
-          cp -R /tmp/render-build/* .
           git add -A
           git commit -m "Publish runtime bundle"
-          git push -f origin HEAD:render-build
+          git branch -M render-build
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push -f origin render-build
+
 
