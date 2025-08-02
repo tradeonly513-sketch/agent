@@ -41,19 +41,34 @@ jobs:
       - name: Verify client build exists
         run: test -d build/client && ls -la build/client
 
-      # Publish the built client to a dedicated branch named render-build
-      - name: Publish client to render-build branch
+            - name: Verify build exists
         run: |
-          rm -rf /tmp/render-build
-          mkdir -p /tmp/render-build
-          cp -r build/client/* /tmp/render-build/
-          cd /tmp/render-build
-          git init
+          test -f build/server/index.js
+          test -d build/client
+          ls -la build
+
+      - name: Publish runtime bundle to render-build branch
+        shell: bash
+        run: |
+          # Prepare a minimal runtime tree
+          rm -rf /tmp/render-build && mkdir -p /tmp/render-build
+          cp -R build /tmp/render-build/build
+
+          # Tiny start script to run Remix’s production server
+          cat > /tmp/render-build/start.sh <<'EOF'
+          #!/usr/bin/env bash
+          set -e
+          npx --yes @remix-run/serve build/server/index.js
+          EOF
+          chmod +x /tmp/render-build/start.sh
+
+          # Force-publish to the render-build branch
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Publish client build"
-          git branch -M render-build
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push -f origin render-build
+          git checkout --orphan render-build || git checkout -B render-build
+          git rm -rf . || true
+          cp -R /tmp/render-build/* .
+          git add -A
+          git commit -m "Publish runtime bundle"
+          git push -f origin HEAD:render-build
 
