@@ -1,6 +1,6 @@
 # vlyx.ide
 
-[![vlyx.ide: Professional AI-Powered Development Environment](./public/social_preview_index.jpg)](https://vlyx.ide)
+[![vlyx.ide: Professional AI-Powered Development Environment](./public/vlyx-ide-logo.png)](https://vlyx.ide)
 
 ## 🚀 Welcome to vlyx.ide
 
