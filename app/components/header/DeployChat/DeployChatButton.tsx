@@ -95,6 +95,11 @@ export function DeployChatButton() {
     setStatus(DeployStatus.NotStarted);
   };
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    // Don't reset deployment state - let it continue in background
+  };
+
   const generateSiteName = () => {
     const appTitle = chatStore.appTitle.get();
     if (!appTitle) {
@@ -169,11 +174,11 @@ export function DeployChatButton() {
     // Write out to the database before we start trying to deploy.
     await database.setAppDeploySettings(appId, deploySettings);
 
-    console.log('DeploymentStarting', appId, deploySettings);
+    console.log('ManualDeployStarting', appId, deploySettings);
 
     const result = await deployApp(appId, deploySettings);
 
-    console.log('DeploymentResult', appId, deploySettings, result);
+    console.log('ManualDeployResult', appId, deploySettings, result);
 
     if (result.error) {
       setError(result.error);
@@ -192,12 +197,28 @@ export function DeployChatButton() {
       <button
         className="flex gap-2 bg-bolt-elements-sidebar-buttonBackgroundDefault text-bolt-elements-sidebar-buttonText hover:bg-bolt-elements-sidebar-buttonBackgroundHover rounded-md p-2 transition-theme"
         onClick={handleOpenModal}
+        disabled={status === DeployStatus.Started}
       >
-        Deploy App
+        {status === DeployStatus.Started ? (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full border-2 border-bolt-elements-borderColor border-t-blue-500 animate-spin" />
+            Deploying...
+          </div>
+        ) : status === DeployStatus.Succeeded ? (
+          <div className="flex items-center gap-2">
+            <div className="i-ph:check-circle text-xl"></div>
+            Deployed
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="i-ph:rocket-launch text-xl"></div>
+            Deploy App
+          </div>
+        )}
       </button>
       <DeployChatModal
         isModalOpen={isModalOpen}
-        setIsModalOpen={setIsModalOpen}
+        setIsModalOpen={handleCloseModal}
         status={status}
         deploySettings={deploySettings}
         setDeploySettings={setDeploySettings}
