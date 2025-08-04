@@ -192,13 +192,13 @@ export const Menu = () => {
       <div className="h-[55px]" />
       <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
         <div className="px-6 py-4 border-b border-bolt-elements-borderColor">
-          <div className="flex items-center gap-2 mb-4" >
+          <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-bolt-elements-borderColor p-1">
               <img src="/logo-styled.svg" alt="Nut.new" className="w-full h-full" />
             </div>
             <h1 className="text-bolt-elements-textPrimary font-semibold text-xl">Nut.new</h1>
           </div>
-          
+
           <div className="space-y-2">
             <a
               href="/"
@@ -207,7 +207,7 @@ export const Menu = () => {
               <div className="i-ph:plus text-base" />
               <span>New App</span>
             </a>
-            
+
             <a
               href="/about"
               className="w-full flex items-center gap-2 bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:bg-bolt-elements-background-depth-4 hover:text-bolt-elements-textPrimary border border-bolt-elements-borderColor rounded-md px-3 py-2 transition-all duration-200 text-sm font-medium"
@@ -271,7 +271,7 @@ export const Menu = () => {
               )}
             </div>
           )}
-          
+
           <DialogRoot open={dialogContent !== null}>
             {binDates(filteredList).map(({ category, items }) => (
               <div key={category} className="mb-6 first:mt-0">
