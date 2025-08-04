@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { getSupabase } from '~/lib/supabase/client';
 import type { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
@@ -21,6 +21,8 @@ export function ClientAuth() {
   const [authState, setAuthState] = useState<'form' | 'success' | 'error' | 'reset'>('form');
   const [authMessage, setAuthMessage] = useState<string>('');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const addIntercomUser = async (userEmail: string) => {
     try {
@@ -81,10 +83,31 @@ export function ClientAuth() {
     }
   }, [showDropdown]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
+
   const handleSignOut = async () => {
     await getSupabase().auth.signOut();
     setShowDropdown(false);
     toast.success('Signed out successfully');
+  };
+
+  const handleShowAccountModal = () => {
+    setShowAccountModal(true);
+    setShowDropdown(false);
   };
 
   if (loading) {
@@ -113,33 +136,47 @@ export function ClientAuth() {
           </button>
 
           {showDropdown && (
-            <div className="absolute right-0 mt-2 py-2 w-64 bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor rounded-lg shadow-lg z-10">
-              <div className="px-4 py-3 text-bolt-elements-textPrimary border-b border-bolt-elements-borderColor">
-                <div className="text-sm text-bolt-elements-textSecondary">Signed in as</div>
-                <div className="font-medium truncate">{user.email}</div>
-              </div>
-              <div className="px-4 py-3 text-bolt-elements-textPrimary border-b border-bolt-elements-borderColor">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span>Peanuts</span>
-                    <span className="font-medium">{peanutsRemaining ?? '...'}</span>
+            <div
+              ref={dropdownRef}
+              className="absolute right-0 mt-2 py-3 w-72 bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor rounded-xl shadow-2xl z-10"
+            >
+              <div className="px-6 py-4 border-b border-bolt-elements-borderColor">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-bolt-elements-background-depth-2 rounded-full flex items-center justify-center border border-bolt-elements-borderColor">
+                    <div className="i-ph:user text-lg text-bolt-elements-textPrimary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-bolt-elements-textSecondary mb-1">Signed in as</div>
+                    <div className="font-medium text-bolt-elements-textPrimary truncate text-sm">{user.email}</div>
                   </div>
                 </div>
               </div>
-              <div className="px-2 pt-2">
-                <button
-                  onClick={() => setShowAccountModal(true)}
-                  className="w-full px-4 py-2 text-left bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center justify-center"
-                >
-                  Account
-                </button>
+
+              <div className="px-6 py-4 border-b border-bolt-elements-borderColor">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🥜</span>
+                    <span className="text-bolt-elements-textPrimary font-medium">Peanuts</span>
+                  </div>
+                  <div className="text-bolt-elements-textPrimary font-bold text-lg">{peanutsRemaining ?? '...'}</div>
+                </div>
               </div>
-              <div className="px-2 pt-2">
+
+              <div className="p-3 space-y-2">
+                <button
+                  onClick={handleShowAccountModal}
+                  className="w-full px-4 py-3 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-all duration-200 flex items-center gap-3 font-medium shadow-sm hover:shadow-md"
+                >
+                  <div className="i-ph:gear text-lg" />
+                  <span>Account Settings</span>
+                </button>
+
                 <button
                   onClick={handleSignOut}
-                  className="w-full px-4 py-2 text-left bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center justify-center"
+                  className="w-full px-4 py-3 bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary hover:bg-bolt-elements-background-depth-3 hover:text-bolt-elements-textPrimary border border-bolt-elements-borderColor rounded-lg transition-all duration-200 flex items-center gap-3 font-medium"
                 >
-                  Sign Out
+                  <div className="i-ph:sign-out text-lg" />
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>
@@ -270,7 +307,7 @@ export function ClientAuth() {
             setShowDropdown(false);
           }}
         >
-          <AccountModal user={user} />
+          <AccountModal user={user} onClose={() => setShowAccountModal(false)} />
         </div>
       )}
     </>
