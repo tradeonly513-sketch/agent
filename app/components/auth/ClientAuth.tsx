@@ -6,14 +6,17 @@ import { SignInForm } from './SignInForm';
 import { SignUpForm } from './SignUpForm';
 import { AuthStateMessage } from './AuthStateMessage';
 import { PasswordResetForm } from './PasswordResetForm';
+import { getPeanutsRemaining } from '~/lib/replay/Account';
+import { AccountModal } from './AccountModal';
 
 export function ClientAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [usageData, setUsageData] = useState<{ peanuts_used: number; peanuts_refunded: number } | null>(null);
+  const [peanutsRemaining, setPeanutsRemaining] = useState<number | undefined>(undefined);
   const [authState, setAuthState] = useState<'form' | 'success' | 'error' | 'reset'>('form');
   const [authMessage, setAuthMessage] = useState<string>('');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -47,7 +50,7 @@ export function ClientAuth() {
     async function getUser() {
       try {
         const { data } = await getSupabase().auth.getUser();
-        setUser(data.user);
+        setUser(data.user ?? undefined);
       } catch (error) {
         console.error('Error fetching user:', error);
       } finally {
@@ -60,7 +63,7 @@ export function ClientAuth() {
     const {
       data: { subscription },
     } = getSupabase().auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-      setUser(session?.user ?? null);
+      setUser(session?.user ?? undefined);
       if (session?.user) {
         setShowAuthModal(false);
       }
@@ -71,25 +74,16 @@ export function ClientAuth() {
     };
   }, []);
 
-  useEffect(() => {
-    async function updateUsageData() {
-      try {
-        const { data, error } = await getSupabase()
-          .from('profiles')
-          .select('peanuts_used, peanuts_refunded')
-          .eq('id', user?.id)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        setUsageData(data);
-      } catch (error) {
-        console.error('Error fetching usage data:', error);
-      }
+  const updateUsageData = async () => {
+    try {
+      const peanutsRemaining = await getPeanutsRemaining();
+      setPeanutsRemaining(peanutsRemaining);
+    } catch (error) {
+      console.error('Error fetching usage data:', error);
     }
+  };
 
+  useEffect(() => {
     if (showDropdown) {
       updateUsageData();
     }
@@ -133,17 +127,20 @@ export function ClientAuth() {
                 <div className="font-medium truncate">{user.email}</div>
               </div>
               <div className="px-4 py-3 text-bolt-elements-textPrimary border-b border-bolt-elements-borderColor">
-                <div className="text-sm text-bolt-elements-textSecondary">Usage</div>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span>Peanuts used</span>
-                    <span className="font-medium">{usageData?.peanuts_used ?? '...'}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Peanuts refunded</span>
-                    <span className="font-medium">{usageData?.peanuts_refunded ?? '...'}</span>
+                    <span>Peanuts</span>
+                    <span className="font-medium">{peanutsRemaining ?? '...'}</span>
                   </div>
                 </div>
+              </div>
+              <div className="px-2 pt-2">
+                <button
+                  onClick={() => setShowAccountModal(true)}
+                  className="w-full px-4 py-2 text-left bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center justify-center"
+                >
+                  Account
+                </button>
               </div>
               <div className="px-2 pt-2">
                 <button
@@ -270,6 +267,18 @@ export function ClientAuth() {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {showAccountModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
+          onClick={() => {
+            setShowAccountModal(false);
+            setShowDropdown(false);
+          }}
+        >
+          <AccountModal user={user} />
         </div>
       )}
     </>
