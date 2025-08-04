@@ -68,7 +68,6 @@ export const Menu = () => {
     (event: React.UIEvent, item: AppLibraryEntry) => {
       event.preventDefault();
 
-      // Optimistically remove the item from the list while we update the database.
       setList((list ?? []).filter((chat) => chat.id !== item.id));
 
       database
@@ -77,7 +76,6 @@ export const Menu = () => {
           loadEntries();
 
           if (chatStore.currentAppId.get() === item.id) {
-            // hard page navigation to clear the stores
             window.location.pathname = '/';
           }
         })
@@ -100,7 +98,6 @@ export const Menu = () => {
     }
   }, [isOpen]);
 
-  // Touch/swipe gesture handling for mobile
   useEffect(() => {
     if (!isSmallViewport) {
       return undefined;
@@ -147,7 +144,6 @@ export const Menu = () => {
     };
   }, [isSmallViewport, isOpen]);
 
-  // Mouse hover handling for desktop
   useEffect(() => {
     if (isSmallViewport) {
       return undefined;
@@ -191,64 +187,106 @@ export const Menu = () => {
       initial="closed"
       animate={isOpen ? 'open' : 'closed'}
       variants={menuVariants}
-      className="flex selection-accent flex-col side-menu fixed top-0 w-[350px] h-full bg-bolt-elements-background-depth-2 border-r rounded-r-3xl border-bolt-elements-borderColor z-sidebar shadow-xl shadow-bolt-elements-sidebar-dropdownShadow text-sm"
+      className="flex selection-accent flex-col side-menu fixed top-0 w-[350px] h-full bg-bolt-elements-background-depth-2 border-r rounded-r-3xl border-bolt-elements-borderColor z-sidebar shadow-2xl text-sm"
     >
-      <div className="h-[55px]" /> {/* Spacer for top margin */}
+      <div className="h-[55px]" />
       <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
-        <div className="flex gap-2 px-2 mb-0 ml-2.5">
-          <a
-            href="/about"
-            className="flex gap-2 bg-bolt-elements-sidebar-buttonBackgroundDefault text-bolt-elements-sidebar-buttonText hover:bg-bolt-elements-sidebar-buttonBackgroundHover rounded-md p-2 transition-theme"
-          >
-            About
-          </a>
+        <div className="px-6 py-4 border-b border-bolt-elements-borderColor">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-bolt-elements-borderColor p-1">
+              <img src="/logo-styled.svg" alt="Nut.new" className="w-full h-full" />
+            </div>
+            <h1 className="text-bolt-elements-textPrimary font-semibold text-xl">Nut.new</h1>
+          </div>
+
+          <div className="space-y-2">
+            <a
+              href="/"
+              className="w-full flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600 rounded-md px-3 py-2 transition-all duration-200 text-sm font-medium"
+            >
+              <div className="i-ph:plus text-base" />
+              <span>New App</span>
+            </a>
+          </div>
         </div>
-        <div className="p-4 select-none">
-          <a
-            href="/"
-            className="flex gap-2 items-center bg-bolt-elements-sidebar-buttonBackgroundDefault text-bolt-elements-sidebar-buttonText hover:bg-bolt-elements-sidebar-buttonBackgroundHover rounded-md p-2 transition-theme mb-4"
-          >
-            <span className="inline-block i-bolt:chat scale-110" />
-            New App
-          </a>
-          <div className="relative w-full">
+
+        <div className="px-6 py-4 border-b border-bolt-elements-borderColor">
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-bolt-elements-textTertiary">
+              <div className="i-ph:magnifying-glass text-lg" />
+            </div>
             <input
-              className="w-full bg-white dark:bg-bolt-elements-background-depth-4 relative px-2 py-1.5 rounded-md focus:outline-none placeholder-bolt-elements-textTertiary text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary border border-bolt-elements-borderColor"
+              className="w-full bg-bolt-elements-background-depth-3 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 placeholder-bolt-elements-textTertiary text-bolt-elements-textPrimary border border-bolt-elements-borderColor transition-all duration-200"
               type="search"
-              placeholder="Search"
+              placeholder="Search apps..."
               onChange={handleSearchChange}
-              aria-label="Search chats"
+              aria-label="Search apps"
             />
           </div>
         </div>
-        <div className="text-bolt-elements-textPrimary font-medium pl-6 pr-5 my-2">Your Apps</div>
-        <div className="flex-1 overflow-auto pl-4 pr-5 pb-5">
+
+        <div className="px-6 py-3 border-b border-bolt-elements-borderColor bg-bolt-elements-background-depth-1">
+          <div className="flex items-center gap-2">
+            <div className="i-ph:folder text-lg text-bolt-elements-textSecondary" />
+            <h3 className="text-bolt-elements-textPrimary font-medium">Your Apps</h3>
+            {list && list.length > 0 && (
+              <span className="ml-auto text-xs text-bolt-elements-textTertiary bg-bolt-elements-background-depth-3 px-2 py-1 rounded-full">
+                {list.length}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto px-6 pb-4">
           {filteredList.length === 0 && (
-            <div className="pl-2 text-bolt-elements-textTertiary">
-              {list ? (list.length === 0 ? 'No apps' : 'No matches found') : 'Loading...'}
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              {list === null ? (
+                <>
+                  <div className="w-8 h-8 border-2 border-bolt-elements-textTertiary border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-bolt-elements-textTertiary text-sm">Loading apps...</p>
+                </>
+              ) : list.length === 0 ? (
+                <>
+                  <div className="w-12 h-12 bg-bolt-elements-background-depth-3 rounded-full flex items-center justify-center mb-4 border border-bolt-elements-borderColor">
+                    <div className="i-ph:folder-open text-xl text-bolt-elements-textTertiary" />
+                  </div>
+                  <p className="text-bolt-elements-textSecondary font-medium mb-2">No apps yet</p>
+                  <p className="text-bolt-elements-textTertiary text-sm">Create your first app to get started</p>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 bg-bolt-elements-background-depth-3 rounded-full flex items-center justify-center mb-4 border border-bolt-elements-borderColor">
+                    <div className="i-ph:magnifying-glass text-xl text-bolt-elements-textTertiary" />
+                  </div>
+                  <p className="text-bolt-elements-textSecondary font-medium mb-2">No matches found</p>
+                  <p className="text-bolt-elements-textTertiary text-sm">Try a different search term</p>
+                </>
+              )}
             </div>
           )}
+
           <DialogRoot open={dialogContent !== null}>
             {binDates(filteredList).map(({ category, items }) => (
-              <div key={category} className="mt-4 first:mt-0 space-y-1">
-                <div className="text-bolt-elements-textTertiary sticky top-0 z-1 bg-bolt-elements-background-depth-2 pl-2 pt-2 pb-1">
+              <div key={category} className="mb-6 first:mt-0">
+                <div className="text-bolt-elements-textTertiary text-xs font-medium uppercase tracking-wider sticky top-0 z-1 bg-bolt-elements-background-depth-2 py-4 mb-3">
                   {category}
                 </div>
-                {items.map((item) => (
-                  <HistoryItem key={item.id} item={item} onDelete={(event) => handleDeleteClick(event, item)} />
-                ))}
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <HistoryItem key={item.id} item={item} onDelete={(event) => handleDeleteClick(event, item)} />
+                  ))}
+                </div>
               </div>
             ))}
             <Dialog onBackdrop={closeDialog} onClose={closeDialog}>
               {dialogContent?.type === 'delete' && (
                 <>
-                  <DialogTitle>Delete Chat?</DialogTitle>
+                  <DialogTitle>Delete App?</DialogTitle>
                   <DialogDescription asChild>
                     <div>
                       <p>
                         You are about to delete <strong>{dialogContent.item.title}</strong>.
                       </p>
-                      <p className="mt-1">Are you sure you want to delete this chat?</p>
+                      <p className="mt-1">Are you sure you want to delete this app?</p>
                       <div className="mt-4 flex items-center gap-2">
                         <input
                           type="checkbox"
@@ -286,10 +324,16 @@ export const Menu = () => {
             </Dialog>
           </DialogRoot>
         </div>
-        <div className="flex items-center justify-between border-t border-bolt-elements-borderColor p-4">
-          <SettingsButton onClick={() => setIsSettingsOpen(true)} />
-          <Feedback />
-          <ThemeSwitch />
+
+        <div className="border-t border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <SettingsButton onClick={() => setIsSettingsOpen(true)} />
+              <div className="h-6 w-px bg-bolt-elements-borderColor" />
+              <Feedback />
+            </div>
+            <ThemeSwitch />
+          </div>
         </div>
       </div>
       <SettingsWindow open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
