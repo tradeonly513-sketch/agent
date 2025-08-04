@@ -1,4 +1,4 @@
-appId: com.stackblitz.bolt.diy
+appId: com.vlyx.ide
 productName: Bolt Local
 directories:
   buildResources: build
