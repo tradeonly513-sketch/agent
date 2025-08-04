@@ -15,7 +15,7 @@ export function useVercelDeploy() {
 
   const handleVercelDeploy = async () => {
     if (!vercelConn.user || !vercelConn.token) {
-      toast.error('Please connect to Vercel first in the settings tab!');
+      toast.error('Please connect to Vercel first using the Deploy button!');
       return false;
     }
 

@@ -15,7 +15,7 @@ export function useNetlifyDeploy() {
 
   const handleNetlifyDeploy = async () => {
     if (!netlifyConn.user || !netlifyConn.token) {
-      toast.error('Please connect to Netlify first in the settings tab!');
+      toast.error('Please connect to Netlify first using the Deploy button!');
       return false;
     }
 
