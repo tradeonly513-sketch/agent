@@ -69,30 +69,32 @@ const Secrets = ({ appSummary }: SecretsProps) => {
     return (
       <div
         key={index}
-        className="p-3 border border-bolt-elements-borderColor rounded-lg bg-bolt-elements-background-depth-1"
+        className="p-4 border border-bolt-elements-borderColor/30 rounded-xl bg-bolt-elements-background-depth-2 shadow-sm hover:shadow-md transition-all duration-200 hover:border-bolt-elements-borderColor/50"
       >
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-bolt-elements-textPrimary">{secret.name}</span>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-bolt-elements-textHeading">{secret.name}</span>
           <span
             className={classNames(
-              'px-2 py-1 text-xs font-medium rounded',
+              'px-3 py-1.5 text-xs font-medium rounded-full shadow-sm border transition-all duration-200',
               isBuiltin
-                ? 'bg-green-100 text-green-800 border border-green-200'
-                : 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+                ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-200 hover:shadow-md'
+                : 'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-200 hover:shadow-md',
             )}
           >
             {isBuiltin ? 'Built-in' : 'Required'}
           </span>
         </div>
 
-        {secret.description && <p className="text-sm text-bolt-elements-textSecondary mb-3">{secret.description}</p>}
+        {secret.description && (
+          <p className="text-sm text-bolt-elements-textSecondary mb-4 leading-relaxed">{secret.description}</p>
+        )}
 
         {!isBuiltin && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
               <label
                 htmlFor={`secret-${secret.name}`}
-                className="block text-xs font-medium text-bolt-elements-textSecondary mb-1"
+                className="block text-xs font-medium text-bolt-elements-textSecondary mb-2"
               >
                 Secret Value
               </label>
@@ -102,7 +104,7 @@ const Secrets = ({ appSummary }: SecretsProps) => {
                 value={currentValue}
                 onChange={(e) => handleSecretValueChange(secret.name, e.target.value)}
                 placeholder="Enter secret value..."
-                className="w-full px-3 py-2 text-sm border border-bolt-elements-borderColor rounded-md bg-bolt-elements-background-depth-2 text-bolt-elements-textPrimary placeholder-bolt-elements-textSecondary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 text-sm border border-bolt-elements-borderColor/60 rounded-xl bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary placeholder-bolt-elements-textSecondary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
               />
             </div>
 
@@ -111,13 +113,20 @@ const Secrets = ({ appSummary }: SecretsProps) => {
                 onClick={() => handleSaveSecret(secret.name)}
                 disabled={isSaving || !currentValue.trim()}
                 className={classNames(
-                  'px-4 py-2 text-sm font-medium rounded-md transition-colors',
+                  'px-5 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm',
                   isSaving || !currentValue.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                    ? 'bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary cursor-not-allowed border border-bolt-elements-borderColor/30'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:shadow-md hover:scale-105 active:scale-95',
                 )}
               >
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-bolt-elements-textSecondary border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </span>
+                ) : (
+                  'Save Changes'
+                )}
               </button>
             </div>
           </div>
@@ -126,16 +135,22 @@ const Secrets = ({ appSummary }: SecretsProps) => {
         {!currentValue && (
           <div
             className={classNames(
-              'text-xs p-2 rounded mt-3',
+              'text-xs p-3 rounded-xl mt-4 border shadow-sm',
               isBuiltin
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+                ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-200/50'
+                : 'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-200/50',
             )}
           >
             {isBuiltin ? (
-              <span>✅ This secret will use a builtin value</span>
+              <span className="flex items-center gap-2">
+                <div className="i-ph:check-circle-duotone text-green-600 text-sm"></div>
+                This secret will use a builtin value
+              </span>
             ) : (
-              <span>⚠️ This secret must be added before using the app</span>
+              <span className="flex items-center gap-2">
+                <div className="i-ph:warning-circle-duotone text-yellow-600 text-sm"></div>
+                This secret must be added before using the app
+              </span>
             )}
           </div>
         )}
@@ -147,9 +162,14 @@ const Secrets = ({ appSummary }: SecretsProps) => {
 
   return (
     <div>
-      <div className="space-y-4 mb-2">
-        <div className="text-lg font-semibold text-bolt-elements-textPrimary">Secrets</div>
-        <div className="space-y-3">{secrets.map(renderSecret)}</div>
+      <div className="space-y-6 mb-2">
+        <div className="flex items-center gap-3 p-4 bg-bolt-elements-background-depth-1 rounded-xl border border-bolt-elements-borderColor/30 shadow-sm">
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+            <div className="i-ph:key-duotone text-white text-lg"></div>
+          </div>
+          <div className="text-lg font-semibold text-bolt-elements-textHeading">Secrets</div>
+        </div>
+        <div className="space-y-4">{secrets.map(renderSecret)}</div>
       </div>
     </div>
   );
