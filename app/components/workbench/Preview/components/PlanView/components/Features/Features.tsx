@@ -149,8 +149,11 @@ const Features = ({ appSummary }: FeaturesProps) => {
       {appSummary?.mockupStatus && renderFeature(undefined, MockupFeatureIndex)}
 
       {appSummary?.features && appSummary?.features.length > 0 && (
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-xl font-bold text-bolt-elements-textHeading">Features</div>
+        <div className="flex items-center gap-3 p-4 bg-bolt-elements-background-depth-1 rounded-xl border border-bolt-elements-borderColor/30 shadow-sm mb-6">
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-sm">
+            <div className="i-ph:puzzle-piece-duotone text-white text-lg"></div>
+          </div>
+          <div className="text-lg font-semibold text-bolt-elements-textHeading">Features</div>
         </div>
       )}
 
