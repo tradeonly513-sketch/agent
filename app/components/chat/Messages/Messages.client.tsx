@@ -17,6 +17,7 @@ interface MessagesProps {
 
 export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(({ onLastMessageCheckboxChange }, ref) => {
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  const [showTopShadow, setShowTopShadow] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const messages = useStore(chatStore.messages);
   const hasPendingMessage = useStore(chatStore.hasPendingMessage);
@@ -44,6 +45,7 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(({ onLas
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
     setShowJumpToBottom(distanceFromBottom > 50);
+    setShowTopShadow(scrollTop > 10);
   };
 
   const scrollToBottom = () => {
@@ -72,6 +74,16 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(({ onLas
     }
   }, [messages, showJumpToBottom]);
 
+  useEffect(() => {
+    if (hasPendingMessage && !showJumpToBottom) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [pendingMessageStatus, hasPendingMessage, showJumpToBottom]);
+
   const renderMessage = (message: Message, index: number) => {
     const { role } = message;
     const isUserMessage = role === 'user';
@@ -99,42 +111,104 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(({ onLas
       <div
         data-testid="message"
         key={index}
-        className={classNames('flex gap-4 p-6 w-full rounded-[calc(0.75rem-1px)]', {
-          'bg-bolt-elements-messages-background': isUserMessage || !hasPendingMessage || (hasPendingMessage && !isLast),
-          'bg-gradient-to-b from-bolt-elements-messages-background from-30% to-transparent':
-            hasPendingMessage && isLast,
-          'mt-4': !isFirst,
+        className={classNames('group relative w-full transition-all duration-200', {
+          'mt-6': !isFirst,
         })}
       >
-        <Suspense
-          fallback={
-            <div className="text-center w-full text-bolt-elements-textSecondary i-svg-spinners:3-dots-fade text-4xl mt-4"></div>
-          }
+        <div
+          className={classNames('flex gap-4 p-6 rounded-2xl border transition-all duration-200', {
+            // User messages
+            'bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/30':
+              isUserMessage,
+            // Assistant messages
+            'bg-bolt-elements-messages-background border-bolt-elements-borderColor hover:border-bolt-elements-borderColor/60':
+              !isUserMessage && (!hasPendingMessage || (hasPendingMessage && !isLast)),
+            // Last message when pending
+            'bg-gradient-to-b from-bolt-elements-messages-background from-30% to-transparent border-bolt-elements-borderColor/50':
+              !isUserMessage && hasPendingMessage && isLast,
+          })}
         >
-          {isUserMessage && (
-            <div className="flex items-center justify-center w-[34px] h-[34px] overflow-hidden bg-white text-gray-600 rounded-full shrink-0 self-start">
-              <div className="i-ph:user-fill text-xl"></div>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center w-full py-8">
+                <div className="flex items-center gap-3 text-bolt-elements-textSecondary">
+                  <div className="w-6 h-6 border-2 border-bolt-elements-textSecondary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Loading...</span>
+                </div>
+              </div>
+            }
+          >
+            {isUserMessage && (
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-full shrink-0 self-start shadow-lg">
+                <div className="i-ph:user-fill text-lg"></div>
+              </div>
+            )}
+
+            {!isUserMessage && (
+              <div className="flex items-center justify-center w-10 h-10 bg-bolt-elements-background-depth-2 border-2 border-bolt-elements-borderColor text-bolt-elements-textPrimary rounded-full shrink-0 self-start shadow-sm">
+                <div className="w-6 h-6">
+                  <img src="/logo-styled.svg" alt="Assistant" className="w-full h-full" />
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              <div className="mb-2">
+                <span
+                  className={classNames('text-sm font-medium', {
+                    'text-blue-600 dark:text-blue-400': isUserMessage,
+                    'text-bolt-elements-textHeading': !isUserMessage,
+                  })}
+                >
+                  {isUserMessage ? 'You' : 'Assistant'}
+                </span>
+              </div>
+              <div className="grid grid-col-1 w-full">
+                <MessageContents message={message} onCheckboxChange={onCheckboxChange} />
+              </div>
             </div>
-          )}
-          <div className="grid grid-col-1 w-full">
-            <MessageContents message={message} onCheckboxChange={onCheckboxChange} />
-          </div>
-        </Suspense>
+          </Suspense>
+        </div>
+
+        <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-bolt-elements-focus rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
       </div>
     );
   };
 
   return (
     <div className="relative flex-1 min-h-0">
+      {showTopShadow && (
+        <div className="absolute top-0 left-0 right-0 h-px bg-bolt-elements-borderColor/30 shadow-sm z-2 pointer-events-none transition-opacity duration-200" />
+      )}
+
       <div
         ref={setRefs}
         className={classNames('absolute inset-0 overflow-y-auto', 'flex flex-col w-full max-w-chat pb-6 mx-auto')}
       >
         {messages.length > 0 ? messages.map(renderMessage) : null}
         {hasPendingMessage && (
-          <div className="w-full text-bolt-elements-textSecondary flex items-center">
-            <span className="i-svg-spinners:3-dots-fade inline-block w-[1em] h-[1em] mr-2 text-4xl"></span>
-            <span className="text-lg">{pendingMessageStatus ? `${pendingMessageStatus}...` : ''}</span>
+          <div className="w-full mt-3">
+            <div className="flex gap-4 pl-6">
+              <div className="flex items-center gap-3 text-bolt-elements-textSecondary py-2">
+                <div className="flex gap-1">
+                  <div
+                    className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                    style={{ animationDelay: '0ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                    style={{ animationDelay: '150ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                    style={{ animationDelay: '300ms' }}
+                  ></div>
+                </div>
+                {pendingMessageStatus && (
+                  <span className="text-sm font-medium opacity-60">{pendingMessageStatus}...</span>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

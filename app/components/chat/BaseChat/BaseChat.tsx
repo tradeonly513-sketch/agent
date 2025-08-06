@@ -27,6 +27,7 @@ import { useStore } from '@nanostores/react';
 import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
 import { StatusModal } from '~/components/status-modal/StatusModal';
+import { userStore } from '~/lib/stores/userAuth';
 
 export const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -69,12 +70,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const hasPendingMessage = useStore(chatStore.hasPendingMessage);
     const listenResponses = useStore(chatStore.listenResponses);
     const appSummary = getLatestAppSummary(messages);
-    const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
+    const TEXTAREA_MAX_HEIGHT = chatStarted ? 300 : 200;
     const { isArboretumVisible } = useArboretumVisibility();
     const showWorkbench = useStore(workbenchStore.showWorkbench);
     const mobileActiveTab = useStore(mobileNavStore.activeTab);
     const isSmallViewport = useViewport(1024);
-
+    const user = useStore(userStore.user);
     const [lastProcessedMessageId, setLastProcessedMessageId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -189,19 +190,21 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         className={classNames(styles.BaseChat, 'relative flex h-full w-full overflow-hidden')}
         data-chat-visible={showChat}
       >
-        <ClientOnly>{() => <Menu />}</ClientOnly>
+        {user && <ClientOnly>{() => <Menu />}</ClientOnly>}
         <div
           ref={scrollRef}
           className={classNames('w-full h-full flex flex-col lg:flex-row overflow-hidden', {
             'overflow-y-auto': !chatStarted,
             'pt-2 pb-2 px-4': isSmallViewport && !appSummary,
             'pt-2 pb-15 px-4': isSmallViewport && !!appSummary,
-            'p-6': !isSmallViewport,
+            'p-6': !isSmallViewport && chatStarted,
+            'p-6 pb-16': !isSmallViewport && !chatStarted, // Add extra bottom padding on landing page to show footer
           })}
         >
           <div
             className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full', {
               'py-2': isSmallViewport,
+              'landing-page-layout': !chatStarted, // Custom CSS class for responsive centering
             })}
           >
             {!chatStarted && (
