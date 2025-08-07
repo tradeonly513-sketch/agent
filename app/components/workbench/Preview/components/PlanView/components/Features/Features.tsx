@@ -110,7 +110,7 @@ const Features = ({ appSummary }: FeaturesProps) => {
             </div>
 
             <div className="gap-2 min-w-0 flex-1">
-              <div className="text-bolt-elements-textHeading text-base font-bold">{name}</div>
+              <div className="text-bolt-elements-textHeading text-base font-bold">{formatPascalCaseName(name)}</div>
               <div className="flex items-center group text-bolt-elements-textSecondary min-w-0">
                 <span>{description}</span>
               </div>
