@@ -2,7 +2,7 @@
  * @ts-nocheck
  * Preventing TS checks with files presented in the video for a better presentation.
  */
-import React, { type RefCallback, useCallback, useEffect, useRef, useState } from 'react';
+import React, { type RefCallback, useCallback, useEffect, useRef } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Menu } from '~/components/sidebar/Menu.client';
 import { Workbench } from '~/components/workbench/Workbench.client';
@@ -22,7 +22,6 @@ import { ChatMode } from '~/lib/replay/SendChatMessage';
 import { getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { mobileNavStore } from '~/lib/stores/mobileNav';
-import { statusModalStore } from '~/lib/stores/statusModal';
 import { useStore } from '@nanostores/react';
 import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
@@ -68,7 +67,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
   ) => {
     const messages = useStore(chatStore.messages);
     const hasPendingMessage = useStore(chatStore.hasPendingMessage);
-    const listenResponses = useStore(chatStore.listenResponses);
     const appSummary = getLatestAppSummary(messages);
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 300 : 200;
     const { isArboretumVisible } = useArboretumVisibility();
@@ -76,21 +74,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const mobileActiveTab = useStore(mobileNavStore.activeTab);
     const isSmallViewport = useViewport(1024);
     const user = useStore(userStore.user);
-    const [lastProcessedMessageId, setLastProcessedMessageId] = useState<string | null>(null);
-
-    useEffect(() => {
-      if (!hasPendingMessage && !listenResponses && appSummary && messages && messages.length > 0) {
-        const lastMessage = messages[messages.length - 1];
-
-        if (lastMessage.role === 'assistant' && lastMessage.id !== lastProcessedMessageId) {
-          setLastProcessedMessageId(lastMessage.id);
-
-          setTimeout(() => {
-            statusModalStore.open();
-          }, 1000);
-        }
-      }
-    }, [hasPendingMessage, listenResponses, appSummary, messages, lastProcessedMessageId]);
 
     useEffect(() => {
       if (showWorkbench && mobileActiveTab === 'chat') {

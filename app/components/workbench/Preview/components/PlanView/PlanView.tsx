@@ -58,7 +58,7 @@ const PlanView = ({ appSummary }: PlanViewProps) => {
                 </WithTooltip>
               </div>
             )}
-            {listenResponses && appSummary?.features?.length && (
+            {listenResponses && appSummary?.features?.length && !isFullyComplete && (
               <div className="flex justify-center items-center">
                 <button
                   className="mb-6 p-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-xl transition-all duration-200 text-left cursor-pointer shadow-lg hover:shadow-xl hover:scale-105 border border-white/20 hover:border-white/30 group"
