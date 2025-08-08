@@ -8,11 +8,7 @@ import { ChatMode } from '~/lib/replay/SendChatMessage';
 import { peanutsStore } from '~/lib/stores/peanuts';
 import WithTooltip from '~/components/ui/Tooltip';
 
-interface PlanViewProps {
-  appSummary: AppSummary | null;
-}
-
-function appSummaryHasPendingFeature(appSummary: AppSummary | null) {
+function appSummaryHasPendingFeature(appSummary: AppSummary | undefined) {
   return (
     appSummary?.features?.length &&
     appSummary.features.some(
@@ -21,8 +17,9 @@ function appSummaryHasPendingFeature(appSummary: AppSummary | null) {
   );
 }
 
-const PlanView = ({ appSummary }: PlanViewProps) => {
+const PlanView = () => {
   const listenResponses = useStore(chatStore.listenResponses);
+  const appSummary = useStore(chatStore.appSummary);
 
   const completedFeatures = appSummary?.features?.filter(
     (feature) => feature.status === AppFeatureStatus.Validated,
@@ -98,12 +95,12 @@ const PlanView = ({ appSummary }: PlanViewProps) => {
               <div className="text-lg font-semibold mb-3 text-bolt-elements-textHeading">Project Description</div>
               <div className="text-bolt-elements-textSecondary leading-relaxed">{appSummary?.description}</div>
             </div>
-            {hasSecrets && <Secrets appSummary={appSummary!} />}
-            {appSummary?.pages && <Pages appSummary={appSummary} />}
+            {hasSecrets && <Secrets />}
+            {appSummary?.pages && <Pages />}
           </div>
           {(appSummary?.features || appSummary?.mockupStatus) && (
             <div>
-              <Features appSummary={appSummary} />
+              <Features />
             </div>
           )}
         </div>

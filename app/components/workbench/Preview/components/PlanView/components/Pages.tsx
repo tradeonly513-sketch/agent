@@ -1,19 +1,16 @@
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import WithTooltip from '~/components/ui/Tooltip';
-import {
-  type AppSummary,
-  type AppDetail,
-  AppFeatureStatus,
-  isFeatureStatusImplemented,
-} from '~/lib/persistence/messageAppSummary';
+import { type AppDetail, AppFeatureStatus, isFeatureStatusImplemented } from '~/lib/persistence/messageAppSummary';
 import { classNames } from '~/utils/classNames';
 import { formatPascalCaseName } from '~/utils/names';
+import { useStore } from '@nanostores/react';
+import { chatStore } from '~/lib/stores/chat';
+import { assert } from '~/utils/nut';
 
-interface PagesProps {
-  appSummary: AppSummary | null;
-}
+const Pages = () => {
+  const appSummary = useStore(chatStore.appSummary);
+  assert(appSummary, 'App summary is required');
 
-const Pages = ({ appSummary }: PagesProps) => {
   const renderComponent = (component: AppDetail, index: number) => {
     const feature = appSummary?.features?.find((feature) => feature.componentNames?.includes(component.name));
 

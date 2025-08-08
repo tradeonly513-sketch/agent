@@ -155,6 +155,7 @@ export interface AppSummary {
   mockupStatus?: AppFeatureStatus;
   features?: AppFeature[];
   otherTests?: AppTest[];
+  setSecrets?: string[];
 
   // The repository being described, if available.
   repositoryId?: string;
@@ -180,13 +181,6 @@ export function parseAppSummaryMessage(message: Message): AppSummary | undefined
   } catch (e) {
     console.error('Failed to parse app summary message', e);
     return undefined;
-  }
-}
-
-// Diagnostics for tracking down why the UI doesn't update as expected.
-export function logAppSummaryMessage(message: Message, reason: string) {
-  if (message.category === APP_SUMMARY_CATEGORY) {
-    console.log('AppSummary', reason, parseAppSummaryMessage(message)?.iteration);
   }
 }
 

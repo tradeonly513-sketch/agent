@@ -8,7 +8,6 @@ import { cubicEasingFn } from '~/utils/easings';
 import { renderLogger } from '~/utils/logger';
 import { Preview } from './Preview/Preview';
 import useViewport from '~/lib/hooks';
-import type { AppSummary } from '~/lib/persistence/messageAppSummary';
 import { ClientOnly } from 'remix-utils/client-only';
 import { DeployChatButton } from '~/components/header/DeployChat/DeployChatButton';
 import { DownloadButton } from '~/components/header/DownloadButton';
@@ -18,7 +17,6 @@ import { chatStore } from '~/lib/stores/chat';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
-  appSummary?: AppSummary;
   mobileActiveTab?: 'chat' | 'planning' | 'preview';
 }
 
@@ -39,7 +37,7 @@ const workbenchVariants = {
   },
 } satisfies Variants;
 
-export const Workbench = memo(({ chatStarted, appSummary, mobileActiveTab }: WorkspaceProps) => {
+export const Workbench = memo(({ chatStarted, mobileActiveTab }: WorkspaceProps) => {
   renderLogger.trace('Workbench');
 
   const showWorkbench = useStore(workbenchStore.showWorkbench);
@@ -48,6 +46,7 @@ export const Workbench = memo(({ chatStarted, appSummary, mobileActiveTab }: Wor
   const hasSeenPreviewRef = useRef(false);
   const hasSeenProjectPlanRef = useRef(false);
   const hasSetPlanningTabRef = useRef(false);
+  const appSummary = useStore(chatStore.appSummary);
 
   const isSmallViewport = useViewport(1024);
 
@@ -158,7 +157,7 @@ export const Workbench = memo(({ chatStarted, appSummary, mobileActiveTab }: Wor
                 </div>
               )}
               <div className="relative flex-1 overflow-hidden">
-                <Preview activeTab={activeTab} appSummary={appSummary ?? null} />
+                <Preview activeTab={activeTab} />
               </div>
             </div>
           </div>
