@@ -29,7 +29,8 @@ const PlanView = ({ appSummary }: PlanViewProps) => {
   ).length;
   const totalFeatures = appSummary?.features?.length;
   const isFullyComplete = completedFeatures === totalFeatures && totalFeatures && totalFeatures > 0;
-  const peanutsError = useStore(peanutsStore.peanutsError);
+  const peanutsErrorButton = useStore(peanutsStore.peanutsErrorButton);
+  const peanutsErrorInfo = useStore(peanutsStore.peanutsErrorInfo);
   const hasSecrets = appSummary?.features?.some((f) => f.secrets?.length);
 
   return (
@@ -38,24 +39,41 @@ const PlanView = ({ appSummary }: PlanViewProps) => {
         <div className="max-w-4xl mx-auto min-h-full flex flex-col">
           <div>
             {!listenResponses && appSummaryHasPendingFeature(appSummary) && !isFullyComplete && (
-              <div className="flex justify-center items-center">
-                <WithTooltip tooltip={peanutsError ?? 'Continue Building Your App!'}>
+              <div className="flex flex-col items-center">
+                <WithTooltip tooltip={peanutsErrorInfo ?? 'Continue Building Your App!'}>
                   <button
-                    className="mb-6 p-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl transition-all duration-200 text-left cursor-pointer shadow-lg hover:shadow-xl hover:scale-105 border border-white/20 hover:border-white/30 group"
+                    className={`mb-6 p-4 rounded-xl transition-all duration-200 text-left cursor-pointer border ${
+                      peanutsErrorButton
+                        ? 'bg-gray-500 text-white shadow-md border-gray-400/30'
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl hover:scale-105 border-white/20 hover:border-white/30 group'
+                    }`}
                     onClick={(event) => {
                       event.preventDefault();
                       doSendMessage(ChatMode.DevelopApp, []);
                     }}
-                    disabled={!!peanutsError}
+                    disabled={!!peanutsErrorButton}
                   >
                     <div className="flex items-center gap-2">
-                      <div className="i-ph:rocket-launch text-xl text-white transition-transform duration-200 group-hover:scale-110"></div>
-                      <div className="font-medium text-white transition-transform duration-200 group-hover:scale-105">
-                        Continue Building
+                      <div
+                        className={`i-ph:rocket-launch text-xl text-white transition-transform duration-200 ${
+                          peanutsErrorButton ? '' : 'group-hover:scale-110'
+                        }`}
+                      ></div>
+                      <div
+                        className={`font-medium text-white transition-transform duration-200 ${
+                          peanutsErrorButton ? '' : 'group-hover:scale-105'
+                        }`}
+                      >
+                        {peanutsErrorButton ?? 'Continue Building'}
                       </div>
                     </div>
                   </button>
                 </WithTooltip>
+                {peanutsErrorInfo && (
+                  <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm max-w-md text-center">
+                    {peanutsErrorInfo}
+                  </div>
+                )}
               </div>
             )}
             {listenResponses && appSummary?.features?.length && !isFullyComplete && (
