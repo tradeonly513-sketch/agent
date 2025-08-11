@@ -137,3 +137,8 @@ export function getSupabase() {
 
   return supabaseClientInstance;
 }
+
+export function getCookieKey() {
+  const supabaseAppId = import.meta.env.VITE_AUTH_SUPABASE_URL.replace('https://', '').split('.')[0];
+  return `sb-${supabaseAppId}-auth-token`;
+}
