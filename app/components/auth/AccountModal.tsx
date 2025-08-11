@@ -185,6 +185,11 @@ export const AccountModal = ({ user, onClose }: AccountModalProps) => {
     try {
       await createTopoffCheckout(user.id, user.email);
       // User will be redirected to Stripe Checkout
+      if (window.analytics) {
+        window.analytics.track('Peanuts Added', {
+          timestamp: new Date().toISOString(),
+        });
+      }
     } catch (error) {
       console.error('Error creating peanut top-off:', error);
       stripeStatusModalActions.showError(

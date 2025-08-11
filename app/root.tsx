@@ -22,6 +22,7 @@ import { GlobalStripeStatusModal } from './components/stripe/GlobalStripeStatusM
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
+import { analyticsCode } from './embeds/anayltics';
 
 import 'virtual:uno.css';
 
@@ -94,13 +95,20 @@ const inlineThemeCode = stripIndents`
   }
 `;
 
+const logRocketInit = stripIndents`
+  window.LogRocket && window.LogRocket.init('woocwd/nut');
+`;
+
 export const Head = createHead(() => (
   <>
     <meta charSet="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <Meta />
     <Links />
+    <script src="https://cdn.lgrckt-in.com/LogRocket.min.js" crossOrigin="anonymous"></script>
+    <script dangerouslySetInnerHTML={{ __html: logRocketInit }} />
     <script dangerouslySetInnerHTML={{ __html: inlineThemeCode }} />
+    <script dangerouslySetInnerHTML={{ __html: analyticsCode }} />
   </>
 ));
 
