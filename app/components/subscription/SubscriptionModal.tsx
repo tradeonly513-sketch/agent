@@ -110,13 +110,12 @@ export function SubscriptionModal({ isOpen, onClose, currentTier }: Subscription
 
         {/* Subscription Tiers */}
         <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
             {(
               Object.entries(SUBSCRIPTION_TIERS) as [SubscriptionTier, (typeof SUBSCRIPTION_TIERS)[SubscriptionTier]][]
             ).map(([tier, details]) => {
               const isCurrentTier = tier === currentTier;
               const isLoading = loading === tier;
-              const isPro = tier === 'pro';
               const isFree = tier === 'free';
 
               return (
@@ -127,22 +126,12 @@ export function SubscriptionModal({ isOpen, onClose, currentTier }: Subscription
                     {
                       'border-green-500/50 bg-gradient-to-br from-green-500/5 to-emerald-500/5 shadow-lg':
                         isCurrentTier,
-                      'border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-pink-500/5 ring-2 ring-purple-500/20 shadow-lg':
-                        isPro && !isCurrentTier,
                       'border-bolt-elements-borderColor/50 bg-gradient-to-br from-bolt-elements-background-depth-2/30 to-bolt-elements-background-depth-3/20 shadow-sm':
-                        !isCurrentTier && !isPro,
+                        !isCurrentTier,
                       'hover:border-bolt-elements-borderColor/70 hover:shadow-lg': !isCurrentTier,
                     },
                   )}
                 >
-                  {isPro && !isCurrentTier && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        MOST POPULAR
-                      </span>
-                    </div>
-                  )}
-
                   {isCurrentTier && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                       <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
@@ -158,8 +147,6 @@ export function SubscriptionModal({ isOpen, onClose, currentTier }: Subscription
                         className={classNames('text-2xl transition-transform duration-300 group-hover:scale-110', {
                           'i-ph:gift text-green-500': isFree,
                           'i-ph:rocket-launch text-blue-500': tier === 'starter',
-                          'i-ph:lightning text-orange-500': tier === 'builder',
-                          'i-ph:crown text-purple-500': isPro,
                         })}
                       />
                     </div>
@@ -199,10 +186,8 @@ export function SubscriptionModal({ isOpen, onClose, currentTier }: Subscription
                         {
                           'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-600 border border-green-500/30 cursor-not-allowed':
                             isCurrentTier,
-                          'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border border-purple-500/50 hover:border-purple-400 hover:scale-105':
-                            isPro && !isCurrentTier && !isLoading,
                           'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border border-blue-500/50 hover:border-blue-400 hover:scale-105':
-                            !isPro && !isFree && !isCurrentTier && !isLoading,
+                            !isFree && !isCurrentTier && !isLoading,
                           'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border border-green-500/50 hover:border-green-400 hover:scale-105':
                             isFree && !isCurrentTier && !isLoading,
                           'opacity-50 cursor-not-allowed hover:scale-100': isLoading,
@@ -220,6 +205,61 @@ export function SubscriptionModal({ isOpen, onClose, currentTier }: Subscription
                 </div>
               );
             })}
+
+            <div className="relative overflow-hidden min-h-[400px]">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl"></div>
+              <div className="relative h-full p-6 rounded-2xl bg-gradient-to-r from-bolt-elements-background-depth-2/80 to-bolt-elements-background-depth-3/80 border border-indigo-500/20 shadow-lg backdrop-blur-sm flex flex-col">
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30 shadow-lg">
+                    <div className="i-ph:sparkle text-2xl text-indigo-500"></div>
+                  </div>
+                  <h3 className="text-xl font-bold text-bolt-elements-textHeading mb-3">Pro</h3>
+                  <div className="text-2xl font-bold text-indigo-500 mb-2">Coming Soon</div>
+                  <p className="text-sm text-bolt-elements-textSecondary leading-relaxed px-2">
+                    Build apps effortlessly
+                  </p>
+                </div>
+
+                {/* Features Preview */}
+                <div className="space-y-3 mb-8 flex-grow">
+                  <div className="flex items-start gap-3 group/feature">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center mt-0.5 flex-shrink-0 border border-indigo-500/30">
+                      <div className="i-ph:sparkle text-indigo-500 text-sm"></div>
+                    </div>
+                    <span className="text-sm text-bolt-elements-textSecondary leading-relaxed">
+                      Guaranteed Reliability
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-3 group/feature">
+                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center mt-0.5 flex-shrink-0 border border-purple-500/30">
+                      <div className="i-ph:sparkle text-purple-500 text-sm"></div>
+                    </div>
+                    <span className="text-sm text-bolt-elements-textSecondary leading-relaxed">Priority Support</span>
+                  </div>
+                  <div className="flex items-start gap-3 group/feature">
+                    <div className="w-6 h-6 rounded-lg bg-pink-500/20 flex items-center justify-center mt-0.5 flex-shrink-0 border border-pink-500/30">
+                      <div className="i-ph:sparkle text-pink-500 text-sm"></div>
+                    </div>
+                    <span className="text-sm text-bolt-elements-textSecondary leading-relaxed">
+                      Transparent Up Front Pricing
+                    </span>
+                  </div>
+                </div>
+
+                {/* Join Waitlist Button */}
+                <div className="mt-auto">
+                  <a
+                    href="https://form.typeform.com/to/bFKqmqdX"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border border-indigo-500/50 hover:border-indigo-400 hover:scale-105 cursor-pointer"
+                  >
+                    <div className="i-ph:arrow-up-right text-white"></div>
+                    <span>Join Waitlist</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
