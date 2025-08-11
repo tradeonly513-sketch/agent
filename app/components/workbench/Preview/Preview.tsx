@@ -5,6 +5,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import PlanView from './components/PlanView/PlanView';
 import AppView, { type ResizeSide } from './components/AppView';
 import useViewport from '~/lib/hooks';
+import { useOAuthForVibeApp } from './hooks/useOAuthForVibeApp';
 
 let gCurrentIFrame: HTMLIFrameElement | undefined;
 
@@ -50,6 +51,15 @@ export const Preview = memo(({ activeTab }: PreviewProps) => {
 
   gCurrentIFrame = iframeRef.current ?? undefined;
 
+  const reloadPreview = () => {
+    if (iframeRef.current) {
+      iframeRef.current.src = iframeRef.current.src;
+    }
+
+    setIsSelectionMode(false);
+    setSelectionPoint(null);
+  };
+
   useEffect(() => {
     if (!previewURL) {
       setUrl('');
@@ -63,14 +73,15 @@ export const Preview = memo(({ activeTab }: PreviewProps) => {
     setIframeUrl(previewURL);
   }, [previewURL]);
 
-  const reloadPreview = () => {
-    if (iframeRef.current) {
-      iframeRef.current.src = iframeRef.current.src;
-    }
-
-    setIsSelectionMode(false);
-    setSelectionPoint(null);
-  };
+  // Handle OAuth authentication
+  useOAuthForVibeApp({
+    iframeRef,
+    iframeUrl,
+    setIframeUrl,
+    setUrl,
+    reloadPreview,
+    previewURL,
+  });
 
   const toggleFullscreen = async () => {
     if (!isFullscreen && containerRef.current) {
