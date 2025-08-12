@@ -13,6 +13,8 @@ export function ClientAuth() {
   const user = useStore(userStore.user);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showProTooltip, setShowProTooltip] = useState(false);
+  const [proTooltipTimeout, setProTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const peanutsRemaining = useStore(peanutsStore.peanutsRemaining);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -147,15 +149,50 @@ export function ClientAuth() {
               </div>
 
               <div className="p-3 space-y-2">
-                <a
-                  href="https://form.typeform.com/to/bFKqmqdX"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all duration-200 flex items-center gap-3 font-medium shadow-sm hover:shadow-md"
-                >
-                  <div className="i-ph:sparkle text-lg" />
-                  <span className="text-sm">Guaranteed Reliability Waitlist</span>
-                </a>
+                <div className="relative">
+                  <a
+                    href="https://form.typeform.com/to/bFKqmqdX"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all duration-200 flex items-center gap-3 font-medium shadow-sm hover:shadow-md"
+                    onMouseEnter={() => {
+                      const timeout = setTimeout(() => setShowProTooltip(true), 500);
+                      setProTooltipTimeout(timeout);
+                    }}
+                    onMouseLeave={() => {
+                      if (proTooltipTimeout) {
+                        clearTimeout(proTooltipTimeout);
+                        setProTooltipTimeout(null);
+                      }
+                      setShowProTooltip(false);
+                    }}
+                  >
+                    <div className="i-ph:sparkle text-lg" />
+                    <span>Pro Plan: Join the Waitlist</span>
+                  </a>
+
+                  {showProTooltip && (
+                    <div className="absolute top-full left-0 mt-3 w-80 bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor rounded-xl p-4 shadow-2xl z-20 backdrop-blur-sm">
+                      <div className="text-sm text-bolt-elements-textPrimary space-y-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-2 h-2 rounded-full bg-black flex-shrink-0"></div>
+                          <span className="font-medium">Guaranteed Reliability</span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-2 h-2 rounded-full bg-black flex-shrink-0"></div>
+                          <span className="font-medium">Up Front App Prices</span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-2 h-2 rounded-full bg-black flex-shrink-0"></div>
+                          <span className="font-medium">Priority Support</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Arrow */}
+                  <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-bolt-elements-background-depth-1"></div>
+                </div>
 
                 <button
                   onClick={handleShowAccountModal}
