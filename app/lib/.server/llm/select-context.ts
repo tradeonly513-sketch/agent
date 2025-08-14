@@ -127,7 +127,7 @@ export async function selectContext(props: {
         ---
         ${filePaths.map((path) => `- ${path}`).join('\n')}
         ---
-        
+
         You have following code loaded in the context buffer that you can refer to:
 
         CURRENT CONTEXT BUFFER
@@ -138,14 +138,14 @@ export async function selectContext(props: {
         Now, you are given a task. You need to select the files that are relevant to the task from the list of files above.
 
         RESPONSE FORMAT:
-        your response shoudl be in following format:
+        your response should be in following format:
 ---
 <updateContextBuffer>
     <includeFile path="path/to/file"/>
     <excludeFile path="path/to/file"/>
 </updateContextBuffer>
 ---
-        * Your should start with <updateContextBuffer> and end with </updateContextBuffer>. 
+        * Your should start with <updateContextBuffer> and end with </updateContextBuffer>.
         * You can include multiple <includeFile> and <excludeFile> tags in the response.
         * You should not include any other text in the response.
         * You should not include any file that is not in the list of files above.
@@ -204,7 +204,10 @@ export async function selectContext(props: {
     }
 
     if (!filePaths.includes(fullPath)) {
-      throw new Error(`File ${path} is not in the list of files above.`);
+      logger.error(`File ${path} is not in the list of files above.`);
+      return;
+
+      // throw new Error(`File ${path} is not in the list of files above.`);
     }
 
     if (currrentFiles.includes(path)) {
@@ -216,6 +219,13 @@ export async function selectContext(props: {
 
   if (onFinish) {
     onFinish(resp);
+  }
+
+  const totalFiles = Object.keys(filteredFiles).length;
+  logger.info(`Total files: ${totalFiles}`);
+
+  if (totalFiles == 0) {
+    throw new Error(`Bolt failed to select files`);
   }
 
   return filteredFiles;

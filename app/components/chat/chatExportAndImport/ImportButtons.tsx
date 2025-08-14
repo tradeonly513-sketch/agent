@@ -1,6 +1,8 @@
 import type { Message } from 'ai';
 import { toast } from 'react-toastify';
 import { ImportFolderButton } from '~/components/chat/ImportFolderButton';
+import { Button } from '~/components/ui/Button';
+import { classNames } from '~/utils/classNames';
 
 type ChatData = {
   messages?: Message[]; // Standard Bolt format
@@ -57,19 +59,35 @@ export function ImportButtons(importChat: ((description: string, messages: Messa
       />
       <div className="flex flex-col items-center gap-4 max-w-2xl text-center">
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => {
               const input = document.getElementById('chat-import');
               input?.click();
             }}
-            className="px-4 py-2 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-prompt-background text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-3 transition-all flex items-center gap-2"
+            variant="default"
+            size="lg"
+            className={classNames(
+              'gap-2 bg-bolt-elements-background-depth-1',
+              'text-bolt-elements-textPrimary',
+              'hover:bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
+              'h-10 px-4 py-2 min-w-[120px] justify-center',
+              'transition-all duration-200 ease-in-out',
+            )}
           >
-            <div className="i-ph:upload-simple" />
+            <span className="i-ph:upload-simple w-4 h-4" />
             Import Chat
-          </button>
+          </Button>
           <ImportFolderButton
             importChat={importChat}
-            className="px-4 py-2 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-prompt-background text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-3 transition-all flex items-center gap-2"
+            className={classNames(
+              'gap-2 bg-bolt-elements-background-depth-1',
+              'text-bolt-elements-textPrimary',
+              'hover:bg-bolt-elements-background-depth-2',
+              'border border-[rgba(0,0,0,0.08)] dark:border-[rgba(255,255,255,0.08)]',
+              'h-10 px-4 py-2 min-w-[120px] justify-center',
+              'transition-all duration-200 ease-in-out rounded-lg',
+            )}
           />
         </div>
       </div>

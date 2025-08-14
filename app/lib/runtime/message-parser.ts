@@ -1,4 +1,4 @@
-import type { ActionType, BoltAction, BoltActionData, FileAction, ShellAction } from '~/types/actions';
+import type { ActionType, BoltAction, BoltActionData, FileAction, ShellAction, SupabaseAction } from '~/types/actions';
 import type { BoltArtifactData } from '~/types/artifact';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
@@ -7,6 +7,8 @@ const ARTIFACT_TAG_OPEN = '<boltArtifact';
 const ARTIFACT_TAG_CLOSE = '</boltArtifact>';
 const ARTIFACT_ACTION_TAG_OPEN = '<boltAction';
 const ARTIFACT_ACTION_TAG_CLOSE = '</boltAction>';
+const BOLT_QUICK_ACTIONS_OPEN = '<bolt-quick-actions>';
+const BOLT_QUICK_ACTIONS_CLOSE = '</bolt-quick-actions>';
 
 const logger = createScopedLogger('MessageParser');
 
@@ -93,6 +95,39 @@ export class StreamingMessageParser {
     let earlyBreak = false;
 
     while (i < input.length) {
+      if (input.startsWith(BOLT_QUICK_ACTIONS_OPEN, i)) {
+        console.log('input:', input.slice(i));
+
+        const actionsBlockEnd = input.indexOf(BOLT_QUICK_ACTIONS_CLOSE, i);
+
+        if (actionsBlockEnd !== -1) {
+          const actionsBlockContent = input.slice(i + BOLT_QUICK_ACTIONS_OPEN.length, actionsBlockEnd);
+
+          // Find all <bolt-quick-action ...>label</bolt-quick-action> inside
+          const quickActionRegex = /<bolt-quick-action([^>]*)>([\s\S]*?)<\/bolt-quick-action>/g;
+          let match;
+          const buttons = [];
+
+          while ((match = quickActionRegex.exec(actionsBlockContent)) !== null) {
+            const tagAttrs = match[1];
+            const label = match[2];
+            const type = this.#extractAttribute(tagAttrs, 'type');
+            const message = this.#extractAttribute(tagAttrs, 'message');
+            const path = this.#extractAttribute(tagAttrs, 'path');
+            const href = this.#extractAttribute(tagAttrs, 'href');
+            buttons.push(
+              createQuickActionElement(
+                { type: type || '', message: message || '', path: path || '', href: href || '' },
+                label,
+              ),
+            );
+          }
+          output += createQuickActionGroup(buttons);
+          i = actionsBlockEnd + BOLT_QUICK_ACTIONS_CLOSE.length;
+          continue;
+        }
+      }
+
       if (state.insideArtifact) {
         const currentArtifact = state.currentArtifact;
 
@@ -293,7 +328,27 @@ export class StreamingMessageParser {
       content: '',
     };
 
-    if (actionType === 'file') {
+    if (actionType === 'supabase') {
+      const operation = this.#extractAttribute(actionTag, 'operation');
+
+      if (!operation || !['migration', 'query'].includes(operation)) {
+        logger.warn(`Invalid or missing operation for Supabase action: ${operation}`);
+        throw new Error(`Invalid Supabase operation: ${operation}`);
+      }
+
+      (actionAttributes as SupabaseAction).operation = operation as 'migration' | 'query';
+
+      if (operation === 'migration') {
+        const filePath = this.#extractAttribute(actionTag, 'filePath');
+
+        if (!filePath) {
+          logger.warn('Migration requires a filePath');
+          throw new Error('Migration requires a filePath');
+        }
+
+        (actionAttributes as SupabaseAction).filePath = filePath;
+      }
+    } else if (actionType === 'file') {
       const filePath = this.#extractAttribute(actionTag, 'filePath') as string;
 
       if (!filePath) {
@@ -327,4 +382,20 @@ const createArtifactElement: ElementFactory = (props) => {
 
 function camelToDashCase(input: string) {
   return input.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+function createQuickActionElement(props: Record<string, string>, label: string) {
+  const elementProps = [
+    'class="__boltQuickAction__"',
+    'data-bolt-quick-action="true"',
+    ...Object.entries(props).map(([key, value]) => `data-${camelToDashCase(key)}=${JSON.stringify(value)}`),
+  ];
+
+  console.log('elementProps', `<button ${elementProps.join(' ')}>${label}</button>`);
+
+  return `<button ${elementProps.join(' ')}>${label}</button>`;
+}
+
+function createQuickActionGroup(buttons: string[]) {
+  return `<div class=\"__boltQuickAction__\" data-bolt-quick-action=\"true\">${buttons.join('')}</div>`;
 }
