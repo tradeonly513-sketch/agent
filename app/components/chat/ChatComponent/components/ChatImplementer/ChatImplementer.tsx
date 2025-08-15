@@ -9,7 +9,7 @@ import { cubicEasingFn } from '~/utils/easings';
 import { BaseChat } from '~/components/chat/BaseChat/BaseChat';
 // import Cookies from 'js-cookie';
 import { useSearchParams } from '@remix-run/react';
-import { type ChatReference, ChatMode } from '~/lib/replay/SendChatMessage';
+import { type ChatReference, type VisitData, ChatMode } from '~/lib/replay/SendChatMessage';
 import { getCurrentMouseData } from '~/components/workbench/PointSelector';
 // import { anthropicNumFreeUsesCookieName, maxFreeUses } from '~/utils/freeUses';
 import { ChatMessageTelemetry } from '~/lib/hooks/pingTelemetry';
@@ -18,11 +18,22 @@ import { type Message } from '~/lib/persistence/message';
 import { updateDevelopmentServer } from '~/lib/replay/DevelopmentServer';
 import { getLatestAppRepositoryId, getLatestAppSummary } from '~/lib/persistence/messageAppSummary';
 import { generateRandomId, navigateApp } from '~/utils/nut';
+import type { DetectedError } from '~/lib/replay/MessageHandlerInterface';
+import type { SimulationData } from '~/lib/replay/MessageHandler';
+import { shouldDisplayMessage } from '~/lib/replay/SendChatMessage';
 
 let gActiveChatMessageTelemetry: ChatMessageTelemetry | undefined;
 
 function clearActiveChat() {
   gActiveChatMessageTelemetry = undefined;
+}
+
+export interface ChatMessageParams {
+  messageInput?: string;
+  chatMode?: ChatMode;
+  sessionRepositoryId?: string;
+  simulationData?: SimulationData;
+  detectedError?: DetectedError;
 }
 
 const ChatImplementer = memo(() => {
@@ -93,7 +104,9 @@ const ChatImplementer = memo(() => {
     setChatStarted(true);
   };
 
-  const sendMessage = async (messageInput: string | undefined, chatMode?: ChatMode) => {
+  const sendMessage = async (params: ChatMessageParams) => {
+    const { messageInput, chatMode, sessionRepositoryId, simulationData, detectedError } = params;
+
     if (messageInput?.length === 0 || chatStore.hasPendingMessage.get()) {
       return;
     }
@@ -156,7 +169,7 @@ const ChatImplementer = memo(() => {
       });
     }
 
-    const messages = chatStore.messages.get();
+    const messages = chatStore.messages.get().filter(shouldDisplayMessage);
 
     let mode = chatMode;
     if (!mode) {
@@ -171,7 +184,21 @@ const ChatImplementer = memo(() => {
 
     const numAbortsAtStart = chatStore.numAborts.get();
 
-    await doSendMessage(mode, messages, references);
+    let visit: VisitData | undefined;
+    if (sessionRepositoryId) {
+      visit = {
+        repositoryId: sessionRepositoryId,
+        references,
+        simulationData,
+        detectedError,
+      };
+    }
+
+    await doSendMessage({
+      mode,
+      messages,
+      visit,
+    });
 
     if (chatStore.numAborts.get() != numAbortsAtStart) {
       return;
