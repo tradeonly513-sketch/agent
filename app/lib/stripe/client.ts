@@ -31,7 +31,7 @@ export interface CreateCheckoutSessionParams {
   tier?: 'free' | 'starter';
   userId: string;
   userEmail: string;
-  returnUrl?: string; // Optional return URL to redirect to after checkout
+  success_url?: string; // Optional return URL to redirect to after checkout
 }
 
 export interface CheckoutSessionResponse {
@@ -61,7 +61,6 @@ export async function createCheckoutSession(params: CreateCheckoutSessionParams)
     }
 
     const { url }: CheckoutSessionResponse = await response.json();
-
     if (!url) {
       throw new Error('No checkout URL received');
     }
@@ -87,7 +86,7 @@ export async function createSubscriptionCheckout(
     tier,
     userId,
     userEmail,
-    returnUrl: window.location.href, // Return to current page after checkout
+    success_url: encodeURIComponent(window.location.href), // Return to current page after checkout, URL-encoded
   });
 }
 
@@ -99,7 +98,7 @@ export async function createTopoffCheckout(userId: string, userEmail: string): P
     type: 'topoff',
     userId,
     userEmail,
-    returnUrl: window.location.href, // Return to current page after checkout
+    success_url: encodeURIComponent(window.location.href), // Return to current page after checkout, URL-encoded
   });
 }
 
