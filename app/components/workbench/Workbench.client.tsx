@@ -27,6 +27,9 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { usePreviewStore } from '~/lib/stores/previews';
 import { chatStore } from '~/lib/stores/chat';
 import type { ElementInfo } from './Inspector';
+import { SaveAllButton } from './SaveAllButton';
+import { FileStatusIndicator } from './FileStatusIndicator';
+import { AutoSaveSettings, type AutoSaveConfig } from './AutoSaveSettings';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -285,6 +288,7 @@ export const Workbench = memo(
     const [isSyncing, setIsSyncing] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
+    const [autoSaveConfig, setAutoSaveConfig] = useState<AutoSaveConfig | null>(null);
 
     // const modifiedFiles = Array.from(useStore(workbenchStore.unsavedFiles).keys());
 
@@ -397,7 +401,22 @@ export const Workbench = memo(
                   <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                   <div className="ml-auto" />
                   {selectedView === 'code' && (
-                    <div className="flex overflow-y-auto">
+                    <div className="flex overflow-y-auto items-center gap-2">
+                      <SaveAllButton
+                        variant="button"
+                        autoSave={autoSaveConfig?.enabled || false}
+                        autoSaveInterval={(autoSaveConfig?.interval || 30) * 1000}
+                      />
+                      <AutoSaveSettings
+                        onSettingsChange={setAutoSaveConfig}
+                        trigger={
+                          <PanelHeaderButton className="text-sm">
+                            <div className="i-ph:gear-duotone" />
+                            Auto-save
+                          </PanelHeaderButton>
+                        }
+                      />
+                      <div className="h-4 w-px bg-bolt-elements-borderColor" />
                       <PanelHeaderButton
                         className="mr-1 text-sm"
                         onClick={() => {
@@ -490,6 +509,10 @@ export const Workbench = memo(
                     <Preview setSelectedElement={setSelectedElement} />
                   </View>
                 </div>
+              </div>
+              {/* Status Bar */}
+              <div className="border-t border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 px-3 py-2">
+                <FileStatusIndicator showDetails={true} />
               </div>
             </div>
           </div>
