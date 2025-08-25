@@ -387,8 +387,8 @@ export const Workbench = memo(
             )}
           >
             <div className="absolute inset-0 px-2 lg:px-4">
-              <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
-                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5 min-h-[48px] flex-wrap">
+              <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg">
+                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5 min-h-[48px]">
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
@@ -401,120 +401,134 @@ export const Workbench = memo(
                     />
                     <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                   </div>
-                  <div className="ml-auto" />
-                  {selectedView === 'code' && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <SaveAllButton
-                        variant="button"
-                        autoSave={autoSaveConfig?.enabled || false}
-                        autoSaveInterval={(autoSaveConfig?.interval || 30) * 1000}
-                      />
-                      <AutoSaveSettings
-                        onSettingsChange={setAutoSaveConfig}
-                        trigger={
-                          <PanelHeaderButton className="text-sm flex items-center gap-1.5">
-                            <div className="i-ph:gear-duotone" />
-                            <span className="hidden sm:inline">Auto-save</span>
-                          </PanelHeaderButton>
-                        }
-                      />
-                      <div className="h-4 w-px bg-bolt-elements-borderColor hidden sm:block" />
-                      <PanelHeaderButton
-                        className="mr-1 text-sm flex items-center gap-1.5"
-                        onClick={() => {
-                          workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
-                        }}
-                      >
-                        <div className="i-ph:terminal" />
-                        <span className="hidden sm:inline">Terminal</span>
-                      </PanelHeaderButton>
-                      <DropdownMenu.Root>
-                        <DropdownMenu.Trigger className="text-sm flex items-center gap-1 text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed">
-                          <div className="i-ph:box-arrow-up" />
-                          Sync
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content
-                          className={classNames(
-                            'min-w-[240px] z-[250]',
-                            'bg-white dark:bg-[#141414]',
-                            'rounded-lg shadow-lg',
-                            'border border-gray-200/50 dark:border-gray-800/50',
-                            'animate-in fade-in-0 zoom-in-95',
-                            'py-1',
-                          )}
-                          sideOffset={5}
-                          align="end"
+                  <div className="ml-auto flex items-center gap-2">
+                    {selectedView === 'code' && (
+                      <>
+                        <PanelHeaderButton
+                          className="text-sm flex items-center gap-1.5"
+                          onClick={() => {
+                            workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
+                          }}
                         >
-                          <DropdownMenu.Item
+                          <div className="i-ph:terminal" />
+                          <span className="hidden sm:inline">Terminal</span>
+                        </PanelHeaderButton>
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger className="text-sm flex items-center gap-1 text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed">
+                            <div className="i-ph:box-arrow-up" />
+                            Sync
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content
                             className={classNames(
-                              'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                              'min-w-[240px] z-[250]',
+                              'bg-white dark:bg-[#141414]',
+                              'rounded-lg shadow-lg',
+                              'border border-gray-200/50 dark:border-gray-800/50',
+                              'animate-in fade-in-0 zoom-in-95',
+                              'py-1',
                             )}
-                            onClick={handleSyncFiles}
-                            disabled={isSyncing}
+                            sideOffset={5}
+                            align="end"
                           >
-                            <div className="flex items-center gap-2">
-                              {isSyncing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-down" />}
-                              <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
-                            </div>
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item
-                            className={classNames(
-                              'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                            )}
-                            onClick={() => setIsPushDialogOpen(true)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="i-ph:git-branch" />
-                              Push to GitHub
-                            </div>
-                          </DropdownMenu.Item>
-                        </DropdownMenu.Content>
-                      </DropdownMenu.Root>
+                            <DropdownMenu.Item
+                              className={classNames(
+                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                              )}
+                              onClick={handleSyncFiles}
+                              disabled={isSyncing}
+                            >
+                              <div className="flex items-center gap-2">
+                                {isSyncing ? (
+                                  <div className="i-ph:spinner" />
+                                ) : (
+                                  <div className="i-ph:cloud-arrow-down" />
+                                )}
+                                <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
+                              </div>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              className={classNames(
+                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                              )}
+                              onClick={() => setIsPushDialogOpen(true)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="i-ph:git-branch" />
+                                Push to GitHub
+                              </div>
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Root>
+                      </>
+                    )}
+                    {selectedView === 'diff' && (
+                      <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
+                    )}
+                    <IconButton
+                      icon="i-ph:x-circle"
+                      className="-mr-1"
+                      size="xl"
+                      onClick={() => {
+                        workbenchStore.showWorkbench.set(false);
+                      }}
+                    />
+                  </div>
+
+                  {/* Save All Toolbar - Prominent dedicated section */}
+                  {selectedView === 'code' && (
+                    <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent-500/10 to-accent-600/10 border-b-2 border-accent-500/30 backdrop-blur-sm">
+                      <div className="flex items-center gap-4">
+                        <SaveAllButton
+                          variant="button"
+                          autoSave={autoSaveConfig?.enabled || false}
+                          autoSaveInterval={(autoSaveConfig?.interval || 30) * 1000}
+                          className="shadow-md hover:shadow-lg transition-shadow"
+                        />
+                        <AutoSaveSettings
+                          onSettingsChange={setAutoSaveConfig}
+                          trigger={
+                            <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 text-bolt-elements-textPrimary transition-all duration-200 border border-white/20 backdrop-blur-sm shadow-sm hover:shadow-md">
+                              <div className="i-ph:gear-duotone text-lg" />
+                              <span>Auto-save Settings</span>
+                            </button>
+                          }
+                        />
+                      </div>
+                      <FileStatusIndicator showDetails={true} className="text-sm font-medium" />
                     </div>
                   )}
 
-                  {selectedView === 'diff' && (
-                    <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
-                  )}
-                  <IconButton
-                    icon="i-ph:x-circle"
-                    className="-mr-1"
-                    size="xl"
-                    onClick={() => {
-                      workbenchStore.showWorkbench.set(false);
-                    }}
-                  />
+                  <div className="relative flex-1 overflow-hidden rounded-b-lg">
+                    <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
+                      <EditorPanel
+                        editorDocument={currentDocument}
+                        isStreaming={isStreaming}
+                        selectedFile={selectedFile}
+                        files={files}
+                        unsavedFiles={unsavedFiles}
+                        fileHistory={fileHistory}
+                        onFileSelect={onFileSelect}
+                        onEditorScroll={onEditorScroll}
+                        onEditorChange={onEditorChange}
+                        onFileSave={onFileSave}
+                        onFileReset={onFileReset}
+                      />
+                    </View>
+                    <View
+                      initial={{ x: '100%' }}
+                      animate={{ x: selectedView === 'diff' ? '0%' : selectedView === 'code' ? '100%' : '-100%' }}
+                    >
+                      <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />
+                    </View>
+                    <View initial={{ x: '100%' }} animate={{ x: selectedView === 'preview' ? '0%' : '100%' }}>
+                      <Preview setSelectedElement={setSelectedElement} />
+                    </View>
+                  </div>
                 </div>
-                <div className="relative flex-1 overflow-hidden">
-                  <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
-                    <EditorPanel
-                      editorDocument={currentDocument}
-                      isStreaming={isStreaming}
-                      selectedFile={selectedFile}
-                      files={files}
-                      unsavedFiles={unsavedFiles}
-                      fileHistory={fileHistory}
-                      onFileSelect={onFileSelect}
-                      onEditorScroll={onEditorScroll}
-                      onEditorChange={onEditorChange}
-                      onFileSave={onFileSave}
-                      onFileReset={onFileReset}
-                    />
-                  </View>
-                  <View
-                    initial={{ x: '100%' }}
-                    animate={{ x: selectedView === 'diff' ? '0%' : selectedView === 'code' ? '100%' : '-100%' }}
-                  >
-                    <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />
-                  </View>
-                  <View initial={{ x: '100%' }} animate={{ x: selectedView === 'preview' ? '0%' : '100%' }}>
-                    <Preview setSelectedElement={setSelectedElement} />
-                  </View>
+                {/* Status Bar */}
+                <div className="border-t border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 px-3 py-2">
+                  <FileStatusIndicator showDetails={true} />
                 </div>
-              </div>
-              {/* Status Bar */}
-              <div className="border-t border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 px-3 py-2">
-                <FileStatusIndicator showDetails={true} />
               </div>
             </div>
           </div>
