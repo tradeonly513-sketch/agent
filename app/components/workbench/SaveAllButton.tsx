@@ -215,28 +215,39 @@ export const SaveAllButton = memo(
             className={classNames(
               'transition-all duration-200',
               isSaving ? 'animate-spin' : '',
-              hasUnsavedFiles ? 'text-accent-500' : 'text-bolt-elements-textTertiary',
+              hasUnsavedFiles ? 'text-white' : 'text-bolt-elements-textTertiary',
             )}
           >
-            <div className="i-ph:floppy-disk-duotone text-lg" />
+            <div className="i-ph:floppy-disk-duotone text-xl" />
           </div>
 
-          {/* Unsaved indicator dot */}
-          {hasUnsavedFiles && !isSaving && (
+          {/* Unsaved indicator with count */}
+          {hasUnsavedFiles && !isSaving && showCount && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="absolute -top-1 -right-1 w-2 h-2 bg-accent-500 rounded-full"
-            />
+              className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold px-1"
+            >
+              {unsavedCount}
+            </motion.div>
           )}
         </div>
 
         {(variant === 'button' || variant === 'both') && (
-          <span className="ml-2">
-            Save All
-            {showCount && hasUnsavedFiles && ` (${unsavedCount})`}
-          </span>
+          <span className="ml-2 font-medium">{isSaving ? 'Saving...' : 'Save All'}</span>
+        )}
+
+        {/* Auto-save countdown badge */}
+        {autoSaveEnabled && timeUntilAutoSave !== null && hasUnsavedFiles && !isSaving && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="ml-2 text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium"
+          >
+            {timeUntilAutoSave}s
+          </motion.div>
         )}
       </>
     );
@@ -261,23 +272,39 @@ export const SaveAllButton = memo(
         <Tooltip.Provider delayDuration={300}>
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
-              <button
+              <motion.button
                 id="save-all-button"
                 onClick={() => handleSaveAll(false)}
                 disabled={!hasUnsavedFiles || isSaving}
                 className={classNames(
-                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                  'transition-all duration-200 ease-in-out',
-                  'border border-bolt-elements-borderColor',
+                  'relative inline-flex items-center gap-1 px-4 py-2 rounded-lg',
+                  'transition-all duration-200 ease-in-out transform',
+                  'font-medium text-sm',
                   hasUnsavedFiles
-                    ? 'bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textPrimary'
-                    : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textTertiary cursor-not-allowed opacity-50',
+                    ? 'bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white shadow-lg hover:shadow-xl border border-accent-600'
+                    : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textTertiary border border-bolt-elements-borderColor cursor-not-allowed opacity-60',
                   isSaving ? 'animate-pulse' : '',
                   className,
                 )}
+                whileHover={hasUnsavedFiles ? { scale: 1.05 } : {}}
+                whileTap={hasUnsavedFiles ? { scale: 0.95 } : {}}
               >
+                {/* Background animation for unsaved files */}
+                {hasUnsavedFiles && !isSaving && (
+                  <motion.div
+                    className="absolute inset-0 bg-white/10 rounded-lg"
+                    animate={{
+                      opacity: [0, 0.3, 0],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                )}
                 {buttonContent}
-              </button>
+              </motion.button>
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content

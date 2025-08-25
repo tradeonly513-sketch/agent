@@ -388,20 +388,22 @@ export const Workbench = memo(
           >
             <div className="absolute inset-0 px-2 lg:px-4">
               <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
-                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5">
-                  <button
-                    className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
-                    disabled={!canHideChat || isSmallViewport}
-                    onClick={() => {
-                      if (canHideChat) {
-                        chatStore.setKey('showChat', !showChat);
-                      }
-                    }}
-                  />
-                  <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
+                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5 min-h-[48px] flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
+                      disabled={!canHideChat || isSmallViewport}
+                      onClick={() => {
+                        if (canHideChat) {
+                          chatStore.setKey('showChat', !showChat);
+                        }
+                      }}
+                    />
+                    <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
+                  </div>
                   <div className="ml-auto" />
                   {selectedView === 'code' && (
-                    <div className="flex overflow-y-auto items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <SaveAllButton
                         variant="button"
                         autoSave={autoSaveConfig?.enabled || false}
@@ -410,21 +412,21 @@ export const Workbench = memo(
                       <AutoSaveSettings
                         onSettingsChange={setAutoSaveConfig}
                         trigger={
-                          <PanelHeaderButton className="text-sm">
+                          <PanelHeaderButton className="text-sm flex items-center gap-1.5">
                             <div className="i-ph:gear-duotone" />
-                            Auto-save
+                            <span className="hidden sm:inline">Auto-save</span>
                           </PanelHeaderButton>
                         }
                       />
-                      <div className="h-4 w-px bg-bolt-elements-borderColor" />
+                      <div className="h-4 w-px bg-bolt-elements-borderColor hidden sm:block" />
                       <PanelHeaderButton
-                        className="mr-1 text-sm"
+                        className="mr-1 text-sm flex items-center gap-1.5"
                         onClick={() => {
                           workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
                         }}
                       >
                         <div className="i-ph:terminal" />
-                        Toggle Terminal
+                        <span className="hidden sm:inline">Terminal</span>
                       </PanelHeaderButton>
                       <DropdownMenu.Root>
                         <DropdownMenu.Trigger className="text-sm flex items-center gap-1 text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed">
