@@ -404,6 +404,23 @@ export const Workbench = memo(
                   <div className="ml-auto flex items-center gap-2">
                     {selectedView === 'code' && (
                       <>
+                        {/* Save All Button integrated into header */}
+                        <SaveAllButton
+                          variant="icon"
+                          autoSave={autoSaveConfig?.enabled || false}
+                          autoSaveInterval={(autoSaveConfig?.interval || 30) * 1000}
+                          className="text-bolt-elements-item-contentDefault hover:text-bolt-elements-item-contentActive"
+                          showCount={true}
+                        />
+                        <AutoSaveSettings
+                          onSettingsChange={setAutoSaveConfig}
+                          trigger={
+                            <PanelHeaderButton className="text-sm flex items-center gap-1.5">
+                              <div className="i-ph:gear-duotone" />
+                              <span className="hidden sm:inline">Auto-save</span>
+                            </PanelHeaderButton>
+                          }
+                        />
                         <PanelHeaderButton
                           className="text-sm flex items-center gap-1.5"
                           onClick={() => {
@@ -473,30 +490,6 @@ export const Workbench = memo(
                       }}
                     />
                   </div>
-
-                  {/* Save All Toolbar - Prominent dedicated section */}
-                  {selectedView === 'code' && (
-                    <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent-500/10 to-accent-600/10 border-b-2 border-accent-500/30 backdrop-blur-sm">
-                      <div className="flex items-center gap-4">
-                        <SaveAllButton
-                          variant="button"
-                          autoSave={autoSaveConfig?.enabled || false}
-                          autoSaveInterval={(autoSaveConfig?.interval || 30) * 1000}
-                          className="shadow-md hover:shadow-lg transition-shadow"
-                        />
-                        <AutoSaveSettings
-                          onSettingsChange={setAutoSaveConfig}
-                          trigger={
-                            <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 text-bolt-elements-textPrimary transition-all duration-200 border border-white/20 backdrop-blur-sm shadow-sm hover:shadow-md">
-                              <div className="i-ph:gear-duotone text-lg" />
-                              <span>Auto-save Settings</span>
-                            </button>
-                          }
-                        />
-                      </div>
-                      <FileStatusIndicator showDetails={true} className="text-sm font-medium" />
-                    </div>
-                  )}
 
                   <div className="relative flex-1 overflow-hidden rounded-b-lg">
                     <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
