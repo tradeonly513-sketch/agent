@@ -27,8 +27,6 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { usePreviewStore } from '~/lib/stores/previews';
 import { chatStore } from '~/lib/stores/chat';
 import type { ElementInfo } from './Inspector';
-// Save All components removed to prevent UI disruption
-import { useKeyboardSaveAll } from './KeyboardSaveAll';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -284,12 +282,40 @@ export const Workbench = memo(
   ({ chatStarted, isStreaming, metadata, updateChatMestaData, setSelectedElement }: WorkspaceProps) => {
     renderLogger.trace('Workbench');
 
-    // Enable keyboard shortcut for Save All (Ctrl+Shift+S)
-    useKeyboardSaveAll();
-
     const [isSyncing, setIsSyncing] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
+
+    // Keyboard shortcut for Save All (Ctrl+Shift+S)
+    useEffect(() => {
+      const handleKeyPress = async (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 's') {
+          e.preventDefault();
+          const unsavedFiles = workbenchStore.unsavedFiles.get();
+          if (unsavedFiles.size > 0) {
+            try {
+              await workbenchStore.saveAllFiles();
+              toast.success(`Saved ${unsavedFiles.size} file${unsavedFiles.size > 1 ? 's' : ''}`, {
+                position: 'bottom-right',
+                autoClose: 2000,
+              });
+            } catch (error) {
+              toast.error('Failed to save some files', {
+                position: 'bottom-right',
+                autoClose: 3000,
+              });
+            }
+          } else {
+            toast.info('All files are already saved', {
+              position: 'bottom-right',
+              autoClose: 2000,
+            });
+          }
+        }
+      };
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }, []);
 
     // const modifiedFiles = Array.from(useStore(workbenchStore.unsavedFiles).keys());
 
@@ -388,112 +414,145 @@ export const Workbench = memo(
             )}
           >
             <div className="absolute inset-0 px-2 lg:px-4">
-              <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg">
-                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5 min-h-[48px]">
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
-                      disabled={!canHideChat || isSmallViewport}
-                      onClick={() => {
-                        if (canHideChat) {
-                          chatStore.setKey('showChat', !showChat);
-                        }
-                      }}
-                    />
-                    <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
-                  </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    {selectedView === 'code' && (
-                      <>
-                        <PanelHeaderButton
-                          className="text-sm flex items-center gap-1.5"
-                          onClick={() => {
-                            workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
-                          }}
+              <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
+                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5">
+                  <button
+                    className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
+                    disabled={!canHideChat || isSmallViewport}
+                    onClick={() => {
+                      if (canHideChat) {
+                        chatStore.setKey('showChat', !showChat);
+                      }
+                    }}
+                  />
+                  <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
+                  <div className="ml-auto" />
+                  {selectedView === 'code' && (
+                    <div className="flex overflow-y-auto">
+                      <PanelHeaderButton
+                        className="mr-1 text-sm"
+                        onClick={() => {
+                          workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
+                        }}
+                      >
+                        <div className="i-ph:terminal" />
+                        Toggle Terminal
+                      </PanelHeaderButton>
+                      <DropdownMenu.Root>
+                        <DropdownMenu.Trigger className="text-sm flex items-center gap-1 text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed">
+                          <div className="i-ph:box-arrow-up" />
+                          Sync
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content
+                          className={classNames(
+                            'min-w-[240px] z-[250]',
+                            'bg-white dark:bg-[#141414]',
+                            'rounded-lg shadow-lg',
+                            'border border-gray-200/50 dark:border-gray-800/50',
+                            'animate-in fade-in-0 zoom-in-95',
+                            'py-1',
+                          )}
+                          sideOffset={5}
+                          align="end"
                         >
-                          <div className="i-ph:terminal" />
-                          <span className="hidden sm:inline">Terminal</span>
-                        </PanelHeaderButton>
-                        <DropdownMenu.Root>
-                          <DropdownMenu.Trigger className="text-sm flex items-center gap-1 text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed">
-                            <div className="i-ph:box-arrow-up" />
-                            Sync
-                          </DropdownMenu.Trigger>
-                          <DropdownMenu.Content
+                          <DropdownMenu.Item
                             className={classNames(
-                              'min-w-[240px] z-[250]',
-                              'bg-white dark:bg-[#141414]',
-                              'rounded-lg shadow-lg',
-                              'border border-gray-200/50 dark:border-gray-800/50',
-                              'animate-in fade-in-0 zoom-in-95',
-                              'py-1',
+                              'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                             )}
-                            sideOffset={5}
-                            align="end"
+                            onClick={async () => {
+                              const unsavedFiles = workbenchStore.unsavedFiles.get();
+                              if (unsavedFiles.size > 0) {
+                                try {
+                                  await workbenchStore.saveAllFiles();
+                                  toast.success(`Saved ${unsavedFiles.size} file${unsavedFiles.size > 1 ? 's' : ''}`, {
+                                    position: 'bottom-right',
+                                    autoClose: 2000,
+                                  });
+                                } catch (error) {
+                                  toast.error('Failed to save some files', {
+                                    position: 'bottom-right',
+                                    autoClose: 3000,
+                                  });
+                                }
+                              } else {
+                                toast.info('All files are already saved', {
+                                  position: 'bottom-right',
+                                  autoClose: 2000,
+                                });
+                              }
+                            }}
                           >
-                            <DropdownMenu.Item
-                              className={classNames(
-                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                              )}
-                              onClick={handleSyncFiles}
-                              disabled={isSyncing}
-                            >
-                              <div className="flex items-center gap-2">
-                                {isSyncing ? (
-                                  <div className="i-ph:spinner" />
-                                ) : (
-                                  <div className="i-ph:cloud-arrow-down" />
-                                )}
-                                <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
-                              </div>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item
-                              className={classNames(
-                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                              )}
-                              onClick={() => setIsPushDialogOpen(true)}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="i-ph:git-branch" />
-                                Push to GitHub
-                              </div>
-                            </DropdownMenu.Item>
-                          </DropdownMenu.Content>
-                        </DropdownMenu.Root>
-                      </>
-                    )}
-                    {selectedView === 'diff' && (
-                      <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
-                    )}
-                    <IconButton
-                      icon="i-ph:x-circle"
-                      className="-mr-1"
-                      size="xl"
-                      onClick={() => {
-                        workbenchStore.showWorkbench.set(false);
-                      }}
-                    />
-                  </div>
+                            <div className="flex items-center gap-2">
+                              <div className="i-ph:floppy-disk" />
+                              <span>Save All (Ctrl+Shift+S)</span>
+                            </div>
+                          </DropdownMenu.Item>
+                          <DropdownMenu.Separator className="my-1 border-t border-bolt-elements-borderColor" />
+                          <DropdownMenu.Item
+                            className={classNames(
+                              'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                            )}
+                            onClick={handleSyncFiles}
+                            disabled={isSyncing}
+                          >
+                            <div className="flex items-center gap-2">
+                              {isSyncing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-down" />}
+                              <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
+                            </div>
+                          </DropdownMenu.Item>
+                          <DropdownMenu.Item
+                            className={classNames(
+                              'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                            )}
+                            onClick={() => setIsPushDialogOpen(true)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="i-ph:git-branch" />
+                              Push to GitHub
+                            </div>
+                          </DropdownMenu.Item>
+                        </DropdownMenu.Content>
+                      </DropdownMenu.Root>
+                    </div>
+                  )}
 
-                  <div className="relative flex-1 overflow-hidden rounded-b-lg">
-                    {selectedView === 'code' && (
-                      <EditorPanel
-                        editorDocument={currentDocument}
-                        isStreaming={isStreaming}
-                        selectedFile={selectedFile}
-                        files={files}
-                        unsavedFiles={unsavedFiles}
-                        fileHistory={fileHistory}
-                        onFileSelect={onFileSelect}
-                        onEditorScroll={onEditorScroll}
-                        onEditorChange={onEditorChange}
-                        onFileSave={onFileSave}
-                        onFileReset={onFileReset}
-                      />
-                    )}
-                    {selectedView === 'diff' && <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />}
-                    {selectedView === 'preview' && <Preview setSelectedElement={setSelectedElement} />}
-                  </div>
+                  {selectedView === 'diff' && (
+                    <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
+                  )}
+                  <IconButton
+                    icon="i-ph:x-circle"
+                    className="-mr-1"
+                    size="xl"
+                    onClick={() => {
+                      workbenchStore.showWorkbench.set(false);
+                    }}
+                  />
+                </div>
+                <div className="relative flex-1 overflow-hidden">
+                  <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
+                    <EditorPanel
+                      editorDocument={currentDocument}
+                      isStreaming={isStreaming}
+                      selectedFile={selectedFile}
+                      files={files}
+                      unsavedFiles={unsavedFiles}
+                      fileHistory={fileHistory}
+                      onFileSelect={onFileSelect}
+                      onEditorScroll={onEditorScroll}
+                      onEditorChange={onEditorChange}
+                      onFileSave={onFileSave}
+                      onFileReset={onFileReset}
+                    />
+                  </View>
+                  <View
+                    initial={{ x: '100%' }}
+                    animate={{ x: selectedView === 'diff' ? '0%' : selectedView === 'code' ? '100%' : '-100%' }}
+                  >
+                    <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />
+                  </View>
+                  <View initial={{ x: '100%' }} animate={{ x: selectedView === 'preview' ? '0%' : '100%' }}>
+                    <Preview setSelectedElement={setSelectedElement} />
+                  </View>
                 </div>
               </div>
             </div>
@@ -529,4 +588,15 @@ export const Workbench = memo(
   },
 );
 
-// View component removed - using conditional rendering instead to fix display issues
+// View component for rendering content with motion transitions
+interface ViewProps extends HTMLMotionProps<'div'> {
+  children: JSX.Element;
+}
+
+const View = memo(({ children, ...props }: ViewProps) => {
+  return (
+    <motion.div className="absolute inset-0" transition={viewTransition} {...props}>
+      {children}
+    </motion.div>
+  );
+});
