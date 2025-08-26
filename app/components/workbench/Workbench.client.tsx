@@ -27,9 +27,8 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { usePreviewStore } from '~/lib/stores/previews';
 import { chatStore } from '~/lib/stores/chat';
 import type { ElementInfo } from './Inspector';
-import { SaveAllButton } from './SaveAllButton';
-import { FileStatusIndicator } from './FileStatusIndicator';
-import { AutoSaveSettings, type AutoSaveConfig } from './AutoSaveSettings';
+// Save All components removed to prevent UI disruption
+import { useKeyboardSaveAll } from './KeyboardSaveAll';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -285,10 +284,12 @@ export const Workbench = memo(
   ({ chatStarted, isStreaming, metadata, updateChatMestaData, setSelectedElement }: WorkspaceProps) => {
     renderLogger.trace('Workbench');
 
+    // Enable keyboard shortcut for Save All (Ctrl+Shift+S)
+    useKeyboardSaveAll();
+
     const [isSyncing, setIsSyncing] = useState(false);
     const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
     const [fileHistory, setFileHistory] = useState<Record<string, FileHistory>>({});
-    const [autoSaveConfig, setAutoSaveConfig] = useState<AutoSaveConfig | null>(null);
 
     // const modifiedFiles = Array.from(useStore(workbenchStore.unsavedFiles).keys());
 
@@ -404,23 +405,6 @@ export const Workbench = memo(
                   <div className="ml-auto flex items-center gap-2">
                     {selectedView === 'code' && (
                       <>
-                        {/* Save All Button integrated into header */}
-                        <SaveAllButton
-                          variant="icon"
-                          autoSave={autoSaveConfig?.enabled || false}
-                          autoSaveInterval={(autoSaveConfig?.interval || 30) * 1000}
-                          className="text-bolt-elements-item-contentDefault hover:text-bolt-elements-item-contentActive"
-                          showCount={true}
-                        />
-                        <AutoSaveSettings
-                          onSettingsChange={setAutoSaveConfig}
-                          trigger={
-                            <PanelHeaderButton className="text-sm flex items-center gap-1.5">
-                              <div className="i-ph:gear-duotone" />
-                              <span className="hidden sm:inline">Auto-save</span>
-                            </PanelHeaderButton>
-                          }
-                        />
                         <PanelHeaderButton
                           className="text-sm flex items-center gap-1.5"
                           onClick={() => {
@@ -510,10 +494,6 @@ export const Workbench = memo(
                     {selectedView === 'diff' && <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />}
                     {selectedView === 'preview' && <Preview setSelectedElement={setSelectedElement} />}
                   </div>
-                </div>
-                {/* Status Bar */}
-                <div className="border-t border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 px-3 py-2">
-                  <FileStatusIndicator showDetails={true} />
                 </div>
               </div>
             </div>
