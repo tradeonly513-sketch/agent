@@ -492,7 +492,7 @@ export const Workbench = memo(
                   </div>
 
                   <div className="relative flex-1 overflow-hidden rounded-b-lg">
-                    <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
+                    {selectedView === 'code' && (
                       <EditorPanel
                         editorDocument={currentDocument}
                         isStreaming={isStreaming}
@@ -506,16 +506,9 @@ export const Workbench = memo(
                         onFileSave={onFileSave}
                         onFileReset={onFileReset}
                       />
-                    </View>
-                    <View
-                      initial={{ x: '100%' }}
-                      animate={{ x: selectedView === 'diff' ? '0%' : selectedView === 'code' ? '100%' : '-100%' }}
-                    >
-                      <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />
-                    </View>
-                    <View initial={{ x: '100%' }} animate={{ x: selectedView === 'preview' ? '0%' : '100%' }}>
-                      <Preview setSelectedElement={setSelectedElement} />
-                    </View>
+                    )}
+                    {selectedView === 'diff' && <DiffView fileHistory={fileHistory} setFileHistory={setFileHistory} />}
+                    {selectedView === 'preview' && <Preview setSelectedElement={setSelectedElement} />}
                   </div>
                 </div>
                 {/* Status Bar */}
@@ -556,15 +549,4 @@ export const Workbench = memo(
   },
 );
 
-// View component for rendering content with motion transitions
-interface ViewProps extends HTMLMotionProps<'div'> {
-  children: JSX.Element;
-}
-
-const View = memo(({ children, ...props }: ViewProps) => {
-  return (
-    <motion.div className="absolute inset-0" transition={viewTransition} {...props}>
-      {children}
-    </motion.div>
-  );
-});
+// View component removed - using conditional rendering instead to fix display issues
