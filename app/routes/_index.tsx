@@ -1,28 +1,32 @@
 import { json, type MetaFunction } from '@remix-run/cloudflare';
 import { ClientOnly } from 'remix-utils/client-only';
-import { BaseChat } from '~/components/chat/BaseChat';
-import { Chat } from '~/components/chat/Chat.client';
-import { Header } from '~/components/header/Header';
-import BackgroundRays from '~/components/ui/BackgroundRays';
+import { AuthenticatedChat } from '~/components/chat/AuthenticatedChat';
 
 export const meta: MetaFunction = () => {
-  return [{ title: 'Bolt' }, { name: 'description', content: 'Talk with Bolt, an AI assistant from StackBlitz' }];
+  return [
+    { title: 'bolt.diy - Multi-User Edition' }, 
+    { name: 'description', content: 'Build web applications with AI assistance - Multi-User Edition by Keoma Wright' }
+  ];
 };
 
 export const loader = () => json({});
 
 /**
- * Landing page component for Bolt
- * Note: Settings functionality should ONLY be accessed through the sidebar menu.
- * Do not add settings button/panel to this landing page as it was intentionally removed
- * to keep the UI clean and consistent with the design system.
+ * Landing page component for Bolt Multi-User Edition
+ * This page now requires authentication before accessing the chat interface
+ * Developed by Keoma Wright
  */
 export default function Index() {
   return (
-    <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1">
-      <BackgroundRays />
-      <Header />
-      <ClientOnly fallback={<BaseChat />}>{() => <Chat />}</ClientOnly>
-    </div>
+    <ClientOnly fallback={
+      <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1 items-center justify-center">
+        <div className="text-center">
+          <div className="i-svg-spinners:3-dots-scale text-4xl text-bolt-elements-textPrimary mb-4" />
+          <p className="text-bolt-elements-textSecondary">Loading bolt.diy...</p>
+        </div>
+      </div>
+    }>
+      {() => <AuthenticatedChat />}
+    </ClientOnly>
   );
 }
