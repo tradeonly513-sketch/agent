@@ -2,7 +2,7 @@
 
 **Developer: Keoma Wright**  
 **Version: 1.0.0**  
-**Date: December 2024**
+**Date: 27 August 2025**
 
 ## 📋 Table of Contents
 1. [Overview](#overview)
@@ -505,7 +505,7 @@ This multi-user system is an extension of the bolt.diy project and follows the s
 
 **Developer**: Keoma Wright  
 **Project**: bolt.diy Multi-User Edition  
-**Year**: 2024
+**Year**: 2025
 
 ---
 
