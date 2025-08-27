@@ -17,7 +17,8 @@ interface DeployDialogProps {
 interface DeployProvider {
   id: 'netlify' | 'vercel' | 'cloudflare';
   name: string;
-  icon: string;
+  iconClass: string;
+  iconColor?: string;
   connected: boolean;
   comingSoon?: boolean;
   description: string;
@@ -160,7 +161,8 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
     {
       id: 'netlify',
       name: 'Netlify',
-      icon: 'https://cdn.simpleicons.org/netlify',
+      iconClass: 'i-simple-icons:netlify',
+      iconColor: 'text-[#00C7B7]',
       connected: !!netlifyConn.user,
       description: 'Deploy your site with automatic SSL, global CDN, and continuous deployment',
       features: [
@@ -175,7 +177,7 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
     {
       id: 'vercel',
       name: 'Vercel',
-      icon: 'https://cdn.simpleicons.org/vercel/white',
+      iconClass: 'i-simple-icons:vercel',
       connected: !!vercelConn.user,
       description: 'Deploy with the platform built for frontend developers',
       features: [
@@ -190,7 +192,8 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
     {
       id: 'cloudflare',
       name: 'Cloudflare Pages',
-      icon: 'https://cdn.simpleicons.org/cloudflare',
+      iconClass: 'i-simple-icons:cloudflare',
+      iconColor: 'text-[#F38020]',
       connected: false,
       comingSoon: true,
       description: "Deploy on Cloudflare's global network",
@@ -248,7 +251,7 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-lg bg-bolt-elements-background-depth-1 flex items-center justify-center flex-shrink-0">
-                  <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
+                  <span className={classNames(provider.iconClass, provider.iconColor || 'text-bolt-elements-textPrimary', 'text-2xl')} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -312,7 +315,7 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3 p-4 bg-bolt-elements-background-depth-2 rounded-lg">
-          <img src={provider.icon} alt={provider.name} className="w-8 h-8" />
+          <span className={classNames(provider.iconClass, provider.iconColor || 'text-bolt-elements-textPrimary', 'text-3xl')} />
           <div className="flex-1">
             <h3 className="font-semibold text-bolt-elements-textPrimary">{provider.name}</h3>
             <p className="text-sm text-bolt-elements-textSecondary">Ready to deploy to your {provider.name} account</p>
