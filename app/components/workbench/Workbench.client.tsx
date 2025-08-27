@@ -291,7 +291,9 @@ export const Workbench = memo(
       const handleKeyPress = async (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 's') {
           e.preventDefault();
+
           const unsavedFiles = workbenchStore.unsavedFiles.get();
+
           if (unsavedFiles.size > 0) {
             try {
               await workbenchStore.saveAllFiles();
@@ -299,7 +301,7 @@ export const Workbench = memo(
                 position: 'bottom-right',
                 autoClose: 2000,
               });
-            } catch (error) {
+            } catch {
               toast.error('Failed to save some files', {
                 position: 'bottom-right',
                 autoClose: 3000,
@@ -314,6 +316,7 @@ export const Workbench = memo(
         }
       };
       window.addEventListener('keydown', handleKeyPress);
+
       return () => window.removeEventListener('keydown', handleKeyPress);
     }, []);
 
@@ -381,8 +384,8 @@ export const Workbench = memo(
         const directoryHandle = await window.showDirectoryPicker();
         await workbenchStore.syncFiles(directoryHandle);
         toast.success('Files synced successfully');
-      } catch (error) {
-        console.error('Error syncing files:', error);
+      } catch {
+        console.error('Error syncing files');
         toast.error('Failed to sync files');
       } finally {
         setIsSyncing(false);
@@ -431,6 +434,42 @@ export const Workbench = memo(
                     <div className="flex overflow-y-auto">
                       <PanelHeaderButton
                         className="mr-1 text-sm"
+                        onClick={async () => {
+                          console.log('[SaveAll] Button clicked');
+
+                          const unsavedFiles = workbenchStore.unsavedFiles.get();
+                          console.log('[SaveAll] Unsaved files:', Array.from(unsavedFiles));
+
+                          if (unsavedFiles.size > 0) {
+                            try {
+                              console.log('[SaveAll] Starting save...');
+                              await workbenchStore.saveAllFiles();
+                              toast.success(`Saved ${unsavedFiles.size} file${unsavedFiles.size > 1 ? 's' : ''}`, {
+                                position: 'bottom-right',
+                                autoClose: 2000,
+                              });
+                              console.log('[SaveAll] Save successful');
+                            } catch {
+                              console.error('[SaveAll] Save failed');
+                              toast.error('Failed to save files', {
+                                position: 'bottom-right',
+                                autoClose: 3000,
+                              });
+                            }
+                          } else {
+                            console.log('[SaveAll] No unsaved files');
+                            toast.info('All files are already saved', {
+                              position: 'bottom-right',
+                              autoClose: 2000,
+                            });
+                          }
+                        }}
+                      >
+                        <div className="i-ph:floppy-disk" />
+                        Save All
+                      </PanelHeaderButton>
+                      <PanelHeaderButton
+                        className="mr-1 text-sm"
                         onClick={() => {
                           workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
                         }}
@@ -455,39 +494,6 @@ export const Workbench = memo(
                           sideOffset={5}
                           align="end"
                         >
-                          <DropdownMenu.Item
-                            className={classNames(
-                              'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                            )}
-                            onClick={async () => {
-                              const unsavedFiles = workbenchStore.unsavedFiles.get();
-                              if (unsavedFiles.size > 0) {
-                                try {
-                                  await workbenchStore.saveAllFiles();
-                                  toast.success(`Saved ${unsavedFiles.size} file${unsavedFiles.size > 1 ? 's' : ''}`, {
-                                    position: 'bottom-right',
-                                    autoClose: 2000,
-                                  });
-                                } catch (error) {
-                                  toast.error('Failed to save some files', {
-                                    position: 'bottom-right',
-                                    autoClose: 3000,
-                                  });
-                                }
-                              } else {
-                                toast.info('All files are already saved', {
-                                  position: 'bottom-right',
-                                  autoClose: 2000,
-                                });
-                              }
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="i-ph:floppy-disk" />
-                              <span>Save All (Ctrl+Shift+S)</span>
-                            </div>
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Separator className="my-1 border-t border-bolt-elements-borderColor" />
                           <DropdownMenu.Item
                             className={classNames(
                               'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
@@ -575,10 +581,10 @@ export const Workbench = memo(
                 }
 
                 return repoUrl;
-              } catch (error) {
-                console.error('Error pushing to GitHub:', error);
+              } catch {
+                console.error('Error pushing to GitHub');
                 toast.error('Failed to push to GitHub');
-                throw error;
+                throw new Error('Failed to push to GitHub');
               }
             }}
           />

@@ -81,7 +81,10 @@ export const SaveAllButton = memo(
           countdownTimerRef.current = null;
         }
       }, 1000);
+    }, [autoSave, hasUnsavedFiles, autoSaveInterval, isSaving]);
 
+    // Cleanup effect
+    useEffect(() => {
       return () => {
         if (autoSaveTimerRef.current) {
           clearTimeout(autoSaveTimerRef.current);
@@ -91,7 +94,7 @@ export const SaveAllButton = memo(
           clearInterval(countdownTimerRef.current);
         }
       };
-    }, [autoSave, hasUnsavedFiles, autoSaveInterval, isSaving]);
+    }, []);
 
     const handleSaveAll = useCallback(
       async (isAutoSave = false) => {

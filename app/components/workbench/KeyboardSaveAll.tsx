@@ -8,9 +8,9 @@ export function useKeyboardSaveAll() {
       // Ctrl+Shift+S or Cmd+Shift+S to save all
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 's') {
         e.preventDefault();
-        
+
         const unsavedFiles = workbenchStore.unsavedFiles.get();
-        
+
         if (unsavedFiles.size === 0) {
           toast.info('All files are already saved', {
             position: 'bottom-right',
@@ -18,16 +18,16 @@ export function useKeyboardSaveAll() {
           });
           return;
         }
-        
+
         try {
           const count = unsavedFiles.size;
           await workbenchStore.saveAllFiles();
-          
+
           toast.success(`Saved ${count} file${count > 1 ? 's' : ''}`, {
             position: 'bottom-right',
             autoClose: 2000,
           });
-        } catch (error) {
+        } catch {
           toast.error('Failed to save some files', {
             position: 'bottom-right',
             autoClose: 3000,
@@ -37,6 +37,7 @@ export function useKeyboardSaveAll() {
     };
 
     window.addEventListener('keydown', handleKeyPress);
+
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 }
