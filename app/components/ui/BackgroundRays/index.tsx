@@ -1,18 +1,6 @@
-import styles from './styles.module.scss';
+import React from "react";
+import ReactDOM from "react-dom/client";
 
-const BackgroundRays = () => {
-  return (
-    <div className={`${styles.rayContainer} `}>
-      <div className={`${styles.lightRay} ${styles.ray1}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray2}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray3}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray4}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray5}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray6}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray7}`}></div>
-      <div className={`${styles.lightRay} ${styles.ray8}`}></div>
-    </div>
-  );
-};
+const App = () => <h1>Hello Bolt on Vercel 🚀</h1>;
 
-export default BackgroundRays;
+ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
