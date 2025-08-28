@@ -33,7 +33,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => navigate('/auth')}
-          className="relative group px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-600/10 hover:from-blue-500/20 hover:to-purple-600/20 border border-white/10 transition-all"
+          className="relative group px-3 py-1.5 rounded-lg bg-bolt-elements-button-secondary-background hover:bg-bolt-elements-button-secondary-backgroundHover border border-bolt-elements-borderColor transition-all"
           title="Activate Multi-User Features"
         >
           <div className="flex items-center gap-2">
@@ -50,7 +50,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
               />
             </svg>
-            <span className="text-xs font-medium text-white/70 group-hover:text-white hidden sm:inline">
+            <span className="text-xs font-medium text-bolt-elements-textSecondary group-hover:text-bolt-elements-textPrimary hidden sm:inline">
               Multi-User
             </span>
             <div className="absolute -top-1 -right-1">

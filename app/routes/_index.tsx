@@ -68,10 +68,10 @@ export default function Index() {
                   transition={{ duration: 0.3 }}
                   className="fixed bottom-6 right-6 max-w-sm z-50"
                 >
-                  <div className="bg-gradient-to-r from-blue-500/10 to-purple-600/10 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl p-4">
+                  <div className="bg-bolt-elements-background-depth-2 backdrop-blur-xl rounded-xl border border-bolt-elements-borderColor shadow-2xl p-4">
                     <button
                       onClick={handleDismissBanner}
-                      className="absolute top-2 right-2 text-white/40 hover:text-white/60 transition-colors"
+                      className="absolute top-2 right-2 text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary transition-colors"
                       aria-label="Close"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +81,7 @@ export default function Index() {
 
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
                               strokeLinecap="round"
@@ -94,20 +94,22 @@ export default function Index() {
                       </div>
 
                       <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-white mb-1">Unlock Multi-User Features</h3>
-                        <p className="text-xs text-white/70 mb-3">
+                        <h3 className="text-sm font-semibold text-bolt-elements-textPrimary mb-1">
+                          Unlock Multi-User Features
+                        </h3>
+                        <p className="text-xs text-bolt-elements-textSecondary mb-3">
                           Save your projects, personalized settings, and collaborate with workspace isolation.
                         </p>
                         <div className="flex gap-2">
                           <button
                             onClick={handleActivateMultiUser}
-                            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg"
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
                           >
                             Activate Now
                           </button>
                           <button
                             onClick={handleDismissBanner}
-                            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-bolt-elements-button-secondary-background text-bolt-elements-button-secondary-text hover:bg-bolt-elements-button-secondary-backgroundHover transition-all"
                           >
                             Continue as Guest
                           </button>
