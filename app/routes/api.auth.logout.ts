@@ -11,11 +11,11 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     // Get token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const payload = verifyToken(token);
-      
+
       if (payload) {
         // Log logout event
         await logSecurityEvent({

@@ -28,25 +28,27 @@ const SESSION_TIMEOUT = 7 * 24 * 60 * 60 * 1000; // 7 days
  * Initialize auth from stored token
  */
 export async function initializeAuth(): Promise<void> {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   authStore.setKey('loading', true);
-  
+
   try {
     const token = Cookies.get('auth_token');
-    
+
     if (token) {
       // Verify token with backend
       const response = await fetch('/api/auth/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
-        const data = await response.json() as { user: Omit<UserProfile, 'passwordHash'> };
+        const data = (await response.json()) as { user: Omit<UserProfile, 'passwordHash'> };
         setAuthState({
           isAuthenticated: true,
           user: data.user,
@@ -72,15 +74,15 @@ export async function initializeAuth(): Promise<void> {
  */
 export function setAuthState(state: AuthState): void {
   authStore.set(state);
-  
+
   if (state.token) {
     // Store token in cookie
-    const cookieOptions = rememberMeStore.get() 
+    const cookieOptions = rememberMeStore.get()
       ? { expires: 7 } // 7 days
       : undefined; // Session cookie
-    
+
     Cookies.set('auth_token', state.token, cookieOptions);
-    
+
     // Store user preferences in localStorage
     if (state.user) {
       localStorage.setItem(`bolt_user_${state.user.id}`, JSON.stringify(state.user.preferences || {}));
@@ -92,9 +94,9 @@ export function setAuthState(state: AuthState): void {
  * Login user
  */
 export async function login(
-  username: string, 
-  password: string, 
-  rememberMe: boolean = false
+  username: string,
+  password: string,
+  rememberMe: boolean = false,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const response = await fetch('/api/auth/login', {
@@ -104,9 +106,14 @@ export async function login(
       },
       body: JSON.stringify({ username, password }),
     });
-    
-    const data = await response.json() as { success?: boolean; error?: string; user?: Omit<UserProfile, 'passwordHash'>; token?: string };
-    
+
+    const data = (await response.json()) as {
+      success?: boolean;
+      error?: string;
+      user?: Omit<UserProfile, 'passwordHash'>;
+      token?: string;
+    };
+
     if (response.ok) {
       rememberMeStore.set(rememberMe);
       setAuthState({
@@ -116,6 +123,7 @@ export async function login(
         loading: false,
       });
       startSessionTimer();
+
       return { success: true };
     } else {
       return { success: false, error: data.error || 'Login failed' };
@@ -133,7 +141,7 @@ export async function signup(
   username: string,
   password: string,
   firstName: string,
-  avatar?: string
+  avatar?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const response = await fetch('/api/auth/signup', {
@@ -143,9 +151,14 @@ export async function signup(
       },
       body: JSON.stringify({ username, password, firstName, avatar }),
     });
-    
-    const data = await response.json() as { success?: boolean; error?: string; user?: Omit<UserProfile, 'passwordHash'>; token?: string };
-    
+
+    const data = (await response.json()) as {
+      success?: boolean;
+      error?: string;
+      user?: Omit<UserProfile, 'passwordHash'>;
+      token?: string;
+    };
+
     if (response.ok) {
       setAuthState({
         isAuthenticated: true,
@@ -154,6 +167,7 @@ export async function signup(
         loading: false,
       });
       startSessionTimer();
+
       return { success: true };
     } else {
       return { success: false, error: data.error || 'Signup failed' };
@@ -169,20 +183,20 @@ export async function signup(
  */
 export async function logout(): Promise<void> {
   const state = authStore.get();
-  
+
   if (state.token) {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${state.token}`,
+          Authorization: `Bearer ${state.token}`,
         },
       });
     } catch (error) {
       console.error('Logout error:', error);
     }
   }
-  
+
   clearAuth();
 }
 
@@ -196,15 +210,17 @@ function clearAuth(): void {
     token: null,
     loading: false,
   });
-  
+
   Cookies.remove('auth_token');
   stopSessionTimer();
-  
+
   // Clear user-specific localStorage
   const currentUser = authStore.get().user;
+
   if (currentUser?.id) {
     // Keep preferences but clear sensitive data
     const prefs = localStorage.getItem(`bolt_user_${currentUser.id}`);
+
     if (prefs) {
       try {
         const parsed = JSON.parse(prefs);
@@ -221,10 +237,11 @@ function clearAuth(): void {
  */
 function startSessionTimer(): void {
   stopSessionTimer();
-  
+
   if (!rememberMeStore.get()) {
     sessionTimeout = setTimeout(() => {
       logout();
+
       if (typeof window !== 'undefined') {
         window.location.href = '/auth';
       }
@@ -245,32 +262,35 @@ function stopSessionTimer(): void {
 /**
  * Update user profile
  */
-export async function updateProfile(updates: Partial<Omit<UserProfile, 'passwordHash' | 'id' | 'username'>>): Promise<boolean> {
+export async function updateProfile(
+  updates: Partial<Omit<UserProfile, 'passwordHash' | 'id' | 'username'>>,
+): Promise<boolean> {
   const state = authStore.get();
-  
+
   if (!state.token || !state.user) {
     return false;
   }
-  
+
   try {
     const response = await fetch('/api/users/profile', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${state.token}`,
+        Authorization: `Bearer ${state.token}`,
       },
       body: JSON.stringify(updates),
     });
-    
+
     if (response.ok) {
-      const updatedUser = await response.json() as Omit<UserProfile, 'passwordHash'>;
+      const updatedUser = (await response.json()) as Omit<UserProfile, 'passwordHash'>;
       authStore.setKey('user', updatedUser);
+
       return true;
     }
   } catch (error) {
     console.error('Failed to update profile:', error);
   }
-  
+
   return false;
 }
 

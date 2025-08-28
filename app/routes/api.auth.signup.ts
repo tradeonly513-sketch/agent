@@ -1,10 +1,6 @@
 import type { ActionFunctionArgs } from '@remix-run/cloudflare';
 import { json } from '@remix-run/cloudflare';
-import { 
-  createUser,
-  getUserByUsername,
-  logSecurityEvent 
-} from '~/lib/utils/fileUserStorage';
+import { createUser, getUserByUsername, logSecurityEvent } from '~/lib/utils/fileUserStorage';
 import { validatePassword, generateToken } from '~/lib/utils/crypto';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -13,7 +9,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const body = await request.json() as { username?: string; password?: string; firstName?: string; avatar?: string };
+    const body = (await request.json()) as {
+      username?: string;
+      password?: string;
+      firstName?: string;
+      avatar?: string;
+    };
     const { username, password, firstName, avatar } = body;
 
     // Validate required fields
@@ -23,19 +24,24 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Validate username format
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-      return json({ 
-        error: 'Username must be 3-20 characters and contain only letters, numbers, and underscores' 
-      }, { status: 400 });
+      return json(
+        {
+          error: 'Username must be 3-20 characters and contain only letters, numbers, and underscores',
+        },
+        { status: 400 },
+      );
     }
 
     // Validate password strength
     const passwordValidation = validatePassword(password);
+
     if (!passwordValidation.valid) {
       return json({ error: passwordValidation.errors.join('. ') }, { status: 400 });
     }
 
     // Check if username already exists
     const existingUser = await getUserByUsername(username);
+
     if (existingUser) {
       return json({ error: 'Username already exists' }, { status: 400 });
     }
@@ -74,14 +80,14 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   } catch (error) {
     console.error('Signup error:', error);
-    
+
     await logSecurityEvent({
       timestamp: new Date().toISOString(),
       action: 'error',
       details: `Signup error: ${error}`,
       ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
     });
-    
+
     return json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -22,10 +22,10 @@ export function AuthenticatedChat() {
     // Check authentication status after component mounts
     const checkAuth = async () => {
       // Give auth store time to initialize
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const state = authStore.get();
-      
+
       if (!state.loading) {
         if (!state.isAuthenticated) {
           navigate('/auth');
@@ -57,11 +57,7 @@ export function AuthenticatedChat() {
       <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1">
         <BackgroundRays />
         <div className="flex-1 flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center gap-4"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-xl bg-bolt-elements-background-depth-2 flex items-center justify-center">
               <span className="i-svg-spinners:3-dots-scale text-2xl text-bolt-elements-textPrimary" />
             </div>
@@ -84,9 +80,7 @@ export function AuthenticatedChat() {
       <Header>
         <UserMenu />
       </Header>
-      <ClientOnly fallback={<BaseChat />}>
-        {() => <Chat />}
-      </ClientOnly>
+      <ClientOnly fallback={<BaseChat />}>{() => <Chat />}</ClientOnly>
     </div>
   );
 }

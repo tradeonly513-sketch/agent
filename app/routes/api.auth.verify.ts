@@ -11,21 +11,21 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     // Get token from Authorization header
     const authHeader = request.headers.get('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return json({ error: 'No token provided' }, { status: 401 });
     }
 
     const token = authHeader.substring(7);
     const payload = verifyToken(token);
-    
+
     if (!payload) {
       return json({ error: 'Invalid token' }, { status: 401 });
     }
 
     // Get user from storage
     const user = await getUserById(payload.userId);
-    
+
     if (!user) {
       return json({ error: 'User not found' }, { status: 404 });
     }

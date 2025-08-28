@@ -1,11 +1,6 @@
 import type { ActionFunctionArgs } from '@remix-run/cloudflare';
 import { json } from '@remix-run/cloudflare';
-import { 
-  getUserByUsername, 
-  updateLastLogin,
-  logSecurityEvent,
-  type UserProfile 
-} from '~/lib/utils/fileUserStorage';
+import { getUserByUsername, updateLastLogin, logSecurityEvent } from '~/lib/utils/fileUserStorage';
 import { verifyPassword, generateToken } from '~/lib/utils/crypto';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -14,7 +9,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const body = await request.json() as { username?: string; password?: string };
+    const body = (await request.json()) as { username?: string; password?: string };
     const { username, password } = body;
 
     if (!username || !password) {
@@ -33,7 +28,7 @@ export async function action({ request }: ActionFunctionArgs) {
         details: `Failed login attempt for non-existent user: ${username}`,
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
       });
-      
+
       return json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
@@ -50,7 +45,7 @@ export async function action({ request }: ActionFunctionArgs) {
         details: `Failed login attempt with incorrect password`,
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
       });
-      
+
       return json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
@@ -84,14 +79,14 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   } catch (error) {
     console.error('Login error:', error);
-    
+
     await logSecurityEvent({
       timestamp: new Date().toISOString(),
       action: 'error',
       details: `Login error: ${error}`,
       ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
     });
-    
+
     return json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -23,11 +23,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (authState.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bolt-elements-background-depth-1">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-4"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-xl bg-bolt-elements-background-depth-2 flex items-center justify-center">
             <span className="i-svg-spinners:3-dots-scale text-2xl text-bolt-elements-textPrimary" />
           </div>
@@ -47,7 +43,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 }
 
 // HOC for protecting pages
-export function withAuth<P extends object>(Component: React.ComponentType<P>) {
+export function withAuth<P extends object>(wrappedComponent: React.ComponentType<P>) {
+  const Component = wrappedComponent;
+
   return function ProtectedComponent(props: P) {
     return (
       <ProtectedRoute>

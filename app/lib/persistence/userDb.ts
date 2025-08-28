@@ -1,7 +1,5 @@
-import type { Message } from 'ai';
 import { createScopedLogger } from '~/utils/logger';
 import type { ChatHistoryItem } from './useChatHistory';
-import type { Snapshot } from './types';
 import { authStore } from '~/lib/stores/auth';
 
 export interface IUserChatMetadata {
@@ -23,6 +21,7 @@ export async function openUserDatabase(): Promise<IDBDatabase | undefined> {
   }
 
   const authState = authStore.get();
+
   if (!authState.user?.id) {
     console.error('No authenticated user found.');
     return undefined;
@@ -76,6 +75,7 @@ export async function openUserDatabase(): Promise<IDBDatabase | undefined> {
  */
 export async function getUserChats(db: IDBDatabase): Promise<ChatHistoryItem[]> {
   const authState = authStore.get();
+
   if (!authState.user?.id) {
     return [];
   }
@@ -87,12 +87,13 @@ export async function getUserChats(db: IDBDatabase): Promise<ChatHistoryItem[]> 
 
     request.onsuccess = () => {
       // Filter by userId and sort by timestamp
-      const chats = (request.result as ChatHistoryItem[])
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      
+      const chats = (request.result as ChatHistoryItem[]).sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
+
       resolve(chats);
     };
-    
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -104,9 +105,9 @@ export async function saveUserSetting(db: IDBDatabase, key: string, value: any):
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('settings', 'readwrite');
     const store = transaction.objectStore('settings');
-    
+
     const request = store.put({ key, value, updatedAt: new Date().toISOString() });
-    
+
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
@@ -120,12 +121,12 @@ export async function loadUserSetting(db: IDBDatabase, key: string): Promise<any
     const transaction = db.transaction('settings', 'readonly');
     const store = transaction.objectStore('settings');
     const request = store.get(key);
-    
+
     request.onsuccess = () => {
       const result = request.result;
       resolve(result ? result.value : null);
     };
-    
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -144,23 +145,24 @@ export interface Workspace {
 
 export async function createWorkspace(db: IDBDatabase, workspace: Omit<Workspace, 'id'>): Promise<string> {
   const authState = authStore.get();
+
   if (!authState.user?.id) {
     throw new Error('No authenticated user');
   }
 
   const workspaceId = `workspace_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction('workspaces', 'readwrite');
     const store = transaction.objectStore('workspaces');
-    
+
     const fullWorkspace: Workspace = {
       id: workspaceId,
       ...workspace,
     };
-    
+
     const request = store.add(fullWorkspace);
-    
+
     request.onsuccess = () => resolve(workspaceId);
     request.onerror = () => reject(request.error);
   });
@@ -174,13 +176,14 @@ export async function getUserWorkspaces(db: IDBDatabase): Promise<Workspace[]> {
     const transaction = db.transaction('workspaces', 'readonly');
     const store = transaction.objectStore('workspaces');
     const request = store.getAll();
-    
+
     request.onsuccess = () => {
-      const workspaces = (request.result as Workspace[])
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const workspaces = (request.result as Workspace[]).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
       resolve(workspaces);
     };
-    
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -193,7 +196,7 @@ export async function deleteWorkspace(db: IDBDatabase, workspaceId: string): Pro
     const transaction = db.transaction('workspaces', 'readwrite');
     const store = transaction.objectStore('workspaces');
     const request = store.delete(workspaceId);
-    
+
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
@@ -209,23 +212,20 @@ export async function getUserStats(db: IDBDatabase): Promise<{
   storageUsed?: number;
 }> {
   try {
-    const [chats, workspaces] = await Promise.all([
-      getUserChats(db),
-      getUserWorkspaces(db),
-    ]);
-    
+    const [chats, workspaces] = await Promise.all([getUserChats(db), getUserWorkspaces(db)]);
+
     // Calculate last activity
     let lastActivity: string | undefined;
-    
+
     const allTimestamps = [
-      ...chats.map(c => c.timestamp),
-      ...workspaces.map(w => w.lastAccessed || w.createdAt),
+      ...chats.map((c) => c.timestamp),
+      ...workspaces.map((w) => w.lastAccessed || w.createdAt),
     ].filter(Boolean);
-    
+
     if (allTimestamps.length > 0) {
       lastActivity = allTimestamps.sort().reverse()[0];
     }
-    
+
     return {
       totalChats: chats.length,
       totalWorkspaces: workspaces.length,

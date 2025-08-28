@@ -21,19 +21,21 @@ export default function AuthPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    
+
     // Clear error for this field
-    setErrors(prev => ({ ...prev, [name]: '' }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (file) {
       const reader = new FileReader();
+
       reader.onloadend = () => {
         setAvatar(reader.result as string);
       };
@@ -50,56 +52,49 @@ export default function AuthPage() {
       if (mode === 'signup') {
         // Validate form
         const validationErrors: Record<string, string> = {};
-        
+
         if (!formData.username) {
           validationErrors.username = 'Username is required';
         }
-        
+
         if (!formData.firstName) {
           validationErrors.firstName = 'First name is required';
         }
-        
+
         const passwordValidation = validatePassword(formData.password);
+
         if (!passwordValidation.valid) {
           validationErrors.password = passwordValidation.errors[0];
         }
-        
+
         if (formData.password !== formData.confirmPassword) {
           validationErrors.confirmPassword = 'Passwords do not match';
         }
-        
+
         if (Object.keys(validationErrors).length > 0) {
           setErrors(validationErrors);
           setLoading(false);
+
           return;
         }
-        
-        const result = await signup(
-          formData.username,
-          formData.password,
-          formData.firstName,
-          avatar
-        );
-        
+
+        const result = await signup(formData.username, formData.password, formData.firstName, avatar);
+
         if (result.success) {
           navigate('/');
         } else {
           setErrors({ general: result.error || 'Signup failed' });
         }
       } else {
-        const result = await login(
-          formData.username,
-          formData.password,
-          formData.rememberMe
-        );
-        
+        const result = await login(formData.username, formData.password, formData.rememberMe);
+
         if (result.success) {
           navigate('/');
         } else {
           setErrors({ general: result.error || 'Invalid username or password' });
         }
       }
-    } catch (error) {
+    } catch {
       setErrors({ general: 'An error occurred. Please try again.' });
     } finally {
       setLoading(false);
@@ -127,11 +122,7 @@ export default function AuthPage() {
 
       {/* Logo and Title */}
       <div className="absolute top-8 left-8 z-20">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center">
             <span className="text-2xl">⚡</span>
           </div>
@@ -150,14 +141,14 @@ export default function AuthPage() {
       >
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
           {/* Tab Header */}
-          <div className="flex relative">
+          <div className="flex relative bg-white/5">
             <button
               onClick={() => setMode('login')}
               className={classNames(
-                'flex-1 py-4 text-center font-medium transition-all',
-                mode === 'login' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white/80'
+                'flex-1 py-4 text-center font-semibold transition-all',
+                mode === 'login'
+                  ? 'text-white bg-gradient-to-r from-blue-500/20 to-purple-600/20'
+                  : 'text-white/70 hover:text-white hover:bg-white/5',
               )}
             >
               Sign In
@@ -165,18 +156,18 @@ export default function AuthPage() {
             <button
               onClick={() => setMode('signup')}
               className={classNames(
-                'flex-1 py-4 text-center font-medium transition-all',
-                mode === 'signup' 
-                  ? 'text-white' 
-                  : 'text-white/60 hover:text-white/80'
+                'flex-1 py-4 text-center font-semibold transition-all',
+                mode === 'signup'
+                  ? 'text-white bg-gradient-to-r from-blue-500/20 to-purple-600/20'
+                  : 'text-white/70 hover:text-white hover:bg-white/5',
               )}
             >
               Sign Up
             </button>
-            
+
             {/* Sliding indicator */}
             <motion.div
-              className="absolute bottom-0 h-0.5 bg-white"
+              className="absolute bottom-0 h-1 bg-gradient-to-r from-blue-500 to-purple-600"
               initial={false}
               animate={{
                 x: mode === 'login' ? '0%' : '100%',
@@ -211,12 +202,7 @@ export default function AuthPage() {
                       </div>
                       <label className="absolute bottom-0 right-0 w-8 h-8 bg-white/20 backdrop-blur rounded-full flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors border border-white/30">
                         <span className="text-sm">📷</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                        />
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                       </label>
                     </div>
                   </div>
@@ -225,9 +211,7 @@ export default function AuthPage() {
                 {/* First Name (Signup only) */}
                 {mode === 'signup' && (
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
-                      First Name
-                    </label>
+                    <label className="block text-sm font-medium text-white/80 mb-2">First Name</label>
                     <input
                       type="text"
                       name="firstName"
@@ -238,22 +222,18 @@ export default function AuthPage() {
                         'border border-white/20 text-white placeholder-white/40',
                         'focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent',
                         'transition-all',
-                        errors.firstName && 'border-red-400'
+                        errors.firstName && 'border-red-400',
                       )}
                       placeholder="Enter your first name"
                       required
                     />
-                    {errors.firstName && (
-                      <p className="mt-1 text-sm text-red-300">{errors.firstName}</p>
-                    )}
+                    {errors.firstName && <p className="mt-1 text-sm text-red-300">{errors.firstName}</p>}
                   </div>
                 )}
 
                 {/* Username */}
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    Username
-                  </label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">Username</label>
                   <input
                     type="text"
                     name="username"
@@ -264,21 +244,17 @@ export default function AuthPage() {
                       'border border-white/20 text-white placeholder-white/40',
                       'focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent',
                       'transition-all',
-                      errors.username && 'border-red-400'
+                      errors.username && 'border-red-400',
                     )}
                     placeholder="Enter your username"
                     required
                   />
-                  {errors.username && (
-                    <p className="mt-1 text-sm text-red-300">{errors.username}</p>
-                  )}
+                  {errors.username && <p className="mt-1 text-sm text-red-300">{errors.username}</p>}
                 </div>
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    Password
-                  </label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">Password</label>
                   <input
                     type="password"
                     name="password"
@@ -289,42 +265,48 @@ export default function AuthPage() {
                       'border border-white/20 text-white placeholder-white/40',
                       'focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent',
                       'transition-all',
-                      errors.password && 'border-red-400'
+                      errors.password && 'border-red-400',
                     )}
                     placeholder="Enter your password"
                     required
                   />
-                  {errors.password && (
-                    <p className="mt-1 text-sm text-red-300">{errors.password}</p>
-                  )}
+                  {errors.password && <p className="mt-1 text-sm text-red-300">{errors.password}</p>}
                   {mode === 'signup' && formData.password && (
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center gap-2">
-                        <div className={classNames(
-                          'w-2 h-2 rounded-full',
-                          formData.password.length >= 8 ? 'bg-green-400' : 'bg-white/30'
-                        )} />
+                        <div
+                          className={classNames(
+                            'w-2 h-2 rounded-full',
+                            formData.password.length >= 8 ? 'bg-green-400' : 'bg-white/30',
+                          )}
+                        />
                         <span className="text-xs text-white/60">At least 8 characters</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className={classNames(
-                          'w-2 h-2 rounded-full',
-                          /[A-Z]/.test(formData.password) ? 'bg-green-400' : 'bg-white/30'
-                        )} />
+                        <div
+                          className={classNames(
+                            'w-2 h-2 rounded-full',
+                            /[A-Z]/.test(formData.password) ? 'bg-green-400' : 'bg-white/30',
+                          )}
+                        />
                         <span className="text-xs text-white/60">One uppercase letter</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className={classNames(
-                          'w-2 h-2 rounded-full',
-                          /[a-z]/.test(formData.password) ? 'bg-green-400' : 'bg-white/30'
-                        )} />
+                        <div
+                          className={classNames(
+                            'w-2 h-2 rounded-full',
+                            /[a-z]/.test(formData.password) ? 'bg-green-400' : 'bg-white/30',
+                          )}
+                        />
                         <span className="text-xs text-white/60">One lowercase letter</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className={classNames(
-                          'w-2 h-2 rounded-full',
-                          /[0-9]/.test(formData.password) ? 'bg-green-400' : 'bg-white/30'
-                        )} />
+                        <div
+                          className={classNames(
+                            'w-2 h-2 rounded-full',
+                            /[0-9]/.test(formData.password) ? 'bg-green-400' : 'bg-white/30',
+                          )}
+                        />
                         <span className="text-xs text-white/60">One number</span>
                       </div>
                     </div>
@@ -334,9 +316,7 @@ export default function AuthPage() {
                 {/* Confirm Password (Signup only) */}
                 {mode === 'signup' && (
                   <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
-                      Confirm Password
-                    </label>
+                    <label className="block text-sm font-medium text-white/80 mb-2">Confirm Password</label>
                     <input
                       type="password"
                       name="confirmPassword"
@@ -347,14 +327,12 @@ export default function AuthPage() {
                         'border border-white/20 text-white placeholder-white/40',
                         'focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent',
                         'transition-all',
-                        errors.confirmPassword && 'border-red-400'
+                        errors.confirmPassword && 'border-red-400',
                       )}
                       placeholder="Confirm your password"
                       required
                     />
-                    {errors.confirmPassword && (
-                      <p className="mt-1 text-sm text-red-300">{errors.confirmPassword}</p>
-                    )}
+                    {errors.confirmPassword && <p className="mt-1 text-sm text-red-300">{errors.confirmPassword}</p>}
                   </div>
                 )}
 
@@ -387,12 +365,13 @@ export default function AuthPage() {
                   type="submit"
                   disabled={loading}
                   className={classNames(
-                    'w-full py-3 rounded-lg font-medium transition-all',
-                    'bg-white text-gray-900',
-                    'hover:bg-white/90',
-                    'focus:outline-none focus:ring-2 focus:ring-white/50',
+                    'w-full py-3 rounded-lg font-semibold transition-all',
+                    'bg-gradient-to-r from-blue-500 to-purple-600 text-white',
+                    'hover:from-blue-600 hover:to-purple-700',
+                    'focus:outline-none focus:ring-2 focus:ring-purple-500/50',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
-                    'flex items-center justify-center gap-2'
+                    'flex items-center justify-center gap-2',
+                    'shadow-lg hover:shadow-xl',
                   )}
                 >
                   {loading ? (
@@ -400,8 +379,10 @@ export default function AuthPage() {
                       <span className="i-svg-spinners:3-dots-scale w-5 h-5" />
                       {mode === 'login' ? 'Signing in...' : 'Creating account...'}
                     </>
+                  ) : mode === 'login' ? (
+                    'Sign In'
                   ) : (
-                    mode === 'login' ? 'Sign In' : 'Create Account'
+                    'Create Account'
                   )}
                 </button>
               </motion.form>

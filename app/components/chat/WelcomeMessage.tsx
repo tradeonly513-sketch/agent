@@ -19,10 +19,16 @@ interface WelcomeMessageProps {
 export function WelcomeMessage({ sendMessage }: WelcomeMessageProps) {
   const authState = useStore(authStore);
   const timeOfDay = new Date().getHours();
-  
+
   const getGreeting = () => {
-    if (timeOfDay < 12) return 'Good morning';
-    if (timeOfDay < 17) return 'Good afternoon';
+    if (timeOfDay < 12) {
+      return 'Good morning';
+    }
+
+    if (timeOfDay < 17) {
+      return 'Good afternoon';
+    }
+
     return 'Good evening';
   };
 
@@ -38,9 +44,7 @@ export function WelcomeMessage({ sendMessage }: WelcomeMessageProps) {
         <h1 className="text-3xl font-bold text-bolt-elements-textPrimary mb-2">
           {getGreeting()}, {authState.user?.firstName || 'Developer'}!
         </h1>
-        <p className="text-lg text-bolt-elements-textSecondary">
-          What would you like to build today?
-        </p>
+        <p className="text-lg text-bolt-elements-textSecondary">What would you like to build today?</p>
       </motion.div>
 
       {/* Example Prompts */}
@@ -50,9 +54,7 @@ export function WelcomeMessage({ sendMessage }: WelcomeMessageProps) {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="flex flex-col gap-3"
       >
-        <p className="text-sm text-bolt-elements-textTertiary text-center">
-          Try one of these examples to get started:
-        </p>
+        <p className="text-sm text-bolt-elements-textTertiary text-center">Try one of these examples to get started:</p>
         <div className="flex flex-wrap justify-center gap-2">
           {EXAMPLE_PROMPTS.map((examplePrompt, index) => (
             <motion.button
@@ -78,7 +80,8 @@ export function WelcomeMessage({ sendMessage }: WelcomeMessageProps) {
           className="text-center text-xs text-bolt-elements-textTertiary"
         >
           <p>
-            Logged in as <span className="text-bolt-elements-textSecondary font-medium">@{authState.user.username}</span>
+            Logged in as{' '}
+            <span className="text-bolt-elements-textSecondary font-medium">@{authState.user.username}</span>
           </p>
         </motion.div>
       )}

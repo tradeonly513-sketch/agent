@@ -4,8 +4,8 @@ import { AuthenticatedChat } from '~/components/chat/AuthenticatedChat';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'bolt.diy - Multi-User Edition' }, 
-    { name: 'description', content: 'Build web applications with AI assistance - Multi-User Edition by Keoma Wright' }
+    { title: 'bolt.diy - Multi-User Edition' },
+    { name: 'description', content: 'Build web applications with AI assistance - Multi-User Edition by Keoma Wright' },
   ];
 };
 
@@ -18,14 +18,16 @@ export const loader = () => json({});
  */
 export default function Index() {
   return (
-    <ClientOnly fallback={
-      <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1 items-center justify-center">
-        <div className="text-center">
-          <div className="i-svg-spinners:3-dots-scale text-4xl text-bolt-elements-textPrimary mb-4" />
-          <p className="text-bolt-elements-textSecondary">Loading bolt.diy...</p>
+    <ClientOnly
+      fallback={
+        <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1 items-center justify-center">
+          <div className="text-center">
+            <div className="i-svg-spinners:3-dots-scale text-4xl text-bolt-elements-textPrimary mb-4" />
+            <p className="text-bolt-elements-textSecondary">Loading bolt.diy...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       {() => <AuthenticatedChat />}
     </ClientOnly>
   );

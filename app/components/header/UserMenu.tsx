@@ -19,6 +19,7 @@ export function UserMenu() {
     }
 
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -34,6 +35,7 @@ export function UserMenu() {
 
   const handleSettings = () => {
     setIsOpen(false);
+
     // Open settings modal or navigate to settings
   };
 
@@ -49,16 +51,12 @@ export function UserMenu() {
         className={classNames(
           'flex items-center gap-2 px-3 py-2 rounded-lg',
           'hover:bg-bolt-elements-background-depth-2',
-          'transition-colors'
+          'transition-colors',
         )}
       >
         <div className="w-8 h-8 rounded-full bg-bolt-elements-background-depth-2 flex items-center justify-center overflow-hidden border border-bolt-elements-borderColor">
           {authState.user.avatar ? (
-            <img 
-              src={authState.user.avatar} 
-              alt={authState.user.firstName}
-              className="w-full h-full object-cover"
-            />
+            <img src={authState.user.avatar} alt={authState.user.firstName} className="w-full h-full object-cover" />
           ) : (
             <span className="text-sm font-medium text-bolt-elements-textPrimary">
               {authState.user.firstName[0].toUpperCase()}
@@ -66,17 +64,15 @@ export function UserMenu() {
           )}
         </div>
         <div className="text-left hidden sm:block">
-          <p className="text-sm font-medium text-bolt-elements-textPrimary">
-            {authState.user.firstName}
-          </p>
-          <p className="text-xs text-bolt-elements-textSecondary">
-            @{authState.user.username}
-          </p>
+          <p className="text-sm font-medium text-bolt-elements-textPrimary">{authState.user.firstName}</p>
+          <p className="text-xs text-bolt-elements-textSecondary">@{authState.user.username}</p>
         </div>
-        <span className={classNames(
-          'i-ph:caret-down text-bolt-elements-textSecondary transition-transform',
-          isOpen ? 'rotate-180' : ''
-        )} />
+        <span
+          className={classNames(
+            'i-ph:caret-down text-bolt-elements-textSecondary transition-transform',
+            isOpen ? 'rotate-180' : '',
+          )}
+        />
       </button>
 
       {/* Dropdown Menu */}
@@ -93,7 +89,7 @@ export function UserMenu() {
               'border border-bolt-elements-borderColor',
               'rounded-lg shadow-lg',
               'overflow-hidden',
-              'z-50'
+              'z-50',
             )}
           >
             {/* User Info */}
@@ -101,8 +97,8 @@ export function UserMenu() {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-bolt-elements-background-depth-2 flex items-center justify-center overflow-hidden border border-bolt-elements-borderColor">
                   {authState.user.avatar ? (
-                    <img 
-                      src={authState.user.avatar} 
+                    <img
+                      src={authState.user.avatar}
                       alt={authState.user.firstName}
                       className="w-full h-full object-cover"
                     />
@@ -113,12 +109,8 @@ export function UserMenu() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-bolt-elements-textPrimary">
-                    {authState.user.firstName}
-                  </p>
-                  <p className="text-sm text-bolt-elements-textSecondary">
-                    @{authState.user.username}
-                  </p>
+                  <p className="font-medium text-bolt-elements-textPrimary">{authState.user.firstName}</p>
+                  <p className="text-sm text-bolt-elements-textSecondary">@{authState.user.username}</p>
                 </div>
               </div>
             </div>
@@ -132,7 +124,7 @@ export function UserMenu() {
                   'text-sm text-bolt-elements-textPrimary',
                   'hover:bg-bolt-elements-background-depth-2',
                   'transition-colors',
-                  'flex items-center gap-3'
+                  'flex items-center gap-3',
                 )}
               >
                 <span className="i-ph:gear text-lg" />
@@ -146,7 +138,7 @@ export function UserMenu() {
                   'text-sm text-bolt-elements-textPrimary',
                   'hover:bg-bolt-elements-background-depth-2',
                   'transition-colors',
-                  'flex items-center gap-3'
+                  'flex items-center gap-3',
                 )}
               >
                 <span className="i-ph:users text-lg" />
@@ -162,7 +154,7 @@ export function UserMenu() {
                   'text-sm text-red-500',
                   'hover:bg-red-500/10',
                   'transition-colors',
-                  'flex items-center gap-3'
+                  'flex items-center gap-3',
                 )}
               >
                 <span className="i-ph:sign-out text-lg" />

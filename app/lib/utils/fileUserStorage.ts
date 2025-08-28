@@ -44,7 +44,7 @@ export async function initializeUserStorage(): Promise<void> {
     // Create directories if they don't exist
     await fs.mkdir(USERS_DIR, { recursive: true });
     await fs.mkdir(USER_DATA_DIR, { recursive: true });
-    
+
     // Create users index if it doesn't exist
     try {
       await fs.access(USERS_INDEX_FILE);
@@ -63,9 +63,10 @@ export async function initializeUserStorage(): Promise<void> {
 export async function getAllUsers(): Promise<Omit<UserProfile, 'passwordHash'>[]> {
   try {
     await initializeUserStorage();
+
     const data = await fs.readFile(USERS_INDEX_FILE, 'utf-8');
     const { users } = JSON.parse(data) as { users: UserProfile[] };
-    
+
     return users.map(({ passwordHash, ...user }) => user);
   } catch (error) {
     console.error('Failed to get users:', error);
@@ -79,10 +80,11 @@ export async function getAllUsers(): Promise<Omit<UserProfile, 'passwordHash'>[]
 export async function getUserByUsername(username: string): Promise<UserProfile | null> {
   try {
     await initializeUserStorage();
+
     const data = await fs.readFile(USERS_INDEX_FILE, 'utf-8');
     const { users } = JSON.parse(data) as { users: UserProfile[] };
-    
-    return users.find(u => u.username === username) || null;
+
+    return users.find((u) => u.username === username) || null;
   } catch (error) {
     console.error('Failed to get user:', error);
     return null;
@@ -95,10 +97,11 @@ export async function getUserByUsername(username: string): Promise<UserProfile |
 export async function getUserById(id: string): Promise<UserProfile | null> {
   try {
     await initializeUserStorage();
+
     const data = await fs.readFile(USERS_INDEX_FILE, 'utf-8');
     const { users } = JSON.parse(data) as { users: UserProfile[] };
-    
-    return users.find(u => u.id === id) || null;
+
+    return users.find((u) => u.id === id) || null;
   } catch (error) {
     console.error('Failed to get user:', error);
     return null;
@@ -112,17 +115,18 @@ export async function createUser(
   username: string,
   password: string,
   firstName: string,
-  avatar?: string
+  avatar?: string,
 ): Promise<UserProfile | null> {
   try {
     await initializeUserStorage();
-    
+
     // Check if username already exists
     const existingUser = await getUserByUsername(username);
+
     if (existingUser) {
       throw new Error('Username already exists');
     }
-    
+
     // Create new user
     const newUser: UserProfile = {
       id: generateUserId(),
@@ -137,21 +141,21 @@ export async function createUser(
         workspaceConfig: {},
       },
     };
-    
+
     // Load existing users
     const data = await fs.readFile(USERS_INDEX_FILE, 'utf-8');
     const { users } = JSON.parse(data) as { users: UserProfile[] };
-    
+
     // Add new user
     users.push(newUser);
-    
+
     // Save updated users
     await fs.writeFile(USERS_INDEX_FILE, JSON.stringify({ users }, null, 2));
-    
+
     // Create user data directory
     const userDataDir = path.join(USER_DATA_DIR, newUser.id);
     await fs.mkdir(userDataDir, { recursive: true });
-    
+
     // Log the signup
     await logSecurityEvent({
       timestamp: new Date().toISOString(),
@@ -160,9 +164,7 @@ export async function createUser(
       action: 'signup',
       details: `User ${newUser.username} created successfully`,
     });
-    
-    // Return user without password
-    const { passwordHash, ...userWithoutPassword } = newUser;
+
     return newUser;
   } catch (error) {
     console.error('Failed to create user:', error);
@@ -181,25 +183,26 @@ export async function createUser(
 export async function updateUser(userId: string, updates: Partial<UserProfile>): Promise<boolean> {
   try {
     await initializeUserStorage();
-    
+
     const data = await fs.readFile(USERS_INDEX_FILE, 'utf-8');
     const { users } = JSON.parse(data) as { users: UserProfile[] };
-    
-    const userIndex = users.findIndex(u => u.id === userId);
+
+    const userIndex = users.findIndex((u) => u.id === userId);
+
     if (userIndex === -1) {
       return false;
     }
-    
+
     // Update user (excluding certain fields)
     const { id, username, passwordHash, ...safeUpdates } = updates;
     users[userIndex] = {
       ...users[userIndex],
       ...safeUpdates,
     };
-    
+
     // Save updated users
     await fs.writeFile(USERS_INDEX_FILE, JSON.stringify({ users }, null, 2));
-    
+
     return true;
   } catch (error) {
     console.error('Failed to update user:', error);
@@ -220,31 +223,33 @@ export async function updateLastLogin(userId: string): Promise<void> {
 export async function deleteUser(userId: string): Promise<boolean> {
   try {
     await initializeUserStorage();
-    
+
     const data = await fs.readFile(USERS_INDEX_FILE, 'utf-8');
     const { users } = JSON.parse(data) as { users: UserProfile[] };
-    
-    const userIndex = users.findIndex(u => u.id === userId);
+
+    const userIndex = users.findIndex((u) => u.id === userId);
+
     if (userIndex === -1) {
       return false;
     }
-    
+
     const deletedUser = users[userIndex];
-    
+
     // Remove user from list
     users.splice(userIndex, 1);
-    
+
     // Save updated users
     await fs.writeFile(USERS_INDEX_FILE, JSON.stringify({ users }, null, 2));
-    
+
     // Delete user data directory
     const userDataDir = path.join(USER_DATA_DIR, userId);
+
     try {
       await fs.rm(userDataDir, { recursive: true, force: true });
     } catch (error) {
       console.warn(`Failed to delete user data directory: ${error}`);
     }
-    
+
     // Log the deletion
     await logSecurityEvent({
       timestamp: new Date().toISOString(),
@@ -253,7 +258,7 @@ export async function deleteUser(userId: string): Promise<boolean> {
       action: 'delete',
       details: `User ${deletedUser.username} deleted`,
     });
-    
+
     return true;
   } catch (error) {
     console.error('Failed to delete user:', error);
@@ -268,7 +273,7 @@ export async function saveUserData(userId: string, key: string, data: any): Prom
   try {
     const userDataDir = path.join(USER_DATA_DIR, userId);
     await fs.mkdir(userDataDir, { recursive: true });
-    
+
     const filePath = path.join(userDataDir, `${key}.json`);
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
   } catch (error) {
@@ -284,6 +289,7 @@ export async function loadUserData(userId: string, key: string): Promise<any | n
   try {
     const filePath = path.join(USER_DATA_DIR, userId, `${key}.json`);
     const data = await fs.readFile(filePath, 'utf-8');
+
     return JSON.parse(data);
   } catch {
     return null;
@@ -297,7 +303,7 @@ export async function logSecurityEvent(event: SecurityLog): Promise<void> {
   try {
     const logFile = path.join(USERS_DIR, 'security.log');
     const logEntry = `${JSON.stringify(event)}\n`;
-    
+
     await fs.appendFile(logFile, logEntry);
   } catch (error) {
     console.error('Failed to log security event:', error);
@@ -311,12 +317,12 @@ export async function getSecurityLogs(limit: number = 100): Promise<SecurityLog[
   try {
     const logFile = path.join(USERS_DIR, 'security.log');
     const data = await fs.readFile(logFile, 'utf-8');
-    
+
     const logs = data
       .trim()
       .split('\n')
-      .filter(line => line)
-      .map(line => {
+      .filter((line) => line)
+      .map((line) => {
         try {
           return JSON.parse(line) as SecurityLog;
         } catch {
@@ -324,7 +330,7 @@ export async function getSecurityLogs(limit: number = 100): Promise<SecurityLog[
         }
       })
       .filter(Boolean) as SecurityLog[];
-    
+
     return logs.slice(-limit).reverse();
   } catch {
     return [];

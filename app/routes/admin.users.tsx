@@ -33,12 +33,12 @@ export default function UserManagement() {
     try {
       const response = await fetch('/api/users', {
         headers: {
-          'Authorization': `Bearer ${authState.token}`,
+          Authorization: `Bearer ${authState.token}`,
         },
       });
-      
+
       if (response.ok) {
-        const data = await response.json() as { users: User[] };
+        const data = (await response.json()) as { users: User[] };
         setUsers(data.users);
       }
     } catch (error) {
@@ -49,20 +49,22 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-    
+    if (!selectedUser) {
+      return;
+    }
+
     setDeleting(true);
-    
+
     try {
       const response = await fetch(`/api/users/${selectedUser.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${authState.token}`,
+          Authorization: `Bearer ${authState.token}`,
         },
       });
-      
+
       if (response.ok) {
-        setUsers(users.filter(u => u.id !== selectedUser.id));
+        setUsers(users.filter((u) => u.id !== selectedUser.id));
         setShowDeleteModal(false);
         setSelectedUser(null);
       }
@@ -73,9 +75,10 @@ export default function UserManagement() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.firstName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.firstName.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -97,7 +100,7 @@ export default function UserManagement() {
                   <p className="text-sm text-bolt-elements-textSecondary">Manage system users</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <input
@@ -110,12 +113,12 @@ export default function UserManagement() {
                       'bg-bolt-elements-background-depth-1',
                       'border border-bolt-elements-borderColor',
                       'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
-                      'focus:outline-none focus:ring-2 focus:ring-accent-500'
+                      'focus:outline-none focus:ring-2 focus:ring-accent-500',
                     )}
                   />
                   <span className="absolute left-3 top-2.5 i-ph:magnifying-glass text-bolt-elements-textTertiary" />
                 </div>
-                
+
                 <button
                   onClick={() => navigate('/auth')}
                   className={classNames(
@@ -123,7 +126,7 @@ export default function UserManagement() {
                     'bg-accent-500 text-white',
                     'hover:bg-accent-600',
                     'transition-colors',
-                    'flex items-center gap-2'
+                    'flex items-center gap-2',
                   )}
                 >
                   <span className="i-ph:plus text-lg" />
@@ -144,23 +147,32 @@ export default function UserManagement() {
             <div className="bg-bolt-elements-background-depth-2 rounded-lg p-4 border border-bolt-elements-borderColor">
               <p className="text-sm text-bolt-elements-textSecondary mb-1">Active Today</p>
               <p className="text-2xl font-bold text-green-500">
-                {users.filter(u => {
-                  if (!u.lastLogin) return false;
-                  const lastLogin = new Date(u.lastLogin);
-                  const today = new Date();
-                  return lastLogin.toDateString() === today.toDateString();
-                }).length}
+                {
+                  users.filter((u) => {
+                    if (!u.lastLogin) {
+                      return false;
+                    }
+
+                    const lastLogin = new Date(u.lastLogin);
+                    const today = new Date();
+
+                    return lastLogin.toDateString() === today.toDateString();
+                  }).length
+                }
               </p>
             </div>
             <div className="bg-bolt-elements-background-depth-2 rounded-lg p-4 border border-bolt-elements-borderColor">
               <p className="text-sm text-bolt-elements-textSecondary mb-1">New This Week</p>
               <p className="text-2xl font-bold text-blue-500">
-                {users.filter(u => {
-                  const created = new Date(u.createdAt);
-                  const weekAgo = new Date();
-                  weekAgo.setDate(weekAgo.getDate() - 7);
-                  return created > weekAgo;
-                }).length}
+                {
+                  users.filter((u) => {
+                    const created = new Date(u.createdAt);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+
+                    return created > weekAgo;
+                  }).length
+                }
               </p>
             </div>
             <div className="bg-bolt-elements-background-depth-2 rounded-lg p-4 border border-bolt-elements-borderColor">
@@ -197,18 +209,14 @@ export default function UserManagement() {
                       'bg-bolt-elements-background-depth-2 rounded-lg p-6',
                       'border border-bolt-elements-borderColor',
                       'hover:shadow-lg transition-all',
-                      user.id === authState.user?.id ? 'ring-2 ring-accent-500' : ''
+                      user.id === authState.user?.id ? 'ring-2 ring-accent-500' : '',
                     )}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-bolt-elements-background-depth-3 flex items-center justify-center overflow-hidden border border-bolt-elements-borderColor">
                           {user.avatar ? (
-                            <img 
-                              src={user.avatar} 
-                              alt={user.firstName}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={user.avatar} alt={user.firstName} className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-lg font-medium text-bolt-elements-textPrimary">
                               {user.firstName[0].toUpperCase()}
@@ -227,7 +235,7 @@ export default function UserManagement() {
                           <p className="text-sm text-bolt-elements-textSecondary">@{user.username}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-1">
                         <button
                           className="p-1 rounded hover:bg-bolt-elements-background-depth-3 transition-colors"
@@ -249,7 +257,7 @@ export default function UserManagement() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
                         <span className="i-ph:calendar-blank" />
@@ -286,14 +294,13 @@ export default function UserManagement() {
                 className="bg-bolt-elements-background-depth-2 rounded-lg p-6 max-w-md w-full border border-bolt-elements-borderColor"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2 className="text-xl font-bold text-bolt-elements-textPrimary mb-2">
-                  Delete User
-                </h2>
+                <h2 className="text-xl font-bold text-bolt-elements-textPrimary mb-2">Delete User</h2>
                 <p className="text-bolt-elements-textSecondary mb-6">
-                  Are you sure you want to delete <span className="font-medium text-bolt-elements-textPrimary">@{selectedUser.username}</span>? 
-                  This action cannot be undone and will permanently remove all user data.
+                  Are you sure you want to delete{' '}
+                  <span className="font-medium text-bolt-elements-textPrimary">@{selectedUser.username}</span>? This
+                  action cannot be undone and will permanently remove all user data.
                 </p>
-                
+
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowDeleteModal(false)}
@@ -304,7 +311,7 @@ export default function UserManagement() {
                       'text-bolt-elements-textPrimary',
                       'hover:bg-bolt-elements-background-depth-3',
                       'disabled:opacity-50',
-                      'transition-colors'
+                      'transition-colors',
                     )}
                   >
                     Cancel
@@ -318,7 +325,7 @@ export default function UserManagement() {
                       'hover:bg-red-600',
                       'disabled:opacity-50',
                       'transition-colors',
-                      'flex items-center justify-center gap-2'
+                      'flex items-center justify-center gap-2',
                     )}
                   >
                     {deleting ? (
