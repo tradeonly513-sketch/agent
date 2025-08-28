@@ -32,7 +32,7 @@
           var refreshToken = hashParams.get('refresh_token');
           var expiresIn = hashParams.get('expires_in');
           var expiresAt = hashParams.get('expires_at');
-          var user = JSON.parse(hashParams.get('user') || '{}');
+          var user = hashParams.get('user');
 
           var error = searchParams.get('error');
           var errorDescription = searchParams.get('error_description');
