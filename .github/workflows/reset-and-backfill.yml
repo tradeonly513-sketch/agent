@@ -76,11 +76,11 @@ jobs:
       - name: Add Issues to Project
         run: |
           for url in $(jq -r '.[].url' issues_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+            gh project item-add ${{ vars.PROJECT_ID }} --owner stackblitz-labs --url "$url"
           done
 
       - name: Add PRs to Project
         run: |
           for url in $(jq -r '.[].url' prs_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+            gh project item-add ${{ vars.PROJECT_ID }} --owner stackblitz-labs --url "$url"
           done
