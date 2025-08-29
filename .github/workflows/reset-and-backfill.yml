@@ -1,0 +1,86 @@
+name: Reset Project to Latest Release Window
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  repository-projects: write
+
+jobs:
+  reset_and_backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+      - name: Authenticate gh
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      # Archive all items in the configured project to "reset" the board
+      - name: Archive all items in project
+        env:
+          PROJECT_ID: ${{ vars.PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          endCursor=""
+          hasNext="true"
+          while [ "$hasNext" = "true" ]; do
+            RESP="$(gh api graphql -f query='
+              query($projectId:ID!, $cursor:String){
+                node(id:$projectId){
+                  ... on ProjectV2 {
+                    items(first:100, after:$cursor){
+                      pageInfo{ hasNextPage endCursor }
+                      nodes{ id }
+                    }
+                  }
+                }
+              }' -F projectId="$PROJECT_ID" -F cursor="$endCursor")"
+            hasNext=$(echo "$RESP" | jq -r '.data.node.items.pageInfo.hasNextPage')
+            endCursor=$(echo "$RESP" | jq -r '.data.node.items.pageInfo.endCursor')
+            echo "$RESP" | jq -r '.data.node.items.nodes[].id' | while read -r ITEM_ID; do
+              [ -z "$ITEM_ID" ] && continue
+              gh api graphql -f query='
+                mutation($projectId:ID!, $itemId:ID!){
+                  archiveProjectV2Item(input:{projectId:$projectId, itemId:$itemId}){
+                    clientMutationId
+                  }
+                }' -F projectId="$PROJECT_ID" -F itemId="$ITEM_ID"
+            done
+          done
+
+      - name: Get Last Release Date
+        id: release
+        run: |
+          gh release list --repo ${{ github.repository }} --limit 1 --json tagName,publishedAt > release.json
+          cat release.json
+          echo "release_date=$(jq -r '.[0].publishedAt' release.json)" >> $GITHUB_ENV
+
+      - name: Get Open Issues Since Release
+        run: |
+          gh issue list                     --repo ${{ github.repository }}                     --state open                     --json url,createdAt                     --limit 500 > issues.json
+          jq --arg cutoff "${{ env.release_date }}" '[.[] | select(.createdAt > $cutoff)]' issues.json > issues_filtered.json
+
+      - name: Get Open PRs Since Release
+        run: |
+          gh pr list                     --repo ${{ github.repository }}                     --state open                     --json url,createdAt                     --limit 500 > prs.json
+          jq --arg cutoff "${{ env.release_date }}" '[.[] | select(.createdAt > $cutoff)]' prs.json > prs_filtered.json
+
+      - name: Add Issues to Project
+        run: |
+          for url in $(jq -r '.[].url' issues_filtered.json); do
+            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+          done
+
+      - name: Add PRs to Project
+        run: |
+          for url in $(jq -r '.[].url' prs_filtered.json); do
+            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+          done
