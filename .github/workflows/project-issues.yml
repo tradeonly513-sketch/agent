@@ -22,6 +22,7 @@ jobs:
         uses: ./.github/actions/setup-gh
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Add issue to project
         run: |
           if [ -n "${{ vars.PROJECT_ID }}" ]; then

@@ -22,6 +22,7 @@ jobs:
         uses: ./.github/actions/setup-gh
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Add PR to project
         run: |
           if [ -n "${{ vars.PROJECT_ID }}" ]; then
