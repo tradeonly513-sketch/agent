@@ -5,7 +5,9 @@ on:
     types: [opened, ready_for_review]
 
 permissions:
-  pull-requests: read
+  contents: read
+  issues: read
+  pull-requests: write
   repository-projects: write
 
 jobs:
