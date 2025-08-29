@@ -21,4 +21,4 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
       - name: Add issue to project
         run: |
-          gh project item-add ${{ vars.PROJECT_ID }} --owner stackblitz-labs --url "${{ github.event.issue.html_url }}"
+          gh project item-add ${{ vars.PROJECT_ID }} --url "${{ github.event.issue.html_url }}"

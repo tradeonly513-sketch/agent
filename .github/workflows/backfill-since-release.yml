@@ -23,26 +23,26 @@ jobs:
       - name: Get Last Release Date
         id: release
         run: |
-          gh release list --repo stackblitz-labs/bolt.diy --limit 1 --json tagName,publishedAt > release.json
+          gh release list --repo ${{ github.repository }} --limit 1 --json tagName,publishedAt > release.json
           cat release.json
           echo "release_date=$(jq -r '.[0].publishedAt' release.json)" >> $GITHUB_ENV
       - name: Get Open Issues Since Release
         run: |
-          gh issue list                     --repo stackblitz-labs/bolt.diy                     --state open                     --json url,createdAt                     --limit 500 > issues.json
+          gh issue list                     --repo ${{ github.repository }}                     --state open                     --json url,createdAt                     --limit 500 > issues.json
           jq --arg cutoff "${{ env.release_date }}" '[.[] | select(.createdAt > $cutoff)]' issues.json > issues_filtered.json
           cat issues_filtered.json
       - name: Get Open PRs Since Release
         run: |
-          gh pr list                     --repo stackblitz-labs/bolt.diy                     --state open                     --json url,createdAt                     --limit 500 > prs.json
+          gh pr list                     --repo ${{ github.repository }}                     --state open                     --json url,createdAt                     --limit 500 > prs.json
           jq --arg cutoff "${{ env.release_date }}" '[.[] | select(.createdAt > $cutoff)]' prs.json > prs_filtered.json
           cat prs_filtered.json
       - name: Add Issues to Project
         run: |
           for url in $(jq -r '.[].url' issues_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --owner stackblitz-labs --url "$url"
+            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
           done
       - name: Add PRs to Project
         run: |
           for url in $(jq -r '.[].url' prs_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --owner stackblitz-labs --url "$url"
+            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
           done
