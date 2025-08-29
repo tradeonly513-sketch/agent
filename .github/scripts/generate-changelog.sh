@@ -18,6 +18,7 @@ if [ -z "$GITHUB_ACTIONS" ]; then
     : "${GITHUB_SERVER_URL:=https://github.com}"
     : "${GITHUB_REPOSITORY:=stackblitz-labs/bolt.diy}"
     : "${GITHUB_OUTPUT:=/tmp/github_output}"
+    : "${NEW_VERSION:=v1.0.0}"
     touch "$GITHUB_OUTPUT"
 
     # Running locally
@@ -26,16 +27,22 @@ if [ -z "$GITHUB_ACTIONS" ]; then
     if git remote -v | grep -q "upstream"; then
         MAIN_REMOTE="upstream"
     fi
-    MAIN_BRANCH="main"  # or "master" depending on your repository
-    
+    MAIN_BRANCH="feature/project-workflows"  # Updated to match current branch
+
     # Ensure we have latest tags
     git fetch ${MAIN_REMOTE} --tags
-    
+
     # Use the remote reference for git log
     GITLOG_REF="${MAIN_REMOTE}/${MAIN_BRANCH}"
 else
     # Running in GitHub Actions
     GITLOG_REF="HEAD"
+fi
+
+# Validate required environment variables
+if [ -z "$NEW_VERSION" ]; then
+    echo "ERROR: NEW_VERSION environment variable is required" >&2
+    exit 1
 fi
 
 # Get the latest tag
@@ -125,9 +132,14 @@ while IFS= read -r commit_line; do
         CATEGORY=$(get_commit_type "$PR_TITLE")
         
         if [ -n "$CATEGORY" ]; then  # Only process if it's a conventional commit
-            # Get PR author's GitHub username
-            GITHUB_USERNAME=$(gh pr view "$PR_NUM" --json author --jq '.author.login')
-            
+            # Get PR author's GitHub username with retry and rate limiting
+            GITHUB_USERNAME=""
+            if command -v gh &> /dev/null && [ -n "$GITHUB_TOKEN" ]; then
+                GITHUB_USERNAME=$(gh pr view "$PR_NUM" --json author --jq '.author.login' 2>/dev/null || echo "")
+                # Add small delay to avoid rate limiting
+                sleep 0.5
+            fi
+
             if [ -n "$GITHUB_USERNAME" ]; then
                 # Check if this is a first-time contributor
                 AUTHOR_EMAIL=$(git show -s --format='%ae' "$HASH")
@@ -149,11 +161,16 @@ while IFS= read -r commit_line; do
         
         # Only process if it follows conventional commit format
         CATEGORY=$(get_commit_type "$COMMIT_MSG")
-        
+
         if [ -n "$CATEGORY" ]; then  # Only process if it's a conventional commit
-            # Get PR author's GitHub username
-            GITHUB_USERNAME=$(gh pr view "$PR_NUM" --json author --jq '.author.login')
-            
+            # Get PR author's GitHub username with retry and rate limiting
+            GITHUB_USERNAME=""
+            if command -v gh &> /dev/null && [ -n "$GITHUB_TOKEN" ]; then
+                GITHUB_USERNAME=$(gh pr view "$PR_NUM" --json author --jq '.author.login' 2>/dev/null || echo "")
+                # Add small delay to avoid rate limiting
+                sleep 0.5
+            fi
+
             if [ -n "$GITHUB_USERNAME" ]; then
                 # Check if this is a first-time contributor
                 AUTHOR_EMAIL=$(git show -s --format='%ae' "$HASH")
@@ -182,9 +199,11 @@ while IFS= read -r commit_line; do
             # Get commit author info
             AUTHOR_EMAIL=$(git show -s --format='%ae' "$HASH")
             
-            # Try to get GitHub username using gh api
-            if [ -n "$GITHUB_ACTIONS" ] || command -v gh >/dev/null 2>&1; then
-                GITHUB_USERNAME=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${HASH}" --jq '.author.login' 2>/dev/null)
+            # Try to get GitHub username using gh api with rate limiting
+            if command -v gh &> /dev/null && [ -n "$GITHUB_TOKEN" ]; then
+                GITHUB_USERNAME=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${HASH}" --jq '.author.login' 2>/dev/null || echo "")
+                # Add small delay to avoid rate limiting
+                sleep 0.5
             fi
             
             if [ -n "$GITHUB_USERNAME" ]; then

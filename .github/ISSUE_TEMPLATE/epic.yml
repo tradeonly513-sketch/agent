@@ -1,0 +1,42 @@
+name: Epic
+description: Epics define long-term vision and capabilities of the software. They will never be finished but serve as umbrella for features.
+title: ''
+labels: ['epic']
+body:
+  - type: textarea
+    id: strategic_impact
+    attributes:
+      label: Strategic Impact
+      description: Why does this area matter? How is it integrated into the product or the development process? What would happen if we ignore it?
+      placeholder: This epic is important because...
+    validations:
+      required: true
+  - type: textarea
+    id: target_audience
+    attributes:
+      label: Target Audience
+      description: Who benefits most from improvements in this area?
+      placeholder: Software Developers using the IDE | Contributors
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: Capabilities
+      description: What existing capabilities or future features can be imagined that belong to this epic? This list serves as illustration to sketch the boundaries of this epic.
+      placeholder: |
+        - Feature 1: Description
+        - Feature 2: Description
+        - Feature 3: Description
+    validations:
+      required: true
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues
+      description: Link to features or other issues which are related to this epic.
+      placeholder: |
+        - Related to #123
+        - Follow-up to #456
+    validations:
+      required: false

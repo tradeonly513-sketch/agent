@@ -3,14 +3,18 @@ name: Docs CI/CD
 on:
   push:
     branches:
-      - main
+      - feature/project-workflows
     paths:
       - 'docs/**' # This will only trigger the workflow when files in docs directory change
+
 permissions:
   contents: write
+  pages: write
+  id-token: write
 jobs:
   build_docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: ./docs
@@ -22,11 +26,13 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+          python-version: '3.x'
+      - name: Generate cache key
+        id: cache-key
+        run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_OUTPUT
       - uses: actions/cache@v4
         with:
-          key: mkdocs-material-${{ env.cache_id }}
+          key: mkdocs-material-${{ steps.cache-key.outputs.cache_id }}
           path: .cache
           restore-keys: |
             mkdocs-material-

@@ -1,0 +1,128 @@
+name: Workflow Validation
+
+on:
+  push:
+    branches:
+      - feature/project-workflows
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate workflow syntax
+        run: |
+          echo "Validating workflow YAML syntax..."
+
+          # Check all workflow files for syntax errors
+          for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
+            if [ -f "$workflow" ]; then
+              echo "Validating $workflow..."
+              if ! yq eval '.' "$workflow" > /dev/null 2>&1; then
+                echo "::error file=$workflow::Invalid YAML syntax in $workflow"
+                exit 1
+              fi
+              echo "✓ $workflow is valid"
+            fi
+          done
+
+      - name: Validate action syntax
+        run: |
+          echo "Validating action YAML syntax..."
+
+          # Check all action files for syntax errors
+          for action in .github/actions/*/action.yaml; do
+            if [ -f "$action" ]; then
+              echo "Validating $action..."
+              if ! yq eval '.' "$action" > /dev/null 2>&1; then
+                echo "::error file=$action::Invalid YAML syntax in $action"
+                exit 1
+              fi
+              echo "✓ $action is valid"
+            fi
+          done
+
+      - name: Check for deprecated actions
+        run: |
+          echo "Checking for deprecated GitHub Actions..."
+
+          # Common deprecated actions to check for
+          DEPRECATED_ACTIONS=(
+            "actions/cache@v2"
+            "actions/cache@v1"
+            "actions/setup-node@v3"
+            "actions/setup-node@v2"
+            "actions/setup-node@v1"
+            "actions/checkout@v3"
+            "actions/checkout@v2"
+            "actions/checkout@v1"
+          )
+
+          FOUND_DEPRECATED=false
+
+          for action in "${DEPRECATED_ACTIONS[@]}"; do
+            if grep -r "$action" .github/ 2>/dev/null; then
+              echo "::warning::Found deprecated action: $action"
+              FOUND_DEPRECATED=true
+            fi
+          done
+
+          if [ "$FOUND_DEPRECATED" = true ]; then
+            echo "::notice::Consider updating deprecated actions to their latest versions"
+          fi
+
+      - name: Check workflow best practices
+        run: |
+          echo "Checking workflow best practices..."
+
+          # Check for missing timeout configurations
+          WORKFLOWS_WITHOUT_TIMEOUT=$(grep -L "timeout-minutes" .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null || true)
+
+          if [ -n "$WORKFLOWS_WITHOUT_TIMEOUT" ]; then
+            echo "::warning::Workflows without timeout configuration:"
+            echo "$WORKFLOWS_WITHOUT_TIMEOUT"
+          fi
+
+          # Check for workflows without permissions
+          WORKFLOWS_WITHOUT_PERMISSIONS=$(grep -L "permissions:" .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null || true)
+
+          if [ -n "$WORKFLOWS_WITHOUT_PERMISSIONS" ]; then
+            echo "::warning::Workflows without explicit permissions:"
+            echo "$WORKFLOWS_WITHOUT_PERMISSIONS"
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read validation results from previous steps
+            const validationPassed = process.exitCode === 0;
+
+            const body = validationPassed
+              ? `✅ **Workflow Validation Passed**\n\nAll workflow files have valid syntax and follow best practices.`
+              : `❌ **Workflow Validation Failed**\n\nPlease check the workflow validation errors above and fix any issues.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

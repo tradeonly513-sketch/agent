@@ -12,14 +12,12 @@ permissions:
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gh jq
-      - name: Authenticate gh
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Setup GitHub CLI
+        uses: ./.github/actions/setup-gh
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get Last Release Date
         id: release
         run: |
@@ -38,11 +36,19 @@ jobs:
           cat prs_filtered.json
       - name: Add Issues to Project
         run: |
-          for url in $(jq -r '.[].url' issues_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
-          done
+          if [ -n "${{ vars.PROJECT_ID }}" ]; then
+            for url in $(jq -r '.[].url' issues_filtered.json); do
+              gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+            done
+          else
+            echo "PROJECT_ID variable not set, skipping issue backfill"
+          fi
       - name: Add PRs to Project
         run: |
-          for url in $(jq -r '.[].url' prs_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
-          done
+          if [ -n "${{ vars.PROJECT_ID }}" ]; then
+            for url in $(jq -r '.[].url' prs_filtered.json); do
+              gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+            done
+          else
+            echo "PROJECT_ID variable not set, skipping PR backfill"
+          fi

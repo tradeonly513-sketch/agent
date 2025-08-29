@@ -3,16 +3,24 @@ name: CI/CD
 on:
   push:
     branches:
-      - master
+      - feature/project-workflows
   pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup and Build
         uses: ./.github/actions/setup-and-build
@@ -20,8 +28,10 @@ jobs:
       - name: Run type check
         run: pnpm run typecheck
 
-      # - name: Run ESLint
-      #   run: pnpm run lint
+      - name: Run ESLint
+        run: pnpm run lint
 
       - name: Run tests
         run: pnpm run test
+        env:
+          CI: true

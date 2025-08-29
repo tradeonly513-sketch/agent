@@ -14,20 +14,22 @@ permissions:
 jobs:
   reset_and_backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gh jq
-      - name: Authenticate gh
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Setup GitHub CLI
+        uses: ./.github/actions/setup-gh
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Archive all items in the configured project to "reset" the board
       - name: Archive all items in project
         env:
           PROJECT_ID: ${{ vars.PROJECT_ID }}
         run: |
+          if [ -z "$PROJECT_ID" ]; then
+            echo "PROJECT_ID variable not set, skipping project reset"
+            exit 0
+          fi
           set -euo pipefail
           endCursor=""
           hasNext="true"
@@ -75,12 +77,20 @@ jobs:
 
       - name: Add Issues to Project
         run: |
-          for url in $(jq -r '.[].url' issues_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
-          done
+          if [ -n "${{ vars.PROJECT_ID }}" ]; then
+            for url in $(jq -r '.[].url' issues_filtered.json); do
+              gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+            done
+          else
+            echo "PROJECT_ID variable not set, skipping issue backfill"
+          fi
 
       - name: Add PRs to Project
         run: |
-          for url in $(jq -r '.[].url' prs_filtered.json); do
-            gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
-          done
+          if [ -n "${{ vars.PROJECT_ID }}" ]; then
+            for url in $(jq -r '.[].url' prs_filtered.json); do
+              gh project item-add ${{ vars.PROJECT_ID }} --url "$url"
+            done
+          else
+            echo "PROJECT_ID variable not set, skipping PR backfill"
+          fi

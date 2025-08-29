@@ -11,14 +11,16 @@ permissions:
 jobs:
   add:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gh
-      - name: Authenticate gh
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Setup GitHub CLI
+        uses: ./.github/actions/setup-gh
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Add PR to project
         run: |
-          gh project item-add ${{ vars.PROJECT_ID }} --url "${{ github.event.pull_request.html_url }}"
+          if [ -n "${{ vars.PROJECT_ID }}" ]; then
+            gh project item-add ${{ vars.PROJECT_ID }} --url "${{ github.event.pull_request.html_url }}"
+          else
+            echo "PROJECT_ID variable not set, skipping project addition"
+          fi

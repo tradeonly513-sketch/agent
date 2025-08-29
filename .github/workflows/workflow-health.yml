@@ -1,0 +1,90 @@
+name: Workflow Health Monitor
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Daily at 8 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  monitor-workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check workflow run status
+        run: |
+          echo "Checking workflow health..."
+
+          # Get recent workflow runs (last 7 days)
+          WORKFLOW_RUNS=$(gh run list --limit 50 --json status,conclusion,workflowName,createdAt,headSha --jq '.[] | select(.createdAt | fromdateiso8601 > (now - 604800))')
+
+          # Analyze workflow health
+          TOTAL_RUNS=$(echo "$WORKFLOW_RUNS" | jq -s 'length')
+          SUCCESSFUL_RUNS=$(echo "$WORKFLOW_RUNS" | jq -s '[.[] | select(.conclusion == "success")] | length')
+          FAILED_RUNS=$(echo "$WORKFLOW_RUNS" | jq -s '[.[] | select(.conclusion == "failure")] | length')
+          CANCELLED_RUNS=$(echo "$WORKFLOW_RUNS" | jq -s '[.[] | select(.conclusion == "cancelled")] | length')
+
+          # Calculate success rate
+          if [ "$TOTAL_RUNS" -gt 0 ]; then
+            SUCCESS_RATE=$((SUCCESSFUL_RUNS * 100 / TOTAL_RUNS))
+          else
+            SUCCESS_RATE=0
+          fi
+
+          echo "Workflow Health Report (Last 7 days):"
+          echo "==================================="
+          echo "Total runs: $TOTAL_RUNS"
+          echo "Successful: $SUCCESSFUL_RUNS"
+          echo "Failed: $FAILED_RUNS"
+          echo "Cancelled: $CANCELLED_RUNS"
+          echo "Success rate: ${SUCCESS_RATE}%"
+
+          # Check for concerning patterns
+          if [ "$SUCCESS_RATE" -lt 80 ] && [ "$TOTAL_RUNS" -gt 10 ]; then
+            echo "::warning::Low success rate detected: ${SUCCESS_RATE}%"
+          fi
+
+          if [ "$FAILED_RUNS" -gt 5 ]; then
+            echo "::error::High number of failed runs detected: $FAILED_RUNS"
+          fi
+
+          # Save report
+          {
+            echo "# Workflow Health Report"
+            echo "Generated: $(date -u)"
+            echo ""
+            echo "## Summary (Last 7 days)"
+            echo "- Total runs: $TOTAL_RUNS"
+            echo "- Success rate: ${SUCCESS_RATE}%"
+            echo "- Failed runs: $FAILED_RUNS"
+            echo ""
+            echo "## Recent Failures"
+            echo "$WORKFLOW_RUNS" | jq -r 'select(.conclusion == "failure") | "- \(.workflowName): \(.createdAt)"' | head -10
+          } > workflow-health-report.md
+
+      - name: Upload health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-health-report
+          path: workflow-health-report.md
+
+      - name: Create issue for workflow issues
+        if: failure()
+        run: |
+          # Check if issue already exists
+          EXISTING_ISSUE=$(gh issue list --label workflow-health --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -z "$EXISTING_ISSUE" ]; then
+            gh issue create \
+              --title "Workflow Health Issues Detected" \
+              --body "Automated workflow health monitoring has detected issues. See attached report for details." \
+              --label "workflow-health,maintenance"
+          fi

@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [main, stable]
+    branches: [feature/project-workflows, stable]
     tags: ['v*', '*.*.*']
   workflow_dispatch:
 
@@ -11,8 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  packages: write
   contents: read
+  packages: write
+  id-token: write
 
 env:
   REGISTRY: ghcr.io
@@ -20,17 +21,19 @@ env:
 jobs:
   docker-build-publish:
     runs-on: ubuntu-latest
-    # timeout-minutes: 30
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set image name (lowercase)
         run: echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -44,11 +47,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/feature/project-workflows' }}
             type=raw,value=stable,enable=${{ github.ref == 'refs/heads/stable' }}
             type=ref,event=tag
             type=sha,format=short
-            type=raw,value=${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' }}
+            type=raw,value=${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/feature/project-workflows' || github.ref == 'refs/heads/stable' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6

@@ -1,32 +1,51 @@
 name: Setup and Build
-description: Generic setup action
+description: Generic setup action with improved caching and error handling
 inputs:
   pnpm-version:
     required: false
     type: string
-    default: '9.4.0'
+    default: 'latest'
   node-version:
     required: false
     type: string
-    default: '20.15.1'
+    default: '20'
 
 runs:
   using: composite
 
   steps:
-    - uses: pnpm/action-setup@v4
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
       with:
         version: ${{ inputs.pnpm-version }}
         run_install: false
 
-    - name: Set Node.js version to ${{ inputs.node-version }}
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
 
-    - name: Install dependencies and build project
+    - name: Get pnpm store directory
+      id: pnpm-cache
       shell: bash
       run: |
-        pnpm install
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pnpm install --frozen-lockfile
+
+    - name: Build project
+      shell: bash
+      run: |
         pnpm run build
