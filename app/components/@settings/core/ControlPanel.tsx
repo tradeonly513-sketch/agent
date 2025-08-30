@@ -5,7 +5,6 @@ import { classNames } from '~/utils/classNames';
 import { TabTile } from '~/components/@settings/shared/components/TabTile';
 import { useFeatures } from '~/lib/hooks/useFeatures';
 import { useNotifications } from '~/lib/hooks/useNotifications';
-import { useConnectionStatus } from '~/lib/hooks/useConnectionStatus';
 import { tabConfigurationStore, resetTabConfiguration } from '~/lib/stores/settings';
 import { profileStore } from '~/lib/stores/profile';
 import type { TabType, Profile } from './types';
@@ -21,7 +20,10 @@ import NotificationsTab from '~/components/@settings/tabs/notifications/Notifica
 import FeaturesTab from '~/components/@settings/tabs/features/FeaturesTab';
 import { DataTab } from '~/components/@settings/tabs/data/DataTab';
 import { EventLogsTab } from '~/components/@settings/tabs/event-logs/EventLogsTab';
-import ConnectionsTab from '~/components/@settings/tabs/connections/ConnectionsTab';
+import GitHubTab from '~/components/@settings/tabs/github/GitHubTab';
+import NetlifyTab from '~/components/@settings/tabs/netlify/NetlifyTab';
+import VercelTab from '~/components/@settings/tabs/vercel/VercelTab';
+import SupabaseTab from '~/components/@settings/tabs/supabase/SupabaseTab';
 import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/CloudProvidersTab';
 import ServiceStatusTab from '~/components/@settings/tabs/providers/status/ServiceStatusTab';
 import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
@@ -54,7 +56,6 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
   // Status hooks
   const { hasNewFeatures, unviewedFeatures, acknowledgeAllFeatures } = useFeatures();
   const { hasUnreadNotifications, unreadNotifications, markAllAsRead } = useNotifications();
-  const { hasConnectionIssues, currentIssue, acknowledgeIssue } = useConnectionStatus();
 
   // Memoize the base tab configurations to avoid recalculation
   const baseTabConfig = useMemo(() => {
@@ -134,8 +135,14 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <CloudProvidersTab />;
       case 'local-providers':
         return <LocalProvidersTab />;
-      case 'connection':
-        return <ConnectionsTab />;
+      case 'github':
+        return <GitHubTab />;
+      case 'netlify':
+        return <NetlifyTab />;
+      case 'vercel':
+        return <VercelTab />;
+      case 'supabase':
+        return <SupabaseTab />;
       case 'event-logs':
         return <EventLogsTab />;
       case 'service-status':
@@ -153,8 +160,6 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return hasNewFeatures;
       case 'notifications':
         return hasUnreadNotifications;
-      case 'connection':
-        return hasConnectionIssues;
       default:
         return false;
     }
@@ -166,12 +171,6 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return `${unviewedFeatures.length} new feature${unviewedFeatures.length === 1 ? '' : 's'} to explore`;
       case 'notifications':
         return `${unreadNotifications.length} unread notification${unreadNotifications.length === 1 ? '' : 's'}`;
-      case 'connection':
-        return currentIssue === 'disconnected'
-          ? 'Connection lost'
-          : currentIssue === 'high-latency'
-            ? 'High latency detected'
-            : 'Connection issues detected';
       default:
         return '';
     }
@@ -189,9 +188,6 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         break;
       case 'notifications':
         markAllAsRead();
-        break;
-      case 'connection':
-        acknowledgeIssue();
         break;
     }
 
