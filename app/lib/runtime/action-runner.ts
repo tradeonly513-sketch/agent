@@ -322,7 +322,29 @@ export class ActionRunner {
     }
 
     try {
-      await webcontainer.fs.writeFile(relativePath, action.content);
+      let fileContent: string | Uint8Array = action.content;
+
+      // Handle base64 encoded binary files
+      if (action.encoding === 'base64') {
+        try {
+          // Decode base64 to binary data
+          const binaryString = atob(action.content);
+          const bytes = new Uint8Array(binaryString.length);
+
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          fileContent = bytes;
+          logger.debug(`Writing binary file ${relativePath} (${bytes.length} bytes)`);
+        } catch (decodeError) {
+          logger.error('Failed to decode base64 content\n\n', decodeError);
+          throw decodeError;
+        }
+      } else {
+        logger.debug(`Writing text file ${relativePath}`);
+      }
+
+      await webcontainer.fs.writeFile(relativePath, fileContent);
       logger.debug(`File written ${relativePath}`);
     } catch (error) {
       logger.error('Failed to write file\n\n', error);

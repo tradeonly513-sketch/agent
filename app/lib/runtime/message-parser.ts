@@ -350,12 +350,17 @@ export class StreamingMessageParser {
       }
     } else if (actionType === 'file') {
       const filePath = this.#extractAttribute(actionTag, 'filePath') as string;
+      const encoding = this.#extractAttribute(actionTag, 'encoding') as 'base64' | undefined;
 
       if (!filePath) {
         logger.debug('File path not specified');
       }
 
       (actionAttributes as FileAction).filePath = filePath;
+
+      if (encoding) {
+        (actionAttributes as FileAction).encoding = encoding;
+      }
     } else if (!['shell', 'start'].includes(actionType)) {
       logger.warn(`Unknown action type '${actionType}'`);
     }
