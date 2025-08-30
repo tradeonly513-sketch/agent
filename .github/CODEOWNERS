@@ -1,0 +1,30 @@
+# Code Owners for bolt.diy
+# These users/teams will automatically be requested for review when files are modified
+
+# Global ownership - repository maintainer
+* @Stijnus
+
+# GitHub workflows and CI/CD configuration
+/.github/ @Stijnus
+/package.json @Stijnus
+/pnpm-lock.yaml @Stijnus
+
+# Security-sensitive configurations
+/.env* @Stijnus
+/wrangler.toml @Stijnus
+/Dockerfile @Stijnus
+/docker-compose.yaml @Stijnus
+
+# Core application architecture
+/app/lib/.server/ @Stijnus
+/app/routes/api.* @Stijnus
+
+# Build and deployment configuration  
+/vite*.config.ts @Stijnus
+/tsconfig.json @Stijnus
+/uno.config.ts @Stijnus
+/eslint.config.mjs @Stijnus
+
+# Documentation (optional review)
+/*.md
+/docs/ @Stijnus
