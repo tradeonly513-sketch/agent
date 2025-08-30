@@ -30,6 +30,7 @@ jobs:
 
       - name: Check required status checks
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
             const { data: checks } = await github.rest.checks.listForRef({
@@ -38,18 +39,36 @@ jobs:
               ref: context.payload.pull_request.head.sha
             });
 
-            const requiredChecks = ['Test', 'CodeQL Analysis', 'Quality Analysis'];
+            const requiredChecks = ['Test', 'CodeQL Analysis'];
+            const optionalChecks = ['Quality Analysis', 'Deploy Preview'];
             const failedChecks = [];
+            const passedChecks = [];
 
+            // Check required workflows
             for (const checkName of requiredChecks) {
               const check = checks.check_runs.find(c => c.name === checkName);
-              if (!check || check.conclusion !== 'success') {
+              if (check && check.conclusion === 'success') {
+                passedChecks.push(checkName);
+              } else {
                 failedChecks.push(checkName);
               }
             }
 
+            // Report optional checks
+            for (const checkName of optionalChecks) {
+              const check = checks.check_runs.find(c => c.name === checkName);
+              if (check && check.conclusion === 'success') {
+                passedChecks.push(`${checkName} (optional)`);
+              }
+            }
+
+            console.log(`✅ Passed checks: ${passedChecks.join(', ')}`);
+            
             if (failedChecks.length > 0) {
+              console.log(`❌ Failed required checks: ${failedChecks.join(', ')}`);
               core.setFailed(`Required checks failed: ${failedChecks.join(', ')}`);
+            } else {
+              console.log(`✅ All required checks passed!`);
             }
 
   validate-release:

@@ -21,31 +21,50 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
     
-    environment:
-      name: preview-pr-${{ github.event.pull_request.number }}
-      url: ${{ steps.deploy.outputs.url }}
-
     steps:
+      - name: Check if preview deployment is configured
+        id: check-secrets
+        run: |
+          if [[ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" && -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
+        if: steps.check-secrets.outputs.configured == 'true'
         uses: actions/checkout@v4
 
       - name: Setup and Build
+        if: steps.check-secrets.outputs.configured == 'true'
         uses: ./.github/actions/setup-and-build
 
       - name: Build for production
+        if: steps.check-secrets.outputs.configured == 'true'
         run: pnpm run build
         env:
           NODE_ENV: production
 
-      - name: Deploy to Cloudflare Pages (Mock for upstream repo)
+      - name: Deploy to Cloudflare Pages
+        if: steps.check-secrets.outputs.configured == 'true'
         id: deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: bolt-diy-preview
+          directory: build/client
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Preview deployment not configured
+        if: steps.check-secrets.outputs.configured == 'false'
         run: |
-          echo "Preview deployment would be configured here with Cloudflare Pages"
-          echo "This requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets"
-          echo "For demonstration, generating mock preview URL..."
-          echo "url=https://bolt-diy-preview-${GITHUB_HEAD_REF}.pages.dev" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          echo "✅ Preview deployment is not configured for this repository"
+          echo "To enable preview deployments, add the following secrets:"
+          echo "- CLOUDFLARE_API_TOKEN"
+          echo "- CLOUDFLARE_ACCOUNT_ID"
+          echo "This is optional and the workflow will pass without it."
+          echo "url=https://preview-not-configured.example.com" >> $GITHUB_OUTPUT
 
       - name: Add preview URL comment to PR
         uses: actions/github-script@v7
@@ -61,15 +80,35 @@ jobs:
               comment.body.includes('🚀 Preview deployment')
             );
 
-            const commentBody = `🚀 Preview deployment is ready!
+            const isConfigured = '${{ steps.check-secrets.outputs.configured }}' === 'true';
+            const deployUrl = '${{ steps.deploy.outputs.url }}' || 'https://preview-not-configured.example.com';
 
-            | Name | Link |
-            |------|------|
-            | Latest commit | ${{ github.sha }} |
-            | Preview URL | ${{ steps.deploy.outputs.url }} |
+            let commentBody;
+            if (isConfigured) {
+              commentBody = `🚀 Preview deployment is ready!
 
-            Built with ❤️ by [bolt.diy](https://bolt.diy)
-            `;
+              | Name | Link |
+              |------|------|
+              | Latest commit | ${{ github.sha }} |
+              | Preview URL | ${deployUrl} |
+
+              Built with ❤️ by [bolt.diy](https://bolt.diy)
+              `;
+            } else {
+              commentBody = `ℹ️ Preview deployment not configured
+
+              | Name | Info |
+              |------|------|
+              | Latest commit | ${{ github.sha }} |
+              | Status | Preview deployment requires Cloudflare secrets |
+
+              To enable preview deployments, repository maintainers can add:
+              - \`CLOUDFLARE_API_TOKEN\` secret
+              - \`CLOUDFLARE_ACCOUNT_ID\` secret
+
+              Built with ❤️ by [bolt.diy](https://bolt.diy)
+              `;
+            }
 
             if (previewComment) {
               github.rest.issues.updateComment({
@@ -89,12 +128,15 @@ jobs:
 
       - name: Run smoke tests on preview
         run: |
-          echo "Smoke tests would run here with Playwright"
-          echo "For full implementation, install Playwright and configure tests"
-          echo "Preview URL: ${{ steps.deploy.outputs.url }}"
-          # Basic HTTP check instead of Playwright tests
-          curl -f ${{ steps.deploy.outputs.url }} || echo "Preview environment check completed"
-        continue-on-error: true
+          if [[ "${{ steps.check-secrets.outputs.configured }}" == "true" ]]; then
+            echo "Running smoke tests on preview deployment..."
+            echo "Preview URL: ${{ steps.deploy.outputs.url }}"
+            # Basic HTTP check instead of Playwright tests
+            curl -f ${{ steps.deploy.outputs.url }} || echo "Preview environment check completed"
+          else
+            echo "✅ Smoke tests skipped - preview deployment not configured"
+            echo "This is normal and expected when Cloudflare secrets are not available"
+          fi
 
   cleanup-preview:
     name: Cleanup Preview
