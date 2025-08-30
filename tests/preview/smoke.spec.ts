@@ -1,3 +1,4 @@
+// @ts-ignore - Playwright is only installed for testing environments
 import { test, expect } from '@playwright/test';
 
 /**
@@ -6,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Preview Deployment Smoke Tests', () => {
-  test('homepage loads successfully', async ({ page }) => {
+  test('homepage loads successfully', async ({ page }: any) => {
     await page.goto('/');
     
     // Check that the page loads
@@ -17,7 +18,7 @@ test.describe('Preview Deployment Smoke Tests', () => {
     
     // Verify no console errors
     const errors: string[] = [];
-    page.on('console', msg => {
+    page.on('console', (msg: any) => {
       if (msg.type() === 'error') {
         errors.push(msg.text());
       }
@@ -34,7 +35,7 @@ test.describe('Preview Deployment Smoke Tests', () => {
     expect(criticalErrors).toHaveLength(0);
   });
 
-  test('basic navigation works', async ({ page }) => {
+  test('basic navigation works', async ({ page }: any) => {
     await page.goto('/');
     
     // Wait for the page to be interactive
@@ -56,10 +57,10 @@ test.describe('Preview Deployment Smoke Tests', () => {
     expect(jsErrors).toBeLessThan(3); // Allow minor errors but not major failures
   });
 
-  test('essential resources load', async ({ page }) => {
+  test('essential resources load', async ({ page }: any) => {
     const responses: { url: string; status: number }[] = [];
     
-    page.on('response', response => {
+    page.on('response', (response: any) => {
       responses.push({
         url: response.url(),
         status: response.status()

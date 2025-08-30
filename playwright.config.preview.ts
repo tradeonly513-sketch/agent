@@ -1,3 +1,4 @@
+// @ts-ignore - Playwright is only installed for testing environments
 import { defineConfig, devices } from '@playwright/test';
 
 /**
