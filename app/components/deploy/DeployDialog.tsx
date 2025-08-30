@@ -6,6 +6,8 @@ import { netlifyConnection, updateNetlifyConnection } from '~/lib/stores/netlify
 import { vercelConnection } from '~/lib/stores/vercel';
 import { useNetlifyDeploy } from './NetlifyDeploy.client';
 import { useVercelDeploy } from './VercelDeploy.client';
+import { useGitHubDeploy } from './GitHubDeploy.client';
+import { GitHubDeploymentDialog } from './GitHubDeploymentDialog';
 import { toast } from 'react-toastify';
 import { classNames } from '~/utils/classNames';
 
@@ -15,7 +17,7 @@ interface DeployDialogProps {
 }
 
 interface DeployProvider {
-  id: 'netlify' | 'vercel' | 'cloudflare';
+  id: 'netlify' | 'vercel' | 'github' | 'cloudflare';
   name: string;
   iconClass: string;
   iconColor?: string;
@@ -152,10 +154,14 @@ const NetlifyConnectForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) 
 export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) => {
   const netlifyConn = useStore(netlifyConnection);
   const vercelConn = useStore(vercelConnection);
-  const [selectedProvider, setSelectedProvider] = useState<'netlify' | 'vercel' | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'netlify' | 'vercel' | 'github' | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [showGitHubDialog, setShowGitHubDialog] = useState(false);
+  const [githubFiles, setGithubFiles] = useState<Record<string, string> | null>(null);
+  const [githubProjectName, setGithubProjectName] = useState('');
   const { handleNetlifyDeploy } = useNetlifyDeploy();
   const { handleVercelDeploy } = useVercelDeploy();
+  const { handleGitHubDeploy } = useGitHubDeploy();
 
   const providers: DeployProvider[] = [
     {
@@ -190,6 +196,21 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
       ],
     },
     {
+      id: 'github',
+      name: 'GitHub',
+      iconClass: 'i-simple-icons:github',
+      connected: true, // GitHub doesn't require separate auth
+      description: 'Deploy to GitHub Pages or create a repository',
+      features: [
+        'Free hosting with GitHub Pages',
+        'Version control integration',
+        'Collaborative development',
+        'Actions & Workflows',
+        'Issue tracking',
+        'Pull requests',
+      ],
+    },
+    {
       id: 'cloudflare',
       name: 'Cloudflare Pages',
       iconClass: 'i-simple-icons:cloudflare',
@@ -208,7 +229,7 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
     },
   ];
 
-  const handleDeploy = async (provider: 'netlify' | 'vercel') => {
+  const handleDeploy = async (provider: 'netlify' | 'vercel' | 'github') => {
     setIsDeploying(true);
 
     try {
@@ -218,15 +239,32 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
         success = await handleNetlifyDeploy();
       } else if (provider === 'vercel') {
         success = await handleVercelDeploy();
+      } else if (provider === 'github') {
+        const result = await handleGitHubDeploy();
+
+        if (result && typeof result === 'object' && result.success && result.files) {
+          setGithubFiles(result.files);
+          setGithubProjectName(result.projectName);
+          setShowGitHubDialog(true);
+          onClose();
+
+          return;
+        }
+
+        success = result && typeof result === 'object' ? result.success : false;
       }
 
       if (success) {
-        toast.success(`Successfully deployed to ${provider === 'netlify' ? 'Netlify' : 'Vercel'}`);
+        toast.success(
+          `Successfully deployed to ${provider === 'netlify' ? 'Netlify' : provider === 'vercel' ? 'Vercel' : 'GitHub'}`,
+        );
         onClose();
       }
     } catch (error) {
       console.error('Deployment error:', error);
-      toast.error(`Failed to deploy to ${provider === 'netlify' ? 'Netlify' : 'Vercel'}`);
+      toast.error(
+        `Failed to deploy to ${provider === 'netlify' ? 'Netlify' : provider === 'vercel' ? 'Vercel' : 'GitHub'}`,
+      );
     } finally {
       setIsDeploying(false);
     }
@@ -239,7 +277,9 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
           {providers.map((provider) => (
             <button
               key={provider.id}
-              onClick={() => !provider.comingSoon && setSelectedProvider(provider.id as 'netlify' | 'vercel')}
+              onClick={() =>
+                !provider.comingSoon && setSelectedProvider(provider.id as 'netlify' | 'vercel' | 'github')
+              }
               disabled={provider.comingSoon}
               className={classNames(
                 'p-4 rounded-lg border-2 transition-all text-left',
@@ -355,7 +395,7 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
             Back
           </button>
           <button
-            onClick={() => handleDeploy(selectedProvider as 'netlify' | 'vercel')}
+            onClick={() => handleDeploy(selectedProvider as 'netlify' | 'vercel' | 'github')}
             disabled={isDeploying}
             className={classNames(
               'flex-1 px-4 py-2 rounded-lg font-medium transition-all',
@@ -383,28 +423,40 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <RadixDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Dialog className="max-w-2xl">
-        <div className="p-6">
-          <DialogTitle className="text-xl font-bold mb-1">Deploy Your Project</DialogTitle>
-          <DialogDescription className="mb-6">
-            Choose a deployment platform to publish your project to the web
-          </DialogDescription>
+    <>
+      <RadixDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <Dialog className="max-w-2xl">
+          <div className="p-6">
+            <DialogTitle className="text-xl font-bold mb-1">Deploy Your Project</DialogTitle>
+            <DialogDescription className="mb-6">
+              Choose a deployment platform to publish your project to the web
+            </DialogDescription>
 
-          {renderProviderContent()}
+            {renderProviderContent()}
 
-          {!selectedProvider && (
-            <div className="mt-6 pt-6 border-t border-bolt-elements-borderColor">
-              <button
-                onClick={onClose}
-                className="w-full px-4 py-2 rounded-lg border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-      </Dialog>
-    </RadixDialog.Root>
+            {!selectedProvider && (
+              <div className="mt-6 pt-6 border-t border-bolt-elements-borderColor">
+                <button
+                  onClick={onClose}
+                  className="w-full px-4 py-2 rounded-lg border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </Dialog>
+      </RadixDialog.Root>
+
+      {/* GitHub Deployment Dialog */}
+      {showGitHubDialog && githubFiles && (
+        <GitHubDeploymentDialog
+          isOpen={showGitHubDialog}
+          onClose={() => setShowGitHubDialog(false)}
+          projectName={githubProjectName}
+          files={githubFiles}
+        />
+      )}
+    </>
   );
 };
