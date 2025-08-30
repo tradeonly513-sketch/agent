@@ -1,7 +1,7 @@
 /**
  * Netlify Configuration Helper
  * Contributed by Keoma Wright
- * 
+ *
  * This module provides automatic configuration generation for Netlify deployments
  */
 
@@ -132,17 +132,47 @@ export function detectFramework(packageJson: any): string {
   const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
 
   // Check for specific frameworks
-  if (deps['next']) return 'next';
-  if (deps['nuxt'] || deps['nuxt3']) return 'nuxt';
-  if (deps['gatsby']) return 'gatsby';
-  if (deps['@remix-run/react']) return 'remix';
-  if (deps['astro']) return 'astro';
-  if (deps['@angular/core']) return 'angular';
-  if (deps['@sveltejs/kit']) return 'svelte-kit';
-  if (deps['svelte']) return 'svelte';
-  if (deps['vue']) return 'vue';
-  if (deps['react']) {
-    if (deps['vite']) return 'react-vite';
+  if (deps.next) {
+    return 'next';
+  }
+
+  if (deps.nuxt || deps.nuxt3) {
+    return 'nuxt';
+  }
+
+  if (deps.gatsby) {
+    return 'gatsby';
+  }
+
+  if (deps['@remix-run/react']) {
+    return 'remix';
+  }
+
+  if (deps.astro) {
+    return 'astro';
+  }
+
+  if (deps['@angular/core']) {
+    return 'angular';
+  }
+
+  if (deps['@sveltejs/kit']) {
+    return 'svelte-kit';
+  }
+
+  if (deps.svelte) {
+    return 'svelte';
+  }
+
+  if (deps.vue) {
+    return 'vue';
+  }
+
+  if (deps.react) {
+    if (deps.vite) {
+      return 'react-vite';
+    }
+
     return 'react';
   }
 
@@ -198,9 +228,11 @@ export function generateNetlifyConfig(framework: string, customConfig?: Partial<
     if (customConfig.redirects) {
       config.redirects!.push(...customConfig.redirects);
     }
+
     if (customConfig.headers) {
       config.headers!.push(...customConfig.headers);
     }
+
     if (customConfig.functions) {
       config.functions = customConfig.functions;
     }
@@ -214,10 +246,13 @@ export function generateNetlifyToml(config: NetlifyConfig): string {
 
   // Build configuration
   toml += '[build]\n';
+
   if (config.build.command) {
     toml += `  command = "${config.build.command}"\n`;
   }
+
   toml += `  publish = "${config.build.publish}"\n`;
+
   if (config.build.functions) {
     toml += `  functions = "${config.build.functions}"\n`;
   }
@@ -225,6 +260,7 @@ export function generateNetlifyToml(config: NetlifyConfig): string {
   // Environment variables
   if (config.build.environment && Object.keys(config.build.environment).length > 0) {
     toml += '\n[build.environment]\n';
+
     for (const [key, value] of Object.entries(config.build.environment)) {
       toml += `  ${key} = "${value}"\n`;
     }
@@ -236,9 +272,11 @@ export function generateNetlifyToml(config: NetlifyConfig): string {
       toml += '\n[[redirects]]\n';
       toml += `  from = "${redirect.from}"\n`;
       toml += `  to = "${redirect.to}"\n`;
+
       if (redirect.status) {
         toml += `  status = ${redirect.status}\n`;
       }
+
       if (redirect.force) {
         toml += `  force = ${redirect.force}\n`;
       }
@@ -250,8 +288,10 @@ export function generateNetlifyToml(config: NetlifyConfig): string {
     for (const header of config.headers) {
       toml += '\n[[headers]]\n';
       toml += `  for = "${header.for}"\n`;
+
       if (Object.keys(header.values).length > 0) {
         toml += '  [headers.values]\n';
+
         for (const [key, value] of Object.entries(header.values)) {
           toml += `    "${key}" = "${value}"\n`;
         }
@@ -263,9 +303,11 @@ export function generateNetlifyToml(config: NetlifyConfig): string {
   if (config.functions) {
     for (const [funcName, funcConfig] of Object.entries(config.functions)) {
       toml += `\n[functions."${funcName}"]\n`;
+
       if (funcConfig.included_files) {
         toml += `  included_files = ${JSON.stringify(funcConfig.included_files)}\n`;
       }
+
       if (funcConfig.external_node_modules) {
         toml += `  external_node_modules = ${JSON.stringify(funcConfig.external_node_modules)}\n`;
       }
@@ -284,8 +326,8 @@ export function validateDeploymentFiles(files: Record<string, string>): {
   const warnings: string[] = [];
 
   // Check for index.html
-  const hasIndex = Object.keys(files).some(path => 
-    path === '/index.html' || path === 'index.html' || path.endsWith('/index.html')
+  const hasIndex = Object.keys(files).some(
+    (path) => path === '/index.html' || path === 'index.html' || path.endsWith('/index.html'),
   );
 
   if (!hasIndex) {
@@ -298,6 +340,7 @@ export function validateDeploymentFiles(files: Record<string, string>): {
 
   for (const [path, content] of Object.entries(files)) {
     const size = new Blob([content]).size;
+
     if (size > MAX_FILE_SIZE) {
       errors.push(`File ${path} exceeds maximum size of 100MB`);
     } else if (size > WARN_FILE_SIZE) {
@@ -306,21 +349,20 @@ export function validateDeploymentFiles(files: Record<string, string>): {
   }
 
   // Check total deployment size
-  const totalSize = Object.values(files).reduce((sum, content) => 
-    sum + new Blob([content]).size, 0
-  );
+  const totalSize = Object.values(files).reduce((sum, content) => sum + new Blob([content]).size, 0);
 
   const MAX_TOTAL_SIZE = 500 * 1024 * 1024; // 500MB
+
   if (totalSize > MAX_TOTAL_SIZE) {
     errors.push(`Total deployment size exceeds 500MB limit`);
   }
 
   // Check for common issues
-  if (Object.keys(files).some(path => path.includes('node_modules'))) {
+  if (Object.keys(files).some((path) => path.includes('node_modules'))) {
     warnings.push('Deployment includes node_modules - these should typically be excluded');
   }
 
-  if (Object.keys(files).some(path => path.includes('.env'))) {
+  if (Object.keys(files).some((path) => path.includes('.env'))) {
     errors.push('Deployment includes .env file - remove sensitive configuration files');
   }
 

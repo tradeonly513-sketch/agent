@@ -1,7 +1,7 @@
 /**
  * Quick Netlify Deployment Component
  * Contributed by Keoma Wright
- * 
+ *
  * This component provides a streamlined one-click deployment to Netlify
  * with automatic build detection and configuration.
  */
@@ -27,43 +27,44 @@ export function QuickNetlifyDeploy() {
   const [deployUrl, setDeployUrl] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const currentChatId = useStore(chatId);
-  
+
   const detectFramework = async (): Promise<QuickDeployConfig> => {
     try {
       const container = await webcontainer;
-      
+
       // Read package.json to detect framework
       let packageJson: any = {};
+
       try {
         const packageContent = await container.fs.readFile('/package.json', 'utf-8');
         packageJson = JSON.parse(packageContent);
-      } catch (e) {
+      } catch {
         console.log('No package.json found, assuming static site');
         return {
           framework: 'static',
           buildCommand: '',
           outputDirectory: '/',
-          nodeVersion: '18'
+          nodeVersion: '18',
         };
       }
 
       const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
       const scripts = packageJson.scripts || {};
-      
+
       // Detect framework based on dependencies
-      let config: QuickDeployConfig = {
-        nodeVersion: '18'
+      const config: QuickDeployConfig = {
+        nodeVersion: '18',
       };
 
-      if (deps['next']) {
+      if (deps.next) {
         config.framework = 'next';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = '.next';
-      } else if (deps['nuxt'] || deps['nuxt3']) {
+      } else if (deps.nuxt || deps.nuxt3) {
         config.framework = 'nuxt';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = '.output/public';
-      } else if (deps['gatsby']) {
+      } else if (deps.gatsby) {
         config.framework = 'gatsby';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = 'public';
@@ -71,21 +72,21 @@ export function QuickNetlifyDeploy() {
         config.framework = 'angular';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = 'dist';
-      } else if (deps['vue']) {
+      } else if (deps.vue) {
         config.framework = 'vue';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = 'dist';
-      } else if (deps['svelte']) {
+      } else if (deps.svelte) {
         config.framework = 'svelte';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = 'public';
-      } else if (deps['react']) {
+      } else if (deps.react) {
         config.framework = 'react';
         config.buildCommand = scripts.build || 'npm run build';
         config.outputDirectory = 'build';
-        
+
         // Check for Vite
-        if (deps['vite']) {
+        if (deps.vite) {
           config.outputDirectory = 'dist';
         }
       } else {
@@ -101,15 +102,15 @@ export function QuickNetlifyDeploy() {
         framework: 'static',
         buildCommand: '',
         outputDirectory: '/',
-        nodeVersion: '18'
+        nodeVersion: '18',
       };
     }
   };
 
-  const handleQuickDeploy = async () => {
+  const handleQuickDeploy = async (): Promise<string | null> => {
     if (!currentChatId) {
       toast.error('No active project found');
-      return;
+      return null;
     }
 
     try {
@@ -117,13 +118,14 @@ export function QuickNetlifyDeploy() {
       setDeployUrl(null);
 
       const artifact = workbenchStore.firstArtifact;
+
       if (!artifact) {
         throw new Error('No active project found');
       }
 
       // Detect framework and configuration
       const config = await detectFramework();
-      
+
       toast.info(`Detected ${config.framework || 'static'} project. Starting deployment...`);
 
       // Create deployment artifact for visual feedback
@@ -136,11 +138,11 @@ export function QuickNetlifyDeploy() {
       });
 
       const deployArtifact = workbenchStore.artifacts.get()[deploymentId];
-      
+
       // Build the project if needed
       if (config.buildCommand) {
         deployArtifact.runner.handleDeployAction('building', 'running', { source: 'netlify' });
-        
+
         const actionId = 'build-' + Date.now();
         const actionData: ActionCallbackData = {
           messageId: 'quick-netlify-build',
@@ -168,9 +170,10 @@ export function QuickNetlifyDeploy() {
       deployArtifact.runner.handleDeployAction('deploying', 'running', { source: 'netlify' });
 
       const container = await webcontainer;
-      
+
       // Determine the output directory
       let outputPath = config.outputDirectory || '/';
+
       if (artifact.runner.buildOutput && artifact.runner.buildOutput.path) {
         outputPath = artifact.runner.buildOutput.path.replace('/home/project', '');
       }
@@ -178,18 +181,18 @@ export function QuickNetlifyDeploy() {
       // Collect files for deployment
       async function getAllFiles(dirPath: string): Promise<Record<string, string>> {
         const files: Record<string, string> = {};
-        
+
         try {
           const entries = await container.fs.readdir(dirPath, { withFileTypes: true });
-          
+
           for (const entry of entries) {
             const fullPath = path.join(dirPath, entry.name);
-            
+
             // Skip node_modules and other build artifacts
             if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === '.cache') {
               continue;
             }
-            
+
             if (entry.isFile()) {
               try {
                 const content = await container.fs.readFile(fullPath, 'utf-8');
@@ -206,12 +209,12 @@ export function QuickNetlifyDeploy() {
         } catch (e) {
           console.error(`Error reading directory ${dirPath}:`, e);
         }
-        
+
         return files;
       }
 
       const fileContents = await getAllFiles(outputPath);
-      
+
       // Create netlify.toml configuration
       const netlifyConfig = `
 [build]
@@ -249,7 +252,7 @@ export function QuickNetlifyDeploy() {
         }),
       });
 
-      const data = await response.json() as { success: boolean; url?: string; siteId?: string; error?: string };
+      const data = (await response.json()) as { success: boolean; url?: string; siteId?: string; error?: string };
 
       if (!response.ok || !data.success) {
         deployArtifact.runner.handleDeployAction('deploying', 'failed', {
@@ -261,14 +264,14 @@ export function QuickNetlifyDeploy() {
 
       // Deployment successful
       setDeployUrl(data.url || null);
-      
+
       deployArtifact.runner.handleDeployAction('complete', 'complete', {
         url: data.url || '',
         source: 'netlify',
       });
 
       toast.success('Deployment successful! Your app is live.');
-      
+
       // Store deployment info
       if (data.siteId) {
         localStorage.setItem(`netlify-quick-site-${currentChatId}`, data.siteId);
@@ -278,6 +281,7 @@ export function QuickNetlifyDeploy() {
     } catch (error) {
       console.error('Quick deploy error:', error);
       toast.error(error instanceof Error ? error.message : 'Deployment failed');
+
       return null;
     } finally {
       setIsDeploying(false);
@@ -288,14 +292,8 @@ export function QuickNetlifyDeploy() {
     <div className="flex flex-col gap-4 p-4 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img
-            className="w-5 h-5"
-            src="https://cdn.simpleicons.org/netlify"
-            alt="Netlify"
-          />
-          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">
-            Quick Deploy to Netlify
-          </h3>
+          <img className="w-5 h-5" src="https://cdn.simpleicons.org/netlify" alt="Netlify" />
+          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">Quick Deploy to Netlify</h3>
         </div>
         {deployUrl && (
           <a
@@ -335,12 +333,7 @@ export function QuickNetlifyDeploy() {
         <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
           <p className="text-sm text-green-600 dark:text-green-400">
             ✅ Your app is live at:{' '}
-            <a
-              href={deployUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-medium"
-            >
+            <a href={deployUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
               {deployUrl}
             </a>
           </p>
