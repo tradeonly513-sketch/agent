@@ -43,16 +43,18 @@ export const createChatFromFolder = async (
         reader.onload = () => {
           const arrayBuffer = reader.result as ArrayBuffer;
           const uint8Array = new Uint8Array(arrayBuffer);
-          
+
           // Convert to base64 without using String.fromCharCode.apply to avoid stack overflow
           let binary = '';
           const chunkSize = 0x8000; // 32KB chunks
+
           for (let i = 0; i < uint8Array.length; i += chunkSize) {
             const chunk = uint8Array.subarray(i, i + chunkSize);
             binary += String.fromCharCode.apply(null, Array.from(chunk));
           }
+
           const base64 = btoa(binary);
-          
+
           const relativePath = file.webkitRelativePath.split('/').slice(1).join('/');
           resolve({
             content: base64,

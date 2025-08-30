@@ -106,12 +106,14 @@ export function GitUrlImport() {
                 // Convert binary data to base64 without stack overflow
                 let binary = '';
                 const chunkSize = 0x8000; // 32KB chunks
+
                 for (let i = 0; i < content.length; i += chunkSize) {
                   const chunk = content.subarray(i, i + chunkSize);
                   binary += String.fromCharCode.apply(null, Array.from(chunk));
                 }
+
                 const base64 = btoa(binary);
-                
+
                 return {
                   path: filePath,
                   content: base64,
@@ -137,12 +139,14 @@ export function GitUrlImport() {
                   // If decoding fails, treat as binary - convert to base64 without stack overflow
                   let binary = '';
                   const chunkSize = 0x8000; // 32KB chunks
+
                   for (let i = 0; i < content.length; i += chunkSize) {
                     const chunk = content.subarray(i, i + chunkSize);
                     binary += String.fromCharCode.apply(null, Array.from(chunk));
                   }
+
                   const base64 = btoa(binary);
-                  
+
                   return {
                     path: filePath,
                     content: base64,
