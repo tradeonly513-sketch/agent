@@ -133,23 +133,49 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Check PR size
-        uses: codota/pr-size-labeler@v1
-        continue-on-error: true
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          size_labels_map: |
-            {
-              "size/XS": 10,
-              "size/S": 30,
-              "size/M": 100,
-              "size/L": 500,
-              "size/XL": 1000,
-              "size/XXL": 2000
-            }
+          fetch-depth: 0
 
-      - name: PR size check result
+      - name: Calculate PR size
+        id: pr-size
         run: |
-          echo "✅ PR size labeling completed"
-          echo "Large PRs are acceptable for major feature additions"
-          echo "This check helps reviewers understand the scope of changes"
+          # Get the base branch (target branch)
+          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+          
+          # Count additions and deletions
+          ADDITIONS=$(git diff --numstat origin/$BASE_BRANCH...HEAD | awk '{sum += $1} END {print sum}')
+          DELETIONS=$(git diff --numstat origin/$BASE_BRANCH...HEAD | awk '{sum += $2} END {print sum}')
+          TOTAL_CHANGES=$((ADDITIONS + DELETIONS))
+          
+          echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+          echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
+          
+          # Determine size category
+          if [ $TOTAL_CHANGES -lt 50 ]; then
+            echo "size=XS" >> $GITHUB_OUTPUT
+          elif [ $TOTAL_CHANGES -lt 200 ]; then
+            echo "size=S" >> $GITHUB_OUTPUT
+          elif [ $TOTAL_CHANGES -lt 500 ]; then
+            echo "size=M" >> $GITHUB_OUTPUT
+          elif [ $TOTAL_CHANGES -lt 1000 ]; then
+            echo "size=L" >> $GITHUB_OUTPUT
+          elif [ $TOTAL_CHANGES -lt 2000 ]; then
+            echo "size=XL" >> $GITHUB_OUTPUT
+          else
+            echo "size=XXL" >> $GITHUB_OUTPUT
+          fi
+
+      - name: PR size summary
+        run: |
+          echo "✅ PR Size Analysis Complete"
+          echo "📊 Changes: +${{ steps.pr-size.outputs.additions }} -${{ steps.pr-size.outputs.deletions }}"
+          echo "📏 Size Category: ${{ steps.pr-size.outputs.size }}"
+          echo "💡 This information helps reviewers understand the scope of changes"
+          
+          if [ "${{ steps.pr-size.outputs.size }}" = "XXL" ]; then
+            echo "ℹ️ This is a large PR - consider breaking it into smaller chunks for future PRs"
+            echo "However, large PRs are acceptable for major feature additions like this one"
+          fi
