@@ -50,8 +50,8 @@ jobs:
         with:
           name: codeql-results-${{ matrix.language }}
           path: |
-            **/results/**/*.sarif
-            **/results/**/*.sarif.json
+            ../results/**/*.sarif
+            ../results/**/*.sarif.json
 
   dependency-scan:
     name: Dependency Vulnerability Scan
@@ -90,7 +90,9 @@ jobs:
         if: always()
         with:
           name: sbom-results
-          path: sbom.spdx.json
+          path: |
+            sbom.spdx.json
+            **/sbom.spdx.json
 
   secrets-scan:
     name: Secrets Detection
