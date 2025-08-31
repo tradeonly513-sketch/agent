@@ -18,7 +18,7 @@ jobs:
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 45
     
     strategy:
       fail-fast: false
@@ -35,8 +35,8 @@ jobs:
           languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
 
-      - name: Setup and Build
-        uses: ./.github/actions/setup-and-build
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -50,8 +50,8 @@ jobs:
         with:
           name: codeql-results-${{ matrix.language }}
           path: |
-            ../results/**/*.sarif
-            ../results/**/*.sarif.json
+            ../results
+            results
 
   dependency-scan:
     name: Dependency Vulnerability Scan
