@@ -363,7 +363,26 @@ ${value.content}
 
       try {
         const newId = await createChatFromMessages(db, description, messages, metadata);
-        window.location.href = `/chat/${newId}`;
+
+        /*
+         * Preserve 'prompt' from current URL (e.g., on /git?url=...&prompt=...)
+         * and pass it through to the chat page so it runs after clone/import.
+         */
+
+        let target = `/chat/${newId}`;
+
+        try {
+          const current = new URL(window.location.href);
+          const prompt = current.searchParams.get('prompt');
+
+          if (prompt) {
+            target = `/chat/${newId}?prompt=${encodeURIComponent(prompt)}`;
+          }
+        } catch {
+          // no-op if URL parsing fails
+        }
+
+        window.location.href = target;
         toast.success('Chat imported successfully');
       } catch (error) {
         if (error instanceof Error) {

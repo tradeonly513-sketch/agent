@@ -212,17 +212,26 @@ export const ChatImpl = memo(
     useEffect(() => {
       const prompt = searchParams.get('prompt');
 
-      // console.log(prompt, searchParams, model, provider);
-
-      if (prompt) {
-        setSearchParams({});
-        runAnimation();
-        append({
-          role: 'user',
-          content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${prompt}`,
-        });
+      if (!prompt) {
+        return;
       }
-    }, [model, provider, searchParams]);
+
+      // On /git route, defer prompt processing until after repo import redirects to /chat
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/git')) {
+        return;
+      }
+
+      // Remove only the 'prompt' param, preserve any others (e.g., 'url' on /git)
+      const next = new URLSearchParams(searchParams);
+      next.delete('prompt');
+      setSearchParams(next, { replace: true });
+
+      runAnimation();
+      append({
+        role: 'user',
+        content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${prompt}`,
+      });
+    }, [model, provider, searchParams, setSearchParams]);
 
     const { enhancingPrompt, promptEnhanced, enhancePrompt, resetEnhancer } = usePromptEnhancer();
     const { parsedMessages, parseMessages } = useMessageParser();
