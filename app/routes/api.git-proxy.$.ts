@@ -105,8 +105,31 @@ async function handleProxyRequest(request: Request, path: string | undefined) {
       headers.set('User-Agent', 'git/@isomorphic-git/cors-proxy');
     }
 
-    console.log('Request headers:', Object.fromEntries(headers.entries()));
-
+    // Log headers with Authorization redacted
+    {
+      const safeHeaders = Array.from(headers.entries()).map(([k, v]) =>
+        k.toLowerCase() === 'authorization' ? [k, '[redacted]'] as const : [k, v] as const
+      );
+      console.log('Request headers:', Object.fromEntries(safeHeaders));
+    }
+ 
+    // Inject server-side GitHub auth when proxying to GitHub hosts
+    try {
+      // Never trust/forward client Authorization to upstream
+      headers.delete('authorization');
+ 
+      const domainIsGitHub = domain === 'github.com' || domain.endsWith('.github.com');
+      const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+ 
+      if (domainIsGitHub && GITHUB_TOKEN) {
+        // GitHub accepts Basic with PAT as password, username "x-access-token"
+        const basic = Buffer.from(`x-access-token:${GITHUB_TOKEN}`).toString('base64');
+        headers.set('Authorization', `Basic ${basic}`);
+      }
+    } catch (_e) {
+      // Ignore auth injection errors and proceed without credentials
+    }
+ 
     // Prepare fetch options
     const fetchOptions: RequestInit = {
       method: request.method,
