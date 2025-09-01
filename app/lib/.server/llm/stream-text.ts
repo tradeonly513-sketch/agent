@@ -1,7 +1,7 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
 import { MAX_TOKENS_FALLBACK, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { ModelCapabilityService } from './model-capability-service';
-import { getSystemPrompt } from '~/lib/common/prompts/prompts';
+import { getCodingPrompt } from '~/lib/common/prompts/coding-prompt';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
 import type { IProviderSetting } from '~/types/model';
 import { PromptLibrary } from '~/lib/common/prompt-library';
@@ -9,7 +9,7 @@ import { allowedHTMLElements } from '~/utils/markdown';
 import { LLMManager } from '~/lib/modules/llm/manager';
 import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
-import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
+import { getPlanningPrompt } from '~/lib/common/prompts/planning-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 
 export type Messages = Message[];
@@ -168,7 +168,7 @@ export async function streamText(props: {
   );
 
   let systemPrompt =
-    PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
+    PromptLibrary.getPropmtFromLibrary(promptId || 'coding', {
       cwd: WORK_DIR,
       allowedHtmlElements: allowedHTMLElements,
       modificationTagName: MODIFICATIONS_TAG_NAME,
@@ -178,7 +178,7 @@ export async function streamText(props: {
         hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
-    }) ?? getSystemPrompt();
+    }) ?? getCodingPrompt();
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
@@ -291,6 +291,10 @@ export async function streamText(props: {
     ),
   );
 
+  // Debug logging for system prompt selection
+  const selectedPromptType = chatMode === 'build' ? 'systemPrompt (BUILD MODE)' : 'getPlanningPrompt (DISCUSS MODE)';
+  logger.info(`ChatMode: "${chatMode}", Selected prompt: ${selectedPromptType}`);
+
   const streamParams = {
     model: provider.getModelInstance({
       model: modelDetails.name,
@@ -298,7 +302,7 @@ export async function streamText(props: {
       apiKeys,
       providerSettings,
     }),
-    system: chatMode === 'build' ? systemPrompt : discussPrompt(),
+    system: chatMode === 'build' ? systemPrompt : getPlanningPrompt(),
     ...tokenParams,
     messages: convertToCoreMessages(processedMessages as any),
     ...filteredOptions,
