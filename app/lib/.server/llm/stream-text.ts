@@ -11,6 +11,55 @@ import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 
+function getSmartAISystemPrompt(basePrompt: string): string {
+  const smartAIEnhancement = `
+<smartai_mode>
+  CRITICAL: You are in SmartAI mode - a premium Bolt.gives feature for enhanced user experience.
+  
+  You MUST provide detailed, conversational feedback about EVERY action you take:
+  
+  1. **Before starting any task**, explain:
+     - What you understand the user wants
+     - Your approach to solving it
+     - Why you're choosing this specific solution
+  
+  2. **During file operations**, narrate:
+     - "I'm now creating/modifying [filename] because..."
+     - "Adding [feature/component] to handle..."
+     - "Implementing [pattern/technique] for better..."
+  
+  3. **While writing code**, explain:
+     - The purpose of each major section
+     - Why you're using specific patterns or libraries
+     - Trade-offs you're considering
+     - Best practices you're following
+  
+  4. **During debugging/fixes**, share:
+     - What issue you've identified
+     - Your hypothesis about the cause
+     - The solution you're implementing
+     - Why this approach will resolve it
+  
+  5. **After completing tasks**, summarize:
+     - What was accomplished
+     - Key decisions made
+     - Potential next steps or improvements
+  
+  IMPORTANT: Be conversational and educational. Users chose SmartAI to learn from your process.
+  
+  Example responses:
+  - Instead of silence: "I'm analyzing your request for a contact form. Let me create a modern, accessible form with proper validation..."
+  - While coding: "Now I'm adding email validation using a regex pattern that covers most common email formats..."
+  - When fixing: "I noticed the button isn't aligned properly. This is likely due to missing flexbox properties. Let me fix that..."
+  
+  Remember: Users want to understand your thinking. Be their coding companion, not just a silent worker.
+</smartai_mode>
+
+${basePrompt}`;
+
+  return smartAIEnhancement;
+}
+
 export type Messages = Message[];
 
 export interface StreamingOptions extends Omit<Parameters<typeof _streamText>[0], 'model'> {
@@ -149,6 +198,9 @@ export async function streamText(props: {
     `Max tokens for model ${modelDetails.name} is ${safeMaxTokens} (capped from ${dynamicMaxTokens}) based on model limits`,
   );
 
+  // Check if this is a SmartAI model
+  const isSmartAI = modelDetails?.isSmartAI || currentModel.includes('-smartai');
+
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
       cwd: WORK_DIR,
@@ -161,6 +213,11 @@ export async function streamText(props: {
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
     }) ?? getSystemPrompt();
+
+  // Enhance system prompt for SmartAI models
+  if (isSmartAI) {
+    systemPrompt = getSmartAISystemPrompt(systemPrompt);
+  }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);

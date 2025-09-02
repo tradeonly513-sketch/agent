@@ -396,7 +396,15 @@ export const ModelSelector = ({
           tabIndex={0}
         >
           <div className="flex items-center justify-between">
-            <div className="truncate">{modelList.find((m) => m.name === model)?.label || 'Select model'}</div>
+            <div className="flex items-center gap-2 truncate">
+              <span className="truncate">{modelList.find((m) => m.name === model)?.label || 'Select model'}</span>
+              {modelList.find((m) => m.name === model)?.isSmartAI && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+                  <span className="i-ph:sparkle text-xs text-blue-400" />
+                  <span className="text-xs text-blue-400 font-medium">SmartAI</span>
+                </span>
+              )}
+            </div>
             <div
               className={classNames(
                 'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary opacity-75',
@@ -514,7 +522,15 @@ export const ModelSelector = ({
                     tabIndex={focusedModelIndex === index ? 0 : -1}
                   >
                     <div className="flex items-center justify-between">
-                      <span>{modelOption.label}</span>
+                      <span className="flex items-center gap-2">
+                        {modelOption.label}
+                        {modelOption.isSmartAI && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+                            <span className="i-ph:sparkle text-xs text-blue-400" />
+                            <span className="text-xs text-blue-400 font-medium">SmartAI</span>
+                          </span>
+                        )}
+                      </span>
                       {isModelLikelyFree(modelOption, provider?.name) && (
                         <span className="i-ph:gift text-xs text-purple-400 ml-2" title="Free model" />
                       )}

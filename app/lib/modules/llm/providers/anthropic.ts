@@ -25,6 +25,14 @@ export class AnthropicProvider extends BaseProvider {
       maxCompletionTokens: 128000,
     },
     {
+      name: 'claude-sonnet-4-20250514-smartai',
+      label: 'Claude Sonnet 4 (SmartAI)',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
+      isSmartAI: true,
+    },
+    {
       name: 'claude-opus-4-1-20250805',
       label: 'Claude Opus 4.1',
       provider: 'Anthropic',
@@ -137,6 +145,9 @@ export class AnthropicProvider extends BaseProvider {
       baseURL: baseUrl || 'https://api.anthropic.com/v1',
     });
 
-    return anthropic(model);
+    // Handle SmartAI variant by using the base model name
+    const actualModel = model.replace('-smartai', '');
+
+    return anthropic(actualModel);
   };
 }
