@@ -3,8 +3,7 @@ import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { classNames } from '~/utils/classNames';
-import { FreeModelRecommendations } from './FreeModelRecommendations';
-import { ChevronDown, Search, X, Gift, AlertTriangle, Loader2, Check, AlertCircle } from 'lucide-react';
+import { ChevronDown, Search, X, Gift, Loader2, Check } from 'lucide-react';
 
 // Fuzzy search utilities
 const levenshteinDistance = (str1: string, str2: string): number => {
@@ -131,7 +130,6 @@ export const ModelSelector = ({
   const providerOptionsRef = useRef<(HTMLDivElement | null)[]>([]);
   const providerDropdownRef = useRef<HTMLDivElement>(null);
   const [showFreeModelsOnly, setShowFreeModelsOnly] = useState(false);
-  const [showFreeModelRecommendations, setShowFreeModelRecommendations] = useState(false);
 
   // Debounce search queries
   useEffect(() => {
@@ -633,38 +631,11 @@ export const ModelSelector = ({
                         ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                         : 'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary border border-bolt-elements-borderColor',
                     )}
-                    title={
-                      showFreeModelsOnly
-                        ? 'Showing only free models - may have quality/reliability issues. Consider paid models for better results.'
-                        : 'Show only free OpenRouter models (may be slower/less reliable)'
-                    }
+                    title={showFreeModelsOnly ? 'Showing only free models' : 'Show only free OpenRouter models'}
                   >
                     <Gift className="text-xs" />
                     Free models only
                   </button>
-                  {showFreeModelsOnly && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-bolt-elements-textTertiary">
-                        {filteredModels.length} free model{filteredModels.length !== 1 ? 's' : ''}
-                      </span>
-                      <div className="space-y-2">
-                        <div className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded px-2 py-1">
-                          <AlertTriangle className="text-xs mr-1" />
-                          Free models may be slower and less reliable. Consider paid models for better results.
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowFreeModelRecommendations(true);
-                          }}
-                          className="text-xs text-blue-400 hover:text-blue-300 underline hover:no-underline transition-colors"
-                        >
-                          View recommendations →
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -805,16 +776,6 @@ export const ModelSelector = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-1 ml-2">
-                        {isModelLikelyFree(modelOption, provider?.name) && (
-                          <div className="flex items-center gap-1">
-                            <span title="Free model - may have quality/reliability issues">
-                              <Gift className="text-xs text-orange-400" />
-                            </span>
-                            <span title="May be slower/less reliable than paid models">
-                              <AlertCircle className="text-xs text-orange-400" />
-                            </span>
-                          </div>
-                        )}
                         {model === modelOption.name && (
                           <span title="Selected">
                             <Check className="text-xs text-green-500" />
@@ -829,13 +790,6 @@ export const ModelSelector = ({
           </div>
         )}
       </div>
-
-      {/* Free Model Recommendations Modal */}
-      <FreeModelRecommendations
-        isVisible={showFreeModelRecommendations}
-        onClose={() => setShowFreeModelRecommendations(false)}
-        providerName={provider?.name || 'OpenRouter'}
-      />
     </div>
   );
 };

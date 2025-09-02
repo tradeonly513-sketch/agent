@@ -302,16 +302,16 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           </div>
         )}
 
-        <div className="flex justify-between items-center text-sm p-4 pt-2">
+        <div className="flex items-center text-sm p-4 pt-2">
           <div className="flex gap-2 items-center">
             <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
             <McpTools />
-            <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
+            <IconButton title="Upload file" className="icon-button" onClick={() => props.handleFileUpload()}>
               <Paperclip className="w-5 h-5" />
             </IconButton>
             <IconButton
               title="Open Prompt Library"
-              className="transition-all"
+              className="icon-button"
               onClick={() => setIsPromptLibraryOpen(true)}
             >
               <BookOpen className="w-5 h-5" />
@@ -319,7 +319,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             <IconButton
               title="Enhance prompt"
               disabled={props.input.length === 0 || props.enhancingPrompt}
-              className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
+              className={classNames('icon-button', props.enhancingPrompt ? 'opacity-100' : '')}
               onClick={() => {
                 props.enhancePrompt?.();
                 toast.success('Prompt enhanced!');
@@ -336,7 +336,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             />
             <IconButton
               title="Model Settings"
-              className={classNames('transition-all flex items-center gap-1', {
+              className={classNames('icon-button flex items-center gap-1', {
                 'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent':
                   props.isModelSettingsCollapsed,
                 'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault':
@@ -353,12 +353,6 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
             </IconButton>
           </div>
-          {props.input.length > 3 ? (
-            <div className="text-xs text-bolt-elements-textTertiary">
-              Use <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
-              <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line
-            </div>
-          ) : null}
           <SupabaseConnection />
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>

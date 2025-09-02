@@ -126,29 +126,17 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
                         bg-bolt-elements-prompt-background text-bolt-elements-textPrimary 
                         focus:outline-none focus:ring-2 focus:ring-bolt-elements-focus"
             />
-            <IconButton
-              onClick={handleSave}
-              title="Save API Key"
-              className="bg-green-500/10 hover:bg-green-500/20 text-green-500"
-            >
+            <IconButton onClick={handleSave} title="Save API Key" className="icon-button text-green-500">
               <Check className="w-4 h-4" />
             </IconButton>
-            <IconButton
-              onClick={() => setIsEditing(false)}
-              title="Cancel"
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
-            >
+            <IconButton onClick={() => setIsEditing(false)} title="Cancel" className="icon-button text-red-500">
               <X className="w-4 h-4" />
             </IconButton>
           </div>
         ) : (
           <>
             {
-              <IconButton
-                onClick={() => setIsEditing(true)}
-                title="Edit API Key"
-                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-500"
-              >
+              <IconButton onClick={() => setIsEditing(true)} title="Edit API Key" className="icon-button text-blue-500">
                 <Pencil className="w-4 h-4" />
               </IconButton>
             }
@@ -156,10 +144,11 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
               <IconButton
                 onClick={() => window.open(provider?.getApiKeyLink)}
                 title="Get API Key"
-                className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 flex items-center gap-2"
+                className="icon-button text-purple-500"
               >
-                <span className="text-xs whitespace-nowrap">{provider?.labelForGetApiKey || 'Get API Key'}</span>
-                <div className="w-4 h-4">{provider?.icon ? <span className={provider.icon} /> : <Key />}</div>
+                <div className="w-4 h-4">
+                  {provider?.icon ? <span className={provider.icon} /> : <Key className="w-4 h-4" />}
+                </div>
               </IconButton>
             )}
           </>
