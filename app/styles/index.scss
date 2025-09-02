@@ -74,7 +74,7 @@ body {
 
 // Global icon sizing optimizations for Lucide icons
 // Automatically reduce common oversized icon sizes
-[class*="lucide"] {
+[class*='lucide'] {
   &.text-xl {
     font-size: 1.125rem; // 18px instead of 20px (text-lg)
   }
