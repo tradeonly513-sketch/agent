@@ -70,7 +70,7 @@ const NetlifyConnectForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-bolt-elements-borderColor scrollbar-track-transparent">
       <div>
         <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-2">Connect to Netlify</h3>
         <p className="text-sm text-bolt-elements-textSecondary mb-4">
@@ -425,17 +425,21 @@ export const DeployDialog: React.FC<DeployDialogProps> = ({ isOpen, onClose }) =
   return (
     <>
       <RadixDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <Dialog className="max-w-2xl">
-          <div className="p-6">
-            <DialogTitle className="text-xl font-bold mb-1">Deploy Your Project</DialogTitle>
-            <DialogDescription className="mb-6">
-              Choose a deployment platform to publish your project to the web
-            </DialogDescription>
+        <Dialog className="max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="p-6 flex flex-col max-h-[90vh]">
+            <div className="flex-shrink-0">
+              <DialogTitle className="text-xl font-bold mb-1">Deploy Your Project</DialogTitle>
+              <DialogDescription className="mb-6">
+                Choose a deployment platform to publish your project to the web
+              </DialogDescription>
+            </div>
 
-            {renderProviderContent()}
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2 scrollbar-thin scrollbar-thumb-bolt-elements-borderColor scrollbar-track-transparent hover:scrollbar-thumb-bolt-elements-textTertiary">
+              {renderProviderContent()}
+            </div>
 
             {!selectedProvider && (
-              <div className="mt-6 pt-6 border-t border-bolt-elements-borderColor">
+              <div className="flex-shrink-0 mt-6 pt-6 border-t border-bolt-elements-borderColor">
                 <button
                   onClick={onClose}
                   className="w-full px-4 py-2 rounded-lg border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2"
