@@ -38,13 +38,21 @@ const badgeVariants = cva(
 );
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {
-  icon?: string;
+  icon?: string | React.ComponentType<{ className?: string }>;
 }
 
 function Badge({ className, variant, size, icon, children, ...props }: BadgeProps) {
   return (
     <div className={classNames(badgeVariants({ variant, size }), className)} {...props}>
-      {icon && <span className={icon} />}
+      {icon &&
+        (typeof icon === 'string' ? (
+          <span className={icon} />
+        ) : (
+          (() => {
+            const IconComponent = icon;
+            return <IconComponent />;
+          })()
+        ))}
       {children}
     </div>
   );

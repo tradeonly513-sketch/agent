@@ -10,7 +10,7 @@ interface Tab {
   label: React.ReactNode;
 
   /** Optional icon to display before the label */
-  icon?: string;
+  icon?: string | React.ComponentType<{ className?: string }>;
 }
 
 interface TabsWithSliderProps {
@@ -94,14 +94,17 @@ export function TabsWithSlider({
           )}
         >
           <span className={classNames('flex items-center gap-2', tab.id === activeTab ? 'font-medium' : '')}>
-            {tab.icon && (
-              <span
-                className={classNames(
-                  tab.icon,
-                  tab.id === activeTab ? 'text-inherit' : 'text-bolt-elements-textSecondary',
-                )}
-              />
-            )}
+            {tab.icon &&
+              (typeof tab.icon === 'string' ? (
+                <span
+                  className={classNames(
+                    tab.icon,
+                    tab.id === activeTab ? 'text-inherit' : 'text-bolt-elements-textSecondary',
+                  )}
+                />
+              ) : (
+                <tab.icon className={tab.id === activeTab ? 'text-inherit' : 'text-bolt-elements-textSecondary'} />
+              ))}
             {tab.label}
           </span>
         </button>

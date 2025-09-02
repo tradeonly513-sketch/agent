@@ -21,6 +21,7 @@ import { Button } from '~/components/ui/Button';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '~/components/ui/Badge';
+import { BarChart3, ChevronDown, ExternalLink, Loader2, Zap, Plug, CheckCircle } from 'lucide-react';
 
 // Add the Netlify logo SVG component at the top of the file
 const NetlifyLogo = () => (
@@ -301,14 +302,14 @@ export default function NetlifyConnection() {
           <CollapsibleTrigger asChild>
             <div className="flex items-center justify-between p-4 rounded-lg bg-bolt-elements-background dark:bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive/70 dark:hover:border-bolt-elements-borderColorActive/70 transition-all duration-200">
               <div className="flex items-center gap-2">
-                <div className="i-ph:chart-bar w-4 h-4 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
+                <BarChart3 className="w-4 h-4 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
                 <span className="text-sm font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
                   Netlify Stats
                 </span>
               </div>
-              <div
+              <ChevronDown
                 className={classNames(
-                  'i-ph:caret-down w-4 h-4 transform transition-transform duration-200 text-bolt-elements-textSecondary',
+                  'w-4 h-4 transform transition-transform duration-200 text-bolt-elements-textSecondary',
                   isStatsOpen ? 'rotate-180' : '',
                 )}
               />
@@ -674,7 +675,7 @@ export default function NetlifyConnection() {
                 className="text-bolt-elements-borderColorActive hover:underline inline-flex items-center gap-1"
               >
                 Get your token
-                <div className="i-ph:arrow-square-out w-4 h-4" />
+                <ExternalLink className="w-4 h-4" />
               </a>
             </div>
             <div className="flex items-center justify-between mt-4">
@@ -691,12 +692,12 @@ export default function NetlifyConnection() {
               >
                 {isConnecting ? (
                   <>
-                    <div className="i-ph:spinner-gap animate-spin" />
+                    <Loader2 className="animate-spin" />
                     Connecting...
                   </>
                 ) : (
                   <>
-                    <div className="i-ph:plug-charging w-4 h-4" />
+                    <Zap className="w-4 h-4" />
                     Connect
                   </>
                 )}
@@ -714,11 +715,11 @@ export default function NetlifyConnection() {
                   'hover:bg-red-600',
                 )}
               >
-                <div className="i-ph:plug w-4 h-4" />
+                <Plug className="w-4 h-4" />
                 Disconnect
               </button>
               <span className="text-sm text-bolt-elements-textSecondary flex items-center gap-1">
-                <div className="i-ph:check-circle w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-500" />
                 Connected to Netlify
               </span>
             </div>

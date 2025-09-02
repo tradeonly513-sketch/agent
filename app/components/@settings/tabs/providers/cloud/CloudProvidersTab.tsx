@@ -14,6 +14,7 @@ import { TbBrain, TbCloudComputing } from 'react-icons/tb';
 import { BiCodeBlock, BiChip } from 'react-icons/bi';
 import { FaCloud, FaBrain } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
+import { Link, Info } from 'lucide-react';
 
 // Add type for provider names to ensure type safety
 type ProviderName =
@@ -267,7 +268,7 @@ const CloudProvidersTab = () => {
                             onClick={() => setEditingProvider(provider.name)}
                           >
                             <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
-                              <div className="i-ph:link text-sm" />
+                              <Link className="text-sm" />
                               <span className="group-hover/url:text-purple-500 transition-colors">
                                 {provider.settings.baseUrl || 'Click to set base URL'}
                               </span>
@@ -279,7 +280,7 @@ const CloudProvidersTab = () => {
                       {providerBaseUrlEnvKeys[provider.name]?.baseUrlKey && (
                         <div className="mt-2 text-xs text-green-500">
                           <div className="flex items-center gap-1">
-                            <div className="i-ph:info" />
+                            <Info />
                             <span>Environment URL set in .env file</span>
                           </div>
                         </div>

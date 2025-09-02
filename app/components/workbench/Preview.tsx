@@ -7,6 +7,21 @@ import { ScreenshotSelector } from './ScreenshotSelector';
 import { expoUrlAtom } from '~/lib/stores/qrCodeStore';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
 import type { ElementInfo } from './Inspector';
+import {
+  Smartphone,
+  Tablet,
+  Laptop,
+  Monitor,
+  RefreshCw,
+  MousePointer,
+  MonitorSpeaker,
+  QrCode,
+  RotateCw,
+  Maximize2,
+  Minimize2,
+  List,
+  ExternalLink,
+} from 'lucide-react';
 
 type ResizeSide = 'left' | 'right' | null;
 
@@ -18,38 +33,38 @@ interface WindowSize {
   name: string;
   width: number;
   height: number;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   hasFrame?: boolean;
   frameType?: 'mobile' | 'tablet' | 'laptop' | 'desktop';
 }
 
 const WINDOW_SIZES: WindowSize[] = [
-  { name: 'iPhone SE', width: 375, height: 667, icon: 'i-ph:device-mobile', hasFrame: true, frameType: 'mobile' },
-  { name: 'iPhone 12/13', width: 390, height: 844, icon: 'i-ph:device-mobile', hasFrame: true, frameType: 'mobile' },
+  { name: 'iPhone SE', width: 375, height: 667, icon: Smartphone, hasFrame: true, frameType: 'mobile' },
+  { name: 'iPhone 12/13', width: 390, height: 844, icon: Smartphone, hasFrame: true, frameType: 'mobile' },
   {
     name: 'iPhone 12/13 Pro Max',
     width: 428,
     height: 926,
-    icon: 'i-ph:device-mobile',
+    icon: Smartphone,
     hasFrame: true,
     frameType: 'mobile',
   },
-  { name: 'iPad Mini', width: 768, height: 1024, icon: 'i-ph:device-tablet', hasFrame: true, frameType: 'tablet' },
-  { name: 'iPad Air', width: 820, height: 1180, icon: 'i-ph:device-tablet', hasFrame: true, frameType: 'tablet' },
-  { name: 'iPad Pro 11"', width: 834, height: 1194, icon: 'i-ph:device-tablet', hasFrame: true, frameType: 'tablet' },
+  { name: 'iPad Mini', width: 768, height: 1024, icon: Tablet, hasFrame: true, frameType: 'tablet' },
+  { name: 'iPad Air', width: 820, height: 1180, icon: Tablet, hasFrame: true, frameType: 'tablet' },
+  { name: 'iPad Pro 11"', width: 834, height: 1194, icon: Tablet, hasFrame: true, frameType: 'tablet' },
   {
     name: 'iPad Pro 12.9"',
     width: 1024,
     height: 1366,
-    icon: 'i-ph:device-tablet',
+    icon: Tablet,
     hasFrame: true,
     frameType: 'tablet',
   },
-  { name: 'Small Laptop', width: 1280, height: 800, icon: 'i-ph:laptop', hasFrame: true, frameType: 'laptop' },
-  { name: 'Laptop', width: 1366, height: 768, icon: 'i-ph:laptop', hasFrame: true, frameType: 'laptop' },
-  { name: 'Large Laptop', width: 1440, height: 900, icon: 'i-ph:laptop', hasFrame: true, frameType: 'laptop' },
-  { name: 'Desktop', width: 1920, height: 1080, icon: 'i-ph:monitor', hasFrame: true, frameType: 'desktop' },
-  { name: '4K Display', width: 3840, height: 2160, icon: 'i-ph:monitor', hasFrame: true, frameType: 'desktop' },
+  { name: 'Small Laptop', width: 1280, height: 800, icon: Laptop, hasFrame: true, frameType: 'laptop' },
+  { name: 'Laptop', width: 1366, height: 768, icon: Laptop, hasFrame: true, frameType: 'laptop' },
+  { name: 'Large Laptop', width: 1440, height: 900, icon: Laptop, hasFrame: true, frameType: 'laptop' },
+  { name: 'Desktop', width: 1920, height: 1080, icon: Monitor, hasFrame: true, frameType: 'desktop' },
+  { name: '4K Display', width: 3840, height: 2160, icon: Monitor, hasFrame: true, frameType: 'desktop' },
 ];
 
 export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
@@ -667,9 +682,9 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
       )}
       <div className="bg-bolt-elements-background-depth-2 p-2 flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <IconButton icon="i-ph:arrow-clockwise" onClick={reloadPreview} />
+          <IconButton icon={RefreshCw} onClick={reloadPreview} />
           <IconButton
-            icon="i-ph:selection"
+            icon={MousePointer}
             onClick={() => setIsSelectionMode(!isSelectionMode)}
             className={isSelectionMode ? 'bg-bolt-elements-background-depth-3' : ''}
           />
@@ -716,31 +731,31 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
 
         <div className="flex items-center gap-2">
           <IconButton
-            icon="i-ph:devices"
+            icon={MonitorSpeaker}
             onClick={toggleDeviceMode}
             title={isDeviceModeOn ? 'Switch to Responsive Mode' : 'Switch to Device Mode'}
           />
 
-          {expoUrl && <IconButton icon="i-ph:qr-code" onClick={() => setIsExpoQrModalOpen(true)} title="Show QR" />}
+          {expoUrl && <IconButton icon={QrCode} onClick={() => setIsExpoQrModalOpen(true)} title="Show QR" />}
 
           <ExpoQrModal open={isExpoQrModalOpen} onClose={() => setIsExpoQrModalOpen(false)} />
 
           {isDeviceModeOn && (
             <>
               <IconButton
-                icon="i-ph:device-rotate"
+                icon={RotateCw}
                 onClick={() => setIsLandscape(!isLandscape)}
                 title={isLandscape ? 'Switch to Portrait' : 'Switch to Landscape'}
               />
               <IconButton
-                icon={showDeviceFrameInPreview ? 'i-ph:device-mobile' : 'i-ph:device-mobile-slash'}
+                icon={Smartphone}
                 onClick={() => setShowDeviceFrameInPreview(!showDeviceFrameInPreview)}
                 title={showDeviceFrameInPreview ? 'Hide Device Frame' : 'Show Device Frame'}
               />
             </>
           )}
           <IconButton
-            icon="i-ph:cursor-click"
+            icon={MousePointer}
             onClick={toggleInspectorMode}
             className={
               isInspectorMode ? 'bg-bolt-elements-background-depth-3 !text-bolt-elements-item-contentAccent' : ''
@@ -748,14 +763,14 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
             title={isInspectorMode ? 'Disable Element Inspector' : 'Enable Element Inspector'}
           />
           <IconButton
-            icon={isFullscreen ? 'i-ph:arrows-in' : 'i-ph:arrows-out'}
+            icon={isFullscreen ? Minimize2 : Maximize2}
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
           />
 
           <div className="flex items-center relative">
             <IconButton
-              icon="i-ph:list"
+              icon={List}
               onClick={() => setIsWindowSizeDropdownOpen(!isWindowSizeDropdownOpen)}
               title="New Window Options"
             />
@@ -776,7 +791,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                         }}
                       >
                         <span>Open in new tab</span>
-                        <div className="i-ph:arrow-square-out h-5 w-4" />
+                        <ExternalLink className="h-5 w-4" />
                       </button>
                       <button
                         className={`flex w-full justify-between items-center text-start bg-transparent text-xs text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary`}
@@ -807,7 +822,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                         }}
                       >
                         <span>Open in new window</span>
-                        <div className="i-ph:browser h-5 w-4" />
+                        <Monitor className="h-5 w-4" />
                       </button>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-bolt-elements-textTertiary">Show Device Frame</span>
@@ -821,7 +836,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                           }}
                         >
                           <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-bolt-elements-textPrimary transition-transform duration-200 ${
                               showDeviceFrame ? 'transform translate-x-5' : ''
                             }`}
                           />
@@ -839,7 +854,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                           }}
                         >
                           <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-bolt-elements-textPrimary transition-transform duration-200 ${
                               isLandscape ? 'transform translate-x-5' : ''
                             }`}
                           />

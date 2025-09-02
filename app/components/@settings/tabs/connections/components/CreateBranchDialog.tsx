@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { classNames } from '~/utils/classNames';
 import type { GitHubRepoInfo } from '~/components/@settings/tabs/connections/types/GitHub';
-import { GitBranch } from '@phosphor-icons/react';
+import { GitBranch, CheckCircle } from 'lucide-react';
 
 interface GitHubBranch {
   name: string;
@@ -103,12 +103,12 @@ export function CreateBranchDialog({ isOpen, onClose, onConfirm, repository, bra
                   </li>
                   {branchName && (
                     <li className="flex items-center gap-2">
-                      <div className="i-ph:check-circle text-green-500" />
+                      <CheckCircle className="text-green-500" />
                       New branch will be created as: {branchName}
                     </li>
                   )}
                   <li className="flex items-center gap-2">
-                    <div className="i-ph:check-circle text-green-500" />
+                    <CheckCircle className="text-green-500" />
                     Based on: {sourceBranch}
                   </li>
                 </ul>

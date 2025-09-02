@@ -1,6 +1,8 @@
+import React from 'react';
 import { getCodingPrompt } from './prompts/coding-prompt';
 import { getLightweightPrompt } from './prompts/lightweight-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
+import { Code, Zap } from 'lucide-react';
 
 export interface PromptOptions {
   cwd: string;
@@ -21,7 +23,7 @@ export interface PromptInfo {
   id: string;
   label: string;
   description: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   features: string[];
   bestFor: string[];
   tokenUsage: 'low' | 'medium' | 'high';
@@ -49,7 +51,7 @@ export class PromptLibrary {
         label: 'Full-Featured Coding',
         description:
           'Complete development environment with advanced AI capabilities, design systems, and mobile app support. Perfect for creating new projects and complex development tasks.',
-        icon: 'i-ph:code-bold',
+        icon: Code,
         features: [
           'Advanced Token Management',
           'Mobile App Development',
@@ -83,7 +85,7 @@ export class PromptLibrary {
         label: 'Lightweight & Fast',
         description:
           'Streamlined prompt for quick tasks, simple fixes, and when response speed matters most. Optimized for speed with essential features only.',
-        icon: 'i-ph:lightning-fill',
+        icon: Zap,
         features: [
           'Fast Responses',
           'Low Token Usage',

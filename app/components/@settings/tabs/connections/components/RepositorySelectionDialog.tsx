@@ -9,6 +9,22 @@ import Cookies from 'js-cookie';
 
 // Import UI components
 import { Input, SearchInput, Badge, FilterChip } from '~/components/ui';
+import {
+  Github,
+  X,
+  Info,
+  Link,
+  GitPullRequest,
+  Search,
+  Funnel,
+  Code,
+  Star,
+  GitFork,
+  ArrowLeft,
+  User,
+  Lock,
+  GitBranch,
+} from 'lucide-react';
 
 // Import the components we've extracted
 import { RepositoryList } from './RepositoryList';
@@ -549,7 +565,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
             <div className="p-5 border-b border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/10 flex items-center justify-center text-purple-500 shadow-sm">
-                  <span className="i-ph:github-logo w-5 h-5" />
+                  <Github className="w-5 h-5" />
                 </div>
                 <div>
                   <Dialog.Title className="text-lg font-semibold text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
@@ -570,7 +586,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                   'focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColor dark:focus:ring-bolt-elements-borderColor-dark',
                 )}
               >
-                <span className="i-ph:x block w-5 h-5" aria-hidden="true" />
+                <X className="block w-5 h-5" aria-hidden="true" />
                 <span className="sr-only">Close dialog</span>
               </Dialog.Close>
             </div>
@@ -578,7 +594,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
             {/* Auth Info Banner */}
             <div className="p-4 border-b border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark flex items-center justify-between bg-gradient-to-r from-bolt-elements-background-depth-2 to-bolt-elements-background-depth-1 dark:from-bolt-elements-background-depth-3 dark:to-bolt-elements-background-depth-2">
               <div className="flex items-center gap-2">
-                <span className="i-ph:info text-blue-500" />
+                <Info className="text-blue-500" />
                 <span className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark">
                   Need to access private repositories?
                 </span>
@@ -589,7 +605,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                 whileHover={{ scale: 1.02, boxShadow: '0 4px 8px rgba(124, 58, 237, 0.2)' }}
                 whileTap={{ scale: 0.98 }}
               >
-                <span className="i-ph:github-logo w-4 h-4" />
+                <Github className="w-4 h-4" />
                 Connect GitHub Account
               </motion.button>
             </div>
@@ -641,13 +657,13 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                 <div className="space-y-5">
                   <div className="bg-gradient-to-br from-bolt-elements-background-depth-1 to-bolt-elements-background-depth-1 dark:from-bolt-elements-background-depth-2-dark dark:to-bolt-elements-background-depth-2-dark p-5 rounded-xl border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
                     <h3 className="text-base font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark mb-3 flex items-center gap-2">
-                      <span className="i-ph:link-simple w-4 h-4 text-purple-500" />
+                      <Link className="w-4 h-4 text-purple-500" />
                       Repository URL
                     </h3>
 
                     <div className="relative">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500">
-                        <span className="i-ph:github-logo w-5 h-5" />
+                        <Github className="w-5 h-5" />
                       </div>
                       <Input
                         type="text"
@@ -660,7 +676,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
 
                     <div className="mt-3 text-xs text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark bg-white/50 dark:bg-bolt-elements-background-depth-4/50 p-3 rounded-lg border border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30 backdrop-blur-sm">
                       <p className="flex items-start gap-2">
-                        <span className="i-ph:info w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-blue-500" />
+                        <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-blue-500" />
                         <span>
                           You can paste any GitHub repository URL, including specific branches or tags.
                           <br />
@@ -690,7 +706,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                     whileHover={customUrl ? { scale: 1.02, boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)' } : {}}
                     whileTap={customUrl ? { scale: 0.98 } : {}}
                   >
-                    <span className="i-ph:git-pull-request w-5 h-5" />
+                    <GitPullRequest className="w-5 h-5" />
                     Import Repository
                   </motion.button>
                 </div>
@@ -700,7 +716,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                     <div className="space-y-5 mb-5">
                       <div className="bg-gradient-to-br from-blue-500/5 to-cyan-500/5 p-5 rounded-xl border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
                         <h3 className="text-base font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark mb-3 flex items-center gap-2">
-                          <span className="i-ph:magnifying-glass w-4 h-4 text-blue-500" />
+                          <Search className="w-4 h-4 text-blue-500" />
                           Search GitHub
                         </h3>
 
@@ -737,7 +753,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                             whileTap={{ scale: 0.95 }}
                             title="Clear filters"
                           >
-                            <span className="i-ph:funnel-simple w-4 h-4" />
+                            <Funnel className="w-4 h-4" />
                           </motion.button>
                         </div>
 
@@ -754,7 +770,6 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                                   <FilterChip
                                     label="Language"
                                     value={filters.language}
-                                    icon="i-ph:code"
                                     active
                                     onRemove={() => {
                                       const newFilters = { ...filters };
@@ -771,7 +786,6 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                                   <FilterChip
                                     label="Stars"
                                     value={`>${filters.stars}`}
-                                    icon="i-ph:star"
                                     active
                                     onRemove={() => {
                                       const newFilters = { ...filters };
@@ -788,7 +802,6 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                                   <FilterChip
                                     label="Forks"
                                     value={`>${filters.forks}`}
-                                    icon="i-ph:git-fork"
                                     active
                                     onRemove={() => {
                                       const newFilters = { ...filters };
@@ -808,7 +821,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                           <div className="grid grid-cols-3 gap-2">
                             <div className="relative col-span-3 md:col-span-1">
                               <div className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark">
-                                <span className="i-ph:code w-3.5 h-3.5" />
+                                <Code className="w-3.5 h-3.5" />
                               </div>
                               <input
                                 type="text"
@@ -826,7 +839,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                             </div>
                             <div className="relative">
                               <div className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark">
-                                <span className="i-ph:star w-3.5 h-3.5" />
+                                <Star className="w-3.5 h-3.5" />
                               </div>
                               <input
                                 type="number"
@@ -838,7 +851,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                             </div>
                             <div className="relative">
                               <div className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark">
-                                <span className="i-ph:git-fork w-3.5 h-3.5" />
+                                <GitFork className="w-3.5 h-3.5" />
                               </div>
                               <input
                                 type="number"
@@ -853,7 +866,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
 
                         <div className="mt-3 text-xs text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark bg-white/50 dark:bg-bolt-elements-background-depth-4/50 p-3 rounded-lg border border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30 backdrop-blur-sm">
                           <p className="flex items-start gap-2">
-                            <span className="i-ph:info w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-blue-500" />
+                            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-blue-500" />
                             <span>
                               Search for repositories by name, description, or topics. Use filters to narrow down
                               results.
@@ -875,21 +888,21 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                             >
-                              <span className="i-ph:arrow-left w-4 h-4" />
+                              <ArrowLeft className="w-4 h-4" />
                             </motion.button>
                             <div>
                               <h3 className="font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark text-lg">
                                 {selectedRepository.name}
                               </h3>
                               <p className="text-xs text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark flex items-center gap-1">
-                                <span className="i-ph:user w-3 h-3" />
+                                <User className="w-3 h-3" />
                                 {selectedRepository.full_name.split('/')[0]}
                               </p>
                             </div>
                           </div>
 
                           {selectedRepository.private && (
-                            <Badge variant="primary" size="md" icon="i-ph:lock w-3 h-3">
+                            <Badge variant="primary" size="md" icon={Lock}>
                               Private
                             </Badge>
                           )}
@@ -905,15 +918,15 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
 
                         <div className="flex flex-wrap items-center gap-2">
                           {selectedRepository.language && (
-                            <Badge variant="subtle" size="md" icon="i-ph:code w-3 h-3">
+                            <Badge variant="subtle" size="md" icon={Code}>
                               {selectedRepository.language}
                             </Badge>
                           )}
-                          <Badge variant="subtle" size="md" icon="i-ph:star w-3 h-3">
+                          <Badge variant="subtle" size="md" icon={Star}>
                             {selectedRepository.stargazers_count.toLocaleString()}
                           </Badge>
                           {selectedRepository.forks_count > 0 && (
-                            <Badge variant="subtle" size="md" icon="i-ph:git-fork w-3 h-3">
+                            <Badge variant="subtle" size="md" icon={GitFork}>
                               {selectedRepository.forks_count.toLocaleString()}
                             </Badge>
                           )}
@@ -921,7 +934,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
 
                         <div className="pt-3 border-t border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="i-ph:git-branch w-4 h-4 text-purple-500" />
+                            <GitBranch className="w-4 h-4 text-purple-500" />
                             <label className="text-sm font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
                               Select Branch
                             </label>
@@ -955,7 +968,7 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
                           whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)' }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <span className="i-ph:git-pull-request w-5 h-5" />
+                          <GitPullRequest className="w-5 h-5" />
                           Import {selectedRepository.name}
                         </motion.button>
                       </div>

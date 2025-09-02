@@ -9,6 +9,24 @@ import { getLanguageFromExtension } from '~/utils/getLanguageFromExtension';
 import type { FileHistory } from '~/types/actions';
 import { DiffView } from './DiffView';
 import {
+  Search,
+  FileCode,
+  Palette,
+  Code,
+  Braces,
+  FileText,
+  File,
+  Database,
+  Box,
+  FileType,
+  Newspaper,
+  Terminal,
+  FileX,
+  CheckCircle,
+  Sidebar,
+  XCircle,
+} from 'lucide-react';
+import {
   type OnChangeCallback as OnEditorChange,
   type OnScrollCallback as OnEditorScroll,
 } from '~/components/editor/codemirror/CodeMirrorEditor';
@@ -120,7 +138,7 @@ const FileModifiedDropdown = memo(
                         className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                       />
                       <div className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary">
-                        <div className="i-ph:magnifying-glass" />
+                        <Search />
                       </div>
                     </div>
 
@@ -138,18 +156,16 @@ const FileModifiedDropdown = memo(
                             >
                               <div className="flex items-center gap-2">
                                 <div className="shrink-0 w-5 h-5 text-bolt-elements-textTertiary">
-                                  {['typescript', 'javascript', 'jsx', 'tsx'].includes(language) && (
-                                    <div className="i-ph:file-js" />
-                                  )}
-                                  {['css', 'scss', 'less'].includes(language) && <div className="i-ph:paint-brush" />}
-                                  {language === 'html' && <div className="i-ph:code" />}
-                                  {language === 'json' && <div className="i-ph:brackets-curly" />}
-                                  {language === 'python' && <div className="i-ph:file-text" />}
-                                  {language === 'markdown' && <div className="i-ph:article" />}
-                                  {['yaml', 'yml'].includes(language) && <div className="i-ph:file-text" />}
-                                  {language === 'sql' && <div className="i-ph:database" />}
-                                  {language === 'dockerfile' && <div className="i-ph:cube" />}
-                                  {language === 'shell' && <div className="i-ph:terminal" />}
+                                  {['typescript', 'javascript', 'jsx', 'tsx'].includes(language) && <FileCode />}
+                                  {['css', 'scss', 'less'].includes(language) && <Palette />}
+                                  {language === 'html' && <Code />}
+                                  {language === 'json' && <Braces />}
+                                  {language === 'python' && <FileText />}
+                                  {language === 'markdown' && <Newspaper />}
+                                  {['yaml', 'yml'].includes(language) && <FileType />}
+                                  {language === 'sql' && <Database />}
+                                  {language === 'dockerfile' && <Box />}
+                                  {language === 'shell' && <Terminal />}
                                   {![
                                     'typescript',
                                     'javascript',
@@ -167,7 +183,7 @@ const FileModifiedDropdown = memo(
                                     'tsx',
                                     'scss',
                                     'less',
-                                  ].includes(language) && <div className="i-ph:file-text" />}
+                                  ].includes(language) && <File />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-2">
@@ -239,7 +255,7 @@ const FileModifiedDropdown = memo(
                       ) : (
                         <div className="flex flex-col items-center justify-center p-4 text-center">
                           <div className="w-12 h-12 mb-2 text-bolt-elements-textTertiary">
-                            <div className="i-ph:file-dashed" />
+                            <FileX />
                           </div>
                           <p className="text-sm font-medium text-bolt-elements-textPrimary">
                             {searchQuery ? 'No matching files' : 'No modified files'}
@@ -258,7 +274,7 @@ const FileModifiedDropdown = memo(
                         onClick={() => {
                           navigator.clipboard.writeText(filteredFiles.map(([filePath]) => filePath).join('\n'));
                           toast('File list copied to clipboard', {
-                            icon: <div className="i-ph:check-circle text-accent-500" />,
+                            icon: <CheckCircle className="text-accent-500" />,
                           });
                         }}
                         className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-bolt-elements-background-depth-1 hover:bg-bolt-elements-background-depth-3 transition-colors text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary"
@@ -374,14 +390,16 @@ export const Workbench = memo(
               <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
                 <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5">
                   <button
-                    className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
+                    className="text-lg text-bolt-elements-textSecondary mr-1"
                     disabled={!canHideChat || isSmallViewport}
                     onClick={() => {
                       if (canHideChat) {
                         chatStore.setKey('showChat', !showChat);
                       }
                     }}
-                  />
+                  >
+                    <Sidebar />
+                  </button>
                   <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                   <div className="ml-auto" />
                   {selectedView === 'code' && (
@@ -392,7 +410,7 @@ export const Workbench = memo(
                           workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
                         }}
                       >
-                        <div className="i-ph:terminal" />
+                        <Terminal />
                         Toggle Terminal
                       </PanelHeaderButton>
                     </div>
@@ -402,7 +420,7 @@ export const Workbench = memo(
                     <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
                   )}
                   <IconButton
-                    icon="i-ph:x-circle"
+                    icon={XCircle}
                     className="-mr-1"
                     size="xl"
                     onClick={() => {

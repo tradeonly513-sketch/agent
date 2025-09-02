@@ -5,6 +5,21 @@ import { useStore } from '@nanostores/react';
 import { formatDistanceToNow } from 'date-fns';
 import { classNames } from '~/utils/classNames';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import {
+  ArrowUpCircle,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  Bell,
+  GitBranch,
+  Settings,
+  Bot,
+  Wifi,
+  Funnel,
+  ChevronDown,
+  Trash2,
+  BellOff,
+} from 'lucide-react';
 
 interface NotificationDetails {
   type?: string;
@@ -91,7 +106,7 @@ const NotificationsTab = () => {
   const getNotificationStyle = (level: string, type?: string) => {
     if (type === 'update') {
       return {
-        icon: 'i-ph:arrow-circle-up',
+        icon: ArrowUpCircle,
         color: 'text-purple-500 dark:text-purple-400',
         bg: 'hover:bg-purple-500/10 dark:hover:bg-purple-500/20',
       };
@@ -100,25 +115,25 @@ const NotificationsTab = () => {
     switch (level) {
       case 'error':
         return {
-          icon: 'i-ph:warning-circle',
+          icon: AlertCircle,
           color: 'text-red-500 dark:text-red-400',
           bg: 'hover:bg-red-500/10 dark:hover:bg-red-500/20',
         };
       case 'warning':
         return {
-          icon: 'i-ph:warning',
+          icon: AlertTriangle,
           color: 'text-yellow-500 dark:text-yellow-400',
           bg: 'hover:bg-yellow-500/10 dark:hover:bg-yellow-500/20',
         };
       case 'info':
         return {
-          icon: 'i-ph:info',
+          icon: Info,
           color: 'text-blue-500 dark:text-blue-400',
           bg: 'hover:bg-blue-500/10 dark:hover:bg-blue-500/20',
         };
       default:
         return {
-          icon: 'i-ph:bell',
+          icon: Bell,
           color: 'text-gray-500 dark:text-gray-400',
           bg: 'hover:bg-gray-500/10 dark:hover:bg-gray-500/20',
         };
@@ -148,7 +163,7 @@ const NotificationsTab = () => {
               'transition-all duration-200',
             )}
           >
-            <span className="i-ph:git-branch text-lg" />
+            <GitBranch className="text-lg" />
             View Changes
           </button>
         </div>
@@ -158,15 +173,20 @@ const NotificationsTab = () => {
     return details.message ? <p className="text-sm text-gray-600 dark:text-gray-400">{details.message}</p> : null;
   };
 
-  const filterOptions: { id: FilterType; label: string; icon: string; color: string }[] = [
-    { id: 'all', label: 'All Notifications', icon: 'i-ph:bell', color: '#9333ea' },
-    { id: 'system', label: 'System', icon: 'i-ph:gear', color: '#6b7280' },
-    { id: 'update', label: 'Updates', icon: 'i-ph:arrow-circle-up', color: '#9333ea' },
-    { id: 'error', label: 'Errors', icon: 'i-ph:warning-circle', color: '#ef4444' },
-    { id: 'warning', label: 'Warnings', icon: 'i-ph:warning', color: '#f59e0b' },
-    { id: 'info', label: 'Information', icon: 'i-ph:info', color: '#3b82f6' },
-    { id: 'provider', label: 'Providers', icon: 'i-ph:robot', color: '#10b981' },
-    { id: 'network', label: 'Network', icon: 'i-ph:wifi-high', color: '#6366f1' },
+  const filterOptions: {
+    id: FilterType;
+    label: string;
+    icon: string | React.ComponentType<{ className?: string }>;
+    color: string;
+  }[] = [
+    { id: 'all', label: 'All Notifications', icon: Bell, color: '#9333ea' },
+    { id: 'system', label: 'System', icon: Settings, color: '#6b7280' },
+    { id: 'update', label: 'Updates', icon: ArrowUpCircle, color: '#9333ea' },
+    { id: 'error', label: 'Errors', icon: AlertCircle, color: '#ef4444' },
+    { id: 'warning', label: 'Warnings', icon: AlertTriangle, color: '#f59e0b' },
+    { id: 'info', label: 'Information', icon: Info, color: '#3b82f6' },
+    { id: 'provider', label: 'Providers', icon: Bot, color: '#10b981' },
+    { id: 'network', label: 'Network', icon: Wifi, color: '#6366f1' },
   ];
 
   return (
@@ -185,12 +205,21 @@ const NotificationsTab = () => {
                 'transition-all duration-200',
               )}
             >
-              <span
-                className={classNames('text-lg', filterOptions.find((opt) => opt.id === filter)?.icon || 'i-ph:funnel')}
-                style={{ color: filterOptions.find((opt) => opt.id === filter)?.color }}
-              />
+              {(() => {
+                const filterOption = filterOptions.find((opt) => opt.id === filter);
+                const IconComponent = filterOption?.icon;
+                const iconColor = filterOption?.color;
+
+                return typeof IconComponent === 'string' ? (
+                  <span className={classNames('text-lg', IconComponent)} style={{ color: iconColor }} />
+                ) : IconComponent ? (
+                  <IconComponent className="text-lg" {...({ style: { color: iconColor } } as any)} />
+                ) : (
+                  <Funnel className="text-lg" />
+                );
+              })()}
               {filterOptions.find((opt) => opt.id === filter)?.label || 'Filter Notifications'}
-              <span className="i-ph:caret-down text-lg text-gray-500 dark:text-gray-400" />
+              <ChevronDown className="text-lg text-gray-500 dark:text-gray-400" />
             </button>
           </DropdownMenu.Trigger>
 
@@ -208,10 +237,17 @@ const NotificationsTab = () => {
                   onClick={() => handleFilterChange(option.id)}
                 >
                   <div className="mr-3 flex h-5 w-5 items-center justify-center">
-                    <div
-                      className={classNames(option.icon, 'text-lg group-hover:text-purple-500 transition-colors')}
-                      style={{ color: option.color }}
-                    />
+                    {typeof option.icon === 'string' ? (
+                      <div
+                        className={classNames(option.icon, 'text-lg group-hover:text-purple-500 transition-colors')}
+                        style={{ color: option.color }}
+                      />
+                    ) : (
+                      <option.icon
+                        className="text-lg group-hover:text-purple-500 transition-colors"
+                        {...({ style: { color: option.color } } as any)}
+                      />
+                    )}
                   </div>
                   <span className="group-hover:text-purple-500 transition-colors">{option.label}</span>
                 </DropdownMenu.Item>
@@ -232,7 +268,7 @@ const NotificationsTab = () => {
             'transition-all duration-200',
           )}
         >
-          <span className="i-ph:trash text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+          <Trash2 className="text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
           Clear All
         </button>
       </div>
@@ -249,7 +285,7 @@ const NotificationsTab = () => {
               'border border-[#E5E5E5] dark:border-[#1A1A1A]',
             )}
           >
-            <span className="i-ph:bell-slash text-4xl text-gray-400 dark:text-gray-600" />
+            <BellOff className="text-4xl text-gray-400 dark:text-gray-600" />
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">No Notifications</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">You're all caught up!</p>
@@ -274,7 +310,7 @@ const NotificationsTab = () => {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <span className={classNames('text-lg', style.icon, style.color)} />
+                    {React.createElement(style.icon, { className: classNames('text-lg', style.color) })}
                     <div className="flex flex-col gap-1">
                       <h3 className="text-sm font-medium text-gray-900 dark:text-white">{log.message}</h3>
                       {log.details && renderNotificationDetails(log.details as NotificationDetails)}

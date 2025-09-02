@@ -225,8 +225,6 @@ const getInitialTabConfiguration = (): TabWindowConfig => {
   }
 };
 
-// console.log('Initial tab configuration:', getInitialTabConfiguration());
-
 export const tabConfigurationStore = map<TabWindowConfig>(getInitialTabConfiguration());
 
 // Helper function to reset tab configuration

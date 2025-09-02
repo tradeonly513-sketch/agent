@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
 import type { GitHubUserResponse } from '~/types/GitHub';
+import { AlertCircle } from 'lucide-react';
 
 interface GitHubAuthDialogProps {
   isOpen: boolean;
@@ -156,7 +157,7 @@ export function GitHubAuthDialog({ isOpen, onClose }: GitHubAuthDialogProps) {
 
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg space-y-1.5">
                   <h3 className="text-sm text-amber-800 dark:text-amber-300 font-medium flex items-center gap-1.5">
-                    <span className="i-ph:warning-circle w-4 h-4" />
+                    <AlertCircle className="w-4 h-4" />
                     Accessing Private Repositories
                   </h3>
                   <p className="text-xs text-amber-700 dark:text-amber-400">

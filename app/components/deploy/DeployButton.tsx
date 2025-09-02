@@ -12,6 +12,7 @@ import { useVercelDeploy } from '~/components/deploy/VercelDeploy.client';
 import { useNetlifyDeploy } from '~/components/deploy/NetlifyDeploy.client';
 import { useGitHubDeploy } from '~/components/deploy/GitHubDeploy.client';
 import { GitHubDeploymentDialog } from '~/components/deploy/GitHubDeploymentDialog';
+import { ChevronDown } from 'lucide-react';
 
 interface DeployButtonProps {
   onVercelDeploy?: () => Promise<void>;
@@ -98,7 +99,7 @@ export const DeployButton = ({ onVercelDeploy, onNetlifyDeploy, onGitHubDeploy }
             className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7"
           >
             {isDeploying ? `Deploying to ${deployingTo}...` : 'Deploy'}
-            <span className={classNames('i-ph:caret-down transition-transform')} />
+            <ChevronDown className="transition-transform" />
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
             className={classNames(

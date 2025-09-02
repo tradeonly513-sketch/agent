@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { GitHubRepoInfo } from '~/types/GitHub';
+import { GitBranch, User, GitPullRequest, Lock, Code, Star, GitFork, Clock } from 'lucide-react';
 
 interface RepositoryCardProps {
   repo: GitHubRepoInfo;
@@ -65,14 +66,14 @@ export function RepositoryCard({ repo, onSelect }: RepositoryCardProps) {
       <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-bolt-elements-background-depth-1/80 dark:bg-bolt-elements-background-depth-4/80 backdrop-blur-sm flex items-center justify-center text-purple-500 shadow-sm">
-            <span className="i-ph:git-branch w-5 h-5" />
+            <GitBranch className="w-5 h-5" />
           </div>
           <div>
             <h3 className="font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark text-base">
               {repo.name}
             </h3>
             <p className="text-xs text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark flex items-center gap-1">
-              <span className="i-ph:user w-3 h-3" />
+              <User className="w-3 h-3" />
               {repo.full_name.split('/')[0]}
             </p>
           </div>
@@ -83,7 +84,7 @@ export function RepositoryCard({ repo, onSelect }: RepositoryCardProps) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <span className="i-ph:git-pull-request w-3.5 h-3.5" />
+          <GitPullRequest className="w-3.5 h-3.5" />
           Import
         </motion.button>
       </div>
@@ -99,23 +100,23 @@ export function RepositoryCard({ repo, onSelect }: RepositoryCardProps) {
       <div className="flex flex-wrap items-center gap-2">
         {repo.private && (
           <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs">
-            <span className="i-ph:lock w-3 h-3" />
+            <Lock className="w-3 h-3" />
             Private
           </span>
         )}
         {repo.language && (
           <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bolt-elements-background-depth-1/50 dark:bg-bolt-elements-background-depth-4/50 backdrop-blur-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark text-xs border border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30">
-            <span className="i-ph:code w-3 h-3" />
+            <Code className="w-3 h-3" />
             {repo.language}
           </span>
         )}
         <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bolt-elements-background-depth-1/50 dark:bg-bolt-elements-background-depth-4/50 backdrop-blur-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark text-xs border border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30">
-          <span className="i-ph:star w-3 h-3" />
+          <Star className="w-3 h-3" />
           {repo.stargazers_count.toLocaleString()}
         </span>
         {repo.forks_count > 0 && (
           <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bolt-elements-background-depth-1/50 dark:bg-bolt-elements-background-depth-4/50 backdrop-blur-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark text-xs border border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30">
-            <span className="i-ph:git-fork w-3 h-3" />
+            <GitFork className="w-3 h-3" />
             {repo.forks_count.toLocaleString()}
           </span>
         )}
@@ -123,7 +124,7 @@ export function RepositoryCard({ repo, onSelect }: RepositoryCardProps) {
 
       <div className="mt-3 pt-3 border-t border-bolt-elements-borderColor/30 dark:border-bolt-elements-borderColor-dark/30 flex items-center justify-between">
         <span className="flex items-center gap-1 text-xs text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark">
-          <span className="i-ph:clock w-3 h-3" />
+          <Clock className="w-3 h-3" />
           Updated {formatDate(repo.updated_at)}
         </span>
 

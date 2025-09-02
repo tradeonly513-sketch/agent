@@ -11,6 +11,19 @@ import {
   updateVercelConnection,
   fetchVercelStats,
 } from '~/lib/stores/vercel';
+import {
+  ExternalLink,
+  Loader2,
+  Zap,
+  Plug,
+  CheckCircle,
+  Building2,
+  ChevronDown,
+  Globe,
+  Clock,
+  Code,
+  Info,
+} from 'lucide-react';
 
 export default function VercelConnection() {
   const connection = useStore(vercelConnection);
@@ -116,7 +129,7 @@ export default function VercelConnection() {
                   className="text-bolt-elements-borderColorActive hover:underline inline-flex items-center gap-1"
                 >
                   Get your token
-                  <div className="i-ph:arrow-square-out w-4 h-4" />
+                  <ExternalLink className="w-4 h-4" />
                 </a>
               </div>
             </div>
@@ -134,12 +147,12 @@ export default function VercelConnection() {
             >
               {connecting ? (
                 <>
-                  <div className="i-ph:spinner-gap animate-spin" />
+                  <Loader2 className="animate-spin" />
                   Connecting...
                 </>
               ) : (
                 <>
-                  <div className="i-ph:plug-charging w-4 h-4" />
+                  <Zap className="w-4 h-4" />
                   Connect
                 </>
               )}
@@ -157,11 +170,11 @@ export default function VercelConnection() {
                     'hover:bg-red-600',
                   )}
                 >
-                  <div className="i-ph:plug w-4 h-4" />
+                  <Plug className="w-4 h-4" />
                   Disconnect
                 </button>
                 <span className="text-sm text-bolt-elements-textSecondary flex items-center gap-1">
-                  <div className="i-ph:check-circle w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                   Connected to Vercel
                 </span>
               </div>
@@ -190,7 +203,7 @@ export default function VercelConnection() {
 
             {fetchingStats ? (
               <div className="flex items-center gap-2 text-sm text-bolt-elements-textSecondary">
-                <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Fetching Vercel projects...
               </div>
             ) : (
@@ -199,11 +212,11 @@ export default function VercelConnection() {
                   onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
                   className="w-full bg-transparent text-left text-sm font-medium text-bolt-elements-textPrimary mb-3 flex items-center gap-2"
                 >
-                  <div className="i-ph:buildings w-4 h-4" />
+                  <Building2 className="w-4 h-4" />
                   Your Projects ({connection.stats?.totalProjects || 0})
-                  <div
+                  <ChevronDown
                     className={classNames(
-                      'i-ph:caret-down w-4 h-4 ml-auto transition-transform',
+                      'w-4 h-4 ml-auto transition-transform',
                       isProjectsExpanded ? 'rotate-180' : '',
                     )}
                   />
@@ -221,7 +234,7 @@ export default function VercelConnection() {
                         <div className="flex items-center justify-between">
                           <div>
                             <h5 className="text-sm font-medium text-bolt-elements-textPrimary flex items-center gap-2">
-                              <div className="i-ph:globe w-4 h-4 text-bolt-elements-borderColorActive" />
+                              <Globe className="w-4 h-4 text-bolt-elements-borderColorActive" />
                               {project.name}
                             </h5>
                             <div className="flex items-center gap-2 mt-2 text-xs text-bolt-elements-textSecondary">
@@ -239,7 +252,7 @@ export default function VercelConnection() {
                                   </a>
                                   <span>•</span>
                                   <span className="flex items-center gap-1">
-                                    <div className="i-ph:clock w-3 h-3" />
+                                    <Clock className="w-3 h-3" />
                                     {new Date(project.createdAt).toLocaleDateString()}
                                   </span>
                                 </>
@@ -255,7 +268,7 @@ export default function VercelConnection() {
                                   </a>
                                   <span>•</span>
                                   <span className="flex items-center gap-1">
-                                    <div className="i-ph:clock w-3 h-3" />
+                                    <Clock className="w-3 h-3" />
                                     {new Date(project.latestDeployments[0].created).toLocaleDateString()}
                                   </span>
                                 </>
@@ -265,7 +278,7 @@ export default function VercelConnection() {
                           {project.framework && (
                             <div className="text-xs text-bolt-elements-textSecondary px-2 py-1 rounded-md bg-[#F0F0F0] dark:bg-[#252525]">
                               <span className="flex items-center gap-1">
-                                <div className="i-ph:code w-3 h-3" />
+                                <Code className="w-3 h-3" />
                                 {project.framework}
                               </span>
                             </div>
@@ -276,7 +289,7 @@ export default function VercelConnection() {
                   </div>
                 ) : isProjectsExpanded ? (
                   <div className="text-sm text-bolt-elements-textSecondary flex items-center gap-2">
-                    <div className="i-ph:info w-4 h-4" />
+                    <Info className="w-4 h-4" />
                     No projects found in your Vercel account
                   </div>
                 ) : null}

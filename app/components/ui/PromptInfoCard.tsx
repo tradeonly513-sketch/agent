@@ -3,12 +3,13 @@ import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { Card, CardContent } from '~/components/ui/Card';
 import { Badge } from '~/components/ui/Badge';
+import { Feather, Scale, Rocket, CheckCircle, Settings, Brain, Check } from 'lucide-react';
 
 export interface PromptInfo {
   id: string;
   label: string;
   description: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   features: string[];
   bestFor: string[];
   tokenUsage: 'low' | 'medium' | 'high';
@@ -27,19 +28,19 @@ const tokenUsageConfig = {
   low: {
     label: 'Lightweight',
     color: 'success',
-    icon: 'i-ph:feather',
+    icon: Feather,
     description: 'Optimized for speed and minimal token usage',
   },
   medium: {
     label: 'Balanced',
     color: 'info',
-    icon: 'i-ph:scale',
+    icon: Scale,
     description: 'Good balance of features and performance',
   },
   high: {
     label: 'Full-Featured',
     color: 'warning',
-    icon: 'i-ph:rocket-launch',
+    icon: Rocket,
     description: 'Complete feature set with advanced capabilities',
   },
 } as const;
@@ -48,17 +49,17 @@ const complexityConfig = {
   simple: {
     label: 'Simple',
     color: 'success',
-    icon: 'i-ph:check-circle',
+    icon: CheckCircle,
   },
   moderate: {
     label: 'Moderate',
     color: 'info',
-    icon: 'i-ph:gear',
+    icon: Settings,
   },
   advanced: {
     label: 'Advanced',
     color: 'primary',
-    icon: 'i-ph:brain',
+    icon: Brain,
   },
 } as const;
 
@@ -104,9 +105,8 @@ export const PromptInfoCard = memo(({ prompt, selected = false, onSelect, classN
                 selected ? 'bg-purple-500/20' : '',
               )}
             >
-              <div
+              <prompt.icon
                 className={classNames(
-                  prompt.icon,
                   'w-6 h-6 transition-colors duration-200',
                   'text-bolt-elements-textSecondary',
                   'group-hover:text-purple-500',
@@ -137,11 +137,11 @@ export const PromptInfoCard = memo(({ prompt, selected = false, onSelect, classN
           {/* Badges */}
           <div className="flex items-center gap-2 mb-4 flex-shrink-0">
             <Badge variant={tokenConfig.color as any} size="sm" className="text-xs flex items-center gap-1">
-              <div className={classNames(tokenConfig.icon, 'w-3 h-3')} />
+              <tokenConfig.icon className="w-3 h-3" />
               {tokenConfig.label}
             </Badge>
             <Badge variant={complexConfig.color as any} size="sm" className="text-xs flex items-center gap-1">
-              <div className={classNames(complexConfig.icon, 'w-3 h-3')} />
+              <complexConfig.icon className="w-3 h-3" />
               {complexConfig.label}
             </Badge>
           </div>
@@ -154,7 +154,7 @@ export const PromptInfoCard = memo(({ prompt, selected = false, onSelect, classN
             <div className="grid grid-cols-1 gap-1">
               {prompt.features.slice(0, 4).map((feature, index) => (
                 <div key={index} className="flex items-center gap-2 text-xs text-bolt-elements-textSecondary">
-                  <div className="i-ph:check w-3 h-3 text-green-500 flex-shrink-0" />
+                  <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
                   <span className="truncate">{feature}</span>
                 </div>
               ))}

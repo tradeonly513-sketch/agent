@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import type { DeployAlert } from '~/types/actions';
+import { CheckCircle, AlertTriangle, Info, Check, X, ExternalLink, MessageCircle } from 'lucide-react';
 
 interface DeployAlertProps {
   alert: DeployAlert;
@@ -31,16 +32,9 @@ export default function DeployChatAlert({ alert, clearAlert, postMessage }: Depl
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div
-              className={classNames(
-                'text-xl',
-                type === 'success'
-                  ? 'i-ph:check-circle-duotone text-bolt-elements-icon-success'
-                  : type === 'error'
-                    ? 'i-ph:warning-duotone text-bolt-elements-button-danger-text'
-                    : 'i-ph:info-duotone text-bolt-elements-loader-progress',
-              )}
-            ></div>
+            <div className="text-xl">
+              {type === 'success' ? <CheckCircle /> : type === 'error' ? <AlertTriangle /> : <Info />}
+            </div>
           </motion.div>
           {/* Content */}
           <div className="ml-3 flex-1">
@@ -79,13 +73,13 @@ export default function DeployChatAlert({ alert, clearAlert, postMessage }: Depl
                         )}
                       >
                         {buildStatus === 'running' ? (
-                          <div className="i-svg-spinners:90-ring-with-bg text-white text-xs"></div>
+                          <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-textPrimary text-xs"></div>
                         ) : buildStatus === 'complete' ? (
-                          <div className="i-ph:check text-white text-xs"></div>
+                          <Check className="text-bolt-elements-textPrimary text-xs" />
                         ) : buildStatus === 'failed' ? (
-                          <div className="i-ph:x text-white text-xs"></div>
+                          <X className="text-bolt-elements-textPrimary text-xs" />
                         ) : (
-                          <span className="text-white text-xs">1</span>
+                          <span className="text-bolt-elements-textPrimary text-xs">1</span>
                         )}
                       </div>
                       <span className="ml-2">Build</span>
@@ -114,13 +108,13 @@ export default function DeployChatAlert({ alert, clearAlert, postMessage }: Depl
                         )}
                       >
                         {deployStatus === 'running' ? (
-                          <div className="i-svg-spinners:90-ring-with-bg text-white text-xs"></div>
+                          <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-textPrimary text-xs"></div>
                         ) : deployStatus === 'complete' ? (
-                          <div className="i-ph:check text-white text-xs"></div>
+                          <Check className="text-bolt-elements-textPrimary text-xs" />
                         ) : deployStatus === 'failed' ? (
-                          <div className="i-ph:x text-white text-xs"></div>
+                          <X className="text-bolt-elements-textPrimary text-xs" />
                         ) : (
-                          <span className="text-white text-xs">2</span>
+                          <span className="text-bolt-elements-textPrimary text-xs">2</span>
                         )}
                       </div>
                       <span className="ml-2">Deploy</span>
@@ -143,7 +137,7 @@ export default function DeployChatAlert({ alert, clearAlert, postMessage }: Depl
                     className="text-bolt-elements-item-contentAccent hover:underline flex items-center"
                   >
                     <span className="mr-1">View deployed site</span>
-                    <div className="i-ph:arrow-square-out"></div>
+                    <ExternalLink />
                   </a>
                 </div>
               )}
@@ -171,7 +165,7 @@ export default function DeployChatAlert({ alert, clearAlert, postMessage }: Depl
                       'flex items-center gap-1.5',
                     )}
                   >
-                    <div className="i-ph:chat-circle-duotone"></div>
+                    <MessageCircle />
                     Ask Bolt
                   </button>
                 )}

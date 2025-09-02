@@ -194,6 +194,85 @@ export const MODEL_CAPABILITY_DATABASE: Record<string, ModelCapabilityEntry> = {
     lastVerified: '2025-01-01',
   },
 
+  // XAI MODELS (GROK)
+  'grok-code-fast-1': {
+    name: 'grok-code-fast-1',
+    provider: 'xAI',
+    maxInputTokens: 256000,
+    maxOutputTokens: 4096,
+    contextWindow: 256000,
+    supportsSystemPrompt: true,
+    supportsTools: true,
+    isReasoning: false,
+    notes: 'Specialized coding model, 4x faster, optimized for agentic tasks',
+    lastVerified: '2025-01-01',
+  },
+
+  'grok-4': {
+    name: 'grok-4',
+    provider: 'xAI',
+    maxInputTokens: 256000,
+    maxOutputTokens: 8192,
+    contextWindow: 256000,
+    supportsSystemPrompt: true,
+    supportsTools: true,
+    isReasoning: false,
+    notes: 'Latest Grok model, high capability',
+    lastVerified: '2025-01-01',
+  },
+
+  'grok-4-0709': {
+    name: 'grok-4-0709',
+    provider: 'xAI',
+    maxInputTokens: 256000,
+    maxOutputTokens: 8192,
+    contextWindow: 256000,
+    supportsSystemPrompt: true,
+    supportsTools: true,
+    isReasoning: false,
+    notes: 'Grok 4 variant from July 2024',
+    lastVerified: '2025-01-01',
+  },
+
+  'grok-3': {
+    name: 'grok-3',
+    provider: 'xAI',
+    maxInputTokens: 131072,
+    maxOutputTokens: 4096,
+    contextWindow: 131072,
+    supportsSystemPrompt: true,
+    supportsTools: true,
+    isReasoning: false,
+    notes: 'Stable Grok 3 model',
+    lastVerified: '2025-01-01',
+  },
+
+  'grok-3-mini': {
+    name: 'grok-3-mini',
+    provider: 'xAI',
+    maxInputTokens: 131072,
+    maxOutputTokens: 4096,
+    contextWindow: 131072,
+    supportsSystemPrompt: true,
+    supportsTools: true,
+    isReasoning: false,
+    notes: 'Faster, cost-effective Grok 3 variant',
+    lastVerified: '2025-01-01',
+  },
+
+  'grok-2-image-1212': {
+    name: 'grok-2-image-1212',
+    provider: 'xAI',
+    maxInputTokens: 32000,
+    maxOutputTokens: 2048,
+    contextWindow: 32000,
+    supportsSystemPrompt: true,
+    supportsTools: true,
+    isReasoning: false,
+    notes: 'Image generation model',
+    lastVerified: '2025-01-01',
+  },
+
   // COMMON OPEN SOURCE MODELS (via multiple providers)
   'llama-3.1-405b': {
     name: 'llama-3.1-405b',
@@ -326,5 +405,6 @@ export function getProviderModelPatterns(): Record<string, string[]> {
     Meta: ['llama-3', 'llama-3.1', 'llama-3.2'],
     Mistral: ['mixtral', 'mistral-7b', 'mistral-nemo'],
     Alibaba: ['qwen', 'qwen2', 'qwen2.5'],
+    xAI: ['grok-2', 'grok-3', 'grok-4', 'grok-code'],
   };
 }

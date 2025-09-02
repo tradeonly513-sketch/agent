@@ -3,6 +3,7 @@ import { TooltipProvider } from '@radix-ui/react-tooltip';
 import WithTooltip from '~/components/ui/Tooltip';
 import { useEditChatDescription } from '~/lib/hooks';
 import { description as descriptionStore } from '~/lib/persistence';
+import { CheckCircle, Edit } from 'lucide-react';
 
 export function ChatDescription() {
   const initialDescription = useStore(descriptionStore)!;
@@ -37,9 +38,11 @@ export function ChatDescription() {
               <div className="flex justify-between items-center p-2 rounded-md bg-bolt-elements-item-backgroundAccent">
                 <button
                   type="submit"
-                  className="i-ph:check-bold scale-110 hover:text-bolt-elements-item-contentAccent"
+                  className="scale-110 hover:text-bolt-elements-item-contentAccent"
                   onMouseDown={handleSubmit}
-                />
+                >
+                  <CheckCircle />
+                </button>
               </div>
             </WithTooltip>
           </TooltipProvider>
@@ -51,12 +54,14 @@ export function ChatDescription() {
             <WithTooltip tooltip="Rename chat">
               <button
                 type="button"
-                className="ml-2 i-ph:pencil-fill scale-110 hover:text-bolt-elements-item-contentAccent"
+                className="ml-2 scale-110 hover:text-bolt-elements-item-contentAccent"
                 onClick={(event) => {
                   event.preventDefault();
                   toggleEditMode();
                 }}
-              />
+              >
+                <Edit />
+              </button>
             </WithTooltip>
           </TooltipProvider>
         </>

@@ -8,6 +8,7 @@ import { DeployButton } from '~/components/deploy/DeployButton';
 import { toast } from 'react-toastify';
 import { classNames } from '~/utils/classNames';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ChevronDown, Loader2, CloudDownload, Bug } from 'lucide-react';
 
 interface HeaderActionButtonsProps {
   chatStarted: boolean;
@@ -52,7 +53,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
               className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7"
             >
               {isSyncing ? 'Syncing...' : 'Sync'}
-              <span className={classNames('i-ph:caret-down transition-transform')} />
+              <ChevronDown className="transition-transform" />
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
               className={classNames(
@@ -74,7 +75,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
                 disabled={isSyncing}
               >
                 <div className="flex items-center gap-2">
-                  {isSyncing ? <div className="i-ph:spinner" /> : <div className="i-ph:cloud-arrow-down" />}
+                  {isSyncing ? <Loader2 className="animate-spin" /> : <CloudDownload />}
                   <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
                 </div>
               </DropdownMenu.Item>
@@ -96,7 +97,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
             className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.5"
             title="Report Bug"
           >
-            <div className="i-ph:bug" />
+            <Bug />
             <span>Report Bug</span>
           </button>
         </div>

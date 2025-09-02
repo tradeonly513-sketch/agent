@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { ImportFolderButton } from '~/components/chat/ImportFolderButton';
 import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
+import { Upload } from 'lucide-react';
 
 type ChatData = {
   messages?: Message[]; // Standard Bolt format
@@ -75,7 +76,7 @@ export function ImportButtons(importChat: ((description: string, messages: Messa
               'transition-all duration-200 ease-in-out',
             )}
           >
-            <span className="i-ph:upload-simple w-4 h-4" />
+            <Upload className="w-4 h-4" />
             Import Chat
           </Button>
           <ImportFolderButton

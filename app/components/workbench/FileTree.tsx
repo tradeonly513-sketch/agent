@@ -8,6 +8,17 @@ import { diffLines, type Change } from 'diff';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { toast } from 'react-toastify';
 import { path } from '~/utils/path';
+import {
+  FilePlus,
+  FolderPlus,
+  Lock,
+  Unlock,
+  Trash,
+  ChevronRight,
+  ChevronDown,
+  File as FileIcon,
+  Circle,
+} from 'lucide-react';
 
 const logger = createScopedLogger('FileTree');
 
@@ -259,7 +270,7 @@ function InlineInput({ depth, placeholder, initialValue = '', onSubmit, onCancel
       className="flex items-center w-full px-2 bg-bolt-elements-background-depth-4 border border-bolt-elements-item-contentAccent py-0.5 text-bolt-elements-textPrimary"
       style={{ paddingLeft: `${6 + depth * NODE_PADDING_LEFT}px` }}
     >
-      <div className="scale-120 shrink-0 i-ph:file-plus text-bolt-elements-textTertiary" />
+      <FilePlus className="scale-120 shrink-0 text-bolt-elements-textTertiary" />
       <input
         ref={inputRef}
         type="text"
@@ -506,13 +517,13 @@ function FileContextMenu({
             <ContextMenu.Group className="p-1 border-b-px border-solid border-bolt-elements-borderColor">
               <ContextMenuItem onSelect={() => setIsCreatingFile(true)}>
                 <div className="flex items-center gap-2">
-                  <div className="i-ph:file-plus" />
+                  <FilePlus />
                   New File
                 </div>
               </ContextMenuItem>
               <ContextMenuItem onSelect={() => setIsCreatingFolder(true)}>
                 <div className="flex items-center gap-2">
-                  <div className="i-ph:folder-plus" />
+                  <FolderPlus />
                   New Folder
                 </div>
               </ContextMenuItem>
@@ -527,13 +538,13 @@ function FileContextMenu({
                 <>
                   <ContextMenuItem onSelect={handleLockFile}>
                     <div className="flex items-center gap-2">
-                      <div className="i-ph:lock-simple" />
+                      <Lock />
                       Lock File
                     </div>
                   </ContextMenuItem>
                   <ContextMenuItem onSelect={handleUnlockFile}>
                     <div className="flex items-center gap-2">
-                      <div className="i-ph:lock-key-open" />
+                      <Unlock />
                       Unlock File
                     </div>
                   </ContextMenuItem>
@@ -542,13 +553,13 @@ function FileContextMenu({
                 <>
                   <ContextMenuItem onSelect={handleLockFolder}>
                     <div className="flex items-center gap-2">
-                      <div className="i-ph:lock-simple" />
+                      <Lock />
                       Lock Folder
                     </div>
                   </ContextMenuItem>
                   <ContextMenuItem onSelect={handleUnlockFolder}>
                     <div className="flex items-center gap-2">
-                      <div className="i-ph:lock-key-open" />
+                      <Unlock />
                       Unlock Folder
                     </div>
                   </ContextMenuItem>
@@ -559,7 +570,7 @@ function FileContextMenu({
             <ContextMenu.Group className="p-1 border-t-px border-solid border-bolt-elements-borderColor">
               <ContextMenuItem onSelect={handleDelete}>
                 <div className="flex items-center gap-2 text-red-500">
-                  <div className="i-ph:trash" />
+                  <Trash />
                   Delete {isFolder ? 'Folder' : 'File'}
                 </div>
               </ContextMenuItem>
@@ -600,19 +611,16 @@ function Folder({ folder, collapsed, selected = false, onCopyPath, onCopyRelativ
           'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent': selected,
         })}
         depth={folder.depth}
-        iconClasses={classNames({
-          'i-ph:caret-right scale-98': collapsed,
-          'i-ph:caret-down scale-98': !collapsed,
-        })}
+        iconClasses=""
         onClick={onClick}
       >
         <div className="flex items-center w-full">
+          {collapsed ? <ChevronRight className="scale-98 shrink-0" /> : <ChevronDown className="scale-98 shrink-0" />}
           <div className="flex-1 truncate pr-2">{folder.name}</div>
           {isLocked && (
-            <span
-              className={classNames('shrink-0', 'i-ph:lock-simple scale-80 text-red-500')}
-              title={'Folder is locked'}
-            />
+            <span title="Folder is locked">
+              <Lock className="shrink-0 scale-80 text-red-500" />
+            </span>
           )}
         </div>
       </NodeButton>
@@ -692,9 +700,7 @@ function File({
           'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent': selected,
         })}
         depth={depth}
-        iconClasses={classNames('i-ph:file-duotone scale-98', {
-          'group-hover:text-bolt-elements-item-contentActive': !selected,
-        })}
+        iconClasses=""
         onClick={onClick}
       >
         <div
@@ -702,6 +708,7 @@ function File({
             'group-hover:text-bolt-elements-item-contentActive': !selected,
           })}
         >
+          <FileIcon className="scale-98 shrink-0" />
           <div className="flex-1 truncate pr-2">{name}</div>
           <div className="flex items-center gap-1">
             {showStats && (
@@ -711,12 +718,11 @@ function File({
               </div>
             )}
             {locked && (
-              <span
-                className={classNames('shrink-0', 'i-ph:lock-simple scale-80 text-red-500')}
-                title={'File is locked'}
-              />
+              <span title="File is locked">
+                <Lock className="shrink-0 scale-80 text-red-500" />
+              </span>
             )}
-            {unsavedChanges && <span className="i-ph:circle-fill scale-68 shrink-0 text-orange-500" />}
+            {unsavedChanges && <Circle className="scale-68 shrink-0 text-orange-500" />}
           </div>
         </div>
       </NodeButton>

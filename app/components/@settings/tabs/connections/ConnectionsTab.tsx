@@ -4,6 +4,7 @@ import { classNames } from '~/utils/classNames';
 import ConnectionDiagnostics from './ConnectionDiagnostics';
 import { Button } from '~/components/ui/Button';
 import VercelConnection from './VercelConnection';
+import { Loader2, Plug, EyeOff, Wrench, Info, ChevronDown, Lightbulb } from 'lucide-react';
 
 // Use React.lazy for dynamic imports
 const GitHubConnection = React.lazy(() => import('./GithubConnection'));
@@ -13,7 +14,7 @@ const NetlifyConnection = React.lazy(() => import('./NetlifyConnection'));
 const LoadingFallback = () => (
   <div className="p-4 bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor">
     <div className="flex items-center justify-center gap-2 text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary">
-      <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
+      <Loader2 className="w-4 h-4 animate-spin" />
       <span>Loading connection...</span>
     </div>
   </div>
@@ -33,7 +34,7 @@ export default function ConnectionsTab() {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2">
-          <div className="i-ph:plugs-connected w-5 h-5 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
+          <Plug className="w-5 h-5 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
           <h2 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
             Connection Settings
           </h2>
@@ -45,12 +46,12 @@ export default function ConnectionsTab() {
         >
           {showDiagnostics ? (
             <>
-              <div className="i-ph:eye-slash w-4 h-4" />
+              <EyeOff className="w-4 h-4" />
               Hide Diagnostics
             </>
           ) : (
             <>
-              <div className="i-ph:wrench w-4 h-4" />
+              <Wrench className="w-4 h-4" />
               Troubleshoot Connections
             </>
           )}
@@ -81,14 +82,14 @@ export default function ConnectionsTab() {
             )}
           >
             <div className="flex items-center gap-2">
-              <div className="i-ph:info w-5 h-5 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
+              <Info className="w-5 h-5 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
               <h3 className="text-base font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
                 Environment Variables
               </h3>
             </div>
-            <div
+            <ChevronDown
               className={classNames(
-                'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary transition-transform',
+                'w-4 h-4 text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary transition-transform',
                 isEnvVarsExpanded ? 'rotate-180' : '',
               )}
             />
@@ -164,7 +165,7 @@ export default function ConnectionsTab() {
       {/* Additional help text */}
       <div className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-2 p-4 rounded-lg">
         <p className="flex items-center gap-1 mb-2">
-          <span className="i-ph:lightbulb w-4 h-4 text-bolt-elements-icon-success dark:text-bolt-elements-icon-success" />
+          <Lightbulb className="w-4 h-4 text-bolt-elements-icon-success dark:text-bolt-elements-icon-success" />
           <span className="font-medium">Troubleshooting Tip:</span>
         </p>
         <p className="mb-2">

@@ -20,6 +20,68 @@ export default class XAIProvider extends BaseProvider {
     { name: 'grok-3-mini-fast-beta', label: 'xAI Grok 3 Mini Fast Beta', provider: 'xAI', maxTokenAllowed: 131000 },
   ];
 
+  async getDynamicModels(
+    apiKeys?: Record<string, string>,
+    settings?: IProviderSetting,
+    serverEnv?: Record<string, string>,
+  ): Promise<ModelInfo[]> {
+    const { apiKey } = this.getProviderBaseUrlAndKey({
+      apiKeys,
+      providerSettings: settings,
+      serverEnv: serverEnv as any,
+      defaultBaseUrlKey: '',
+      defaultApiTokenKey: 'XAI_API_KEY',
+    });
+
+    if (!apiKey) {
+      throw `Missing Api Key configuration for ${this.name} provider`;
+    }
+
+    const response = await fetch(`https://api.x.ai/v1/models`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const res = (await response.json()) as any;
+    const staticModelIds = this.staticModels.map((m) => m.name);
+
+    const data = res.data.filter(
+      (model: any) =>
+        model.object === 'model' &&
+        (model.id.startsWith('grok-') || model.id.includes('grok')) &&
+        !staticModelIds.includes(model.id),
+    );
+
+    return data.map((m: any) => {
+      // Set context windows based on model type
+      let contextWindow = 131072; // Default for Grok 3 models
+      let maxCompletionTokens = 4096; // Default output tokens
+
+      if (m.id.includes('grok-4')) {
+        contextWindow = 256000;
+        maxCompletionTokens = 8192;
+      } else if (m.id.includes('grok-code-fast-1')) {
+        contextWindow = 256000;
+        maxCompletionTokens = 4096;
+      } else if (m.id.includes('grok-3')) {
+        contextWindow = 131072;
+        maxCompletionTokens = 4096;
+      } else if (m.id.includes('grok-2-image')) {
+        contextWindow = 32000;
+        maxCompletionTokens = 2048;
+      }
+
+      return {
+        name: m.id,
+        label: `xAI ${m.id.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}`,
+        provider: this.name,
+        maxTokenAllowed: contextWindow,
+        maxCompletionTokens,
+      };
+    });
+  }
+
   getModelInstance(options: {
     model: string;
     serverEnv: Env;

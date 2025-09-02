@@ -8,6 +8,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { Terminal, type TerminalRef } from './Terminal';
 import { TerminalManager } from './TerminalManager';
+import { Terminal as TerminalIcon, X, Plus, RefreshCw, ChevronDown } from 'lucide-react';
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('Terminal');
@@ -152,7 +153,7 @@ export const TerminalTabs = memo(() => {
                       )}
                       onClick={() => setActiveTerminal(index)}
                     >
-                      <div className="i-ph:terminal-window-duotone text-lg" />
+                      <TerminalIcon className="text-lg" />
                       Bolt Terminal
                     </button>
                   ) : (
@@ -169,7 +170,7 @@ export const TerminalTabs = memo(() => {
                         )}
                         onClick={() => setActiveTerminal(index)}
                       >
-                        <div className="i-ph:terminal-window-duotone text-lg" />
+                        <TerminalIcon className="text-lg" />
                         Terminal {terminalCount > 1 && index}
                         <button
                           className="bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary hover:bg-transparent rounded"
@@ -178,7 +179,7 @@ export const TerminalTabs = memo(() => {
                             closeTerminal(index);
                           }}
                         >
-                          <div className="i-ph:x text-xs" />
+                          <X className="text-xs" />
                         </button>
                       </button>
                     </React.Fragment>
@@ -186,9 +187,9 @@ export const TerminalTabs = memo(() => {
                 </React.Fragment>
               );
             })}
-            {terminalCount < MAX_TERMINALS && <IconButton icon="i-ph:plus" size="md" onClick={addTerminal} />}
+            {terminalCount < MAX_TERMINALS && <IconButton icon={Plus} size="md" onClick={addTerminal} />}
             <IconButton
-              icon="i-ph:arrow-clockwise"
+              icon={RefreshCw}
               title="Reset Terminal"
               size="md"
               onClick={() => {
@@ -209,7 +210,7 @@ export const TerminalTabs = memo(() => {
             />
             <IconButton
               className="ml-auto"
-              icon="i-ph:caret-down"
+              icon={ChevronDown}
               title="Close"
               size="md"
               onClick={() => workbenchStore.toggleTerminal(false)}

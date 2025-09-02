@@ -10,6 +10,7 @@ import { diffFiles, extractRelativePath } from '~/utils/diff';
 import type { FileHistory } from '~/types/actions';
 import { getLanguageFromExtension } from '~/utils/getLanguageFromExtension';
 import { themeStore } from '~/lib/stores/theme';
+import { Minimize2, Maximize2, FileX, AlertCircle, FileText, File, AlertCircle as AlertCircleIcon } from 'lucide-react';
 
 interface CodeComparisonProps {
   beforeCode: string;
@@ -42,7 +43,7 @@ const FullscreenButton = memo(({ onClick, isFullscreen }: FullscreenButtonProps)
     className="ml-4 p-1 rounded hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary transition-colors"
     title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
   >
-    <div className={isFullscreen ? 'i-ph:corners-in' : 'i-ph:corners-out'} />
+    {isFullscreen ? <Minimize2 /> : <Maximize2 />}
   </button>
 ));
 
@@ -333,7 +334,11 @@ const changeColorStyles = {
 const renderContentWarning = (type: 'binary' | 'error') => (
   <div className="h-full flex items-center justify-center p-4">
     <div className="text-center text-bolt-elements-textTertiary">
-      <div className={`i-ph:${type === 'binary' ? 'file-x' : 'warning-circle'} text-4xl text-red-400 mb-2 mx-auto`} />
+      {type === 'binary' ? (
+        <FileX className="text-4xl text-red-400 mb-2 mx-auto" />
+      ) : (
+        <AlertCircle className="text-4xl text-red-400 mb-2 mx-auto" />
+      )}
       <p className="font-medium text-bolt-elements-textPrimary">
         {type === 'binary' ? 'Binary file detected' : 'Error processing file'}
       </p>
@@ -358,7 +363,7 @@ const NoChangesView = memo(
   }) => (
     <div className="h-full flex flex-col items-center justify-center p-4">
       <div className="text-center text-bolt-elements-textTertiary">
-        <div className="i-ph:files text-4xl text-green-400 mb-2 mx-auto" />
+        <FileText className="text-4xl text-green-400 mb-2 mx-auto" />
         <p className="font-medium text-bolt-elements-textPrimary">Files are identical</p>
         <p className="text-sm mt-1">Both versions match exactly</p>
       </div>
@@ -372,6 +377,7 @@ const NoChangesView = memo(
               <div className={lineNumberStyles}>{index + 1}</div>
               <div className={lineContentStyles}>
                 <span className="mr-2"> </span>
+                {/* SECURITY: Syntax highlighting HTML should be sanitized by the highlighter library */}
                 <span
                   dangerouslySetInnerHTML={{
                     __html: highlighter
@@ -517,7 +523,7 @@ const FileInfo = memo(
 
     return (
       <div className="flex items-center bg-bolt-elements-background-depth-1 p-2 text-sm text-bolt-elements-textPrimary shrink-0">
-        <div className="i-ph:file mr-2 h-4 w-4 shrink-0" />
+        <File className="mr-2 h-4 w-4 shrink-0" />
         <span className="truncate">{filename}</span>
         <span className="ml-auto shrink-0 flex items-center gap-2">
           {hasChanges ? (
@@ -788,7 +794,7 @@ export const DiffView = memo(({ fileHistory, setFileHistory }: DiffViewProps) =>
     return (
       <div className="flex w-full h-full justify-center items-center bg-bolt-elements-background-depth-1 text-red-400">
         <div className="text-center">
-          <div className="i-ph:warning-circle text-4xl mb-2" />
+          <AlertCircleIcon className="text-4xl mb-2" />
           <p>Failed to render diff view</p>
         </div>
       </div>

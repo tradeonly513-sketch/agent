@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
+import { ChevronDown, Code, MessageCircle } from 'lucide-react';
 
 export const ExportChatButton = ({ exportChat }: { exportChat?: () => void }) => {
   return (
@@ -8,7 +9,7 @@ export const ExportChatButton = ({ exportChat }: { exportChat?: () => void }) =>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7">
           Export
-          <span className={classNames('i-ph:caret-down transition-transform')} />
+          <ChevronDown className="transition-transform" />
         </DropdownMenu.Trigger>
         <DropdownMenu.Content
           className={classNames(
@@ -30,7 +31,7 @@ export const ExportChatButton = ({ exportChat }: { exportChat?: () => void }) =>
               workbenchStore.downloadZip();
             }}
           >
-            <div className="i-ph:code size-4.5"></div>
+            <Code className="size-4.5" />
             <span>Download Code</span>
           </DropdownMenu.Item>
           <DropdownMenu.Item
@@ -39,7 +40,7 @@ export const ExportChatButton = ({ exportChat }: { exportChat?: () => void }) =>
             )}
             onClick={() => exportChat?.()}
           >
-            <div className="i-ph:chat size-4.5"></div>
+            <MessageCircle className="size-4.5" />
             <span>Export Chat</span>
           </DropdownMenu.Item>
         </DropdownMenu.Content>

@@ -13,6 +13,22 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { extractRelativePath } from '~/utils/diff';
 import { formatSize } from '~/utils/formatSize';
 import type { FileMap, File } from '~/lib/stores/files';
+import {
+  CheckCircle,
+  X,
+  Github,
+  Copy,
+  Files,
+  Settings,
+  GitBranch,
+  Search,
+  Lock,
+  Code,
+  Star,
+  GitFork,
+  Clock,
+  Loader2,
+} from 'lucide-react';
 
 // UI Components
 import { Badge, EmptyState, StatusIndicator, SearchInput } from '~/components/ui';
@@ -288,7 +304,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500">
-                        <div className="i-ph:check-circle w-5 h-5" />
+                        <CheckCircle className="w-5 h-5" />
                       </div>
                       <div>
                         <h3 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
@@ -307,7 +323,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                         onClick={handleClose}
                         className="p-2 rounded-lg transition-all duration-200 ease-in-out bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary dark:text-bolt-elements-textTertiary-dark dark:hover:text-bolt-elements-textPrimary-dark hover:bg-bolt-elements-background-depth-2 dark:hover:bg-bolt-elements-background-depth-3 focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColor dark:focus:ring-bolt-elements-borderColor-dark"
                       >
-                        <span className="i-ph:x block w-5 h-5" aria-hidden="true" />
+                        <X className="block w-5 h-5" aria-hidden="true" />
                         <span className="sr-only">Close dialog</span>
                       </button>
                     </Dialog.Close>
@@ -315,7 +331,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
 
                   <div className="bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 rounded-lg p-4 text-left border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
                     <p className="text-sm font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark mb-2 flex items-center gap-2">
-                      <span className="i-ph:github-logo w-4 h-4 text-purple-500" />
+                      <Github className="w-4 h-4 text-purple-500" />
                       Repository URL
                     </p>
                     <div className="flex items-center gap-2">
@@ -331,14 +347,14 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <div className="i-ph:copy w-4 h-4" />
+                        <Copy className="w-4 h-4" />
                       </motion.button>
                     </div>
                   </div>
 
                   <div className="bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-3 rounded-lg p-4 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark">
                     <p className="text-sm font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark mb-2 flex items-center gap-2">
-                      <span className="i-ph:files w-4 h-4 text-purple-500" />
+                      <Files className="w-4 h-4 text-purple-500" />
                       Pushed Files ({pushedFiles.length})
                     </p>
                     <div className="max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
@@ -365,7 +381,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="i-ph:github-logo w-4 h-4" />
+                      <Github className="w-4 h-4" />
                       View Repository
                     </motion.a>
                     <motion.button
@@ -377,7 +393,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="i-ph:copy w-4 h-4" />
+                      <Copy className="w-4 h-4" />
                       Copy URL
                     </motion.button>
                     <motion.button
@@ -421,7 +437,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       onClick={handleClose}
                       className="absolute right-0 top-0 p-2 rounded-lg transition-all duration-200 ease-in-out bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary dark:text-bolt-elements-textTertiary-dark dark:hover:text-bolt-elements-textPrimary-dark hover:bg-bolt-elements-background-depth-2 dark:hover:bg-bolt-elements-background-depth-3 focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColor dark:focus:ring-bolt-elements-borderColor-dark"
                     >
-                      <span className="i-ph:x block w-5 h-5" aria-hidden="true" />
+                      <X className="block w-5 h-5" aria-hidden="true" />
                       <span className="sr-only">Close dialog</span>
                     </button>
                   </Dialog.Close>
@@ -431,7 +447,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     transition={{ delay: 0.1 }}
                     className="mx-auto w-16 h-16 rounded-xl bg-bolt-elements-background-depth-3 flex items-center justify-center text-purple-500"
                   >
-                    <div className="i-ph:github-logo w-8 h-8" />
+                    <Github className="w-8 h-8" />
                   </motion.div>
                   <h3 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
                     GitHub Connection Required
@@ -458,7 +474,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="i-ph:gear" />
+                      <Settings />
                       Go to Settings
                     </motion.a>
                   </div>
@@ -495,7 +511,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     transition={{ delay: 0.1 }}
                     className="w-10 h-10 rounded-xl bg-bolt-elements-background-depth-3 flex items-center justify-center text-purple-500"
                   >
-                    <div className="i-ph:github-logo w-5 h-5" />
+                    <Github className="w-5 h-5" />
                   </motion.div>
                   <div>
                     <Dialog.Title className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
@@ -513,7 +529,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       onClick={handleClose}
                       className="ml-auto p-2 rounded-lg transition-all duration-200 ease-in-out bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary dark:text-bolt-elements-textTertiary-dark dark:hover:text-bolt-elements-textPrimary-dark hover:bg-bolt-elements-background-depth-2 dark:hover:bg-bolt-elements-background-depth-3 focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColor dark:focus:ring-bolt-elements-borderColor-dark"
                     >
-                      <span className="i-ph:x block w-5 h-5" aria-hidden="true" />
+                      <X className="block w-5 h-5" aria-hidden="true" />
                       <span className="sr-only">Close dialog</span>
                     </button>
                   </Dialog.Close>
@@ -523,7 +539,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                   <div className="relative">
                     <img src={user.avatar_url} alt={user.login} className="w-10 h-10 rounded-full" />
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                      <div className="i-ph:github-logo w-3 h-3" />
+                      <Github className="w-3 h-3" />
                     </div>
                   </div>
                   <div>
@@ -546,7 +562,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     </label>
                     <div className="relative">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark">
-                        <span className="i-ph:git-branch w-4 h-4" />
+                        <GitBranch className="w-4 h-4" />
                       </div>
                       <input
                         id="repoName"
@@ -582,7 +598,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
 
                     {recentRepos.length === 0 && !isFetchingRepos ? (
                       <EmptyState
-                        icon="i-ph:github-logo"
+                        icon={Github}
                         title="No repositories found"
                         description="We couldn't find any repositories in your GitHub account."
                         variant="compact"
@@ -591,7 +607,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                       <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                         {filteredRepos.length === 0 && repoSearchQuery.trim() !== '' ? (
                           <EmptyState
-                            icon="i-ph:magnifying-glass"
+                            icon={Search}
                             title="No matching repositories"
                             description="Try a different search term"
                             variant="compact"
@@ -608,13 +624,13 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <div className="i-ph:git-branch w-4 h-4 text-purple-500" />
+                                  <GitBranch className="w-4 h-4 text-purple-500" />
                                   <span className="text-sm font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark group-hover:text-purple-500">
                                     {repo.name}
                                   </span>
                                 </div>
                                 {repo.private && (
-                                  <Badge variant="primary" size="sm" icon="i-ph:lock w-3 h-3">
+                                  <Badge variant="primary" size="sm" icon={Lock}>
                                     Private
                                   </Badge>
                                 )}
@@ -626,17 +642,17 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                               )}
                               <div className="mt-2 flex items-center gap-2 flex-wrap">
                                 {repo.language && (
-                                  <Badge variant="subtle" size="sm" icon="i-ph:code w-3 h-3">
+                                  <Badge variant="subtle" size="sm" icon={Code}>
                                     {repo.language}
                                   </Badge>
                                 )}
-                                <Badge variant="subtle" size="sm" icon="i-ph:star w-3 h-3">
+                                <Badge variant="subtle" size="sm" icon={Star}>
                                   {repo.stargazers_count.toLocaleString()}
                                 </Badge>
-                                <Badge variant="subtle" size="sm" icon="i-ph:git-fork w-3 h-3">
+                                <Badge variant="subtle" size="sm" icon={GitFork}>
                                   {repo.forks_count.toLocaleString()}
                                 </Badge>
-                                <Badge variant="subtle" size="sm" icon="i-ph:clock w-3 h-3">
+                                <Badge variant="subtle" size="sm" icon={Clock}>
                                   {new Date(repo.updated_at).toLocaleDateString()}
                                 </Badge>
                               </div>
@@ -695,12 +711,12 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                     >
                       {isLoading ? (
                         <>
-                          <div className="i-ph:spinner-gap animate-spin w-4 h-4" />
+                          <Loader2 className="animate-spin w-4 h-4" />
                           Pushing...
                         </>
                       ) : (
                         <>
-                          <div className="i-ph:github-logo w-4 h-4" />
+                          <Github className="w-4 h-4" />
                           Push to GitHub
                         </>
                       )}

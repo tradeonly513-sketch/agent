@@ -8,11 +8,28 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Dialog, DialogRoot, DialogTitle } from '~/components/ui/Dialog';
 import { jsPDF } from 'jspdf';
 import { toast } from 'react-toastify';
+import {
+  Funnel,
+  Bot,
+  Cloud,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  Bug,
+  FileCode,
+  FileText,
+  File,
+  Download,
+  ChevronDown,
+  RefreshCw,
+  Search,
+  Clipboard,
+} from 'lucide-react';
 
 interface SelectOption {
   value: string;
   label: string;
-  icon?: string;
+  icon?: string | React.ComponentType<{ className?: string }>;
   color?: string;
 }
 
@@ -20,43 +37,43 @@ const logLevelOptions: SelectOption[] = [
   {
     value: 'all',
     label: 'All Types',
-    icon: 'i-ph:funnel',
+    icon: Funnel,
     color: '#9333ea',
   },
   {
     value: 'provider',
     label: 'LLM',
-    icon: 'i-ph:robot',
+    icon: Bot,
     color: '#10b981',
   },
   {
     value: 'api',
     label: 'API',
-    icon: 'i-ph:cloud',
+    icon: Cloud,
     color: '#3b82f6',
   },
   {
     value: 'error',
     label: 'Errors',
-    icon: 'i-ph:warning-circle',
+    icon: AlertCircle,
     color: '#ef4444',
   },
   {
     value: 'warning',
     label: 'Warnings',
-    icon: 'i-ph:warning',
+    icon: AlertTriangle,
     color: '#f59e0b',
   },
   {
     value: 'info',
     label: 'Info',
-    icon: 'i-ph:info',
+    icon: Info,
     color: '#3b82f6',
   },
   {
     value: 'debug',
     label: 'Debug',
-    icon: 'i-ph:bug',
+    icon: Bug,
     color: '#6b7280',
   },
 ];
@@ -83,7 +100,7 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
   const style = useMemo(() => {
     if (log.category === 'provider') {
       return {
-        icon: 'i-ph:robot',
+        icon: Bot,
         color: 'text-emerald-500 dark:text-emerald-400',
         bg: 'hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20',
         badge: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10',
@@ -92,7 +109,7 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
 
     if (log.category === 'api') {
       return {
-        icon: 'i-ph:cloud',
+        icon: Cloud,
         color: 'text-blue-500 dark:text-blue-400',
         bg: 'hover:bg-blue-500/10 dark:hover:bg-blue-500/20',
         badge: 'text-blue-500 bg-blue-50 dark:bg-blue-500/10',
@@ -102,28 +119,28 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
     switch (log.level) {
       case 'error':
         return {
-          icon: 'i-ph:warning-circle',
+          icon: AlertCircle,
           color: 'text-red-500 dark:text-red-400',
           bg: 'hover:bg-red-500/10 dark:hover:bg-red-500/20',
           badge: 'text-red-500 bg-red-50 dark:bg-red-500/10',
         };
       case 'warning':
         return {
-          icon: 'i-ph:warning',
+          icon: AlertTriangle,
           color: 'text-yellow-500 dark:text-yellow-400',
           bg: 'hover:bg-yellow-500/10 dark:hover:bg-yellow-500/20',
           badge: 'text-yellow-500 bg-yellow-50 dark:bg-yellow-500/10',
         };
       case 'debug':
         return {
-          icon: 'i-ph:bug',
+          icon: Bug,
           color: 'text-gray-500 dark:text-gray-400',
           bg: 'hover:bg-gray-500/10 dark:hover:bg-gray-500/20',
           badge: 'text-gray-500 bg-gray-50 dark:bg-gray-500/10',
         };
       default:
         return {
-          icon: 'i-ph:info',
+          icon: Info,
           color: 'text-blue-500 dark:text-blue-400',
           bg: 'hover:bg-blue-500/10 dark:hover:bg-blue-500/20',
           badge: 'text-blue-500 bg-blue-50 dark:bg-blue-500/10',
@@ -223,7 +240,7 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className={classNames('text-lg', style.icon, style.color)} />
+          <style.icon className={classNames('text-lg', style.color)} />
           <div className="flex flex-col gap-1">
             <div className="text-sm font-medium text-gray-900 dark:text-white">{log.message}</div>
             {log.details && (
@@ -258,7 +275,7 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
 interface ExportFormat {
   id: string;
   label: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   handler: () => void;
 }
 
@@ -763,25 +780,25 @@ export function EventLogsTab() {
     {
       id: 'json',
       label: 'Export as JSON',
-      icon: 'i-ph:file-js',
+      icon: FileCode,
       handler: exportAsJSON,
     },
     {
       id: 'csv',
       label: 'Export as CSV',
-      icon: 'i-ph:file-csv',
+      icon: FileText,
       handler: exportAsCSV,
     },
     {
       id: 'pdf',
       label: 'Export as PDF',
-      icon: 'i-ph:file-pdf',
+      icon: File,
       handler: exportAsPDF,
     },
     {
       id: 'txt',
       label: 'Export as Text',
-      icon: 'i-ph:file-text',
+      icon: FileText,
       handler: exportAsText,
     },
   ];
@@ -812,14 +829,14 @@ export function EventLogsTab() {
             'transition-all duration-200',
           )}
         >
-          <span className="i-ph:download text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+          <Download className="text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
           Export
         </button>
 
         <Dialog showCloseButton>
           <div className="p-6">
             <DialogTitle className="flex items-center gap-2">
-              <div className="i-ph:download w-5 h-5" />
+              <Download className="w-5 h-5" />
               Export Event Logs
             </DialogTitle>
 
@@ -837,7 +854,7 @@ export function EventLogsTab() {
                     'text-bolt-elements-textPrimary',
                   )}
                 >
-                  <div className={classNames(format.icon, 'w-5 h-5')} />
+                  <format.icon className="w-5 h-5" />
                   <div>
                     <div className="font-medium">{format.label}</div>
                     <div className="text-xs text-bolt-elements-textSecondary mt-0.5">
@@ -872,12 +889,20 @@ export function EventLogsTab() {
                 'transition-all duration-200',
               )}
             >
-              <span
-                className={classNames('text-lg', selectedLevelOption?.icon || 'i-ph:funnel')}
-                style={{ color: selectedLevelOption?.color }}
-              />
+              {(() => {
+                const IconComponent = selectedLevelOption?.icon;
+                const iconColor = selectedLevelOption?.color;
+
+                return typeof IconComponent === 'string' ? (
+                  <span className={classNames('text-lg', IconComponent)} style={{ color: iconColor }} />
+                ) : IconComponent ? (
+                  <IconComponent className="text-lg" {...({ style: { color: iconColor } } as any)} />
+                ) : (
+                  <Funnel className="text-lg" />
+                );
+              })()}
               {selectedLevelOption?.label || 'All Types'}
-              <span className="i-ph:caret-down text-lg text-gray-500 dark:text-gray-400" />
+              <ChevronDown className="text-lg text-gray-500 dark:text-gray-400" />
             </button>
           </DropdownMenu.Trigger>
 
@@ -895,10 +920,19 @@ export function EventLogsTab() {
                   onClick={() => handleLevelFilterChange(option.value)}
                 >
                   <div className="mr-3 flex h-5 w-5 items-center justify-center">
-                    <div
-                      className={classNames(option.icon, 'text-lg group-hover:text-purple-500 transition-colors')}
-                      style={{ color: option.color }}
-                    />
+                    {typeof option.icon === 'string' ? (
+                      <div
+                        className={classNames(option.icon, 'text-lg group-hover:text-purple-500 transition-colors')}
+                        style={{ color: option.color }}
+                      />
+                    ) : (
+                      option.icon && (
+                        <option.icon
+                          className="text-lg group-hover:text-purple-500 transition-colors"
+                          {...({ style: { color: option.color } } as any)}
+                        />
+                      )
+                    )}
                   </div>
                   <span className="group-hover:text-purple-500 transition-colors">{option.label}</span>
                 </DropdownMenu.Item>
@@ -950,7 +984,7 @@ export function EventLogsTab() {
               { 'animate-spin': isRefreshing },
             )}
           >
-            <span className="i-ph:arrows-clockwise text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+            <RefreshCw className="text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
             Refresh
           </button>
 
@@ -975,7 +1009,7 @@ export function EventLogsTab() {
             )}
           />
           <div className="absolute left-3 top-1/2 -translate-y-1/2">
-            <div className="i-ph:magnifying-glass text-lg text-gray-500 dark:text-gray-400" />
+            <Search className="text-lg text-gray-500 dark:text-gray-400" />
           </div>
         </div>
 
@@ -990,7 +1024,7 @@ export function EventLogsTab() {
               'border border-[#E5E5E5] dark:border-[#1A1A1A]',
             )}
           >
-            <span className="i-ph:clipboard-text text-4xl text-gray-400 dark:text-gray-600" />
+            <Clipboard className="text-4xl text-gray-400 dark:text-gray-600" />
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">No Logs Found</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">Try adjusting your search or filters</p>

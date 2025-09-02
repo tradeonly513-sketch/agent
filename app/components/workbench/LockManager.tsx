@@ -3,6 +3,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { Checkbox } from '~/components/ui/Checkbox';
 import { toast } from '~/components/ui/use-toast';
+import { Search, Unlock, FileText, Folder } from 'lucide-react';
 
 interface LockedItem {
   path: string;
@@ -145,7 +146,7 @@ export function LockManager() {
       <div className="flex items-center gap-1 px-2 py-1 border-b border-bolt-elements-borderColor">
         {/* Search Input */}
         <div className="relative flex-1">
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary i-ph:magnifying-glass text-xs pointer-events-none" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary text-xs pointer-events-none" />
           <input
             type="text"
             placeholder="Search..."
@@ -195,7 +196,7 @@ export function LockManager() {
       <div className="flex-1 overflow-auto modern-scrollbar px-1 py-1">
         {filteredAndSortedItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-bolt-elements-textTertiary text-xs gap-2">
-            <span className="i-ph:lock-open-duotone text-lg opacity-50" />
+            <Unlock className="text-lg opacity-50" />
             <span>No locked items found</span>
           </div>
         ) : (
@@ -214,12 +215,11 @@ export function LockManager() {
                   className="w-3 h-3 rounded border-bolt-elements-borderColor"
                   aria-labelledby={`item-label-${item.path}`} // For accessibility
                 />
-                <span
-                  className={classNames(
-                    'shrink-0 text-bolt-elements-textTertiary text-xs',
-                    item.type === 'file' ? 'i-ph:file-text-duotone' : 'i-ph:folder-duotone',
-                  )}
-                />
+                {item.type === 'file' ? (
+                  <FileText className="shrink-0 text-bolt-elements-textTertiary text-xs" />
+                ) : (
+                  <Folder className="shrink-0 text-bolt-elements-textTertiary text-xs" />
+                )}
                 <span id={`item-label-${item.path}`} className="truncate flex-1 text-xs" title={item.path}>
                   {item.path.replace('/home/project/', '')}
                 </span>
@@ -243,7 +243,7 @@ export function LockManager() {
                   }}
                   title="Unlock"
                 >
-                  <span className="i-ph:lock-open text-xs" />
+                  <Unlock className="text-xs" />
                 </button>
               </li>
             ))}

@@ -4,6 +4,7 @@ import type { MCPConfig } from '~/lib/services/mcpService';
 import { toast } from 'react-toastify';
 import { useMCPStore } from '~/lib/stores/mcp';
 import McpServerList from '~/components/@settings/tabs/mcp/McpServerList';
+import { RotateCcw, ExternalLink, Save } from 'lucide-react';
 
 const EXAMPLE_MCP_CONFIG: MCPConfig = {
   mcpServers: {
@@ -141,7 +142,7 @@ export default function McpTab() {
             {isCheckingServers ? (
               <div className="i-svg-spinners:90-ring-with-bg w-3 h-3 text-bolt-elements-loader-progress animate-spin" />
             ) : (
-              <div className="i-ph:arrow-counter-clockwise w-3 h-3" />
+              <RotateCcw className="w-3 h-3" />
             )}
             Check availability
           </button>
@@ -201,7 +202,7 @@ export default function McpTab() {
               className="text-bolt-elements-link hover:underline inline-flex items-center gap-1"
             >
               View example servers
-              <div className="i-ph:arrow-square-out w-4 h-4" />
+              <ExternalLink className="w-4 h-4" />
             </a>
           </div>
         </div>
@@ -229,7 +230,7 @@ export default function McpTab() {
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
-            <div className="i-ph:floppy-disk w-4 h-4" />
+            <Save className="w-4 h-4" />
             {isSaving ? 'Saving...' : 'Save Configuration'}
           </button>
         </div>

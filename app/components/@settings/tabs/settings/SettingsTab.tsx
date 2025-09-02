@@ -5,6 +5,7 @@ import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
+import { Palette, Languages, Bell, Clock, Globe, Keyboard } from 'lucide-react';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -69,13 +70,13 @@ export default function SettingsTab() {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:palette-fill w-4 h-4 text-purple-500" />
+          <Palette className="w-4 h-4 text-purple-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Preferences</span>
         </div>
 
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="i-ph:translate-fill w-4 h-4 text-bolt-elements-textSecondary" />
+            <Languages className="w-4 h-4 text-bolt-elements-textSecondary" />
             <label className="block text-sm text-bolt-elements-textSecondary">Language</label>
           </div>
           <select
@@ -105,7 +106,7 @@ export default function SettingsTab() {
 
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="i-ph:bell-fill w-4 h-4 text-bolt-elements-textSecondary" />
+            <Bell className="w-4 h-4 text-bolt-elements-textSecondary" />
             <label className="block text-sm text-bolt-elements-textSecondary">Notifications</label>
           </div>
           <div className="flex items-center justify-between">
@@ -149,13 +150,13 @@ export default function SettingsTab() {
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:clock-fill w-4 h-4 text-purple-500" />
+          <Clock className="w-4 h-4 text-purple-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Time Settings</span>
         </div>
 
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="i-ph:globe-fill w-4 h-4 text-bolt-elements-textSecondary" />
+            <Globe className="w-4 h-4 text-bolt-elements-textSecondary" />
             <label className="block text-sm text-bolt-elements-textSecondary">Timezone</label>
           </div>
           <select
@@ -183,7 +184,7 @@ export default function SettingsTab() {
         transition={{ delay: 0.3 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:keyboard-fill w-4 h-4 text-purple-500" />
+          <Keyboard className="w-4 h-4 text-purple-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Keyboard Shortcuts</span>
         </div>
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
@@ -8,12 +8,14 @@ import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import FilePreview from './FilePreview';
 import { ScreenshotStateManager } from './ScreenshotStateManager';
 import { SendButton } from './SendButton.client';
+import { Paperclip, ChevronDown, ChevronRight, Sparkles, BookOpen, Loader2 } from 'lucide-react';
 import { IconButton } from '~/components/ui/IconButton';
 import { toast } from 'react-toastify';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
 import { SupabaseConnection } from './SupabaseConnection';
 import { ChatModeToggle } from './ChatModeToggle';
 import { SmartModeDetector } from './SmartModeDetector';
+import { ActionPromptLibrary } from './ActionPromptLibrary';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
 import styles from './BaseChat.module.scss';
 import type { ProviderInfo } from '~/types/model';
@@ -66,6 +68,24 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+
+  const handlePromptSelect = (promptText: string) => {
+    // Set the textarea value and trigger the input change
+    if (props.textareaRef?.current) {
+      props.textareaRef.current.value = promptText;
+
+      // Create a synthetic event to trigger the input change
+      const event = new Event('input', { bubbles: true });
+      props.textareaRef.current.dispatchEvent(event);
+    }
+
+    // Also update the input state if available
+    props.handleInputChange?.({
+      target: { value: promptText },
+    } as React.ChangeEvent<HTMLTextAreaElement>);
+  };
+
   return (
     <div
       className={classNames(
@@ -287,7 +307,14 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
             <McpTools />
             <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
-              <div className="i-ph:paperclip text-xl"></div>
+              <Paperclip className="w-5 h-5" />
+            </IconButton>
+            <IconButton
+              title="Open Prompt Library"
+              className="transition-all"
+              onClick={() => setIsPromptLibraryOpen(true)}
+            >
+              <BookOpen className="w-5 h-5" />
             </IconButton>
             <IconButton
               title="Enhance prompt"
@@ -298,11 +325,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 toast.success('Prompt enhanced!');
               }}
             >
-              {props.enhancingPrompt ? (
-                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
-              ) : (
-                <div className="i-bolt:stars text-xl"></div>
-              )}
+              {props.enhancingPrompt ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
             </IconButton>
 
             <SpeechRecognitionButton
@@ -322,7 +345,11 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               onClick={() => props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed)}
               disabled={!props.providerList || props.providerList.length === 0}
             >
-              <div className={`i-ph:caret-${props.isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
+              {props.isModelSettingsCollapsed ? (
+                <ChevronRight className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
               {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
             </IconButton>
           </div>
@@ -336,6 +363,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
       </div>
+
+      {/* Action Prompt Library */}
+      <ActionPromptLibrary
+        isOpen={isPromptLibraryOpen}
+        onClose={() => setIsPromptLibraryOpen(false)}
+        onPromptSelect={handlePromptSelect}
+      />
     </div>
   );
 };

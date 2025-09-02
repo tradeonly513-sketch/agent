@@ -1,5 +1,22 @@
 import React from 'react';
 import { classNames } from '~/utils/classNames';
+import {
+  FileCode,
+  FileText,
+  Braces,
+  File,
+  FileVideo,
+  FileAudio,
+  FileImage,
+  FileArchive,
+  Package,
+  BookOpen,
+  Scale,
+  GitBranch,
+  Lock,
+  FileSpreadsheet,
+  Presentation,
+} from 'lucide-react';
 
 interface FileIconProps {
   filename: string;
@@ -12,156 +29,156 @@ export function FileIcon({ filename, size = 'md', className }: FileIconProps) {
     return filename.split('.').pop()?.toLowerCase() || '';
   };
 
-  const getIconForExtension = (extension: string): string => {
+  const getIconForExtension = (extension: string): React.ComponentType<{ className?: string }> => {
     // Code files
     if (['js', 'jsx', 'ts', 'tsx'].includes(extension)) {
-      return 'i-ph:file-js';
+      return FileCode;
     }
 
     if (['html', 'htm', 'xhtml'].includes(extension)) {
-      return 'i-ph:file-html';
+      return FileCode;
     }
 
     if (['css', 'scss', 'sass', 'less'].includes(extension)) {
-      return 'i-ph:file-css';
+      return FileCode;
     }
 
     if (['json', 'jsonc'].includes(extension)) {
-      return 'i-ph:brackets-curly';
+      return Braces;
     }
 
     if (['md', 'markdown'].includes(extension)) {
-      return 'i-ph:file-text';
+      return FileText;
     }
 
     if (['py', 'pyc', 'pyd', 'pyo'].includes(extension)) {
-      return 'i-ph:file-py';
+      return FileCode;
     }
 
     if (['java', 'class', 'jar'].includes(extension)) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     if (['php'].includes(extension)) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     if (['rb', 'ruby'].includes(extension)) {
-      return 'i-ph:file-rs';
+      return File;
     }
 
     if (['c', 'cpp', 'h', 'hpp', 'cc'].includes(extension)) {
-      return 'i-ph:file-cpp';
+      return FileCode;
     }
 
     if (['go'].includes(extension)) {
-      return 'i-ph:file-rs';
+      return File;
     }
 
     if (['rs', 'rust'].includes(extension)) {
-      return 'i-ph:file-rs';
+      return File;
     }
 
     if (['swift'].includes(extension)) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     if (['kt', 'kotlin'].includes(extension)) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     if (['dart'].includes(extension)) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     // Config files
     if (['yml', 'yaml'].includes(extension)) {
-      return 'i-ph:file-cloud';
+      return FileCode;
     }
 
     if (['xml', 'svg'].includes(extension)) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     if (['toml'].includes(extension)) {
-      return 'i-ph:file-text';
+      return FileText;
     }
 
     if (['ini', 'conf', 'config'].includes(extension)) {
-      return 'i-ph:file-text';
+      return FileText;
     }
 
     if (['env', 'env.local', 'env.development', 'env.production'].includes(extension)) {
-      return 'i-ph:file-lock';
+      return Lock;
     }
 
     // Document files
     if (['pdf'].includes(extension)) {
-      return 'i-ph:file-pdf';
+      return File;
     }
 
     if (['doc', 'docx'].includes(extension)) {
-      return 'i-ph:file-doc';
+      return FileText;
     }
 
     if (['xls', 'xlsx'].includes(extension)) {
-      return 'i-ph:file-xls';
+      return FileSpreadsheet;
     }
 
     if (['ppt', 'pptx'].includes(extension)) {
-      return 'i-ph:file-ppt';
+      return Presentation;
     }
 
     if (['txt'].includes(extension)) {
-      return 'i-ph:file-text';
+      return FileText;
     }
 
     // Image files
     if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico', 'tiff'].includes(extension)) {
-      return 'i-ph:file-image';
+      return FileImage;
     }
 
     // Audio/Video files
     if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(extension)) {
-      return 'i-ph:file-audio';
+      return FileAudio;
     }
 
     if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension)) {
-      return 'i-ph:file-video';
+      return FileVideo;
     }
 
     // Archive files
     if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(extension)) {
-      return 'i-ph:file-zip';
+      return FileArchive;
     }
 
     // Special files
     if (filename === 'package.json') {
-      return 'i-ph:package';
+      return Package;
     }
 
     if (filename === 'tsconfig.json') {
-      return 'i-ph:file-ts';
+      return FileCode;
     }
 
     if (filename === 'README.md') {
-      return 'i-ph:book-open';
+      return BookOpen;
     }
 
     if (filename === 'LICENSE') {
-      return 'i-ph:scales';
+      return Scale;
     }
 
     if (filename === '.gitignore') {
-      return 'i-ph:git-branch';
+      return GitBranch;
     }
 
     if (filename.startsWith('Dockerfile')) {
-      return 'i-ph:file-code';
+      return FileCode;
     }
 
     // Default
-    return 'i-ph:file';
+    return File;
   };
 
   const getIconColorForExtension = (extension: string): string => {
@@ -342,5 +359,7 @@ export function FileIcon({ filename, size = 'md', className }: FileIconProps) {
   const color = getIconColorForExtension(extension);
   const sizeClass = getSizeClass(size);
 
-  return <span className={classNames(icon, color, sizeClass, className)} />;
+  const IconComponent = icon;
+
+  return <IconComponent className={classNames(color, sizeClass, className)} />;
 }

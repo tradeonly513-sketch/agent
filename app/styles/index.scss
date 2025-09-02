@@ -71,3 +71,19 @@ body {
   // Firefox support for inverted colors
   scrollbar-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%) transparent;
 }
+
+// Global icon sizing optimizations for Lucide icons
+// Automatically reduce common oversized icon sizes
+[class*="lucide"] {
+  &.text-xl {
+    font-size: 1.125rem; // 18px instead of 20px (text-lg)
+  }
+
+  &.text-2xl {
+    font-size: 1.25rem; // 20px instead of 24px (text-xl)
+  }
+
+  &.text-3xl {
+    font-size: 1.5rem; // 24px instead of 30px (text-2xl)
+  }
+}

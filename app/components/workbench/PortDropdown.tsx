@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from 'react';
 import type { PreviewInfo } from '~/lib/stores/previews';
+import { Plug } from 'lucide-react';
 
 interface PortDropdownProps {
   activePreviewIndex: number;
@@ -49,10 +50,10 @@ export const PortDropdown = memo(
       <div className="relative z-port-dropdown" ref={dropdownRef}>
         {/* Display the active port if available, otherwise show the plug icon */}
         <button
-          className="flex items-center group-focus-within:text-bolt-elements-preview-addressBar-text bg-white group-focus-within:bg-bolt-elements-preview-addressBar-background dark:bg-bolt-elements-preview-addressBar-backgroundHover rounded-full px-2 py-1 gap-1.5"
+          className="flex items-center group-focus-within:text-bolt-elements-preview-addressBar-text bg-bolt-elements-background-depth-1 group-focus-within:bg-bolt-elements-preview-addressBar-background dark:bg-bolt-elements-preview-addressBar-backgroundHover rounded-full px-2 py-1 gap-1.5"
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         >
-          <span className="i-ph:plug text-base"></span>
+          <Plug className="text-base" />
           {previews.length > 0 && activePreviewIndex >= 0 && activePreviewIndex < previews.length ? (
             <span className="text-xs font-medium">{previews[activePreviewIndex].port}</span>
           ) : null}

@@ -13,6 +13,7 @@ import { cubicEasingFn } from '~/utils/easings';
 import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { BaseChat } from './BaseChat';
 import Cookies from 'js-cookie';
+import { X, CheckCircle, AlertCircle } from 'lucide-react';
 import { debounce } from '~/utils/debounce';
 import { useSettings } from '~/lib/hooks/useSettings';
 import type { ProviderInfo } from '~/types/model';
@@ -60,7 +61,7 @@ export function Chat() {
         closeButton={({ closeToast }) => {
           return (
             <button className="Toastify__close-button" onClick={closeToast}>
-              <div className="i-ph:x text-lg" />
+              <X className="text-lg" />
             </button>
           );
         }}
@@ -70,10 +71,10 @@ export function Chat() {
            */
           switch (type) {
             case 'success': {
-              return <div className="i-ph:check-bold text-bolt-elements-icon-success text-2xl" />;
+              return <CheckCircle className="text-bolt-elements-icon-success text-xl" />;
             }
             case 'error': {
-              return <div className="i-ph:warning-circle-bold text-bolt-elements-icon-error text-2xl" />;
+              return <AlertCircle className="text-bolt-elements-icon-error text-xl" />;
             }
           }
 

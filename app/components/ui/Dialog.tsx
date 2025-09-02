@@ -8,6 +8,7 @@ import { Button } from './Button';
 import { FixedSizeList } from 'react-window';
 import { Checkbox } from './Checkbox';
 import { Label } from './Label';
+import { X } from 'lucide-react';
 
 export { Close as DialogClose, Root as DialogRoot } from '@radix-ui/react-dialog';
 
@@ -129,7 +130,7 @@ export const Dialog = memo(({ children, className, showCloseButton = true, onClo
             {showCloseButton && (
               <RadixDialog.Close asChild onClick={onClose}>
                 <IconButton
-                  icon="i-ph:x"
+                  icon={X}
                   className="absolute top-3 right-3 text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary"
                 />
               </RadixDialog.Close>

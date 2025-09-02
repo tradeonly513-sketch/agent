@@ -1,4 +1,5 @@
 import { AnimatePresence, cubicBezier, motion } from 'framer-motion';
+import { ArrowRight, Square } from 'lucide-react';
 
 interface SendButtonProps {
   show: boolean;
@@ -29,9 +30,7 @@ export const SendButton = ({ show, isStreaming, disabled, onClick }: SendButtonP
             }
           }}
         >
-          <div className="text-lg">
-            {!isStreaming ? <div className="i-ph:arrow-right"></div> : <div className="i-ph:stop-circle-bold"></div>}
-          </div>
+          <div className="text-lg">{!isStreaming ? <ArrowRight /> : <Square />}</div>
         </motion.button>
       ) : null}
     </AnimatePresence>

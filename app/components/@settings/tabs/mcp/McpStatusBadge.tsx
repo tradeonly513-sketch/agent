@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function McpStatusBadge({ status }: { status: 'checking' | 'available' | 'unavailable' }) {
   const { styles, label, icon, ariaLabel } = useMemo(() => {
@@ -15,13 +16,13 @@ export default function McpStatusBadge({ status }: { status: 'checking' | 'avail
         styles: `${base} bg-green-100 text-green-800 dark:bg-green-900/80 dark:text-green-200`,
         label: 'Available',
         ariaLabel: 'Server available',
-        icon: <span className="i-ph:check-circle w-3 h-3 text-current" aria-hidden="true" />,
+        icon: <CheckCircle className="w-3 h-3 text-current" aria-hidden="true" />,
       },
       unavailable: {
         styles: `${base} bg-red-100 text-red-800 dark:bg-red-900/80 dark:text-red-200`,
         label: 'Unavailable',
         ariaLabel: 'Server unavailable',
-        icon: <span className="i-ph:warning-circle w-3 h-3 text-current" aria-hidden="true" />,
+        icon: <AlertCircle className="w-3 h-3 text-current" aria-hidden="true" />,
       },
     };
 

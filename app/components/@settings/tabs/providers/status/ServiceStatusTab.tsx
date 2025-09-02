@@ -11,6 +11,7 @@ import { FaCloud, FaBrain } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { useToast } from '~/components/ui/use-toast';
+import { RefreshCw, Loader2, Key, Activity } from 'lucide-react';
 
 // Types
 type ProviderName =
@@ -728,7 +729,7 @@ const ServiceStatusTab = () => {
               )}
               disabled={loading}
             >
-              <div className={`i-ph:arrows-clockwise w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
@@ -783,12 +784,12 @@ const ServiceStatusTab = () => {
             >
               {testingStatus === 'testing' ? (
                 <>
-                  <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Testing...</span>
                 </>
               ) : (
                 <>
-                  <div className="i-ph:key w-4 h-4" />
+                  <Key className="w-4 h-4" />
                   <span>Test Key</span>
                 </>
               )}
@@ -878,7 +879,7 @@ const ServiceStatusTab = () => {
 
 // Add tab metadata
 ServiceStatusTab.tabMetadata = {
-  icon: 'i-ph:activity-bold',
+  icon: Activity,
   description: 'Monitor and test LLM provider service status',
   category: 'services',
 };

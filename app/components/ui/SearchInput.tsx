@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import { classNames } from '~/utils/classNames';
 import { Input } from './Input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, Search, X } from 'lucide-react';
 
 interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /** Function to call when the clear button is clicked */
@@ -41,11 +42,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             iconClassName,
           )}
         >
-          {loading ? (
-            <span className="i-ph:spinner-gap animate-spin w-4 h-4" />
-          ) : (
-            <span className="i-ph:magnifying-glass w-4 h-4" />
-          )}
+          {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" />}
         </div>
 
         {/* Input field */}
@@ -68,7 +65,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
               className="absolute right-3 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary p-1 rounded-full hover:bg-bolt-elements-background-depth-2"
               aria-label="Clear search"
             >
-              <span className="i-ph:x w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" />
             </motion.button>
           )}
         </AnimatePresence>

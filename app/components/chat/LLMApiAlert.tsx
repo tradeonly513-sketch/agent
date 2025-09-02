@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { LlmErrorAlertType } from '~/types/actions';
 import { classNames } from '~/utils/classNames';
+import { Key, Clock, AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface Props {
   alert: LlmErrorAlertType;
@@ -13,13 +14,13 @@ export default function LlmErrorAlert({ alert, clearAlert }: Props) {
   const getErrorIcon = () => {
     switch (errorType) {
       case 'authentication':
-        return 'i-ph:key-duotone';
+        return <Key className="text-lg text-bolt-elements-button-danger-text" />;
       case 'rate_limit':
-        return 'i-ph:clock-duotone';
+        return <Clock className="text-lg text-bolt-elements-button-danger-text" />;
       case 'quota':
-        return 'i-ph:warning-circle-duotone';
+        return <AlertTriangle className="text-lg text-bolt-elements-button-danger-text" />;
       default:
-        return 'i-ph:warning-duotone';
+        return <AlertCircle className="text-lg text-bolt-elements-button-danger-text" />;
     }
   };
 
@@ -52,7 +53,7 @@ export default function LlmErrorAlert({ alert, clearAlert }: Props) {
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className={`${getErrorIcon()} text-xl text-bolt-elements-button-danger-text`}></div>
+            {getErrorIcon()}
           </motion.div>
 
           <div className="ml-3 flex-1">

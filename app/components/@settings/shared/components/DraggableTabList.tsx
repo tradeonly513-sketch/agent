@@ -4,6 +4,7 @@ import { classNames } from '~/utils/classNames';
 import type { TabVisibilityConfig } from '~/components/@settings/core/types';
 import { TAB_LABELS } from '~/components/@settings/core/types';
 import { Switch } from '~/components/ui/Switch';
+import { GripVertical } from 'lucide-react';
 
 interface DraggableTabListProps {
   tabs: TabVisibilityConfig[];
@@ -86,7 +87,7 @@ const DraggableTabItem = ({
     >
       <div className="flex items-center gap-4">
         <div className="cursor-grab">
-          <div className="i-ph:dots-six-vertical w-4 h-4 text-bolt-elements-textSecondary" />
+          <GripVertical className="w-4 h-4 text-bolt-elements-textSecondary" />
         </div>
         <div>
           <div className="font-medium text-bolt-elements-textPrimary">{TAB_LABELS[tab.id]}</div>

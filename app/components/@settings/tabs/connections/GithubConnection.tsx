@@ -6,6 +6,23 @@ import { classNames } from '~/utils/classNames';
 import Cookies from 'js-cookie';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import { Button } from '~/components/ui/Button';
+import {
+  Lightbulb,
+  ExternalLink,
+  Loader2,
+  Zap,
+  Plug,
+  CheckCircle,
+  Layout,
+  RefreshCw,
+  BarChart3,
+  ChevronDown,
+  Star,
+  GitFork,
+  Users,
+  GitBranch,
+  Clock,
+} from 'lucide-react';
 
 interface GitHubUserResponse {
   login: string;
@@ -553,7 +570,7 @@ export default function GitHubConnection() {
         {!connection.user && (
           <div className="text-xs text-bolt-elements-textSecondary bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 p-3 rounded-lg mb-4">
             <p className="flex items-center gap-1 mb-1">
-              <span className="i-ph:lightbulb w-3.5 h-3.5 text-bolt-elements-icon-success dark:text-bolt-elements-icon-success" />
+              <Lightbulb className="w-3.5 h-3.5 text-bolt-elements-icon-success dark:text-bolt-elements-icon-success" />
               <span className="font-medium">Tip:</span> You can also set the{' '}
               <code className="px-1 py-0.5 bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-2 rounded">
                 VITE_GITHUB_ACCESS_TOKEN
@@ -624,7 +641,7 @@ export default function GitHubConnection() {
                 className="text-bolt-elements-borderColorActive hover:underline inline-flex items-center gap-1"
               >
                 Get your token
-                <div className="i-ph:arrow-square-out w-4 h-4" />
+                <ExternalLink className="w-4 h-4" />
               </a>
               <span className="mx-2">•</span>
               <span>
@@ -652,12 +669,12 @@ export default function GitHubConnection() {
             >
               {isConnecting ? (
                 <>
-                  <div className="i-ph:spinner-gap animate-spin" />
+                  <Loader2 className="animate-spin" />
                   Connecting...
                 </>
               ) : (
                 <>
-                  <div className="i-ph:plug-charging w-4 h-4" />
+                  <Zap className="w-4 h-4" />
                   Connect
                 </>
               )}
@@ -674,11 +691,11 @@ export default function GitHubConnection() {
                       'hover:bg-red-600',
                     )}
                   >
-                    <div className="i-ph:plug w-4 h-4" />
+                    <Plug className="w-4 h-4" />
                     Disconnect
                   </button>
                   <span className="text-sm text-bolt-elements-textSecondary flex items-center gap-1">
-                    <div className="i-ph:check-circle w-4 h-4 text-green-500" />
+                    <CheckCircle className="w-4 h-4 text-green-500" />
                     Connected to GitHub
                   </span>
                 </div>
@@ -688,7 +705,7 @@ export default function GitHubConnection() {
                     onClick={() => window.open('https://github.com/dashboard', '_blank', 'noopener,noreferrer')}
                     className="flex items-center gap-2 hover:bg-bolt-elements-item-backgroundActive/10 hover:text-bolt-elements-textPrimary dark:hover:text-bolt-elements-textPrimary transition-colors"
                   >
-                    <div className="i-ph:layout w-4 h-4" />
+                    <Layout className="w-4 h-4" />
                     Dashboard
                   </Button>
                   <Button
@@ -702,12 +719,12 @@ export default function GitHubConnection() {
                   >
                     {isFetchingStats ? (
                       <>
-                        <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                         Refreshing...
                       </>
                     ) : (
                       <>
-                        <div className="i-ph:arrows-clockwise w-4 h-4" />
+                        <RefreshCw className="w-4 h-4" />
                         Refresh Stats
                       </>
                     )}
@@ -740,12 +757,12 @@ export default function GitHubConnection() {
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between p-4 rounded-lg bg-bolt-elements-background dark:bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive/70 dark:hover:border-bolt-elements-borderColorActive/70 transition-all duration-200">
                   <div className="flex items-center gap-2">
-                    <div className="i-ph:chart-bar w-4 h-4 text-bolt-elements-item-contentAccent" />
+                    <BarChart3 className="w-4 h-4 text-bolt-elements-item-contentAccent" />
                     <span className="text-sm font-medium text-bolt-elements-textPrimary">GitHub Stats</span>
                   </div>
-                  <div
+                  <ChevronDown
                     className={classNames(
-                      'i-ph:caret-down w-4 h-4 transform transition-transform duration-200 text-bolt-elements-textSecondary',
+                      'w-4 h-4 transform transition-transform duration-200 text-bolt-elements-textSecondary',
                       isStatsExpanded ? 'rotate-180' : '',
                     )}
                   />
@@ -835,19 +852,19 @@ export default function GitHubConnection() {
                             {
                               label: 'Stars',
                               value: connection.stats.stars || 0,
-                              icon: 'i-ph:star',
+                              icon: Star,
                               iconColor: 'text-bolt-elements-icon-warning',
                             },
                             {
                               label: 'Forks',
                               value: connection.stats.forks || 0,
-                              icon: 'i-ph:git-fork',
+                              icon: GitFork,
                               iconColor: 'text-bolt-elements-icon-info',
                             },
                             {
                               label: 'Followers',
                               value: connection.stats.followers || 0,
-                              icon: 'i-ph:users',
+                              icon: Users,
                               iconColor: 'text-bolt-elements-icon-success',
                             },
                           ].map((stat, index) => (
@@ -912,18 +929,18 @@ export default function GitHubConnection() {
                           <div className="space-y-3">
                             <div className="flex items-start justify-between">
                               <div className="flex items-center gap-2">
-                                <div className="i-ph:git-branch w-4 h-4 text-bolt-elements-icon-tertiary" />
+                                <GitBranch className="w-4 h-4 text-bolt-elements-icon-tertiary" />
                                 <h5 className="text-sm font-medium text-bolt-elements-textPrimary group-hover:text-bolt-elements-item-contentAccent transition-colors">
                                   {repo.name}
                                 </h5>
                               </div>
                               <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
                                 <span className="flex items-center gap-1" title="Stars">
-                                  <div className="i-ph:star w-3.5 h-3.5 text-bolt-elements-icon-warning" />
+                                  <Star className="w-3.5 h-3.5 text-bolt-elements-icon-warning" />
                                   {repo.stargazers_count.toLocaleString()}
                                 </span>
                                 <span className="flex items-center gap-1" title="Forks">
-                                  <div className="i-ph:git-fork w-3.5 h-3.5 text-bolt-elements-icon-info" />
+                                  <GitFork className="w-3.5 h-3.5 text-bolt-elements-icon-info" />
                                   {repo.forks_count.toLocaleString()}
                                 </span>
                               </div>
@@ -937,11 +954,11 @@ export default function GitHubConnection() {
 
                             <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
                               <span className="flex items-center gap-1" title="Default Branch">
-                                <div className="i-ph:git-branch w-3.5 h-3.5" />
+                                <GitBranch className="w-3.5 h-3.5" />
                                 {repo.default_branch}
                               </span>
                               <span className="flex items-center gap-1" title="Last Updated">
-                                <div className="i-ph:clock w-3.5 h-3.5" />
+                                <Clock className="w-3.5 h-3.5" />
                                 {new Date(repo.updated_at).toLocaleDateString(undefined, {
                                   year: 'numeric',
                                   month: 'short',
@@ -949,7 +966,7 @@ export default function GitHubConnection() {
                                 })}
                               </span>
                               <span className="flex items-center gap-1 ml-auto group-hover:text-bolt-elements-item-contentAccent transition-colors">
-                                <div className="i-ph:arrow-square-out w-3.5 h-3.5" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                                 View
                               </span>
                             </div>
@@ -972,7 +989,7 @@ function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center p-4">
       <div className="flex items-center gap-2">
-        <div className="i-ph:spinner-gap-bold animate-spin w-4 h-4" />
+        <Loader2 className="animate-spin w-4 h-4" />
         <span className="text-bolt-elements-textSecondary">Loading...</span>
       </div>
     </div>

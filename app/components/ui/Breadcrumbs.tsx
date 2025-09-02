@@ -1,6 +1,7 @@
 import React from 'react';
 import { classNames } from '~/utils/classNames';
 import { motion } from 'framer-motion';
+import { ChevronRight } from 'lucide-react';
 
 interface BreadcrumbItem {
   label: string;
@@ -12,7 +13,7 @@ interface BreadcrumbItem {
 interface BreadcrumbsProps {
   items: BreadcrumbItem[];
   className?: string;
-  separator?: string;
+  separator?: string | React.ComponentType<{ className?: string }>;
   maxItems?: number;
   renderItem?: (item: BreadcrumbItem, index: number, isLast: boolean) => React.ReactNode;
 }
@@ -20,7 +21,7 @@ interface BreadcrumbsProps {
 export function Breadcrumbs({
   items,
   className,
-  separator = 'i-ph:caret-right',
+  separator = ChevronRight,
   maxItems = 0,
   renderItem,
 }: BreadcrumbsProps) {
@@ -84,14 +85,24 @@ export function Breadcrumbs({
           return (
             <li key={index} className="flex items-center">
               {renderItem ? renderItem(item, index, isLast) : defaultRenderItem(item, index, isLast)}
-              {!isLast && (
-                <span
-                  className={classNames(
-                    separator,
-                    'w-3 h-3 mx-1 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark',
-                  )}
-                />
-              )}
+              {!isLast &&
+                (() => {
+                  if (typeof separator === 'string') {
+                    return (
+                      <span
+                        className={classNames(
+                          separator,
+                          'w-3 h-3 mx-1 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark',
+                        )}
+                      />
+                    );
+                  } else {
+                    const SeparatorComponent = separator;
+                    return (
+                      <SeparatorComponent className="w-3 h-3 mx-1 text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark" />
+                    );
+                  }
+                })()}
             </li>
           );
         })}

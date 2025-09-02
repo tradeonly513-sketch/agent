@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
+import { X } from 'lucide-react';
 
 interface CloseButtonProps {
   onClick?: () => void;
@@ -43,7 +44,7 @@ export function CloseButton({ onClick, className, size = 'md' }: CloseButtonProp
       whileTap={{ scale: 0.95 }}
       aria-label="Close"
     >
-      <div className={classNames('i-ph:x', iconSizeClasses[size])} />
+      <X className={iconSizeClasses[size]} />
     </motion.button>
   );
 }

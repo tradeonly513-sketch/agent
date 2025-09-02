@@ -4,6 +4,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { webcontainer } from '~/lib/webcontainer';
 import { WORK_DIR } from '~/utils/constants';
 import { debounce } from '~/utils/debounce';
+import { Loader2, ChevronDown } from 'lucide-react';
 
 interface DisplayMatch {
   path: string;
@@ -196,7 +197,7 @@ export function Search() {
       <div className="flex-1 overflow-auto py-2">
         {isSearching && (
           <div className="flex items-center justify-center h-32 text-bolt-elements-textTertiary">
-            <div className="i-ph:circle-notch animate-spin mr-2" /> Searching...
+            <Loader2 className="animate-spin mr-2" /> Searching...
           </div>
         )}
         {!isSearching && hasSearched && searchResults.length === 0 && searchQuery.trim() !== '' && (
@@ -209,8 +210,8 @@ export function Search() {
                 className="flex gap-2 items-center w-full text-left py-1 px-2 text-bolt-elements-textSecondary bg-transparent hover:bg-bolt-elements-background-depth-3 group"
                 onClick={() => setExpandedFiles((prev) => ({ ...prev, [file]: !prev[file] }))}
               >
-                <span
-                  className=" i-ph:caret-down-thin w-3 h-3 text-bolt-elements-textSecondary transition-transform"
+                <ChevronDown
+                  className=" w-3 h-3 text-bolt-elements-textSecondary transition-transform"
                   style={{ transform: expandedFiles[file] ? 'rotate(180deg)' : undefined }}
                 />
                 <span className="font-normal text-sm">{file.split('/').pop()}</span>

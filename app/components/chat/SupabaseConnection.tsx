@@ -5,6 +5,7 @@ import { useStore } from '@nanostores/react';
 import { chatId } from '~/lib/persistence/useChatHistory';
 import { fetchSupabaseStats } from '~/lib/stores/supabase';
 import { Dialog, DialogRoot, DialogClose, DialogTitle, DialogButton } from '~/components/ui/Dialog';
+import { ExternalLink, Loader2, Plug, Database, ChevronDown, RefreshCw, Plus, Check, Info } from 'lucide-react';
 
 export function SupabaseConnection() {
   const {
@@ -138,7 +139,7 @@ export function SupabaseConnection() {
                       className="text-[#3ECF8E] hover:underline inline-flex items-center gap-1"
                     >
                       Get your token
-                      <div className="i-ph:arrow-square-out w-4 h-4" />
+                      <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
                 </div>
@@ -159,12 +160,12 @@ export function SupabaseConnection() {
                   >
                     {connecting ? (
                       <>
-                        <div className="i-ph:spinner-gap animate-spin" />
+                        <Loader2 className="animate-spin" />
                         Connecting...
                       </>
                     ) : (
                       <>
-                        <div className="i-ph:plug-charging w-4 h-4" />
+                        <Plug className="w-4 h-4" />
                         Connect
                       </>
                     )}
@@ -195,7 +196,7 @@ export function SupabaseConnection() {
 
                 {fetchingStats ? (
                   <div className="flex items-center gap-2 text-sm text-bolt-elements-textSecondary">
-                    <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Fetching projects...
                   </div>
                 ) : (
@@ -205,13 +206,10 @@ export function SupabaseConnection() {
                         onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
                         className="bg-transparent text-left text-sm font-medium text-bolt-elements-textPrimary flex items-center gap-2"
                       >
-                        <div className="i-ph:database w-4 h-4" />
+                        <Database className="w-4 h-4" />
                         Your Projects ({supabaseConn.stats?.totalProjects || 0})
-                        <div
-                          className={classNames(
-                            'i-ph:caret-down w-4 h-4 transition-transform',
-                            isProjectsExpanded ? 'rotate-180' : '',
-                          )}
+                        <ChevronDown
+                          className={classNames('w-4 h-4 transition-transform', isProjectsExpanded ? 'rotate-180' : '')}
                         />
                       </button>
                       <div className="flex items-center gap-2">
@@ -220,14 +218,14 @@ export function SupabaseConnection() {
                           className="px-2 py-1 rounded-md text-xs bg-[#F0F0F0] dark:bg-[#252525] text-bolt-elements-textSecondary hover:bg-[#E5E5E5] dark:hover:bg-[#333333] flex items-center gap-1"
                           title="Refresh projects list"
                         >
-                          <div className="i-ph:arrows-clockwise w-3 h-3" />
+                          <RefreshCw className="w-3 h-3" />
                           Refresh
                         </button>
                         <button
                           onClick={() => handleCreateProject()}
                           className="px-2 py-1 rounded-md text-xs bg-[#3ECF8E] text-white hover:bg-[#3BBF84] flex items-center gap-1"
                         >
-                          <div className="i-ph:plus w-3 h-3" />
+                          <Plus className="w-3 h-3" />
                           New Project
                         </button>
                       </div>
@@ -251,7 +249,7 @@ export function SupabaseConnection() {
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <h5 className="text-sm font-medium text-bolt-elements-textPrimary flex items-center gap-1">
-                                      <div className="i-ph:database w-3 h-3 text-[#3ECF8E]" />
+                                      <Database className="w-3 h-3 text-[#3ECF8E]" />
                                       {project.name}
                                     </h5>
                                     <div className="text-xs text-bolt-elements-textSecondary mt-1">
@@ -269,7 +267,7 @@ export function SupabaseConnection() {
                                   >
                                     {supabaseConn.selectedProjectId === project.id ? (
                                       <span className="flex items-center gap-1">
-                                        <div className="i-ph:check w-3 h-3" />
+                                        <Check className="w-3 h-3" />
                                         Selected
                                       </span>
                                     ) : (
@@ -282,7 +280,7 @@ export function SupabaseConnection() {
                           </div>
                         ) : (
                           <div className="text-sm text-bolt-elements-textSecondary flex items-center gap-2">
-                            <div className="i-ph:info w-4 h-4" />
+                            <Info className="w-4 h-4" />
                             No projects found
                           </div>
                         )}
@@ -296,7 +294,7 @@ export function SupabaseConnection() {
                     <DialogButton type="secondary">Close</DialogButton>
                   </DialogClose>
                   <DialogButton type="danger" onClick={handleDisconnect}>
-                    <div className="i-ph:plugs w-4 h-4" />
+                    <Plug className="w-4 h-4" />
                     Disconnect
                   </DialogButton>
                 </div>

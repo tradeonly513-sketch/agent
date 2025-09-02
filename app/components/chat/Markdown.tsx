@@ -9,6 +9,7 @@ import type { Message } from 'ai';
 import styles from './Markdown.module.scss';
 import ThoughtBox from './ThoughtBox';
 import type { ProviderInfo } from '~/types/model';
+import { File, MessageCircle, Code, Link, HelpCircle } from 'lucide-react';
 
 const logger = createScopedLogger('MarkdownComponent');
 
@@ -123,15 +124,15 @@ export const Markdown = memo(
             const path = dataProps['data-path'] || dataProps.dataPath;
             const href = dataProps['data-href'] || dataProps.dataHref;
 
-            const iconClassMap: Record<string, string> = {
-              file: 'i-ph:file',
-              message: 'i-ph:chats',
-              implement: 'i-ph:code',
-              link: 'i-ph:link',
+            const iconClassMap: Record<string, React.ComponentType<{ className?: string }>> = {
+              file: File,
+              message: MessageCircle,
+              implement: Code,
+              link: Link,
             };
 
             const safeType = typeof type === 'string' ? type : '';
-            const iconClass = iconClassMap[safeType] ?? 'i-ph:question';
+            const IconComponent = iconClassMap[safeType] ?? HelpCircle;
 
             return (
               <button
@@ -177,7 +178,7 @@ export const Markdown = memo(
                   }
                 }}
               >
-                <div className={`text-lg ${iconClass}`} />
+                <IconComponent className="text-lg" />
                 {children}
               </button>
             );

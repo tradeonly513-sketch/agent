@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect } from 'react';
 import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
 import { classNames } from '~/utils/classNames';
+import { Wrench, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
 import {
   TOOL_EXECUTION_APPROVAL,
   TOOL_EXECUTION_DENIED,
@@ -54,19 +55,22 @@ function JsonCodeBlock({ className, code, theme }: JsonCodeBlockProps) {
   }
 
   return (
-    <div
-      className={classNames('text-xs rounded-md overflow-hidden mcp-tool-invocation-code', className)}
-      dangerouslySetInnerHTML={{
-        __html: jsonHighlighter.codeToHtml(formattedCode, {
-          lang: 'json',
-          theme: theme === 'dark' ? 'dark-plus' : 'light-plus',
-        }),
-      }}
-      style={{
-        padding: '0',
-        margin: '0',
-      }}
-    ></div>
+    <>
+      {/* SECURITY: Syntax highlighting HTML should be sanitized by the highlighter library */}
+      <div
+        className={classNames('text-xs rounded-md overflow-hidden mcp-tool-invocation-code', className)}
+        dangerouslySetInnerHTML={{
+          __html: jsonHighlighter.codeToHtml(formattedCode, {
+            lang: 'json',
+            theme: theme === 'dark' ? 'dark-plus' : 'light-plus',
+          }),
+        }}
+        style={{
+          padding: '0',
+          margin: '0',
+        }}
+      />
+    </>
   );
 }
 
@@ -110,7 +114,7 @@ export const ToolInvocations = memo(({ toolInvocations, toolCallAnnotations, add
           aria-label={showDetails ? 'Collapse details' : 'Expand details'}
         >
           <div className="p-2.5">
-            <div className="i-ph:wrench text-xl text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors"></div>
+            <Wrench className="text-lg text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors" />
           </div>
           <div className="p-2.5 w-full text-left">
             <div className="w-full text-bolt-elements-textPrimary font-medium leading-5 text-sm">
@@ -134,9 +138,11 @@ export const ToolInvocations = memo(({ toolInvocations, toolCallAnnotations, add
               onClick={toggleDetails}
             >
               <div className="p-2">
-                <div
-                  className={`${showDetails ? 'i-ph:caret-up-bold' : 'i-ph:caret-down-bold'} text-xl text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors`}
-                ></div>
+                {showDetails ? (
+                  <ChevronUp className="text-lg text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors" />
+                ) : (
+                  <ChevronDown className="text-lg text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors" />
+                )}
               </div>
             </motion.button>
           )}
@@ -230,11 +236,11 @@ const ToolResultsList = memo(({ toolInvocations, toolCallAnnotations, theme }: T
               <div className="flex items-center gap-1.5 text-xs mb-1">
                 {isErrorResult ? (
                   <div className="text-lg text-bolt-elements-icon-error">
-                    <div className="i-ph:x"></div>
+                    <X className="w-4 h-4" />
                   </div>
                 ) : (
                   <div className="text-lg text-bolt-elements-icon-success">
-                    <div className="i-ph:check"></div>
+                    <Check className="w-4 h-4" />
                   </div>
                 )}
                 <div className="text-bolt-elements-textSecondary text-xs">Server:</div>

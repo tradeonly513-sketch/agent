@@ -1,5 +1,6 @@
 import { classNames } from '~/utils/classNames';
 import { IconButton } from '~/components/ui';
+import { MessageCircle } from 'lucide-react';
 
 export function DiscussMode() {
   return (
@@ -10,7 +11,7 @@ export function DiscussMode() {
           'transition-all flex items-center gap-1 bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent',
         )}
       >
-        <div className={`i-ph:chats text-xl`} />
+        <MessageCircle className="text-lg" />
       </IconButton>
     </div>
   );

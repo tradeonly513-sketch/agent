@@ -3,6 +3,7 @@ import type { GitHubRepoInfo } from '~/types/GitHub';
 import { EmptyState, StatusIndicator } from '~/components/ui';
 import { RepositoryCard } from './RepositoryCard';
 import { RepositoryDialogContext } from './RepositoryDialogContext';
+import { Folder, Search } from 'lucide-react';
 
 interface RepositoryListProps {
   repos: GitHubRepoInfo[];
@@ -30,7 +31,7 @@ export function RepositoryList({ repos, isLoading, onSelect, activeTab }: Reposi
     if (activeTab === 'my-repos') {
       return (
         <EmptyState
-          icon="i-ph:folder-simple-dashed"
+          icon={Folder}
           title="No repositories found"
           description="Connect your GitHub account or create a new repository to get started"
           actionLabel="Connect GitHub Account"
@@ -40,7 +41,7 @@ export function RepositoryList({ repos, isLoading, onSelect, activeTab }: Reposi
     } else {
       return (
         <EmptyState
-          icon="i-ph:magnifying-glass"
+          icon={Search}
           title="No repositories found"
           description="Try searching with different keywords or filters"
         />

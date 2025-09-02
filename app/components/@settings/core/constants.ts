@@ -1,17 +1,18 @@
 import type { TabType } from './types';
+import { User, Settings, Bell, Star, Database, Cloud, Laptop, Activity, Wifi, List, Wrench } from 'lucide-react';
 
-export const TAB_ICONS: Record<TabType, string> = {
-  profile: 'i-ph:user-circle',
-  settings: 'i-ph:gear-six',
-  notifications: 'i-ph:bell',
-  features: 'i-ph:star',
-  data: 'i-ph:database',
-  'cloud-providers': 'i-ph:cloud',
-  'local-providers': 'i-ph:laptop',
-  'service-status': 'i-ph:activity-bold',
-  connection: 'i-ph:wifi-high',
-  'event-logs': 'i-ph:list-bullets',
-  mcp: 'i-ph:wrench',
+export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string }>> = {
+  profile: User,
+  settings: Settings,
+  notifications: Bell,
+  features: Star,
+  data: Database,
+  'cloud-providers': Cloud,
+  'local-providers': Laptop,
+  'service-status': Activity,
+  connection: Wifi,
+  'event-logs': List,
+  mcp: Wrench,
 };
 
 export const TAB_LABELS: Record<TabType, string> = {

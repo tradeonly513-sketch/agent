@@ -5,6 +5,7 @@ import WithTooltip from '~/components/ui/Tooltip';
 import { useEditChatDescription } from '~/lib/hooks';
 import { forwardRef, type ForwardedRef, useCallback } from 'react';
 import { Checkbox } from '~/components/ui/Checkbox';
+import { Check } from 'lucide-react';
 
 interface HistoryItemProps {
   item: ChatHistoryItem;
@@ -98,9 +99,11 @@ export function HistoryItem({
           />
           <button
             type="submit"
-            className="i-ph:check h-4 w-4 text-gray-500 hover:text-purple-500 transition-colors"
+            className="h-4 w-4 text-gray-500 hover:text-purple-500 transition-colors"
             onMouseDown={handleSubmit}
-          />
+          >
+            <Check />
+          </button>
         </form>
       ) : (
         <a
@@ -119,7 +122,7 @@ export function HistoryItem({
             <div className="flex items-center gap-2.5 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
               <ChatActionButton
                 toolTipContent="Export"
-                icon="i-ph:download-simple h-4 w-4"
+                icon="i-ph-download-duotone"
                 onClick={(event) => {
                   event.preventDefault();
                   exportChat(item.id);
@@ -128,7 +131,7 @@ export function HistoryItem({
               {onDuplicate && (
                 <ChatActionButton
                   toolTipContent="Duplicate"
-                  icon="i-ph:copy h-4 w-4"
+                  icon="i-ph-copy-duotone"
                   onClick={(event) => {
                     event.preventDefault();
                     onDuplicate?.(item.id);
@@ -137,7 +140,7 @@ export function HistoryItem({
               )}
               <ChatActionButton
                 toolTipContent="Rename"
-                icon="i-ph:pencil-fill h-4 w-4"
+                icon="i-ph-pencil-duotone"
                 onClick={(event) => {
                   event.preventDefault();
                   toggleEditMode();
@@ -145,7 +148,7 @@ export function HistoryItem({
               />
               <ChatActionButton
                 toolTipContent="Delete"
-                icon="i-ph:trash h-4 w-4"
+                icon="i-ph-trash-duotone"
                 className="hover:text-red-500 dark:hover:text-red-400"
                 onClick={handleDeleteClick}
               />

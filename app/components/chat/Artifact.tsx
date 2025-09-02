@@ -8,6 +8,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 import { WORK_DIR } from '~/utils/constants';
+import { ChevronDown, ChevronUp, Check, X, Terminal, Circle } from 'lucide-react';
 
 const highlighterOptions = {
   langs: ['shell'],
@@ -109,7 +110,7 @@ export const Artifact = memo(({ messageId }: ArtifactProps) => {
                 onClick={toggleActions}
               >
                 <div className="p-4">
-                  <div className={showActions ? 'i-ph:caret-up-bold' : 'i-ph:caret-down-bold'}></div>
+                  {showActions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
               </motion.button>
             )}
@@ -119,7 +120,7 @@ export const Artifact = memo(({ messageId }: ArtifactProps) => {
           <div className="flex items-center gap-1.5 p-5 bg-bolt-elements-actions-background border-t border-bolt-elements-artifacts-borderColor">
             <div className={classNames('text-lg', getIconColor(allActionFinished ? 'complete' : 'running'))}>
               {allActionFinished ? (
-                <div className="i-ph:check"></div>
+                <Check className="w-4 h-4" />
               ) : (
                 <div className="i-svg-spinners:90-ring-with-bg"></div>
               )}
@@ -157,21 +158,27 @@ export const Artifact = memo(({ messageId }: ArtifactProps) => {
 });
 
 interface ShellCodeBlockProps {
-  classsName?: string;
+  className?: string;
   code: string;
 }
 
-function ShellCodeBlock({ classsName, code }: ShellCodeBlockProps) {
+function ShellCodeBlock({ className, code }: ShellCodeBlockProps) {
+  const combinedClassName = classNames('text-xs', className);
+  const htmlContent = shellHighlighter.codeToHtml(code, {
+    lang: 'shell',
+    theme: 'dark-plus',
+  });
+
   return (
-    <div
-      className={classNames('text-xs', classsName)}
-      dangerouslySetInnerHTML={{
-        __html: shellHighlighter.codeToHtml(code, {
-          lang: 'shell',
-          theme: 'dark-plus',
-        }),
-      }}
-    ></div>
+    <>
+      {/* SECURITY: Syntax highlighting HTML should be sanitized by the highlighter library */}
+      <div
+        className={combinedClassName}
+        dangerouslySetInnerHTML={{
+          __html: htmlContent,
+        }}
+      />
+    </>
   );
 }
 
@@ -218,15 +225,15 @@ const ActionList = memo(({ actions }: ActionListProps) => {
                       {type !== 'start' ? (
                         <div className="i-svg-spinners:90-ring-with-bg"></div>
                       ) : (
-                        <div className="i-ph:terminal-window-duotone"></div>
+                        <Terminal className="w-4 h-4" />
                       )}
                     </>
                   ) : status === 'pending' ? (
-                    <div className="i-ph:circle-duotone"></div>
+                    <Circle className="w-4 h-4" />
                   ) : status === 'complete' ? (
-                    <div className="i-ph:check"></div>
+                    <Check className="w-4 h-4" />
                   ) : status === 'failed' || status === 'aborted' ? (
-                    <div className="i-ph:x"></div>
+                    <X className="w-4 h-4" />
                   ) : null}
                 </div>
                 {type === 'file' ? (
@@ -257,7 +264,7 @@ const ActionList = memo(({ actions }: ActionListProps) => {
               </div>
               {(type === 'shell' || type === 'start') && (
                 <ShellCodeBlock
-                  classsName={classNames('mt-1', {
+                  className={classNames('mt-1', {
                     'mb-3.5': !isLast,
                   })}
                   code={content}

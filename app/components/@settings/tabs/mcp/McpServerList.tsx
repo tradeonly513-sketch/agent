@@ -1,6 +1,7 @@
 import type { MCPServer } from '~/lib/services/mcpService';
 import McpStatusBadge from '~/components/@settings/tabs/mcp/McpStatusBadge';
 import McpServerListItem from '~/components/@settings/tabs/mcp/McpServerListItem';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 type McpServerListProps = {
   serverEntries: [string, MCPServer][];
@@ -41,9 +42,11 @@ export default function McpServerList({
                   className="flex items-center gap-1.5 text-bolt-elements-textPrimary"
                   aria-expanded={isExpanded}
                 >
-                  <div
-                    className={`i-ph:${isExpanded ? 'caret-down' : 'caret-right'} w-3 h-3 transition-transform duration-150`}
-                  />
+                  {isExpanded ? (
+                    <ChevronDown className="w-3 h-3 transition-transform duration-150" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3 transition-transform duration-150" />
+                  )}
                   <span className="font-medium truncate text-left">{serverName}</span>
                 </div>
 

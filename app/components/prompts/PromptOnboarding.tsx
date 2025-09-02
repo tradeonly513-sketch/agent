@@ -76,7 +76,7 @@ export const PromptOnboarding = memo(({ onComplete, onSkip, className }: PromptO
           transition={{ delay: 0.6 }}
         >
           <div className="text-center">
-            <div className={classNames(selectedPromptInfo.icon, 'w-8 h-8 mx-auto text-purple-500 mb-3')} />
+            <selectedPromptInfo.icon className="w-8 h-8 mx-auto text-purple-500 mb-3" />
             <h3 className="font-semibold text-bolt-elements-textPrimary mb-2">
               You've selected: {selectedPromptInfo.label}
             </h3>

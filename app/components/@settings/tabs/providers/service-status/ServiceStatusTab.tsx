@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ServiceStatus } from './types';
 import { ProviderStatusCheckerFactory } from './provider-factory';
+import { CheckCircle, AlertTriangle, XCircle, HelpCircle, Loader2, AlertTriangle as WarningIcon } from 'lucide-react';
 
 export default function ServiceStatusTab() {
   const [serviceStatuses, setServiceStatuses] = useState<ServiceStatus[]>([]);
@@ -71,20 +72,20 @@ export default function ServiceStatusTab() {
   const getStatusIcon = (status: ServiceStatus['status']) => {
     switch (status) {
       case 'operational':
-        return 'i-ph:check-circle';
+        return CheckCircle;
       case 'degraded':
-        return 'i-ph:warning';
+        return AlertTriangle;
       case 'down':
-        return 'i-ph:x-circle';
+        return XCircle;
       default:
-        return 'i-ph:question';
+        return HelpCircle;
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin i-ph:circle-notch w-8 h-8 text-purple-500" />
+        <Loader2 className="animate-spin w-8 h-8 text-purple-500" />
       </div>
     );
   }
@@ -92,7 +93,7 @@ export default function ServiceStatusTab() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-red-500 dark:text-red-400">
-        <div className="i-ph:warning w-8 h-8 mb-2" />
+        <WarningIcon className="w-8 h-8 mb-2" />
         <p>{error}</p>
       </div>
     );

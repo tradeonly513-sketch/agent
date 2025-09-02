@@ -2,6 +2,7 @@ import React from 'react';
 import { classNames } from '~/utils/classNames';
 import { Button } from './Button';
 import { motion } from 'framer-motion';
+import { Folder } from 'lucide-react';
 
 // Variant-specific styles
 const VARIANT_STYLES = {
@@ -30,8 +31,8 @@ const VARIANT_STYLES = {
 };
 
 interface EmptyStateProps {
-  /** Icon class name */
-  icon?: string;
+  /** Icon class name or component */
+  icon?: string | React.ComponentType<{ className?: string }>;
 
   /** Title text */
   title: string;
@@ -64,7 +65,7 @@ interface EmptyStateProps {
  * A component for displaying empty states with optional actions.
  */
 export function EmptyState({
-  icon = 'i-ph:folder-simple-dashed',
+  icon = Folder,
   title,
   description,
   actionLabel,
@@ -100,13 +101,27 @@ export function EmptyState({
           styles.icon.container,
         )}
       >
-        <span
-          className={classNames(
-            icon,
-            styles.icon.size,
-            'text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark',
-          )}
-        />
+        {typeof icon === 'string' ? (
+          <span
+            className={classNames(
+              icon,
+              styles.icon.size,
+              'text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark',
+            )}
+          />
+        ) : (
+          (() => {
+            const IconComponent = icon;
+            return (
+              <IconComponent
+                className={classNames(
+                  styles.icon.size,
+                  'text-bolt-elements-textTertiary dark:text-bolt-elements-textTertiary-dark',
+                )}
+              />
+            );
+          })()
+        )}
       </div>
 
       {/* Title */}

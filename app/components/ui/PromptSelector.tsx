@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import { PromptInfoCard } from './PromptInfoCard';
 import { classNames } from '~/utils/classNames';
+import { Lightbulb } from 'lucide-react';
 
 interface PromptSelectorProps {
   selectedPromptId?: string;
@@ -78,7 +79,7 @@ export const PromptSelector = memo(
         >
           <div className="flex items-start gap-4">
             <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500 flex-shrink-0">
-              <div className="i-ph:lightbulb w-5 h-5" />
+              <Lightbulb className="w-5 h-5" />
             </div>
             <div className="flex-1">
               <h3 className="font-medium text-bolt-elements-textPrimary mb-2">💡 Pro Tips for Prompt Selection</h3>

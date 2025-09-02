@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle, X, AlertTriangle, Lightbulb, Circle, Star } from 'lucide-react';
 
 interface FreeModelRecommendationsProps {
   isVisible: boolean;
@@ -57,14 +58,14 @@ export const FreeModelRecommendations: React.FC<FreeModelRecommendationsProps> =
       <div className="bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-bolt-elements-textPrimary flex items-center gap-2">
-            <span className="i-ph:warning-circle text-orange-400" />
+            <AlertCircle className="text-orange-400" />
             Free Model Recommendations
           </h3>
           <button
             onClick={onClose}
             className="text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors"
           >
-            <span className="i-ph:x text-lg" />
+            <X className="text-lg" />
           </button>
         </div>
 
@@ -72,7 +73,7 @@ export const FreeModelRecommendations: React.FC<FreeModelRecommendationsProps> =
           {/* Warning Alert */}
           <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <span className="i-ph:warning text-orange-400 text-xl flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="text-orange-400 text-lg flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-medium text-orange-300 mb-2">Free Model Limitations</h4>
                 <p className="text-sm text-bolt-elements-textSecondary">
@@ -89,13 +90,13 @@ export const FreeModelRecommendations: React.FC<FreeModelRecommendationsProps> =
             {recommendations.map((section, index) => (
               <div key={index} className="bg-bolt-elements-background-depth-3 rounded-lg p-4">
                 <h4 className="font-medium text-bolt-elements-textPrimary mb-3 flex items-center gap-2">
-                  <span className="i-ph:lightbulb text-blue-400" />
+                  <Lightbulb className="text-blue-400" />
                   {section.title}
                 </h4>
                 <ul className="space-y-2">
                   {section.items.map((item, itemIndex) => (
                     <li key={itemIndex} className="text-sm text-bolt-elements-textSecondary flex items-start gap-2">
-                      <span className="i-ph:dot text-xs text-bolt-elements-textTertiary mt-1 flex-shrink-0" />
+                      <Circle className="w-1 h-1 text-bolt-elements-textTertiary mt-1 flex-shrink-0" />
                       {item}
                     </li>
                   ))}
@@ -107,7 +108,7 @@ export const FreeModelRecommendations: React.FC<FreeModelRecommendationsProps> =
           {/* Alternative Models */}
           <div className="bg-bolt-elements-background-depth-3 rounded-lg p-4">
             <h4 className="font-medium text-bolt-elements-textPrimary mb-3 flex items-center gap-2">
-              <span className="i-ph:star text-green-400" />
+              <Star className="text-green-400" />
               Recommended Paid Alternatives
             </h4>
             <div className="grid sm:grid-cols-2 gap-3">

@@ -14,6 +14,7 @@ import { providerBaseUrlEnvKeys } from '~/utils/constants';
 import { useToast } from '~/components/ui/use-toast';
 import { Progress } from '~/components/ui/Progress';
 import OllamaModelInstaller from './OllamaModelInstaller';
+import { Code, Database, Box, Loader2, RefreshCw, Trash2, Link, ExternalLink } from 'lucide-react';
 
 // Add type for provider names to ensure type safety
 type ProviderName = 'Ollama' | 'LMStudio' | 'OpenAILike';
@@ -305,17 +306,17 @@ export default function LocalProvidersTab() {
   const ModelDetails = ({ model }: { model: OllamaModel }) => (
     <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
       <div className="flex items-center gap-1">
-        <div className="i-ph:code text-purple-500" />
+        <Code className="text-purple-500" />
         <span>{model.digest.substring(0, 7)}</span>
       </div>
       {model.details && (
         <>
           <div className="flex items-center gap-1">
-            <div className="i-ph:database text-purple-500" />
+            <Database className="text-purple-500" />
             <span>{model.details.parameter_size}</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="i-ph:cube text-purple-500" />
+            <Box className="text-purple-500" />
             <span>{model.details.quantization_level}</span>
           </div>
         </>
@@ -350,11 +351,11 @@ export default function LocalProvidersTab() {
       >
         {model.status === 'updating' ? (
           <div className="flex items-center gap-2">
-            <div className="i-ph:spinner-gap-bold animate-spin w-4 h-4" />
+            <Loader2 className="animate-spin w-4 h-4" />
             <span className="text-sm">Updating...</span>
           </div>
         ) : (
-          <div className="i-ph:arrows-clockwise text-lg" />
+          <RefreshCw className="text-lg" />
         )}
       </motion.button>
       <motion.button
@@ -371,7 +372,7 @@ export default function LocalProvidersTab() {
         whileTap={{ scale: 0.95 }}
         title="Delete model"
       >
-        <div className="i-ph:trash text-lg" />
+        <Trash2 className="text-lg" />
       </motion.button>
     </div>
   );
@@ -515,7 +516,7 @@ export default function LocalProvidersTab() {
                           )}
                         >
                           <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
-                            <div className="i-ph:link text-sm" />
+                            <Link className="text-sm" />
                             <span>{provider.settings.baseUrl || OLLAMA_API_URL}</span>
                           </div>
                         </div>
@@ -530,12 +531,12 @@ export default function LocalProvidersTab() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="i-ph:cube-duotone text-purple-500" />
+                      <Box className="text-purple-500" />
                       <h4 className="text-sm font-medium text-bolt-elements-textPrimary">Installed Models</h4>
                     </div>
                     {isLoadingModels ? (
                       <div className="flex items-center gap-2">
-                        <div className="i-ph:spinner-gap-bold animate-spin w-4 h-4" />
+                        <Loader2 className="animate-spin w-4 h-4" />
                         <span className="text-sm text-bolt-elements-textSecondary">Loading models...</span>
                       </div>
                     ) : (
@@ -557,7 +558,7 @@ export default function LocalProvidersTab() {
                       </div>
                     ) : ollamaModels.length === 0 ? (
                       <div className="text-center py-8 text-bolt-elements-textSecondary">
-                        <div className="i-ph:cube-transparent text-4xl mx-auto mb-2" />
+                        <Box className="text-4xl mx-auto mb-2 opacity-50" />
                         <p>No models installed yet</p>
                         <p className="text-sm text-bolt-elements-textTertiary px-1">
                           Browse models at{' '}
@@ -568,7 +569,7 @@ export default function LocalProvidersTab() {
                             className="text-purple-500 hover:underline inline-flex items-center gap-0.5 text-base font-medium"
                           >
                             ollama.com/library
-                            <div className="i-ph:arrow-square-out text-xs" />
+                            <ExternalLink className="text-xs" />
                           </a>{' '}
                           and copy model names to install
                         </p>
@@ -733,7 +734,7 @@ export default function LocalProvidersTab() {
                               )}
                             >
                               <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
-                                <div className="i-ph:link text-sm" />
+                                <Link className="text-sm" />
                                 <span>{provider.settings.baseUrl || 'Click to set base URL'}</span>
                               </div>
                             </div>

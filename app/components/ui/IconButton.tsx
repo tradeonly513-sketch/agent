@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { memo, forwardRef, type ForwardedRef } from 'react';
 import { classNames } from '~/utils/classNames';
 
@@ -14,7 +15,7 @@ interface BaseIconButtonProps {
 }
 
 type IconButtonWithoutChildrenProps = {
-  icon: string;
+  icon: string | React.ComponentType<{ className?: string }>;
   children?: undefined;
 } & BaseIconButtonProps;
 
@@ -31,7 +32,7 @@ export const IconButton = memo(
     (
       {
         icon,
-        size = 'xl',
+        size = 'lg',
         className,
         iconClassName,
         disabledClassName,
@@ -62,7 +63,16 @@ export const IconButton = memo(
             onClick?.(event);
           }}
         >
-          {children ? children : <div className={classNames(icon, getIconSize(size), iconClassName)}></div>}
+          {children ? (
+            children
+          ) : typeof icon === 'string' ? (
+            <div className={classNames(icon, getIconSize(size), iconClassName)} />
+          ) : icon ? (
+            (() => {
+              const IconComponent = icon;
+              return <IconComponent className={classNames(getIconSize(size), iconClassName)} />;
+            })()
+          ) : null}
         </button>
       );
     },
@@ -77,8 +87,8 @@ function getIconSize(size: IconSize) {
   } else if (size === 'lg') {
     return 'text-lg';
   } else if (size === 'xl') {
-    return 'text-xl';
+    return 'text-lg';
   } else {
-    return 'text-2xl';
+    return 'text-xl';
   }
 }

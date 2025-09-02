@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { IconButton } from './IconButton';
 import type { DesignScheme } from '~/types/design-scheme';
 import { defaultDesignScheme, designFeatures, designFonts, paletteRoles } from '~/types/design-scheme';
+import { RefreshCw, Edit, Check, Palette, Type, Wand2 } from 'lucide-react';
 
 export interface ColorSchemeDialogProps {
   designScheme?: DesignScheme;
@@ -70,7 +71,7 @@ export const ColorSchemeDialog: React.FC<ColorSchemeDialogProps> = ({ setDesignS
           onClick={handleReset}
           className="text-sm bg-transparent hover:bg-bolt-elements-bg-depth-2 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary rounded-lg flex items-center gap-2 transition-all duration-200"
         >
-          <span className="i-ph:arrow-clockwise text-sm" />
+          <RefreshCw className="text-sm" />
           Reset
         </button>
       </div>
@@ -99,7 +100,7 @@ export const ColorSchemeDialog: React.FC<ColorSchemeDialogProps> = ({ setDesignS
                 tabIndex={-1}
               />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-bolt-elements-bg-depth-1 rounded-full flex items-center justify-center shadow-sm">
-                <span className="i-ph:pencil-simple text-xs text-bolt-elements-textSecondary" />
+                <Edit className="text-xs text-bolt-elements-textSecondary" />
               </div>
             </div>
             <div className="flex-1 min-w-0">
@@ -154,7 +155,7 @@ export const ColorSchemeDialog: React.FC<ColorSchemeDialogProps> = ({ setDesignS
               </div>
               {font.includes(f.key) && (
                 <div className="w-6 h-6 mx-auto bg-bolt-elements-item-contentAccent rounded-full flex items-center justify-center">
-                  <span className="i-ph:check text-white text-sm" />
+                  <Check className="text-white text-sm" />
                 </div>
               )}
             </div>
@@ -273,7 +274,7 @@ export const ColorSchemeDialog: React.FC<ColorSchemeDialogProps> = ({ setDesignS
   return (
     <div>
       <IconButton title="Design Palette" className="transition-all" onClick={() => setIsDialogOpen(!isDialogOpen)}>
-        <div className="i-ph:palette text-xl"></div>
+        <Palette className="text-lg" />
       </IconButton>
 
       <DialogRoot open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -292,9 +293,9 @@ export const ColorSchemeDialog: React.FC<ColorSchemeDialogProps> = ({ setDesignS
             {/* Navigation Tabs */}
             <div className="flex gap-1 p-1 bg-bolt-elements-bg-depth-3 rounded-xl">
               {[
-                { key: 'colors', label: 'Colors', icon: 'i-ph:palette' },
-                { key: 'typography', label: 'Typography', icon: 'i-ph:text-aa' },
-                { key: 'features', label: 'Features', icon: 'i-ph:magic-wand' },
+                { key: 'colors', label: 'Colors', icon: Palette },
+                { key: 'typography', label: 'Typography', icon: Type },
+                { key: 'features', label: 'Features', icon: Wand2 },
               ].map((tab) => (
                 <button
                   key={tab.key}

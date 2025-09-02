@@ -4,6 +4,7 @@ import type { KeyboardEvent } from 'react';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { classNames } from '~/utils/classNames';
 import { FreeModelRecommendations } from './FreeModelRecommendations';
+import { ChevronDown, Search, X, Gift, AlertTriangle, Loader2, Check, AlertCircle } from 'lucide-react';
 
 // Fuzzy search utilities
 const levenshteinDistance = (str1: string, str2: string): number => {
@@ -443,9 +444,9 @@ export const ModelSelector = ({
         >
           <div className="flex items-center justify-between">
             <div className="truncate">{provider?.name || 'Select provider'}</div>
-            <div
+            <ChevronDown
               className={classNames(
-                'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary opacity-75',
+                'w-4 h-4 text-bolt-elements-textSecondary opacity-75 transition-transform',
                 isProviderDropdownOpen ? 'rotate-180' : undefined,
               )}
             />
@@ -478,7 +479,7 @@ export const ModelSelector = ({
                   aria-label="Search providers"
                 />
                 <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
-                  <span className="i-ph:magnifying-glass text-bolt-elements-textTertiary" />
+                  <Search className="text-bolt-elements-textTertiary" />
                 </div>
                 {providerSearchQuery && (
                   <button
@@ -490,7 +491,7 @@ export const ModelSelector = ({
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-bolt-elements-background-depth-3 transition-colors"
                     aria-label="Clear search"
                   >
-                    <span className="i-ph:x text-bolt-elements-textTertiary text-xs" />
+                    <X className="text-bolt-elements-textTertiary text-xs" />
                   </button>
                 )}
               </div>
@@ -561,6 +562,7 @@ export const ModelSelector = ({
                     }}
                     tabIndex={focusedProviderIndex === index ? 0 : -1}
                   >
+                    {/* SECURITY: Search highlighting HTML should be sanitized by the search library */}
                     <div
                       dangerouslySetInnerHTML={{
                         __html: (providerOption as any).highlightedName || providerOption.name,
@@ -599,9 +601,9 @@ export const ModelSelector = ({
         >
           <div className="flex items-center justify-between">
             <div className="truncate">{modelList.find((m) => m.name === model)?.label || 'Select model'}</div>
-            <div
+            <ChevronDown
               className={classNames(
-                'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary opacity-75',
+                'w-4 h-4 text-bolt-elements-textSecondary opacity-75 transition-transform',
                 isModelDropdownOpen ? 'rotate-180' : undefined,
               )}
             />
@@ -637,7 +639,7 @@ export const ModelSelector = ({
                         : 'Show only free OpenRouter models (may be slower/less reliable)'
                     }
                   >
-                    <span className="i-ph:gift text-xs" />
+                    <Gift className="text-xs" />
                     Free models only
                   </button>
                   {showFreeModelsOnly && (
@@ -647,7 +649,7 @@ export const ModelSelector = ({
                       </span>
                       <div className="space-y-2">
                         <div className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded px-2 py-1">
-                          <span className="i-ph:warning text-xs mr-1" />
+                          <AlertTriangle className="text-xs mr-1" />
                           Free models may be slower and less reliable. Consider paid models for better results.
                         </div>
                         <button
@@ -694,7 +696,7 @@ export const ModelSelector = ({
                   aria-label="Search models"
                 />
                 <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
-                  <span className="i-ph:magnifying-glass text-bolt-elements-textTertiary" />
+                  <Search className="text-bolt-elements-textTertiary" />
                 </div>
                 {modelSearchQuery && (
                   <button
@@ -706,7 +708,7 @@ export const ModelSelector = ({
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-bolt-elements-background-depth-3 transition-colors"
                     aria-label="Clear search"
                   >
-                    <span className="i-ph:x text-bolt-elements-textTertiary text-xs" />
+                    <X className="text-bolt-elements-textTertiary text-xs" />
                   </button>
                 )}
               </div>
@@ -731,7 +733,7 @@ export const ModelSelector = ({
               {modelLoading === 'all' || modelLoading === provider?.name ? (
                 <div className="px-3 py-3 text-sm">
                   <div className="flex items-center gap-2 text-bolt-elements-textTertiary">
-                    <span className="i-ph:spinner animate-spin" />
+                    <Loader2 className="animate-spin" />
                     Loading models...
                   </div>
                 </div>
@@ -784,6 +786,7 @@ export const ModelSelector = ({
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="truncate">
+                          {/* SECURITY: Search highlighting HTML should be sanitized by the search library */}
                           <span
                             dangerouslySetInnerHTML={{
                               __html: (modelOption as any).highlightedLabel || modelOption.label,
@@ -804,18 +807,18 @@ export const ModelSelector = ({
                       <div className="flex items-center gap-1 ml-2">
                         {isModelLikelyFree(modelOption, provider?.name) && (
                           <div className="flex items-center gap-1">
-                            <span
-                              className="i-ph:gift text-xs text-orange-400"
-                              title="Free model - may have quality/reliability issues"
-                            />
-                            <span
-                              className="i-ph:warning-circle text-xs text-orange-400"
-                              title="May be slower/less reliable than paid models"
-                            />
+                            <span title="Free model - may have quality/reliability issues">
+                              <Gift className="text-xs text-orange-400" />
+                            </span>
+                            <span title="May be slower/less reliable than paid models">
+                              <AlertCircle className="text-xs text-orange-400" />
+                            </span>
                           </div>
                         )}
                         {model === modelOption.name && (
-                          <span className="i-ph:check text-xs text-green-500" title="Selected" />
+                          <span title="Selected">
+                            <Check className="text-xs text-green-500" />
+                          </span>
                         )}
                       </div>
                     </div>

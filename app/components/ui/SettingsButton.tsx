@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { IconButton } from '~/components/ui/IconButton';
+import { Settings } from 'lucide-react';
 interface SettingsButtonProps {
   onClick: () => void;
 }
@@ -8,7 +9,7 @@ export const SettingsButton = memo(({ onClick }: SettingsButtonProps) => {
   return (
     <IconButton
       onClick={onClick}
-      icon="i-ph:gear"
+      icon={Settings}
       size="xl"
       title="Settings"
       data-testid="settings-button"

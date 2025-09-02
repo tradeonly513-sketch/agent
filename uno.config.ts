@@ -239,7 +239,11 @@ export default defineConfig({
     }),
     presetIcons({
       warn: true,
-      collections: customIconCollection,
+      collections: {
+        ...customIconCollection,
+        // @ts-ignore - UnoCSS type definitions don't match actual usage
+        ph: () => import('@iconify-json/ph').then(m => m.default),
+      },
       unit: 'em',
     }),
   ],

@@ -7,12 +7,13 @@ import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import { PromptInfoCard } from '~/components/ui/PromptInfoCard';
+import { GitBranch, MousePointer, Brain, List, CheckCircle, TestTube, BookOpen } from 'lucide-react';
 
 interface FeatureToggle {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: string | React.ComponentType<{ className?: string }>;
   enabled: boolean;
   beta?: boolean;
   experimental?: boolean;
@@ -46,7 +47,11 @@ const FeatureCard = memo(
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={classNames(feature.icon, 'w-5 h-5 text-bolt-elements-textSecondary')} />
+            {typeof feature.icon === 'string' ? (
+              <div className={classNames(feature.icon, 'w-5 h-5 text-bolt-elements-textSecondary')} />
+            ) : (
+              <feature.icon className="w-5 h-5 text-bolt-elements-textSecondary" />
+            )}
             <div className="flex items-center gap-2">
               <h4 className="font-medium text-bolt-elements-textPrimary">{feature.title}</h4>
               {feature.beta && (
@@ -78,7 +83,7 @@ const FeatureSection = memo(
   }: {
     title: string;
     features: FeatureToggle[];
-    icon: string;
+    icon: string | React.ComponentType<{ className?: string }>;
     description: string;
     onToggleFeature: (id: string, enabled: boolean) => void;
   }) => (
@@ -90,7 +95,14 @@ const FeatureSection = memo(
       transition={{ duration: 0.3 }}
     >
       <div className="flex items-center gap-3">
-        <div className={classNames(icon, 'text-xl text-purple-500')} />
+        {(() => {
+          if (typeof icon === 'string') {
+            return <div className={classNames(icon, 'text-lg text-purple-500')} />;
+          } else {
+            const IconComponent = icon;
+            return <IconComponent className="text-lg text-purple-500" />;
+          }
+        })()}
         <div>
           <h3 className="text-lg font-medium text-bolt-elements-textPrimary">{title}</h3>
           <p className="text-sm text-bolt-elements-textSecondary">{description}</p>
@@ -184,7 +196,7 @@ export default function FeaturesTab() {
         id: 'latestBranch',
         title: 'Main Branch Updates',
         description: 'Get the latest updates from the main branch',
-        icon: 'i-ph:git-branch',
+        icon: GitBranch,
         enabled: isLatestBranch,
         tooltip: 'Enabled by default to receive updates from the main development branch',
       },
@@ -192,7 +204,7 @@ export default function FeaturesTab() {
         id: 'autoSelectTemplate',
         title: 'Auto Select Template',
         description: 'Automatically select starter template',
-        icon: 'i-ph:selection',
+        icon: MousePointer,
         enabled: autoSelectTemplate,
         tooltip: 'Enabled by default to automatically select the most appropriate starter template',
       },
@@ -200,7 +212,7 @@ export default function FeaturesTab() {
         id: 'contextOptimization',
         title: 'Context Optimization',
         description: 'Optimize context for better responses',
-        icon: 'i-ph:brain',
+        icon: Brain,
         enabled: contextOptimizationEnabled,
         tooltip: 'Enabled by default for improved AI responses',
       },
@@ -208,7 +220,7 @@ export default function FeaturesTab() {
         id: 'eventLogs',
         title: 'Event Logging',
         description: 'Enable detailed event logging and history',
-        icon: 'i-ph:list-bullets',
+        icon: List,
         enabled: eventLogs,
         tooltip: 'Enabled by default to record detailed logs of system events and user actions',
       },
@@ -221,7 +233,7 @@ export default function FeaturesTab() {
       <FeatureSection
         title="Core Features"
         features={features.stable}
-        icon="i-ph:check-circle"
+        icon={CheckCircle}
         description="Essential features that are enabled by default for optimal performance"
         onToggleFeature={handleToggleFeature}
       />
@@ -230,7 +242,7 @@ export default function FeaturesTab() {
         <FeatureSection
           title="Beta Features"
           features={features.beta}
-          icon="i-ph:test-tube"
+          icon={TestTube}
           description="New features that are ready for testing but may have some rough edges"
           onToggleFeature={handleToggleFeature}
         />
@@ -245,7 +257,7 @@ export default function FeaturesTab() {
         transition={{ delay: 0.3 }}
       >
         <div className="flex items-center gap-3">
-          <div className="i-ph:book text-xl text-purple-500" />
+          <BookOpen className="text-lg text-purple-500" />
           <div>
             <h3 className="text-lg font-medium text-bolt-elements-textPrimary">Prompt Templates</h3>
             <p className="text-sm text-bolt-elements-textSecondary">

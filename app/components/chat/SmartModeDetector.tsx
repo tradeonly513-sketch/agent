@@ -2,6 +2,7 @@ import React, { memo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
+import { X } from 'lucide-react';
 
 interface SmartModeDetectorProps {
   input: string;
@@ -180,7 +181,7 @@ export const SmartModeDetector = memo(({ input, currentMode, onModeSwitch, class
               className="p-1 rounded-md hover:bg-bolt-elements-background-depth-3 transition-colors"
               title="Dismiss suggestion"
             >
-              <i className="i-ph:x w-3 h-3 text-bolt-elements-textSecondary" />
+              <X className="w-3 h-3 text-bolt-elements-textSecondary" />
             </button>
           </div>
         </div>

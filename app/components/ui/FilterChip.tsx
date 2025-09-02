@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
+import { X } from 'lucide-react';
 
 interface FilterChipProps {
   /** The label text to display */
@@ -84,7 +85,7 @@ export function FilterChip({ label, value, onRemove, active = false, icon, class
           )}
           aria-label={`Remove ${label} filter`}
         >
-          <span className="i-ph:x w-3 h-3" />
+          <X className="w-3 h-3" />
         </button>
       )}
     </motion.div>
