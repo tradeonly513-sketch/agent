@@ -1,6 +1,6 @@
 # Bolt.gives - Enhanced AI Development Platform
 
-![Bolt.gives](public/boltgives.png)
+![Bolt.gives](public/boltgives.jpeg)
 
 ## 🚀 About This Fork
 
