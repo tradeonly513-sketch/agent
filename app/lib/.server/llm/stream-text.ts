@@ -191,8 +191,24 @@ export async function streamText(props: {
 
   const dynamicMaxTokens = modelDetails ? getCompletionTokenLimit(modelDetails) : Math.min(MAX_TOKENS, 16384);
 
-  // Additional safety cap - should not be needed with proper completion limits, but kept for safety
-  const safeMaxTokens = Math.min(dynamicMaxTokens, 128000);
+  // Additional safety cap - respect model-specific limits
+  let safeMaxTokens = dynamicMaxTokens;
+
+  // Apply model-specific caps for Anthropic models
+  if (modelDetails?.provider === 'Anthropic') {
+    if (modelDetails.name.includes('claude-sonnet-4') || modelDetails.name.includes('claude-opus-4')) {
+      safeMaxTokens = Math.min(dynamicMaxTokens, 64000);
+    } else if (modelDetails.name.includes('claude-3-7-sonnet')) {
+      safeMaxTokens = Math.min(dynamicMaxTokens, 64000);
+    } else if (modelDetails.name.includes('claude-3-5-sonnet')) {
+      safeMaxTokens = Math.min(dynamicMaxTokens, 8192);
+    } else {
+      safeMaxTokens = Math.min(dynamicMaxTokens, 4096);
+    }
+  } else {
+    // General safety cap for other providers
+    safeMaxTokens = Math.min(dynamicMaxTokens, 128000);
+  }
 
   logger.info(
     `Max tokens for model ${modelDetails.name} is ${safeMaxTokens} (capped from ${dynamicMaxTokens}) based on model limits`,

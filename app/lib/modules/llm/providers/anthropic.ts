@@ -22,14 +22,14 @@ export class AnthropicProvider extends BaseProvider {
       label: 'Claude Sonnet 4',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
-      maxCompletionTokens: 128000,
+      maxCompletionTokens: 64000,
     },
     {
       name: 'claude-sonnet-4-20250514-smartai',
       label: 'Claude Sonnet 4 (SmartAI)',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
-      maxCompletionTokens: 128000,
+      maxCompletionTokens: 64000,
       isSmartAI: true,
     },
     {
@@ -37,21 +37,21 @@ export class AnthropicProvider extends BaseProvider {
       label: 'Claude Opus 4.1',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
-      maxCompletionTokens: 128000,
+      maxCompletionTokens: 64000,
     },
     {
       name: 'claude-3-7-sonnet-20250219',
       label: 'Claude 3.7 Sonnet',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
-      maxCompletionTokens: 128000,
+      maxCompletionTokens: 64000,
     },
     {
       name: 'claude-3-5-sonnet-20241022',
       label: 'Claude 3.5 Sonnet',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
-      maxCompletionTokens: 128000,
+      maxCompletionTokens: 8192,
     },
 
     // Claude 3 Haiku: 200k context, fastest and most cost-effective
@@ -60,7 +60,7 @@ export class AnthropicProvider extends BaseProvider {
       label: 'Claude 3 Haiku',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
-      maxCompletionTokens: 128000,
+      maxCompletionTokens: 4096,
     },
   ];
 
@@ -111,12 +111,29 @@ export class AnthropicProvider extends BaseProvider {
         contextWindow = 200000; // Claude 3 Sonnet has 200k context
       }
 
+      // Determine max completion tokens based on model
+      let maxCompletionTokens = 4096; // default fallback
+
+      if (m.id?.includes('claude-sonnet-4') || m.id?.includes('claude-opus-4')) {
+        maxCompletionTokens = 64000;
+      } else if (m.id?.includes('claude-3-7-sonnet')) {
+        maxCompletionTokens = 64000;
+      } else if (m.id?.includes('claude-3-5-sonnet')) {
+        maxCompletionTokens = 8192;
+      } else if (m.id?.includes('claude-3-haiku')) {
+        maxCompletionTokens = 4096;
+      } else if (m.id?.includes('claude-3-opus')) {
+        maxCompletionTokens = 4096;
+      } else if (m.id?.includes('claude-3-sonnet')) {
+        maxCompletionTokens = 4096;
+      }
+
       return {
         name: m.id,
         label: `${m.display_name} (${Math.floor(contextWindow / 1000)}k context)`,
         provider: this.name,
         maxTokenAllowed: contextWindow,
-        maxCompletionTokens: 128000, // Claude models support up to 128k completion tokens
+        maxCompletionTokens,
       };
     });
   }
