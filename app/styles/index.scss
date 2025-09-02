@@ -87,3 +87,10 @@ body {
     font-size: 1.5rem; // 24px instead of 30px (text-2xl)
   }
 }
+
+// Global icon button styling
+.icon-button {
+  @apply bg-transparent text-bolt-elements-textSecondary;
+  @apply hover:text-bolt-elements-item-contentAccent hover:bg-bolt-elements-item-backgroundActive;
+  @apply transition-colors p-1 rounded;
+}
