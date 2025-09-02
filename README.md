@@ -14,6 +14,15 @@ We believe in making AI development accessible to everyone while providing profe
 
 Our fork includes numerous advanced features that were submitted as PRs to bolt.diy but were not integrated into the main application:
 
+### 🤖 **NEW: SmartAI - Detailed Conversational Coding (Bolt.gives Exclusive)**
+- **Real-time explanations** of what the AI is doing and why
+- **Educational feedback** that helps you learn as you code
+- **Step-by-step narration** of the coding process
+- **Best practices insights** shared during implementation
+- **Debugging explanations** showing how issues are identified and fixed
+- **Available for Claude Sonnet 4** with more models coming soon
+- Transform "Generating Response..." into an interactive coding companion!
+
 ### ✨ **Comprehensive Save All System** 
 - **One-click save** for all modified files
 - **Auto-save functionality** with customizable intervals
@@ -49,6 +58,7 @@ Our fork includes numerous advanced features that were submitted as PRs to bolt.
 
 ### 🤖 **Extended AI Model Support**
 - **Claude 4 models** (Opus, Sonnet, Haiku)
+- **Claude Sonnet 4 (SmartAI)** - Exclusive conversational coding variant
 - **Auto-detection of Ollama** when configured
 - **Enhanced provider management**
 - **Automatic provider enablement** based on environment
