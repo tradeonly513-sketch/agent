@@ -1,5 +1,5 @@
 import type { TabType } from './types';
-import { User, Settings, Bell, Star, Database, Cloud, Laptop, Activity, Github, Wrench, List } from 'lucide-react';
+import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List } from 'lucide-react';
 
 export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string }>> = {
   profile: User,
@@ -9,10 +9,9 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   data: Database,
   'cloud-providers': Cloud,
   'local-providers': Laptop,
-  'service-status': Activity,
   github: Github,
-  netlify: () => <i-bolt:netlify className="w-5 h-5" />,
-  vercel: () => <i-bolt:vercel className="w-5 h-5" />,
+  netlify: Database,
+  vercel: Cloud,
   supabase: Database,
   'event-logs': List,
   mcp: Wrench,
@@ -26,7 +25,6 @@ export const TAB_LABELS: Record<TabType, string> = {
   data: 'Data Management',
   'cloud-providers': 'Cloud Providers',
   'local-providers': 'Local Providers',
-  'service-status': 'Service Status',
   github: 'GitHub',
   netlify: 'Netlify',
   vercel: 'Vercel',
@@ -43,7 +41,6 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
   data: 'Manage your data and storage',
   'cloud-providers': 'Configure cloud AI providers and models',
   'local-providers': 'Configure local AI providers and models',
-  'service-status': 'Monitor cloud LLM service status',
   github: 'Connect and manage GitHub integration',
   netlify: 'Configure Netlify deployment settings',
   vercel: 'Manage Vercel projects and deployments',
@@ -66,8 +63,7 @@ export const DEFAULT_TAB_CONFIG = [
   { id: 'event-logs', visible: true, window: 'user' as const, order: 9 },
   { id: 'mcp', visible: true, window: 'user' as const, order: 10 },
   { id: 'profile', visible: true, window: 'user' as const, order: 11 },
-  { id: 'service-status', visible: true, window: 'user' as const, order: 12 },
-  { id: 'settings', visible: true, window: 'user' as const, order: 13 },
+  { id: 'settings', visible: true, window: 'user' as const, order: 12 },
 
   // User Window Tabs (In dropdown, initially hidden)
 ];
