@@ -84,7 +84,7 @@ const Events = ({ featureName }: EventsProps) => {
       case 'start-feature':
         return event.why === 'implement' ? 'Writing the feature' : 'Writing tests';
       case 'start-mockup':
-        return 'Writing mockup components';
+        return 'Building the mockup';
       case 'write-mockup-tests':
         return 'Writing tests for mockup';
       case 'run-tests':
