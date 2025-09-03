@@ -1,5 +1,5 @@
 import type { TabType } from './types';
-import { User, Settings, Bell, Star, Database, Cloud, Laptop, Wifi, List, Wrench } from 'lucide-react';
+import { User, Settings, Bell, Star, Database, Cloud, Laptop, Activity, Github, Wrench, List } from 'lucide-react';
 
 export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string }>> = {
   profile: User,
@@ -9,7 +9,11 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   data: Database,
   'cloud-providers': Cloud,
   'local-providers': Laptop,
-  connection: Wifi,
+  'service-status': Activity,
+  github: Github,
+  netlify: () => <i-bolt:netlify className="w-5 h-5" />,
+  vercel: () => <i-bolt:vercel className="w-5 h-5" />,
+  supabase: Database,
   'event-logs': List,
   mcp: Wrench,
 };
@@ -22,7 +26,11 @@ export const TAB_LABELS: Record<TabType, string> = {
   data: 'Data Management',
   'cloud-providers': 'Cloud Providers',
   'local-providers': 'Local Providers',
-  connection: 'Connection',
+  'service-status': 'Service Status',
+  github: 'GitHub',
+  netlify: 'Netlify',
+  vercel: 'Vercel',
+  supabase: 'Supabase',
   'event-logs': 'Event Logs',
   mcp: 'MCP Servers',
 };
@@ -35,7 +43,11 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
   data: 'Manage your data and storage',
   'cloud-providers': 'Configure cloud AI providers and models',
   'local-providers': 'Configure local AI providers and models',
-  connection: 'Check connection status and settings',
+  'service-status': 'Monitor cloud LLM service status',
+  github: 'Connect and manage GitHub integration',
+  netlify: 'Configure Netlify deployment settings',
+  vercel: 'Manage Vercel projects and deployments',
+  supabase: 'Setup Supabase database connection',
   'event-logs': 'View system events and logs',
   mcp: 'Configure MCP (Model Context Protocol) servers',
 };
@@ -46,13 +58,16 @@ export const DEFAULT_TAB_CONFIG = [
   { id: 'data', visible: true, window: 'user' as const, order: 1 },
   { id: 'cloud-providers', visible: true, window: 'user' as const, order: 2 },
   { id: 'local-providers', visible: true, window: 'user' as const, order: 3 },
-  { id: 'connection', visible: true, window: 'user' as const, order: 4 },
-  { id: 'notifications', visible: true, window: 'user' as const, order: 5 },
-  { id: 'event-logs', visible: true, window: 'user' as const, order: 6 },
-  { id: 'mcp', visible: true, window: 'user' as const, order: 7 },
-
-  { id: 'profile', visible: true, window: 'user' as const, order: 9 },
-  { id: 'settings', visible: true, window: 'user' as const, order: 10 },
+  { id: 'github', visible: true, window: 'user' as const, order: 4 },
+  { id: 'netlify', visible: true, window: 'user' as const, order: 5 },
+  { id: 'vercel', visible: true, window: 'user' as const, order: 6 },
+  { id: 'supabase', visible: true, window: 'user' as const, order: 7 },
+  { id: 'notifications', visible: true, window: 'user' as const, order: 8 },
+  { id: 'event-logs', visible: true, window: 'user' as const, order: 9 },
+  { id: 'mcp', visible: true, window: 'user' as const, order: 10 },
+  { id: 'profile', visible: true, window: 'user' as const, order: 11 },
+  { id: 'service-status', visible: true, window: 'user' as const, order: 12 },
+  { id: 'settings', visible: true, window: 'user' as const, order: 13 },
 
   // User Window Tabs (In dropdown, initially hidden)
 ];
