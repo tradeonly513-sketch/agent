@@ -94,3 +94,54 @@ body {
   @apply hover:text-bolt-elements-item-contentAccent hover:bg-bolt-elements-item-backgroundActive;
   @apply transition-colors p-1 rounded;
 }
+
+// Theme-safe utility classes to prevent white background leaks
+.theme-safe-button {
+  @apply bg-transparent text-bolt-elements-textSecondary;
+  @apply hover:bg-bolt-elements-background-depth-2 hover:text-bolt-elements-textPrimary;
+  @apply transition-colors focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColorActive;
+  @apply border-0;
+  
+  // Prevent browser defaults from overriding
+  background-color: transparent !important;
+  
+  &:not(:hover):not(:focus):not(:active) {
+    background-color: transparent !important;
+  }
+}
+
+.theme-safe-card {
+  @apply bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary;
+  @apply border border-bolt-elements-borderColor;
+  
+  // Prevent white background leaks
+  background-color: var(--bolt-elements-bg-depth-1) !important;
+}
+
+.theme-safe-badge {
+  @apply bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary;
+  @apply border border-bolt-elements-borderColor/30;
+  
+  // Override any white backgrounds from component libraries
+  background-color: var(--bolt-elements-bg-depth-2) !important;
+  
+  &.subtle {
+    @apply bg-bolt-elements-background-depth-2/50;
+    background-color: color-mix(in srgb, var(--bolt-elements-bg-depth-2), transparent 50%) !important;
+  }
+}
+
+// Global reset for common white background leaks
+button:not([class*="bg-"]):not([style*="background"]) {
+  background-color: transparent;
+}
+
+// Prevent input and button default backgrounds in forms
+input[type="color"] {
+  background-color: transparent;
+}
+
+// Motion components override
+[data-framer-component-type] button {
+  background-color: transparent;
+}

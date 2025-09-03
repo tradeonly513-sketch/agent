@@ -95,7 +95,7 @@ export const ActionPromptLibrary: React.FC<ActionPromptLibraryProps> = ({ isOpen
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary"
+              className="theme-safe-button text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary"
             >
               <X className="w-5 h-5" />
             </Button>
@@ -128,10 +128,10 @@ export const ActionPromptLibrary: React.FC<ActionPromptLibraryProps> = ({ isOpen
                       key={category.id}
                       onClick={() => handleCategorySelect(category.id)}
                       className={classNames(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all border',
+                        'theme-safe-button flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all border',
                         isSelected
-                          ? 'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent border-bolt-elements-item-contentAccent'
-                          : 'bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary border-bolt-elements-borderColor hover:bg-bolt-elements-item-backgroundActive hover:text-bolt-elements-textPrimary',
+                          ? '!bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent border-bolt-elements-item-contentAccent'
+                          : '!bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary border-bolt-elements-borderColor hover:!bg-bolt-elements-item-backgroundActive hover:text-bolt-elements-textPrimary',
                       )}
                     >
                       <Icon className="w-4 h-4" />
@@ -146,7 +146,7 @@ export const ActionPromptLibrary: React.FC<ActionPromptLibraryProps> = ({ isOpen
                 {(searchQuery || selectedCategory) && (
                   <button
                     onClick={resetFilters}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-bolt-elements-background-depth-2 text-bolt-elements-textTertiary border border-bolt-elements-borderColor hover:bg-bolt-elements-item-backgroundActive hover:text-bolt-elements-textPrimary transition-all"
+                    className="theme-safe-button flex items-center gap-2 px-3 py-2 rounded-lg text-sm !bg-bolt-elements-background-depth-2 text-bolt-elements-textTertiary border border-bolt-elements-borderColor hover:!bg-bolt-elements-item-backgroundActive hover:text-bolt-elements-textPrimary transition-all"
                   >
                     <X className="w-4 h-4" />
                     Clear filters
