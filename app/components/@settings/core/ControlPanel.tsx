@@ -84,6 +84,11 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
           return false;
         }
 
+        // Exclude profile, settings, and notifications tabs from tiles (accessible via avatar dropdown)
+        if (tab.id === 'profile' || tab.id === 'settings' || tab.id === 'notifications') {
+          return false;
+        }
+
         return tab.visible && tab.window === 'user';
       })
       .sort((a, b) => a.order - b.order);
@@ -92,13 +97,9 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
   // Reset to default view when modal opens/closes
   useEffect(() => {
     if (!open) {
-      // Reset when closing
       setActiveTab(null);
       setLoadingTab(null);
       setShowTabManagement(false);
-    } else {
-      // When opening, set to null to show the main view
-      setActiveTab(null);
     }
   }, [open]);
 

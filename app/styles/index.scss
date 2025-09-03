@@ -101,10 +101,10 @@ body {
   @apply hover:bg-bolt-elements-background-depth-2 hover:text-bolt-elements-textPrimary;
   @apply transition-colors focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColorActive;
   @apply border-0;
-  
+
   // Prevent browser defaults from overriding
   background-color: transparent !important;
-  
+
   &:not(:hover):not(:focus):not(:active) {
     background-color: transparent !important;
   }
@@ -113,7 +113,7 @@ body {
 .theme-safe-card {
   @apply bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary;
   @apply border border-bolt-elements-borderColor;
-  
+
   // Prevent white background leaks
   background-color: var(--bolt-elements-bg-depth-1) !important;
 }
@@ -121,10 +121,10 @@ body {
 .theme-safe-badge {
   @apply bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary;
   @apply border border-bolt-elements-borderColor/30;
-  
+
   // Override any white backgrounds from component libraries
   background-color: var(--bolt-elements-bg-depth-2) !important;
-  
+
   &.subtle {
     @apply bg-bolt-elements-background-depth-2/50;
     background-color: color-mix(in srgb, var(--bolt-elements-bg-depth-2), transparent 50%) !important;
@@ -132,12 +132,12 @@ body {
 }
 
 // Global reset for common white background leaks
-button:not([class*="bg-"]):not([style*="background"]) {
+button:not([class*='bg-']):not([style*='background']) {
   background-color: transparent;
 }
 
 // Prevent input and button default backgrounds in forms
-input[type="color"] {
+input[type='color'] {
   background-color: transparent;
 }
 
