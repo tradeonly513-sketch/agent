@@ -1,41 +1,11 @@
 import { atom } from 'nanostores';
-import type { SupabaseUser, SupabaseStats, SupabaseApiKey, SupabaseCredentials } from '~/types/supabase';
-
-export interface SupabaseProject {
-  id: string;
-  name: string;
-  region: string;
-  organization_id: string;
-  status: string;
-  database?: {
-    host: string;
-    version: string;
-    postgres_engine: string;
-    release_channel: string;
-  };
-  created_at: string;
-  stats?: {
-    database: {
-      tables?: number;
-      views?: number;
-      functions?: number;
-      size_mb?: number;
-    };
-    storage: {
-      buckets?: number;
-      files?: number;
-      used_gb?: number;
-      available_gb?: number;
-    };
-    auth?: {
-      users?: number;
-    };
-    functions?: {
-      deployed?: number;
-      invocations?: number;
-    };
-  };
-}
+import type {
+  SupabaseUser,
+  SupabaseStats,
+  SupabaseApiKey,
+  SupabaseCredentials,
+  SupabaseProject,
+} from '~/types/supabase';
 
 export interface SupabaseConnectionState {
   user: SupabaseUser | null;
@@ -46,6 +16,9 @@ export interface SupabaseConnectionState {
   project?: SupabaseProject;
   credentials?: SupabaseCredentials;
 }
+
+// Re-export the SupabaseProject interface from types
+export type { SupabaseProject } from '~/types/supabase';
 
 const savedConnection = typeof localStorage !== 'undefined' ? localStorage.getItem('supabase_connection') : null;
 const savedCredentials = typeof localStorage !== 'undefined' ? localStorage.getItem('supabaseCredentials') : null;

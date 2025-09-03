@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
-import { Input } from '~/components/ui/Input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import {
   supabaseConnection,
@@ -416,7 +415,7 @@ export default function SupabaseTab() {
                           </div>
                           <div className="text-center">
                             <div className="text-sm font-semibold text-bolt-elements-textPrimary">
-                              {project.stats?.functions?.deployed ?? '--'}
+                              {project.stats?.functions.deployed ?? '--'}
                             </div>
                             <div className="text-xs text-bolt-elements-textSecondary flex items-center justify-center gap-1">
                               <div className="i-ph:code w-3 h-3" />
@@ -704,13 +703,20 @@ export default function SupabaseTab() {
 
               <div>
                 <label className="block text-sm text-bolt-elements-textSecondary mb-2">Access Token</label>
-                <Input
+                <input
                   type="password"
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   disabled={connecting}
                   placeholder="Enter your Supabase access token"
-                  className={classNames('bg-[#F8F8F8] dark:bg-[#1A1A1A]', 'disabled:opacity-50')}
+                  className={classNames(
+                    'w-full px-3 py-2 rounded-lg text-sm',
+                    'bg-[#F8F8F8] dark:bg-[#1A1A1A]',
+                    'border border-[#E5E5E5] dark:border-[#333333]',
+                    'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
+                    'focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive',
+                    'disabled:opacity-50',
+                  )}
                 />
                 <div className="mt-2 text-sm text-bolt-elements-textSecondary">
                   <a
@@ -918,10 +924,8 @@ export default function SupabaseTab() {
                         const totalStorage =
                           connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage.used_gb || 0), 0) || 0;
                         const totalFunctions =
-                          connection.stats?.projects?.reduce(
-                            (sum, p) => sum + (p.stats?.functions?.deployed || 0),
-                            0,
-                          ) || 0;
+                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.functions.deployed || 0), 0) ||
+                          0;
                         const totalTables =
                           connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database.tables || 0), 0) || 0;
                         const totalBuckets =
@@ -1043,14 +1047,14 @@ export default function SupabaseTab() {
                         <div>
                           Deployed:{' '}
                           {connection.stats?.projects?.reduce(
-                            (sum, p) => sum + (p.stats?.functions?.deployed || 0),
+                            (sum, p) => sum + (p.stats?.functions.deployed || 0),
                             0,
                           ) || '--'}
                         </div>
                         <div>
                           Invocations:{' '}
                           {connection.stats?.projects?.reduce(
-                            (sum, p) => sum + (p.stats?.functions?.invocations || 0),
+                            (sum, p) => sum + (p.stats?.functions.invocations || 0),
                             0,
                           ) || '--'}
                         </div>

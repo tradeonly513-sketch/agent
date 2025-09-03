@@ -144,8 +144,8 @@ const NotificationsTab = () => {
     if (details.type === 'update') {
       return (
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-gray-600 dark:text-gray-400">{details.message}</p>
-          <div className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-500">
+          <p className="text-sm text-bolt-elements-textSecondary">{details.message}</p>
+          <div className="flex flex-col gap-1 text-xs text-bolt-elements-textTertiary">
             <p>Current Version: {details.currentVersion}</p>
             <p>Latest Version: {details.latestVersion}</p>
             <p>Branch: {details.branch}</p>
@@ -156,10 +156,10 @@ const NotificationsTab = () => {
               'mt-2 inline-flex items-center gap-2',
               'rounded-lg px-3 py-1.5',
               'text-sm font-medium',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
-              'text-gray-900 dark:text-white',
-              'hover:bg-purple-500/10 dark:hover:bg-purple-500/20',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
+              'text-bolt-elements-textPrimary',
+              'hover:bg-bolt-elements-item-backgroundActive',
               'transition-all duration-200',
             )}
           >
@@ -170,7 +170,7 @@ const NotificationsTab = () => {
       );
     }
 
-    return details.message ? <p className="text-sm text-gray-600 dark:text-gray-400">{details.message}</p> : null;
+    return details.message ? <p className="text-sm text-bolt-elements-textSecondary">{details.message}</p> : null;
   };
 
   const filterOptions: {
@@ -198,10 +198,10 @@ const NotificationsTab = () => {
               className={classNames(
                 'flex items-center gap-2',
                 'rounded-lg px-3 py-1.5',
-                'text-sm text-gray-900 dark:text-white',
-                'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-                'border border-[#E5E5E5] dark:border-[#1A1A1A]',
-                'hover:bg-purple-500/10 dark:hover:bg-purple-500/20',
+                'text-sm text-bolt-elements-textPrimary',
+                'bg-bolt-elements-background-depth-2',
+                'border border-bolt-elements-borderColor',
+                'hover:bg-bolt-elements-item-backgroundActive',
                 'transition-all duration-200',
               )}
             >
@@ -219,13 +219,13 @@ const NotificationsTab = () => {
                 );
               })()}
               {filterOptions.find((opt) => opt.id === filter)?.label || 'Filter Notifications'}
-              <ChevronDown className="text-lg text-gray-500 dark:text-gray-400" />
+              <ChevronDown className="text-lg text-bolt-elements-textSecondary" />
             </button>
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Portal>
             <DropdownMenu.Content
-              className="min-w-[200px] bg-white dark:bg-[#0A0A0A] rounded-lg shadow-lg py-1 z-[250] animate-in fade-in-0 zoom-in-95 border border-[#E5E5E5] dark:border-[#1A1A1A]"
+              className="min-w-[200px] bg-bolt-elements-background-depth-2 rounded-lg shadow-lg py-1 z-[250] animate-in fade-in-0 zoom-in-95 border border-bolt-elements-borderColor"
               sideOffset={5}
               align="start"
               side="bottom"
@@ -233,23 +233,28 @@ const NotificationsTab = () => {
               {filterOptions.map((option) => (
                 <DropdownMenu.Item
                   key={option.id}
-                  className="group flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-purple-500/10 dark:hover:bg-purple-500/20 cursor-pointer transition-colors"
+                  className="group flex items-center px-4 py-2.5 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive cursor-pointer transition-colors"
                   onClick={() => handleFilterChange(option.id)}
                 >
                   <div className="mr-3 flex h-5 w-5 items-center justify-center">
                     {typeof option.icon === 'string' ? (
                       <div
-                        className={classNames(option.icon, 'text-lg group-hover:text-purple-500 transition-colors')}
+                        className={classNames(
+                          option.icon,
+                          'text-lg group-hover:text-bolt-elements-item-contentActive transition-colors',
+                        )}
                         style={{ color: option.color }}
                       />
                     ) : (
                       <option.icon
-                        className="text-lg group-hover:text-purple-500 transition-colors"
+                        className="text-lg group-hover:text-bolt-elements-item-contentActive transition-colors"
                         {...({ style: { color: option.color } } as any)}
                       />
                     )}
                   </div>
-                  <span className="group-hover:text-purple-500 transition-colors">{option.label}</span>
+                  <span className="group-hover:text-bolt-elements-item-contentActive transition-colors">
+                    {option.label}
+                  </span>
                 </DropdownMenu.Item>
               ))}
             </DropdownMenu.Content>
@@ -261,14 +266,14 @@ const NotificationsTab = () => {
           className={classNames(
             'group flex items-center gap-2',
             'rounded-lg px-3 py-1.5',
-            'text-sm text-gray-900 dark:text-white',
-            'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-            'border border-[#E5E5E5] dark:border-[#1A1A1A]',
-            'hover:bg-purple-500/10 dark:hover:bg-purple-500/20',
+            'text-sm text-bolt-elements-textPrimary',
+            'bg-bolt-elements-background-depth-2',
+            'border border-bolt-elements-borderColor',
+            'hover:bg-bolt-elements-item-backgroundActive',
             'transition-all duration-200',
           )}
         >
-          <Trash2 className="text-lg text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+          <Trash2 className="text-lg text-bolt-elements-textSecondary group-hover:text-bolt-elements-item-contentActive transition-colors" />
           Clear All
         </button>
       </div>
@@ -281,14 +286,14 @@ const NotificationsTab = () => {
             className={classNames(
               'flex flex-col items-center justify-center gap-4',
               'rounded-lg p-8 text-center',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
             )}
           >
-            <BellOff className="text-4xl text-gray-400 dark:text-gray-600" />
+            <BellOff className="text-4xl text-bolt-elements-textSecondary" />
             <div className="flex flex-col gap-1">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white">No Notifications</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">You're all caught up!</p>
+              <h3 className="text-sm font-medium text-bolt-elements-textPrimary">No Notifications</h3>
+              <p className="text-sm text-bolt-elements-textSecondary">You're all caught up!</p>
             </div>
           </motion.div>
         ) : (
@@ -302,8 +307,8 @@ const NotificationsTab = () => {
                 className={classNames(
                   'flex flex-col gap-2',
                   'rounded-lg p-4',
-                  'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-                  'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+                  'bg-bolt-elements-background-depth-2',
+                  'border border-bolt-elements-borderColor',
                   style.bg,
                   'transition-all duration-200',
                 )}
@@ -312,15 +317,15 @@ const NotificationsTab = () => {
                   <div className="flex items-start gap-3">
                     {React.createElement(style.icon, { className: classNames('text-lg', style.color) })}
                     <div className="flex flex-col gap-1">
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">{log.message}</h3>
+                      <h3 className="text-sm font-medium text-bolt-elements-textPrimary">{log.message}</h3>
                       {log.details && renderNotificationDetails(log.details as NotificationDetails)}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-bolt-elements-textSecondary">
                         Category: {log.category}
                         {log.subCategory ? ` > ${log.subCategory}` : ''}
                       </p>
                     </div>
                   </div>
-                  <time className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                  <time className="shrink-0 text-xs text-bolt-elements-textSecondary">
                     {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
                   </time>
                 </div>

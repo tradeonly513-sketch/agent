@@ -13,26 +13,39 @@ export interface SupabaseProject {
   region: string;
   created_at: string;
   status: string;
-  stats?: {
-    database: {
-      tables?: number;
-      views?: number;
-      functions?: number;
-      size_mb?: number;
-    };
-    storage: {
-      buckets?: number;
-      files?: number;
-      used_gb?: number;
-      available_gb?: number;
-    };
-    auth?: {
-      users?: number;
-    };
-    functions?: {
-      deployed?: number;
-      invocations?: number;
-    };
+  database?: {
+    host: string;
+    version: string;
+    postgres_engine: string;
+    release_channel: string;
+  };
+  stats?: ProjectStats;
+}
+
+export interface ProjectStats {
+  database: {
+    tables: number;
+    views: number;
+    functions: number;
+    size_bytes: number;
+    size_mb: number;
+  };
+  storage: {
+    buckets: number;
+    files: number;
+    used_bytes: number;
+    used_gb: number;
+    available_bytes: number;
+    available_gb: number;
+  };
+  functions: {
+    deployed: number;
+    invocations: number;
+  };
+  auth?: {
+    users: number;
+    sessions: number;
+    providers: string[];
   };
 }
 

@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { chatStore } from '~/lib/stores/chat';
+import { toggleSidebar } from '~/lib/stores/sidebar';
 import { classNames } from '~/utils/classNames';
 import { HeaderActionButtons } from './HeaderActionButtons.client';
 import { ChatDescription } from '~/lib/persistence/ChatDescription.client';
@@ -17,7 +18,7 @@ export function Header() {
       })}
     >
       <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
-        <Sidebar className="text-lg icon-button" />
+        <Sidebar className="text-lg icon-button" onClick={toggleSidebar} />
         <a href="/" className="text-2xl font-semibold text-accent flex items-center">
           {/* <span className="i-bolt:logo-text?mask w-[46px] inline-block" /> */}
           <img src="/logo-light-styled.png" alt="logo" className="w-[90px] inline-block dark:hidden" />

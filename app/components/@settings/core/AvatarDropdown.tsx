@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import { profileStore } from '~/lib/stores/profile';
+import { useNotifications } from '~/lib/hooks/useNotifications';
 import type { TabType, Profile } from './types';
-import { User, Settings, Bug } from 'lucide-react';
+import { User, Settings, Bug, Bell } from 'lucide-react';
 
 interface AvatarDropdownProps {
   onSelectTab: (tab: TabType) => void;
@@ -12,12 +13,13 @@ interface AvatarDropdownProps {
 
 export const AvatarDropdown = ({ onSelectTab }: AvatarDropdownProps) => {
   const profile = useStore(profileStore) as Profile;
+  const { hasUnreadNotifications, unreadNotifications } = useNotifications();
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <motion.button
-          className="w-10 h-10 rounded-full bg-transparent flex items-center justify-center focus:outline-none"
+          className="relative w-10 h-10 rounded-full bg-transparent flex items-center justify-center focus:outline-none"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -32,6 +34,15 @@ export const AvatarDropdown = ({ onSelectTab }: AvatarDropdownProps) => {
           ) : (
             <div className="w-full h-full rounded-full flex items-center justify-center bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500">
               <User className="w-6 h-6" />
+            </div>
+          )}
+
+          {/* Notification Badge */}
+          {hasUnreadNotifications && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-950 flex items-center justify-center">
+              <span className="text-[8px] font-bold text-white leading-none">
+                {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
+              </span>
             </div>
           )}
         </motion.button>
@@ -109,6 +120,30 @@ export const AvatarDropdown = ({ onSelectTab }: AvatarDropdownProps) => {
           >
             <Settings className="w-4 h-4 text-gray-400 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors" />
             Settings
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            className={classNames(
+              'flex items-center gap-2 px-4 py-2.5',
+              'text-sm text-gray-700 dark:text-gray-200',
+              'hover:bg-purple-50 dark:hover:bg-purple-500/10',
+              'hover:text-purple-500 dark:hover:text-purple-400',
+              'cursor-pointer transition-all duration-200',
+              'outline-none',
+              'group',
+            )}
+            onClick={() => onSelectTab('notifications')}
+          >
+            <div className="flex items-center gap-2 flex-1">
+              <Bell className="w-4 h-4 text-gray-400 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors" />
+              <span>Notifications</span>
+              {hasUnreadNotifications && (
+                <div className="ml-auto flex items-center gap-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-red-500 font-medium">{unreadNotifications.length}</span>
+                </div>
+              )}
+            </div>
           </DropdownMenu.Item>
 
           <div className="my-1 border-t border-gray-200/50 dark:border-gray-800/50" />

@@ -5,7 +5,6 @@ import { useStore } from '@nanostores/react';
 import { logStore } from '~/lib/stores/logs';
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
-import { Input } from '~/components/ui/Input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import {
   vercelConnection,
@@ -61,7 +60,7 @@ export default function VercelTab() {
     });
 
     try {
-      const response = await fetch('https://api.vercel.com/v13/user', {
+      const response = await fetch('https://api.vercel.com/v2/user', {
         headers: {
           Authorization: `Bearer ${connection.token}`,
           'Content-Type': 'application/json',
@@ -99,7 +98,7 @@ export default function VercelTab() {
       icon: 'i-ph:arrows-clockwise',
       action: async (projectId: string) => {
         try {
-          const response = await fetch(`https://api.vercel.com/v13/deployments`, {
+          const response = await fetch(`https://api.vercel.com/v1/deployments`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${connection.token}`,
@@ -181,7 +180,7 @@ export default function VercelTab() {
       icon: 'i-ph:trash',
       action: async (projectId: string) => {
         try {
-          const response = await fetch(`https://api.vercel.com/v13/projects/${projectId}`, {
+          const response = await fetch(`https://api.vercel.com/v1/projects/${projectId}`, {
             method: 'DELETE',
             headers: {
               Authorization: `Bearer ${connection.token}`,
@@ -218,7 +217,7 @@ export default function VercelTab() {
     isConnecting.set(true);
 
     try {
-      const response = await fetch('https://api.vercel.com/v13/user', {
+      const response = await fetch('https://api.vercel.com/v2/user', {
         headers: {
           Authorization: `Bearer ${connection.token}`,
           'Content-Type': 'application/json',
@@ -784,13 +783,20 @@ export default function VercelTab() {
 
               <div>
                 <label className="block text-sm text-bolt-elements-textSecondary mb-2">Personal Access Token</label>
-                <Input
+                <input
                   type="password"
                   value={connection.token}
                   onChange={(e) => updateVercelConnection({ ...connection, token: e.target.value })}
                   disabled={connecting}
                   placeholder="Enter your Vercel personal access token"
-                  className={classNames('bg-[#F8F8F8] dark:bg-[#1A1A1A]', 'disabled:opacity-50')}
+                  className={classNames(
+                    'w-full px-3 py-2 rounded-lg text-sm',
+                    'bg-[#F8F8F8] dark:bg-[#1A1A1A]',
+                    'border border-[#E5E5E5] dark:border-[#333333]',
+                    'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
+                    'focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive',
+                    'disabled:opacity-50',
+                  )}
                 />
                 <div className="mt-2 text-sm text-bolt-elements-textSecondary">
                   <a

@@ -60,27 +60,27 @@ export const ImportFolderButton: React.FC<ImportFolderButtonProps> = ({ classNam
       );
 
       const textFiles = fileChecks.filter((f) => !f.isBinary).map((f) => f.file);
-      const binaryFilePaths = fileChecks
-        .filter((f) => f.isBinary)
-        .map((f) => f.file.webkitRelativePath.split('/').slice(1).join('/'));
+      const binaryFiles = fileChecks.filter((f) => f.isBinary).map((f) => f.file);
 
-      if (textFiles.length === 0) {
-        const error = new Error('No text files found');
-        logStore.logError('File import failed - no text files', error, { folderName });
-        toast.error('No text files found in the selected folder');
+      if (textFiles.length === 0 && binaryFiles.length === 0) {
+        const error = new Error('No valid files found');
+        logStore.logError('File import failed - no valid files', error, { folderName });
+        toast.error('No valid files found in the selected folder');
 
         return;
       }
 
-      if (binaryFilePaths.length > 0) {
-        logStore.logWarning(`Skipping binary files during import`, {
-          folderName,
-          binaryCount: binaryFilePaths.length,
-        });
-        toast.info(`Skipping ${binaryFilePaths.length} binary files`);
-      }
+      const totalFiles = textFiles.length + binaryFiles.length;
+      const importSummary =
+        binaryFiles.length > 0 && textFiles.length > 0
+          ? `${totalFiles} files (${textFiles.length} text, ${binaryFiles.length} binary)`
+          : binaryFiles.length > 0
+            ? `${binaryFiles.length} binary files`
+            : `${textFiles.length} text files`;
 
-      const messages = await createChatFromFolder(textFiles, binaryFilePaths, folderName);
+      toast.info(`Importing ${importSummary}...`);
+
+      const messages = await createChatFromFolder(textFiles, binaryFiles, folderName);
 
       if (importChat) {
         await importChat(folderName, [...messages]);
@@ -89,7 +89,7 @@ export const ImportFolderButton: React.FC<ImportFolderButtonProps> = ({ classNam
       logStore.logSystem('Folder imported successfully', {
         folderName,
         textFileCount: textFiles.length,
-        binaryFileCount: binaryFilePaths.length,
+        binaryFileCount: binaryFiles.length,
       });
       toast.success('Folder imported successfully');
     } catch (error) {

@@ -32,7 +32,7 @@ export const TabTile: React.FC<TabTileProps> = ({
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
           <div className={classNames('min-h-[160px] list-none', className || '')}>
-            <div className="relative h-full rounded-xl border border-[#E5E5E5] dark:border-[#333333] p-0.5">
+            <div className="relative h-full rounded-xl border border-bolt-elements-borderColor p-0.5">
               <GlowingEffect
                 blur={0}
                 borderWidth={1}
@@ -47,11 +47,11 @@ export const TabTile: React.FC<TabTileProps> = ({
                 onClick={onClick}
                 className={classNames(
                   'relative flex flex-col items-center justify-center h-full p-4 rounded-lg',
-                  'bg-bolt-elements-background-depth-1',
+                  'bg-bolt-elements-bg-depth-1',
                   'group cursor-pointer',
-                  'hover:bg-purple-50 dark:hover:bg-[#1a1a1a]',
+                  'hover:bg-bolt-elements-item-backgroundActive',
                   'transition-colors duration-100 ease-out',
-                  isActive ? 'bg-purple-500/5 dark:bg-purple-500/10' : '',
+                  isActive ? 'bg-bolt-elements-item-backgroundAccent/10' : '',
                   isLoading ? 'cursor-wait opacity-70 pointer-events-none' : '',
                 )}
               >
@@ -62,12 +62,12 @@ export const TabTile: React.FC<TabTileProps> = ({
                     'w-14 h-14',
                     'flex items-center justify-center',
                     'rounded-xl',
-                    'bg-bolt-elements-background-depth-2',
+                    'bg-bolt-elements-bg-depth-2',
                     'ring-1 ring-bolt-elements-borderColor',
                     'group-hover:bg-bolt-elements-item-backgroundActive',
                     'group-hover:ring-bolt-elements-borderColorActive',
                     'transition-all duration-100 ease-out',
-                    isActive ? 'bg-purple-500/10 dark:bg-purple-500/10 ring-purple-500/30 dark:ring-purple-500/20' : '',
+                    isActive ? 'bg-bolt-elements-item-backgroundAccent/20 ring-bolt-elements-borderColorActive' : '',
                   )}
                 >
                   {(() => {
@@ -76,10 +76,10 @@ export const TabTile: React.FC<TabTileProps> = ({
                       <IconComponent
                         className={classNames(
                           'w-8 h-8',
-                          'text-gray-600 dark:text-gray-300',
-                          'group-hover:text-purple-500 dark:group-hover:text-purple-400/80',
+                          'text-bolt-elements-textSecondary',
+                          'group-hover:text-bolt-elements-item-contentActive',
                           'transition-colors duration-100 ease-out',
-                          isActive ? 'text-purple-500 dark:text-purple-400/90' : '',
+                          isActive ? 'text-bolt-elements-item-contentAccent' : '',
                         )}
                       />
                     );
@@ -91,10 +91,10 @@ export const TabTile: React.FC<TabTileProps> = ({
                   <h3
                     className={classNames(
                       'text-[15px] font-medium leading-snug mb-2',
-                      'text-gray-700 dark:text-gray-200',
-                      'group-hover:text-purple-600 dark:group-hover:text-purple-300/90',
+                      'text-bolt-elements-textPrimary',
+                      'group-hover:text-bolt-elements-item-contentActive',
                       'transition-colors duration-100 ease-out',
-                      isActive ? 'text-purple-500 dark:text-purple-400/90' : '',
+                      isActive ? 'text-bolt-elements-item-contentAccent' : '',
                     )}
                   >
                     {TAB_LABELS[tab.id]}
@@ -103,12 +103,12 @@ export const TabTile: React.FC<TabTileProps> = ({
                     <p
                       className={classNames(
                         'text-[13px] leading-relaxed',
-                        'text-gray-500 dark:text-gray-400',
+                        'text-bolt-elements-textTertiary',
                         'max-w-[85%]',
                         'text-center',
-                        'group-hover:text-purple-500 dark:group-hover:text-purple-400/70',
+                        'group-hover:text-bolt-elements-item-contentActive/80',
                         'transition-colors duration-100 ease-out',
-                        isActive ? 'text-purple-400 dark:text-purple-400/80' : '',
+                        isActive ? 'text-bolt-elements-item-contentAccent/90' : '',
                       )}
                     >
                       {description}
@@ -119,12 +119,12 @@ export const TabTile: React.FC<TabTileProps> = ({
                 {/* Update Indicator with Tooltip */}
                 {hasUpdate && (
                   <>
-                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400 animate-pulse" />
+                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-bolt-elements-item-contentAccent animate-pulse" />
                     <Tooltip.Portal>
                       <Tooltip.Content
                         className={classNames(
                           'px-3 py-1.5 rounded-lg',
-                          'bg-bolt-elements-background-depth-2 text-bolt-elements-textPrimary',
+                          'bg-bolt-elements-bg-depth-2 text-bolt-elements-textPrimary',
                           'border border-bolt-elements-borderColor',
                           'text-sm font-medium',
                           'select-none',
@@ -134,7 +134,7 @@ export const TabTile: React.FC<TabTileProps> = ({
                         sideOffset={5}
                       >
                         {statusMessage}
-                        <Tooltip.Arrow className="fill-bolt-elements-background-depth-2" />
+                        <Tooltip.Arrow className="fill-bolt-elements-bg-depth-2" />
                       </Tooltip.Content>
                     </Tooltip.Portal>
                   </>

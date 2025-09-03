@@ -6,7 +6,6 @@ import { useStore } from '@nanostores/react';
 import { netlifyConnection, updateNetlifyConnection, initializeNetlifyConnection } from '~/lib/stores/netlify';
 import type { NetlifySite, NetlifyDeploy, NetlifyBuild, NetlifyUser } from '~/types/netlify';
 import { Button } from '~/components/ui/Button';
-import { Input } from '~/components/ui/Input';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '~/components/ui/Badge';
@@ -1065,12 +1064,19 @@ export default function NetlifyTab() {
                 <label className="block text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary mb-2">
                   API Token
                 </label>
-                <Input
+                <input
                   type="password"
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder="Enter your Netlify API token"
-                  className={classNames('bg-[#F8F8F8] dark:bg-[#1A1A1A]', 'disabled:opacity-50')}
+                  className={classNames(
+                    'w-full px-3 py-2 rounded-lg text-sm',
+                    'bg-[#F8F8F8] dark:bg-[#1A1A1A]',
+                    'border border-[#E5E5E5] dark:border-[#333333]',
+                    'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
+                    'focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive',
+                    'disabled:opacity-50',
+                  )}
                 />
                 <div className="mt-2 text-sm text-bolt-elements-textSecondary">
                   <a

@@ -6,10 +6,7 @@ import type { IProviderConfig } from '~/types/model';
 import { logStore } from '~/lib/stores/logs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
-import { BsRobot } from 'react-icons/bs';
-import type { IconType } from 'react-icons';
-import { BiChip } from 'react-icons/bi';
-import { TbBrandOpenai } from 'react-icons/tb';
+import { Bot, Cpu, Zap } from 'lucide-react';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
 import { useToast } from '~/components/ui/use-toast';
 import { Progress } from '~/components/ui/Progress';
@@ -20,10 +17,10 @@ import { Code, Database, Box, Loader2, RefreshCw, Trash2, Link, ExternalLink } f
 type ProviderName = 'Ollama' | 'LMStudio' | 'OpenAILike';
 
 // Update the PROVIDER_ICONS type to use the ProviderName type
-const PROVIDER_ICONS: Record<ProviderName, IconType> = {
-  Ollama: BsRobot,
-  LMStudio: BsRobot,
-  OpenAILike: TbBrandOpenai,
+const PROVIDER_ICONS: Record<ProviderName, React.ComponentType<{ className?: string }>> = {
+  Ollama: Bot,
+  LMStudio: Bot,
+  OpenAILike: Zap,
 };
 
 // Update PROVIDER_DESCRIPTIONS to use the same type
@@ -403,7 +400,7 @@ export default function LocalProvidersTab() {
               )}
               whileHover={{ scale: 1.05 }}
             >
-              <BiChip className="w-6 h-6" />
+              <Cpu className="w-6 h-6" />
             </motion.div>
             <div>
               <div className="flex items-center gap-2">
@@ -450,9 +447,8 @@ export default function LocalProvidersTab() {
                     )}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                   >
-                    {React.createElement(PROVIDER_ICONS[provider.name as ProviderName] || BsRobot, {
+                    {React.createElement(PROVIDER_ICONS[provider.name as ProviderName] || Bot, {
                       className: 'w-7 h-7',
-                      'aria-label': `${provider.name} icon`,
                     })}
                   </motion.div>
                   <div>
@@ -659,9 +655,8 @@ export default function LocalProvidersTab() {
                         )}
                         whileHover={{ scale: 1.1, rotate: 5 }}
                       >
-                        {React.createElement(PROVIDER_ICONS[provider.name as ProviderName] || BsRobot, {
+                        {React.createElement(PROVIDER_ICONS[provider.name as ProviderName] || Bot, {
                           className: 'w-7 h-7',
-                          'aria-label': `${provider.name} icon`,
                         })}
                       </motion.div>
                       <div>

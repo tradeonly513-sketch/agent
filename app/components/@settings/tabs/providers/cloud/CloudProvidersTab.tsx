@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Switch } from '~/components/ui/Switch';
-import { Input } from '~/components/ui/Input';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { URL_CONFIGURABLE_PROVIDERS } from '~/lib/stores/settings';
 import type { IProviderConfig } from '~/types/model';
@@ -9,16 +8,14 @@ import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
-
-// Removed unused react-icons imports, now using lucide-react
-import { Link, Info, Cloud, Brain, Cpu, Code, Database, Zap, Bot, Github } from 'lucide-react';
+import { Cloud, Bot, Brain, Cpu, Code, Zap, Database, Github } from 'lucide-react';
+import { Link, Info } from 'lucide-react';
 
 // Add type for provider names to ensure type safety
 type ProviderName =
   | 'AmazonBedrock'
   | 'Anthropic'
   | 'Cohere'
-  | 'Copilot'
   | 'Deepseek'
   | 'Github'
   | 'Google'
@@ -37,7 +34,6 @@ const PROVIDER_ICONS: Record<ProviderName, React.ComponentType<{ className?: str
   AmazonBedrock: Cloud,
   Anthropic: Brain,
   Cohere: Cpu,
-  Copilot: Github,
   Deepseek: Code,
   Github,
   Google: Cloud,
@@ -55,7 +51,6 @@ const PROVIDER_ICONS: Record<ProviderName, React.ComponentType<{ className?: str
 // Update PROVIDER_DESCRIPTIONS to use the same type
 const PROVIDER_DESCRIPTIONS: Partial<Record<ProviderName, string>> = {
   Anthropic: 'Access Claude and other Anthropic models',
-  Copilot: 'Use GitHub Copilot models for AI-powered coding assistance',
   Github: 'Use OpenAI models hosted through GitHub infrastructure',
   OpenAI: 'Use GPT-4, GPT-3.5, and other OpenAI models',
 };
@@ -240,14 +235,16 @@ const CloudProvidersTab = () => {
                     >
                       <div className="flex items-center gap-2 mt-4">
                         {editingProvider === provider.name ? (
-                          <Input
+                          <input
                             type="text"
                             defaultValue={provider.settings.baseUrl}
                             placeholder={`Enter ${provider.name} base URL`}
                             className={classNames(
-                              'flex-1',
-                              'bg-bolt-elements-background-depth-3',
-                              'focus:ring-purple-500/30',
+                              'flex-1 px-3 py-1.5 rounded-lg text-sm',
+                              'bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor',
+                              'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
+                              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+                              'transition-all duration-200',
                             )}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
