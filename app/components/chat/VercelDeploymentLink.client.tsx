@@ -27,7 +27,7 @@ export function VercelDeploymentLink() {
 
       try {
         // Fetch projects directly from the API
-        const projectsResponse = await fetch('https://api.vercel.com/v9/projects', {
+        const projectsResponse = await fetch('https://api.vercel.com/v13/projects', {
           headers: {
             Authorization: `Bearer ${connection.token}`,
             'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ export function VercelDeploymentLink() {
 
         if (project) {
           // Fetch project details including deployments
-          const projectDetailsResponse = await fetch(`https://api.vercel.com/v9/projects/${project.id}`, {
+          const projectDetailsResponse = await fetch(`https://api.vercel.com/v13/projects/${project.id}`, {
             headers: {
               Authorization: `Bearer ${connection.token}`,
               'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ export function VercelDeploymentLink() {
 
           // If no aliases or project details failed, try fetching deployments
           const deploymentsResponse = await fetch(
-            `https://api.vercel.com/v6/deployments?projectId=${project.id}&limit=1`,
+            `https://api.vercel.com/v13/deployments?projectId=${project.id}&limit=1`,
             {
               headers: {
                 Authorization: `Bearer ${connection.token}`,

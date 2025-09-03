@@ -15,6 +15,7 @@ export interface PromptInfo {
   tokenUsage: 'low' | 'medium' | 'high';
   complexity: 'simple' | 'moderate' | 'advanced';
   recommended?: boolean;
+  isCustom?: boolean;
 }
 
 interface PromptInfoCardProps {
@@ -90,6 +91,14 @@ export const PromptInfoCard = memo(({ prompt, selected = false, onSelect, classN
           <div className="absolute top-12 right-4 z-10">
             <Badge variant="primary" size="sm" className="text-xs font-medium">
               Recommended
+            </Badge>
+          </div>
+        )}
+
+        {prompt.isCustom && (
+          <div className="absolute top-4 right-4 z-10">
+            <Badge variant="secondary" size="sm" className="text-xs font-medium bg-purple-500/10 text-purple-500">
+              Custom
             </Badge>
           </div>
         )}

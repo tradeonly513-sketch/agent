@@ -120,8 +120,46 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
   try {
     const mcpService = MCPService.getInstance();
+
+    /*
+     * Ensure MCP service is initialized with user configuration
+     * This simulates what should happen when MCP store initializes from localStorage
+     */
+    const githubConfig = {
+      mcpServers: {
+        github: {
+          type: 'stdio' as const,
+          command: 'npx',
+          args: ['-y', '@modelcontextprotocol/server-github'],
+          env: process.env.GITHUB_PERSONAL_ACCESS_TOKEN
+            ? {
+                GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+              }
+            : undefined,
+        },
+      },
+    };
+
+    // Check if MCP service has tools, if not, initialize it
+    const currentTools = mcpService.toolsWithoutExecute;
+
+    if (Object.keys(currentTools).length === 0) {
+      logger.info('MCP Service has no tools, initializing with GitHub configuration...');
+      await mcpService.updateConfig(githubConfig);
+      logger.info('MCP Service initialized with GitHub server');
+    }
+
     const totalMessageContent = messages.reduce((acc, message) => acc + message.content, '');
     logger.debug(`Total message length: ${totalMessageContent.split(' ').length}, words`);
+
+    // Debug MCP tools availability
+    const mcpTools = mcpService.toolsWithoutExecute;
+    const mcpToolNames = Object.keys(mcpTools);
+    logger.debug(`MCP Service has ${mcpToolNames.length} tools available:`, mcpToolNames);
+
+    if (mcpToolNames.length === 0) {
+      logger.warn('MCP Service has no tools available - this explains why LLM cannot use GitHub tools');
+    }
 
     let lastChunk: string | undefined = undefined;
 

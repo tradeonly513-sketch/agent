@@ -7,7 +7,8 @@ import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import { PromptInfoCard } from '~/components/ui/PromptInfoCard';
-import { GitBranch, MousePointer, Brain, List, CheckCircle, TestTube, BookOpen } from 'lucide-react';
+import { CustomPromptManager } from '~/components/@settings/tabs/prompts/CustomPromptManager';
+import { GitBranch, MousePointer, Brain, List, CheckCircle, TestTube, BookOpen, Settings } from 'lucide-react';
 
 interface FeatureToggle {
   id: string;
@@ -287,6 +288,27 @@ export default function FeaturesTab() {
             </motion.div>
           ))}
         </div>
+      </motion.div>
+
+      {/* Custom Prompt Management Section */}
+      <motion.div
+        layout
+        className="flex flex-col gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="flex items-center gap-3">
+          <Settings className="text-lg text-purple-500" />
+          <div>
+            <h3 className="text-lg font-medium text-bolt-elements-textPrimary">Custom Prompts</h3>
+            <p className="text-sm text-bolt-elements-textSecondary">
+              Create and manage your own custom AI assistant prompts for specialized workflows
+            </p>
+          </div>
+        </div>
+
+        <CustomPromptManager />
       </motion.div>
     </div>
   );

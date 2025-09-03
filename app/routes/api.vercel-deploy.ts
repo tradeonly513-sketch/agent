@@ -184,7 +184,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     // Get project info
-    const projectResponse = await fetch(`https://api.vercel.com/v9/projects/${projectId}`, {
+    const projectResponse = await fetch(`https://api.vercel.com/v13/projects/${projectId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -197,7 +197,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const projectData = (await projectResponse.json()) as any;
 
     // Get latest deployment
-    const deploymentsResponse = await fetch(`https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=1`, {
+    const deploymentsResponse = await fetch(`https://api.vercel.com/v13/deployments?projectId=${projectId}&limit=1`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -264,7 +264,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // If no projectId provided, create a new project
     if (!targetProjectId) {
       const projectName = `bolt-diy-${chatId}-${Date.now()}`;
-      const createProjectResponse = await fetch('https://api.vercel.com/v9/projects', {
+      const createProjectResponse = await fetch('https://api.vercel.com/v13/projects', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -294,7 +294,7 @@ export async function action({ request }: ActionFunctionArgs) {
       };
     } else {
       // Get existing project info
-      const projectResponse = await fetch(`https://api.vercel.com/v9/projects/${targetProjectId}`, {
+      const projectResponse = await fetch(`https://api.vercel.com/v13/projects/${targetProjectId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -311,7 +311,7 @@ export async function action({ request }: ActionFunctionArgs) {
       } else {
         // If project doesn't exist, create a new one
         const projectName = `bolt-diy-${chatId}-${Date.now()}`;
-        const createProjectResponse = await fetch('https://api.vercel.com/v9/projects', {
+        const createProjectResponse = await fetch('https://api.vercel.com/v13/projects', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,

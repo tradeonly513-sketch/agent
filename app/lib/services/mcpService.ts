@@ -161,9 +161,13 @@ export class MCPService {
   }
 
   async updateConfig(config: MCPConfig) {
-    logger.debug('updating config', JSON.stringify(config));
+    logger.debug('updateConfig called with:', JSON.stringify(config, null, 2));
+    logger.debug('Number of servers in config:', Object.keys(config.mcpServers || {}).length);
+
     this._config = config;
     await this._createClients();
+
+    logger.debug('After createClients, registered servers:', Object.keys(this._mcpToolsPerServer));
 
     return this._mcpToolsPerServer;
   }
@@ -236,8 +240,12 @@ export class MCPService {
   private async _createClients() {
     await this._closeClients();
 
+    logger.debug('_createClients called with config servers:', Object.keys(this._config?.mcpServers || {}));
+
     const createClientPromises = Object.entries(this._config?.mcpServers || []).map(async ([serverName, config]) => {
       let client: MCPClient | null = null;
+
+      logger.debug(`Processing server: ${serverName}`, JSON.stringify(config, null, 2));
 
       try {
         client = await this._createMCPClient(serverName, config);

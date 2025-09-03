@@ -1,18 +1,29 @@
 // Export all UI components for easier imports
 
 // Core components
+export * from './Accordion';
+export * from './Alert';
+export * from './AlertDialog';
+export * from './Avatar';
 export * from './Badge';
 export * from './Button';
 export * from './Card';
 export * from './Checkbox';
 export * from './Collapsible';
 export * from './Dialog';
+export * from './HoverCard';
 export * from './IconButton';
 export * from './Input';
 export * from './Label';
+export * from './Popover';
+export * from './RadioGroup';
 export * from './ScrollArea';
+export * from './Select';
+export * from './Sheet';
+export * from './Skeleton';
 export * from './Switch';
 export * from './Tabs';
+export * from './Textarea';
 export * from './ThemeSwitch';
 
 // Loading components

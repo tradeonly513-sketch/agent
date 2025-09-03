@@ -32,7 +32,7 @@ export async function fetchVercelStats(token: string) {
   try {
     isFetchingStats.set(true);
 
-    const projectsResponse = await fetch('https://api.vercel.com/v9/projects', {
+    const projectsResponse = await fetch('https://api.vercel.com/v13/projects', {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ export async function fetchVercelStats(token: string) {
       projects.map(async (project: any) => {
         try {
           const deploymentsResponse = await fetch(
-            `https://api.vercel.com/v6/deployments?projectId=${project.id}&limit=1`,
+            `https://api.vercel.com/v13/deployments?projectId=${project.id}&limit=1`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,

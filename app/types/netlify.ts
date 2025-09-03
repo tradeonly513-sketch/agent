@@ -71,6 +71,8 @@ export interface NetlifyUser {
 export interface NetlifyStats {
   sites: NetlifySite[];
   totalSites: number;
+  totalDeploys?: number;
+  totalBuilds?: number;
   deploys?: NetlifyDeploy[];
   builds?: NetlifyBuild[];
   lastDeployTime?: string;

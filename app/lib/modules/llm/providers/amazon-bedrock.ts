@@ -13,7 +13,7 @@ interface AWSBedRockConfig {
 
 export default class AmazonBedrockProvider extends BaseProvider {
   name = 'AmazonBedrock';
-  getApiKeyLink = 'https://console.aws.amazon.com/iam/home';
+  getApiKeyLink = 'https://console.aws.amazon.com/iam/home#/security_credentials';
 
   config = {
     apiTokenKey: 'AWS_BEDROCK_CONFIG',

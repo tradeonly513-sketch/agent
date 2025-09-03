@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Switch } from '~/components/ui/Switch';
+import { Input } from '~/components/ui/Input';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { URL_CONFIGURABLE_PROVIDERS } from '~/lib/stores/settings';
 import type { IProviderConfig } from '~/types/model';
@@ -8,19 +9,16 @@ import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
-import { SiAmazon, SiGoogle, SiGithub, SiHuggingface, SiPerplexity, SiOpenai } from 'react-icons/si';
-import { BsRobot, BsCloud } from 'react-icons/bs';
-import { TbBrain, TbCloudComputing } from 'react-icons/tb';
-import { BiCodeBlock, BiChip } from 'react-icons/bi';
-import { FaCloud, FaBrain } from 'react-icons/fa';
-import type { IconType } from 'react-icons';
-import { Link, Info } from 'lucide-react';
+
+// Removed unused react-icons imports, now using lucide-react
+import { Link, Info, Cloud, Brain, Cpu, Code, Database, Zap, Bot, Github } from 'lucide-react';
 
 // Add type for provider names to ensure type safety
 type ProviderName =
   | 'AmazonBedrock'
   | 'Anthropic'
   | 'Cohere'
+  | 'Copilot'
   | 'Deepseek'
   | 'Github'
   | 'Google'
@@ -35,27 +33,29 @@ type ProviderName =
   | 'XAI';
 
 // Update the PROVIDER_ICONS type to use the ProviderName type
-const PROVIDER_ICONS: Record<ProviderName, IconType> = {
-  AmazonBedrock: SiAmazon,
-  Anthropic: FaBrain,
-  Cohere: BiChip,
-  Deepseek: BiCodeBlock,
-  Github: SiGithub,
-  Google: SiGoogle,
-  Groq: BsCloud,
-  HuggingFace: SiHuggingface,
-  Hyperbolic: TbCloudComputing,
-  Mistral: TbBrain,
-  OpenAI: SiOpenai,
-  OpenRouter: FaCloud,
-  Perplexity: SiPerplexity,
-  Together: BsCloud,
-  XAI: BsRobot,
+const PROVIDER_ICONS: Record<ProviderName, React.ComponentType<{ className?: string }>> = {
+  AmazonBedrock: Cloud,
+  Anthropic: Brain,
+  Cohere: Cpu,
+  Copilot: Github,
+  Deepseek: Code,
+  Github,
+  Google: Cloud,
+  Groq: Cloud,
+  HuggingFace: Database,
+  Hyperbolic: Cloud,
+  Mistral: Brain,
+  OpenAI: Zap,
+  OpenRouter: Cloud,
+  Perplexity: Brain,
+  Together: Cloud,
+  XAI: Bot,
 };
 
 // Update PROVIDER_DESCRIPTIONS to use the same type
 const PROVIDER_DESCRIPTIONS: Partial<Record<ProviderName, string>> = {
   Anthropic: 'Access Claude and other Anthropic models',
+  Copilot: 'Use GitHub Copilot models for AI-powered coding assistance',
   Github: 'Use OpenAI models hosted through GitHub infrastructure',
   OpenAI: 'Use GPT-4, GPT-3.5, and other OpenAI models',
 };
@@ -151,7 +151,7 @@ const CloudProvidersTab = () => {
                 'text-purple-500',
               )}
             >
-              <TbCloudComputing className="w-5 h-5" />
+              <Cloud className="w-5 h-5" />
             </div>
             <div>
               <h4 className="text-md font-medium text-bolt-elements-textPrimary">Cloud Providers</h4>
@@ -206,9 +206,8 @@ const CloudProvidersTab = () => {
                   whileTap={{ scale: 0.9 }}
                 >
                   <div className={classNames('w-6 h-6', 'transition-transform duration-200', 'group-hover:rotate-12')}>
-                    {React.createElement(PROVIDER_ICONS[provider.name as ProviderName] || BsRobot, {
+                    {React.createElement(PROVIDER_ICONS[provider.name as ProviderName] || Bot, {
                       className: 'w-full h-full',
-                      'aria-label': `${provider.name} logo`,
                     })}
                   </div>
                 </motion.div>
@@ -241,16 +240,14 @@ const CloudProvidersTab = () => {
                     >
                       <div className="flex items-center gap-2 mt-4">
                         {editingProvider === provider.name ? (
-                          <input
+                          <Input
                             type="text"
                             defaultValue={provider.settings.baseUrl}
                             placeholder={`Enter ${provider.name} base URL`}
                             className={classNames(
-                              'flex-1 px-3 py-1.5 rounded-lg text-sm',
-                              'bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor',
-                              'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
-                              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
-                              'transition-all duration-200',
+                              'flex-1',
+                              'bg-bolt-elements-background-depth-3',
+                              'focus:ring-purple-500/30',
                             )}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {

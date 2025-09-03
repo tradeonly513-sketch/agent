@@ -47,7 +47,7 @@ export const TabTile: React.FC<TabTileProps> = ({
                 onClick={onClick}
                 className={classNames(
                   'relative flex flex-col items-center justify-center h-full p-4 rounded-lg',
-                  'bg-white dark:bg-[#141414]',
+                  'bg-bolt-elements-background-depth-1',
                   'group cursor-pointer',
                   'hover:bg-purple-50 dark:hover:bg-[#1a1a1a]',
                   'transition-colors duration-100 ease-out',
@@ -62,10 +62,10 @@ export const TabTile: React.FC<TabTileProps> = ({
                     'w-14 h-14',
                     'flex items-center justify-center',
                     'rounded-xl',
-                    'bg-gray-100 dark:bg-gray-800',
-                    'ring-1 ring-gray-200 dark:ring-gray-700',
-                    'group-hover:bg-purple-100 dark:group-hover:bg-gray-700/80',
-                    'group-hover:ring-purple-200 dark:group-hover:ring-purple-800/30',
+                    'bg-bolt-elements-background-depth-2',
+                    'ring-1 ring-bolt-elements-borderColor',
+                    'group-hover:bg-bolt-elements-item-backgroundActive',
+                    'group-hover:ring-bolt-elements-borderColorActive',
                     'transition-all duration-100 ease-out',
                     isActive ? 'bg-purple-500/10 dark:bg-purple-500/10 ring-purple-500/30 dark:ring-purple-500/20' : '',
                   )}
@@ -124,7 +124,8 @@ export const TabTile: React.FC<TabTileProps> = ({
                       <Tooltip.Content
                         className={classNames(
                           'px-3 py-1.5 rounded-lg',
-                          'bg-[#18181B] text-white',
+                          'bg-bolt-elements-background-depth-2 text-bolt-elements-textPrimary',
+                          'border border-bolt-elements-borderColor',
                           'text-sm font-medium',
                           'select-none',
                           'z-[100]',
@@ -133,7 +134,7 @@ export const TabTile: React.FC<TabTileProps> = ({
                         sideOffset={5}
                       >
                         {statusMessage}
-                        <Tooltip.Arrow className="fill-[#18181B]" />
+                        <Tooltip.Arrow className="fill-bolt-elements-background-depth-2" />
                       </Tooltip.Content>
                     </Tooltip.Portal>
                   </>

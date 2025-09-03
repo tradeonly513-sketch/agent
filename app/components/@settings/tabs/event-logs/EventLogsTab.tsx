@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Switch } from '~/components/ui/Switch';
+import { Input } from '~/components/ui/Input';
 import { logStore, type LogEntry } from '~/lib/stores/logs';
 import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
@@ -161,16 +162,16 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
           </div>
           {details.prompt && (
             <div className="flex flex-col gap-1">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Prompt:</div>
-              <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded p-2 whitespace-pre-wrap">
+              <div className="text-xs font-medium text-bolt-elements-textPrimary">Prompt:</div>
+              <pre className="text-xs text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 rounded p-2 whitespace-pre-wrap">
                 {details.prompt}
               </pre>
             </div>
           )}
           {details.response && (
             <div className="flex flex-col gap-1">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Response:</div>
-              <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded p-2 whitespace-pre-wrap">
+              <div className="text-xs font-medium text-bolt-elements-textPrimary">Response:</div>
+              <pre className="text-xs text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 rounded p-2 whitespace-pre-wrap">
                 {details.response}
               </pre>
             </div>
@@ -192,16 +193,16 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
           <div className="text-xs text-gray-600 dark:text-gray-400 break-all">{details.url}</div>
           {details.request && (
             <div className="flex flex-col gap-1">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Request:</div>
-              <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded p-2 whitespace-pre-wrap">
+              <div className="text-xs font-medium text-bolt-elements-textPrimary">Request:</div>
+              <pre className="text-xs text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 rounded p-2 whitespace-pre-wrap">
                 {JSON.stringify(details.request, null, 2)}
               </pre>
             </div>
           )}
           {details.response && (
             <div className="flex flex-col gap-1">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Response:</div>
-              <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded p-2 whitespace-pre-wrap">
+              <div className="text-xs font-medium text-bolt-elements-textPrimary">Response:</div>
+              <pre className="text-xs text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 rounded p-2 whitespace-pre-wrap">
                 {JSON.stringify(details.response, null, 2)}
               </pre>
             </div>
@@ -219,7 +220,7 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
     }
 
     return (
-      <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded whitespace-pre-wrap">
+      <pre className="text-xs text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 rounded whitespace-pre-wrap">
         {JSON.stringify(details, null, 2)}
       </pre>
     );
@@ -259,7 +260,7 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
                 {log.level}
               </div>
               {log.category && (
-                <div className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                <div className="px-2 py-0.5 rounded-full text-xs bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary">
                   {log.category}
                 </div>
               )}
@@ -994,17 +995,17 @@ export function EventLogsTab() {
 
       <div className="flex flex-col gap-4">
         <div className="relative">
-          <input
+          <Input
             type="text"
             placeholder="Search logs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={classNames(
               'w-full px-4 py-2 pl-10 rounded-lg',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
-              'text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
+              'text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary',
+              'focus:outline-none focus:ring-2 focus:ring-bolt-elements-item-contentAccent/20 focus:border-bolt-elements-item-contentAccent',
               'transition-all duration-200',
             )}
           />
