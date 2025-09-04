@@ -468,7 +468,7 @@ export class MCPService {
     }
 
     // Update server analytics
-    this._updateServerAnalytics(serverName, success, responseTime, modelInfo);
+    this._updateServerAnalytics(serverName, success, responseTime);
 
     // Save analytics data
     this._saveAnalytics();
@@ -491,6 +491,7 @@ export class MCPService {
           authentication: 0,
           other: 0,
         },
+        modelPerformance: {},
       };
     }
 

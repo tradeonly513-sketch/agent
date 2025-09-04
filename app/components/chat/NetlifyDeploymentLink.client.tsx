@@ -10,7 +10,7 @@ export function NetlifyDeploymentLink() {
 
   useEffect(() => {
     if (connection.token && currentChatId) {
-      fetchNetlifyStats(connection.token);
+      fetchNetlifyStats();
     }
   }, [connection.token, currentChatId]);
 

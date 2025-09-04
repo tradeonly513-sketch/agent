@@ -16,7 +16,6 @@ import type {
   GitHubConnection,
 } from '~/types/GitHub';
 
-
 interface ConnectionTestResult {
   status: 'success' | 'error' | 'testing';
   message: string;
@@ -986,7 +985,7 @@ export default function GitHubTab() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-bolt-elements-textPrimary">
-                            {connection.stats.publicRepos + connection.stats.privateRepos}
+                            {(connection.stats.publicRepos || 0) + (connection.stats.privateRepos || 0)}
                           </div>
                           <div className="text-xs text-bolt-elements-textSecondary">Total Repositories</div>
                         </div>
@@ -1361,7 +1360,10 @@ export default function GitHubTab() {
 
                         <div className="pt-2 border-t border-bolt-elements-borderColor">
                           <span className="text-xs text-bolt-elements-textSecondary">
-                            Last updated: {new Date(connection.stats.lastUpdated).toLocaleString()}
+                            Last updated:{' '}
+                            {connection.stats.lastUpdated
+                              ? new Date(connection.stats.lastUpdated).toLocaleString()
+                              : 'Never'}
                           </span>
                         </div>
                       </div>

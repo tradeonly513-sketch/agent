@@ -34,7 +34,15 @@ async function vercelUserLoader({ request, context }: { request: Request; contex
       throw new Error(`Vercel API error: ${response.status}`);
     }
 
-    const userData = await response.json();
+    const userData = (await response.json()) as {
+      user: {
+        id: string;
+        name: string | null;
+        email: string;
+        avatar: string | null;
+        username: string;
+      };
+    };
 
     return json({
       id: userData.user.id,
@@ -92,10 +100,19 @@ async function vercelUserAction({ request, context }: { request: Request; contex
         throw new Error(`Vercel API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        projects: Array<{
+          id: string;
+          name: string;
+          framework: string | null;
+          public: boolean;
+          createdAt: string;
+          updatedAt: string;
+        }>;
+      };
 
       return json({
-        projects: data.projects.map((project: any) => ({
+        projects: data.projects.map((project) => ({
           id: project.id,
           name: project.name,
           framework: project.framework,

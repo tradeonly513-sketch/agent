@@ -166,7 +166,7 @@ export async function fetchSupabaseStatsViaAPI() {
       throw new Error('Failed to fetch projects');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { user: any; stats: any };
 
     updateSupabaseConnection({
       user: data.user,

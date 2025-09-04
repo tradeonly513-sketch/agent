@@ -92,7 +92,7 @@ export async function fetchNetlifyStats() {
       throw new Error(`Failed to fetch sites: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { sites: any[] };
     const sites = data.sites || [];
 
     const currentState = netlifyConnection.get();

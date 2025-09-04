@@ -155,7 +155,7 @@ export class ApiInitializationService {
       });
 
       if (reposResponse.ok) {
-        const reposData = await reposResponse.json();
+        const reposData = (await reposResponse.json()) as { repos: any[] };
 
         // Update connection with repositories data
         const existingConnection = JSON.parse(localStorage.getItem('github_connection') || '{}');

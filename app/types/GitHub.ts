@@ -21,10 +21,21 @@ export interface GitHubRepoInfo {
   forks_count: number;
   default_branch: string;
   updated_at: string;
-  language: string;
+  language?: string;
   languages_url: string;
   private?: boolean;
   topics?: string[];
+  archived?: boolean;
+  fork?: boolean;
+  issues_count?: number;
+  pull_requests_count?: number;
+  license?: {
+    name: string;
+    spdx_id: string;
+  };
+  branches_count?: number;
+  contributors_count?: number;
+  size?: number;
 }
 
 export interface GitHubContent {
@@ -59,9 +70,12 @@ export interface GitHubBlobResponse {
 
 export interface GitHubOrganization {
   login: string;
+  name?: string;
   avatar_url: string;
   description: string;
   html_url: string;
+  public_repos?: number;
+  followers?: number;
 }
 
 export interface GitHubEvent {
@@ -72,7 +86,7 @@ export interface GitHubEvent {
     name: string;
     url: string;
   };
-  payload: {
+  payload?: {
     action?: string;
     ref?: string;
     ref_type?: string;
@@ -86,12 +100,31 @@ export interface GitHubLanguageStats {
 
 export interface GitHubStats {
   repos: GitHubRepoInfo[];
-  totalStars: number;
-  totalForks: number;
+  totalStars?: number;
+  totalForks?: number;
   organizations: GitHubOrganization[];
   recentActivity: GitHubEvent[];
   languages: GitHubLanguageStats;
   totalGists: number;
+  mostUsedLanguages?: Array<{
+    language: string;
+    bytes: number;
+    repos: number;
+  }>;
+  publicRepos?: number;
+  privateRepos?: number;
+  totalBranches?: number;
+  accountAge?: number;
+  publicGists?: number;
+  privateGists?: number;
+  stars?: number;
+  forks?: number;
+  followers?: number;
+  totalContributors?: number;
+  totalIssues?: number;
+  totalPullRequests?: number;
+  lastUpdated?: string;
+  recentCommits?: number;
 }
 
 export interface GitHubConnection {
@@ -99,6 +132,7 @@ export interface GitHubConnection {
   token: string;
   tokenType: 'classic' | 'fine-grained';
   stats?: GitHubStats;
+  rateLimit?: GitHubRateLimits;
 }
 
 export interface GitHubTokenInfo {

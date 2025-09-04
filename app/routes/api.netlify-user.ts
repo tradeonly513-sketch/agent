@@ -34,7 +34,13 @@ async function netlifyUserLoader({ request, context }: { request: Request; conte
       throw new Error(`Netlify API error: ${response.status}`);
     }
 
-    const userData = await response.json();
+    const userData = (await response.json()) as {
+      id: string;
+      name: string | null;
+      email: string;
+      avatar_url: string | null;
+      full_name: string | null;
+    };
 
     return json({
       id: userData.id,
@@ -93,10 +99,18 @@ async function netlifyUserAction({ request, context }: { request: Request; conte
         throw new Error(`Netlify API error: ${response.status}`);
       }
 
-      const sites = await response.json();
+      const sites = (await response.json()) as Array<{
+        id: string;
+        name: string;
+        url: string;
+        admin_url: string;
+        build_settings: any;
+        created_at: string;
+        updated_at: string;
+      }>;
 
       return json({
-        sites: sites.map((site: any) => ({
+        sites: sites.map((site) => ({
           id: site.id,
           name: site.name,
           url: site.url,

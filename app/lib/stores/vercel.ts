@@ -82,7 +82,7 @@ export async function fetchVercelStatsViaAPI() {
       throw new Error(`Failed to fetch projects: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { projects: any[] };
     const projects = data.projects || [];
 
     const currentState = vercelConnection.get();

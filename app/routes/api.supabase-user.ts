@@ -34,7 +34,14 @@ async function supabaseUserLoader({ request, context }: { request: Request; cont
       throw new Error(`Supabase API error: ${response.status}`);
     }
 
-    const projects = await response.json();
+    const projects = (await response.json()) as Array<{
+      id: string;
+      name: string;
+      region: string;
+      status: string;
+      organization_id: string;
+      created_at: string;
+    }>;
 
     // Get user info from the first project (all projects belong to the same user)
     const user =
@@ -48,7 +55,7 @@ async function supabaseUserLoader({ request, context }: { request: Request; cont
 
     return json({
       user,
-      projects: projects.map((project: any) => ({
+      projects: projects.map((project) => ({
         id: project.id,
         name: project.name,
         region: project.region,
@@ -106,7 +113,14 @@ async function supabaseUserAction({ request, context }: { request: Request; cont
         throw new Error(`Supabase API error: ${response.status}`);
       }
 
-      const projects = await response.json();
+      const projects = (await response.json()) as Array<{
+        id: string;
+        name: string;
+        region: string;
+        status: string;
+        organization_id: string;
+        created_at: string;
+      }>;
 
       // Get user info from the first project
       const user =
@@ -121,7 +135,7 @@ async function supabaseUserAction({ request, context }: { request: Request; cont
       return json({
         user,
         stats: {
-          projects: projects.map((project: any) => ({
+          projects: projects.map((project) => ({
             id: project.id,
             name: project.name,
             region: project.region,
@@ -153,10 +167,13 @@ async function supabaseUserAction({ request, context }: { request: Request; cont
         throw new Error(`Supabase API error: ${response.status}`);
       }
 
-      const apiKeys = await response.json();
+      const apiKeys = (await response.json()) as Array<{
+        name: string;
+        api_key: string;
+      }>;
 
       return json({
-        apiKeys: apiKeys.map((key: any) => ({
+        apiKeys: apiKeys.map((key) => ({
           name: key.name,
           api_key: key.api_key,
         })),

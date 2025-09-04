@@ -17,7 +17,6 @@ async function githubUserLoader({ request, context }: { request: Request; contex
       process.env.GITHUB_TOKEN ||
       process.env.VITE_GITHUB_ACCESS_TOKEN;
 
-
     if (!githubToken) {
       return json({ error: 'GitHub token not found' }, { status: 401 });
     }
@@ -39,7 +38,13 @@ async function githubUserLoader({ request, context }: { request: Request; contex
       throw new Error(`GitHub API error: ${response.status}`);
     }
 
-    const userData = await response.json();
+    const userData = (await response.json()) as {
+      login: string;
+      name: string | null;
+      avatar_url: string;
+      html_url: string;
+      type: string;
+    };
 
     return json({
       login: userData.login,
@@ -101,10 +106,22 @@ async function githubUserAction({ request, context }: { request: Request; contex
         throw new Error(`GitHub API error: ${response.status}`);
       }
 
-      const repos = await response.json();
+      const repos = (await response.json()) as Array<{
+        id: number;
+        name: string;
+        full_name: string;
+        html_url: string;
+        description: string | null;
+        private: boolean;
+        language: string | null;
+        updated_at: string;
+        stargazers_count: number;
+        forks_count: number;
+        topics: string[];
+      }>;
 
       return json({
-        repos: repos.map((repo: any) => ({
+        repos: repos.map((repo) => ({
           id: repo.id,
           name: repo.name,
           full_name: repo.full_name,
@@ -140,10 +157,17 @@ async function githubUserAction({ request, context }: { request: Request; contex
         throw new Error(`GitHub API error: ${response.status}`);
       }
 
-      const branches = await response.json();
+      const branches = (await response.json()) as Array<{
+        name: string;
+        commit: {
+          sha: string;
+          url: string;
+        };
+        protected: boolean;
+      }>;
 
       return json({
-        branches: branches.map((branch: any) => ({
+        branches: branches.map((branch) => ({
           name: branch.name,
           commit: {
             sha: branch.commit.sha,
