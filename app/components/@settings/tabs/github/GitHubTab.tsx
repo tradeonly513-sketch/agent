@@ -1,118 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { logStore } from '~/lib/stores/logs';
 import { classNames } from '~/utils/classNames';
 import Cookies from 'js-cookie';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import { Button } from '~/components/ui/Button';
+import type {
+  GitHubUserResponse,
+  GitHubRepoInfo,
+  GitHubOrganization,
+  GitHubBranch,
+  GitHubEvent,
+  GitHubLanguageStats,
+  GitHubStats,
+  GitHubConnection,
+} from '~/types/GitHub';
 
-interface GitHubUserResponse {
-  login: string;
-  avatar_url: string;
-  html_url: string;
-  name: string;
-  bio: string;
-  public_repos: number;
-  followers: number;
-  following: number;
-  created_at: string;
-  public_gists: number;
-}
-
-interface GitHubRepoInfo {
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string;
-  stargazers_count: number;
-  forks_count: number;
-  default_branch: string;
-  updated_at: string;
-  languages_url: string;
-  branches_count?: number;
-  contributors_count?: number;
-  issues_count?: number;
-  pull_requests_count?: number;
-  size?: number;
-  topics?: string[];
-  license?: {
-    name: string;
-    spdx_id: string;
-  };
-  archived?: boolean;
-  fork?: boolean;
-}
-
-interface GitHubOrganization {
-  login: string;
-  avatar_url: string;
-  html_url: string;
-  name?: string;
-  description?: string;
-  public_repos?: number;
-  followers?: number;
-  created_at?: string;
-}
-
-interface GitHubBranch {
-  name: string;
-  commit: {
-    sha: string;
-    url: string;
-  };
-  protected: boolean;
-}
-
-interface GitHubEvent {
-  id: string;
-  type: string;
-  repo: {
-    name: string;
-  };
-  created_at: string;
-}
-
-interface GitHubLanguageStats {
-  [language: string]: number;
-}
-
-interface GitHubStats {
-  repos: GitHubRepoInfo[];
-  recentActivity: GitHubEvent[];
-  languages: GitHubLanguageStats;
-  totalGists: number;
-  publicRepos: number;
-  privateRepos: number;
-  stars: number;
-  forks: number;
-  followers: number;
-  publicGists: number;
-  privateGists: number;
-  lastUpdated: string;
-  totalStars?: number;
-  totalForks?: number;
-  organizations?: GitHubOrganization[];
-  totalBranches?: number;
-  totalContributors?: number;
-  totalIssues?: number;
-  totalPullRequests?: number;
-  mostUsedLanguages?: Array<{ language: string; bytes: number; repos: number }>;
-  recentCommits?: number;
-  accountAge?: number;
-}
-
-interface GitHubConnection {
-  user: GitHubUserResponse | null;
-  token: string;
-  tokenType: 'classic' | 'fine-grained';
-  stats?: GitHubStats;
-  rateLimit?: {
-    limit: number;
-    remaining: number;
-    reset: number;
-  };
-}
 
 interface ConnectionTestResult {
   status: 'success' | 'error' | 'testing';
@@ -146,10 +49,10 @@ export default function GitHubTab() {
 
   // Connection testing function
   const testConnection = async () => {
-    if (!connection.token) {
+    if (!connection.user) {
       setConnectionTest({
         status: 'error',
-        message: 'No token provided',
+        message: 'No connection established',
         timestamp: Date.now(),
       });
       return;
@@ -161,15 +64,11 @@ export default function GitHubTab() {
     });
 
     try {
-      const response = await fetch('https://api.github.com/user', {
-        headers: {
-          Authorization: `${connection.tokenType === 'classic' ? 'token' : 'Bearer'} ${connection.token}`,
-          'User-Agent': 'Bolt.diy',
-        },
-      });
+      // Test connection via server-side API
+      const response = await fetch('/api/github-user');
 
       if (response.ok) {
-        const data = (await response.json()) as any;
+        const data = (await response.json()) as GitHubUserResponse;
         setConnectionTest({
           status: 'success',
           message: `Connected successfully as ${data.login}`,
@@ -188,85 +87,6 @@ export default function GitHubTab() {
         message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: Date.now(),
       });
-    }
-  };
-
-  const fetchGithubUser = async (token: string) => {
-    try {
-      console.log('Fetching GitHub user with token:', token.substring(0, 5) + '...');
-
-      // Use server-side API endpoint instead of direct GitHub API call
-      const response = await fetch(`/api/system/git-info?action=getUser`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`, // Include token in headers for validation
-        },
-      });
-
-      if (!response.ok) {
-        console.error('Error fetching GitHub user. Status:', response.status);
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      // Get rate limit information from headers
-      const rateLimit = {
-        limit: parseInt(response.headers.get('x-ratelimit-limit') || '0'),
-        remaining: parseInt(response.headers.get('x-ratelimit-remaining') || '0'),
-        reset: parseInt(response.headers.get('x-ratelimit-reset') || '0'),
-      };
-
-      const data = await response.json();
-      console.log('GitHub user API response:', data);
-
-      const { user } = data as { user: GitHubUserResponse };
-
-      // Validate that we received a user object
-      if (!user || !user.login) {
-        console.error('Invalid user data received:', user);
-        throw new Error('Invalid user data received');
-      }
-
-      // Use the response data
-      setConnection((prev) => ({
-        ...prev,
-        user,
-        token,
-        tokenType: tokenTypeRef.current,
-        rateLimit,
-      }));
-
-      // Set cookies for client-side access
-      Cookies.set('githubUsername', user.login);
-      Cookies.set('githubToken', token);
-      Cookies.set('git:github.com', JSON.stringify({ username: token, password: 'x-oauth-basic' }));
-
-      // Store connection details in localStorage
-      localStorage.setItem(
-        'github_connection',
-        JSON.stringify({
-          user,
-          token,
-          tokenType: tokenTypeRef.current,
-        }),
-      );
-
-      logStore.logInfo('Connected to GitHub', {
-        type: 'system',
-        message: `Connected to GitHub as ${user.login}`,
-      });
-
-      // Fetch additional GitHub stats
-      fetchGitHubStats(token);
-    } catch (error) {
-      console.error('Failed to fetch GitHub user:', error);
-      logStore.logError(`GitHub authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        type: 'system',
-        message: 'GitHub authentication failed',
-      });
-
-      toast.error(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error; // Rethrow to allow handling in the calling function
     }
   };
 
@@ -631,34 +451,39 @@ export default function GitHubTab() {
           localStorage.removeItem('github_connection');
         }
       } else {
-        // Check for environment variable token
-        const envToken = import.meta.env.VITE_GITHUB_ACCESS_TOKEN;
+        // Check for server-side GitHub connection via API
+        try {
+          const response = await fetch('/api/github-user');
 
-        if (envToken) {
-          // Check if token type is specified in environment variables
-          const envTokenType = import.meta.env.VITE_GITHUB_TOKEN_TYPE;
-          console.log('Environment token type:', envTokenType);
+          if (response.ok) {
+            const userData = (await response.json()) as GitHubUserResponse;
 
-          const tokenType =
-            envTokenType === 'classic' || envTokenType === 'fine-grained'
-              ? (envTokenType as 'classic' | 'fine-grained')
-              : 'classic';
+            // Create connection object for the UI
+            const connectionData = {
+              user: userData,
+              token: '', // Token is stored server-side only
+              tokenType: 'classic' as const,
+            };
 
-          console.log('Using token type:', tokenType);
+            // Update the UI state
+            setConnection(connectionData);
 
-          // Update both the state and the ref
-          tokenTypeRef.current = tokenType;
-          setConnection((prev) => ({
-            ...prev,
-            tokenType,
-          }));
+            // Store minimal connection info (no token)
+            localStorage.setItem(
+              'github_connection',
+              JSON.stringify({
+                user: userData,
+                tokenType: 'classic',
+              }),
+            );
 
-          try {
-            // Fetch user data with the environment token
-            await fetchGithubUser(envToken);
-          } catch (error) {
-            console.error('Failed to connect with environment token:', error);
+            // Fetch stats (which includes repositories) via server-side API
+            await fetchGitHubStatsViaAPI();
+
+            return;
           }
+        } catch (error) {
+          console.warn('Failed to connect to GitHub via API:', error);
         }
       }
 
@@ -667,6 +492,57 @@ export default function GitHubTab() {
 
     loadSavedConnection();
   }, []);
+
+  // Function to fetch GitHub stats via server-side API
+  const fetchGitHubStatsViaAPI = async () => {
+    try {
+      setIsFetchingStats(true);
+
+      // Get repositories via server-side API
+      const reposResponse = await fetch('/api/github-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'get_repos' }),
+      });
+
+      if (reposResponse.ok) {
+        const reposData = (await reposResponse.json()) as { repos: GitHubRepoInfo[] };
+
+        // Update connection with repositories data
+        setConnection((prev) => ({
+          ...prev,
+          stats: {
+            repos: reposData.repos || [],
+            recentActivity: [],
+            languages: {},
+            totalGists: 0,
+            publicRepos: 0,
+            privateRepos: 0,
+            stars: 0,
+            forks: 0,
+            followers: 0,
+            publicGists: 0,
+            privateGists: 0,
+            lastUpdated: new Date().toISOString(),
+            organizations: [],
+            totalBranches: 0,
+            totalContributors: 0,
+            totalIssues: 0,
+            totalPullRequests: 0,
+            mostUsedLanguages: [],
+            recentCommits: 0,
+            accountAge: 0,
+          },
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch GitHub stats via API:', error);
+    } finally {
+      setIsFetchingStats(false);
+    }
+  };
 
   // Ensure cookies are updated when connection changes
   useEffect(() => {
@@ -687,28 +563,14 @@ export default function GitHubTab() {
     }
   }, [connection]);
 
-  // Add function to update rate limits
-  const updateRateLimits = async (token: string) => {
+  // Add function to update rate limits via server-side API
+  const updateRateLimits = async () => {
     try {
-      const response = await fetch('https://api.github.com/rate_limit', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      });
-
-      if (response.ok) {
-        const rateLimit = {
-          limit: parseInt(response.headers.get('x-ratelimit-limit') || '0'),
-          remaining: parseInt(response.headers.get('x-ratelimit-remaining') || '0'),
-          reset: parseInt(response.headers.get('x-ratelimit-reset') || '0'),
-        };
-
-        setConnection((prev) => ({
-          ...prev,
-          rateLimit,
-        }));
-      }
+      /*
+       * For now, we'll skip rate limit checking since it's handled server-side
+       * This can be implemented later if needed by adding rate limit endpoint
+       */
+      console.log('Rate limit checking is handled server-side');
     } catch (error) {
       console.error('Failed to fetch rate limits:', error);
     }
@@ -718,9 +580,9 @@ export default function GitHubTab() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (connection.token && connection.user) {
-      updateRateLimits(connection.token);
-      interval = setInterval(() => updateRateLimits(connection.token), 60000); // Update every minute
+    if (connection.user) {
+      updateRateLimits();
+      interval = setInterval(() => updateRateLimits(), 60000); // Update every minute
     }
 
     return () => {
@@ -728,7 +590,7 @@ export default function GitHubTab() {
         clearInterval(interval);
       }
     };
-  }, [connection.token, connection.user]);
+  }, [connection.user]);
 
   if (isLoading || isConnecting || isFetchingStats) {
     return <LoadingSpinner />;
@@ -739,31 +601,40 @@ export default function GitHubTab() {
     setIsConnecting(true);
 
     try {
-      // Update the ref with the current state value before connecting
-      tokenTypeRef.current = connection.tokenType;
+      // Try to connect via server-side API
+      const response = await fetch('/api/github-user');
 
-      /*
-       * Save token type to localStorage even before connecting
-       * This ensures the token type is persisted even if connection fails
-       */
-      localStorage.setItem(
-        'github_connection',
-        JSON.stringify({
-          user: null,
-          token: connection.token,
-          tokenType: connection.tokenType,
-        }),
-      );
+      if (response.ok) {
+        const userData = (await response.json()) as GitHubUserResponse;
 
-      // Attempt to fetch the user info which validates the token
-      await fetchGithubUser(connection.token);
+        // Update connection state with server-side user data
+        setConnection({
+          user: userData,
+          token: '', // Token is stored server-side only
+          tokenType: 'classic',
+        });
 
-      toast.success('Connected to GitHub successfully');
+        // Save connection to localStorage
+        localStorage.setItem(
+          'github_connection',
+          JSON.stringify({
+            user: userData,
+            tokenType: 'classic',
+          }),
+        );
+
+        // Fetch repositories/stats
+        await fetchGitHubStatsViaAPI();
+
+        toast.success('Connected to GitHub successfully');
+      } else {
+        throw new Error('Failed to connect to GitHub via server');
+      }
     } catch (error) {
       console.error('Failed to connect to GitHub:', error);
 
       // Reset connection state on failure
-      setConnection({ user: null, token: connection.token, tokenType: connection.tokenType });
+      setConnection({ user: null, token: '', tokenType: 'classic' });
 
       toast.error(`Failed to connect to GitHub: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -1013,7 +884,7 @@ export default function GitHubTab() {
                     <Button
                       onClick={() => {
                         fetchGitHubStats(connection.token);
-                        updateRateLimits(connection.token);
+                        updateRateLimits();
                       }}
                       disabled={isFetchingStats}
                       variant="outline"
@@ -1300,7 +1171,7 @@ export default function GitHubTab() {
                                 <span className="text-xs text-bolt-elements-textSecondary">{stat.label}</span>
                                 <span className="text-lg font-medium text-bolt-elements-textPrimary flex items-center gap-1">
                                   <div className={`${stat.icon} w-4 h-4 ${stat.iconColor}`} />
-                                  {stat.value.toLocaleString()}
+                                  {(stat.value || 0).toLocaleString()}
                                 </span>
                               </div>
                             ))}
@@ -1573,11 +1444,11 @@ export default function GitHubTab() {
                                   <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
                                     <span className="flex items-center gap-1" title="Stars">
                                       <div className="i-ph:star w-3.5 h-3.5 text-bolt-elements-icon-warning" />
-                                      {repo.stargazers_count.toLocaleString()}
+                                      {(repo.stargazers_count || 0).toLocaleString()}
                                     </span>
                                     <span className="flex items-center gap-1" title="Forks">
                                       <div className="i-ph:git-fork w-3.5 h-3.5 text-bolt-elements-icon-info" />
-                                      {repo.forks_count.toLocaleString()}
+                                      {(repo.forks_count || 0).toLocaleString()}
                                     </span>
                                     {repo.issues_count !== undefined && (
                                       <span className="flex items-center gap-1" title="Open Issues">

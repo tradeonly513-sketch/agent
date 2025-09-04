@@ -12,6 +12,7 @@ import {
   isFetchingStats,
   updateVercelConnection,
   fetchVercelStats,
+  initializeVercelConnection,
 } from '~/lib/stores/vercel';
 
 interface ConnectionTestResult {
@@ -202,6 +203,14 @@ export default function VercelTab() {
       variant: 'destructive',
     },
   ];
+
+  // Initialize connection on component mount
+  useEffect(() => {
+    const initializeConnection = async () => {
+      await initializeVercelConnection();
+    };
+    initializeConnection();
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {

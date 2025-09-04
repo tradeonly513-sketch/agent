@@ -113,7 +113,7 @@ const FileModifiedDropdown = memo(
               <Popover.Button className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 transition-colors text-bolt-elements-item-contentDefault">
                 <span>File Changes</span>
                 {hasChanges && (
-                  <span className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-500 text-xs flex items-center justify-center border border-accent-500/30">
+                  <span className="w-5 h-5 rounded-full bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent text-xs flex items-center justify-center border border-bolt-elements-borderColorActive">
                     {modifiedFiles.length}
                   </span>
                 )}
@@ -135,7 +135,7 @@ const FileModifiedDropdown = memo(
                         placeholder="Search files..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColorActive focus:ring-offset-1"
                       />
                       <div className="absolute left-2 top-1/2 -translate-y-1/2 text-bolt-elements-textTertiary">
                         <Search />

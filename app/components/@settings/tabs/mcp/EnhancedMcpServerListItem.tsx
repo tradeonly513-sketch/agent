@@ -34,6 +34,98 @@ const detectServerType = (serverName: string, config: any): string | null => {
     return 'postgres';
   }
 
+  if (lowerName.includes('brave')) {
+    return 'brave-search';
+  }
+
+  if (lowerName.includes('kubernetes') || lowerName.includes('k8s')) {
+    return 'kubernetes';
+  }
+
+  if (lowerName.includes('elasticsearch') || lowerName.includes('elastic')) {
+    return 'elasticsearch';
+  }
+
+  if (lowerName.includes('weather')) {
+    return 'weather';
+  }
+
+  if (lowerName.includes('sentry')) {
+    return 'sentry';
+  }
+
+  if (lowerName.includes('twitter') || lowerName.includes('x-')) {
+    return 'twitter';
+  }
+
+  if (lowerName.includes('reddit')) {
+    return 'reddit';
+  }
+
+  if (lowerName.includes('youtube') || lowerName.includes('yt-')) {
+    return 'youtube';
+  }
+
+  if (lowerName.includes('openai') || lowerName.includes('gpt')) {
+    return 'openai';
+  }
+
+  if (lowerName.includes('anthropic') || lowerName.includes('claude')) {
+    return 'anthropic';
+  }
+
+  if (lowerName.includes('perplexity')) {
+    return 'perplexity';
+  }
+
+  if (lowerName.includes('replicate')) {
+    return 'replicate';
+  }
+
+  if (lowerName.includes('mem0') || lowerName.includes('coding')) {
+    return 'mem0-coding';
+  }
+
+  if (lowerName.includes('devstandards') || lowerName.includes('standards')) {
+    return 'devstandards';
+  }
+
+  if (lowerName.includes('code-runner') || lowerName.includes('coderunner')) {
+    return 'code-runner';
+  }
+
+  if (lowerName.includes('vscode')) {
+    return 'vscode-mcp';
+  }
+
+  if (lowerName.includes('xcode')) {
+    return 'xcode-mcp';
+  }
+
+  if (lowerName.includes('context7') || lowerName.includes('documentation')) {
+    return 'context7-docs';
+  }
+
+  if (lowerName.includes('shrimp') || lowerName.includes('task-manager')) {
+    return 'shrimp-task-manager';
+  }
+
+  if (lowerName.includes('sonarqube') || lowerName.includes('sonar')) {
+    return 'sonarqube';
+  }
+
+  if (lowerName.includes('semgrep') || lowerName.includes('security')) {
+    return 'semgrep-security';
+  }
+
+  if (lowerName.includes('jupyter') || lowerName.includes('notebook')) {
+    return 'jupyter-mcp';
+  }
+
+  if (lowerName.includes('git-ingest') || lowerName.includes('git-analyzer')) {
+    return 'mcp-git-ingest';
+  }
+
   // Try to match by command args for STDIO servers
   if (config.type === 'stdio' && config.args) {
     const argsStr = config.args.join(' ').toLowerCase();
@@ -53,6 +145,77 @@ const detectServerType = (serverName: string, config: any): string | null => {
     if (argsStr.includes('server-postgres')) {
       return 'postgres';
     }
+
+    if (argsStr.includes('server-sqlite')) {
+      return 'sqlite';
+    }
+
+    if (argsStr.includes('server-git')) {
+      return 'git';
+    }
+
+    if (argsStr.includes('hacker-news-mcp')) {
+      return 'hacker-news';
+    }
+
+    if (argsStr.includes('qdrant')) {
+      return 'qdrant';
+    }
+
+    if (argsStr.includes('@mem0ai/mem0-mcp')) {
+      return 'mem0-coding';
+    }
+
+    if (argsStr.includes('@ivangrynenko/devstandards_mcp')) {
+      return 'devstandards';
+    }
+
+    if (argsStr.includes('@axliupore/mcp-code-runner')) {
+      return 'code-runner';
+    }
+
+    if (argsStr.includes('@juehang/vscode-mcp-server')) {
+      return 'vscode-mcp';
+    }
+
+    if (argsStr.includes('@r-huijts/xcode-mcp-server')) {
+      return 'xcode-mcp';
+    }
+
+    if (argsStr.includes('@context7/server')) {
+      return 'context7-docs';
+    }
+
+    if (argsStr.includes('@cjo4m06/mcp-shrimp-task-manager')) {
+      return 'shrimp-task-manager';
+    }
+
+    if (argsStr.includes('@sonarsource/sonarqube-mcp')) {
+      return 'sonarqube';
+    }
+
+    if (argsStr.includes('@semgrep/mcp-server')) {
+      return 'semgrep-security';
+    }
+
+    if (argsStr.includes('@datalayer/jupyter-mcp-server')) {
+      return 'jupyter-mcp';
+    }
+
+    if (argsStr.includes('@adhikasp/mcp-git-ingest')) {
+      return 'mcp-git-ingest';
+    }
+
+    if (argsStr.includes('@modelcontextprotocol/server-brave-search')) {
+      return 'brave-search';
+    }
+  }
+
+  // Try to match by URL for HTTP servers
+  if (config.url) {
+    const urlStr = config.url.toLowerCase();
+
+    // Add other URL-based detections here if needed
   }
 
   return null;
@@ -98,6 +261,128 @@ const SERVER_API_CONFIGS: Record<
       label: 'Database URL',
       placeholder: 'postgresql://username:password@hostname:port/database',
       description: 'PostgreSQL connection string',
+      required: true,
+    },
+  },
+  'brave-search': {
+    BRAVE_API_KEY: {
+      label: 'Brave Search API Key',
+      placeholder: 'BSxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get your API key from https://api.search.brave.com/app/keys',
+      required: true,
+    },
+  },
+  kubernetes: {
+    KUBECONFIG: {
+      label: 'Kubeconfig Path',
+      placeholder: '~/.kube/config',
+      description: 'Path to your Kubernetes configuration file',
+      required: true,
+    },
+  },
+  elasticsearch: {
+    ELASTICSEARCH_URL: {
+      label: 'Elasticsearch URL',
+      placeholder: 'http://localhost:9200',
+      description: 'Elasticsearch cluster URL',
+      required: true,
+    },
+    ELASTICSEARCH_API_KEY: {
+      label: 'Elasticsearch API Key',
+      placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Elasticsearch API key for authentication',
+      required: true,
+    },
+  },
+  weather: {
+    OPENWEATHER_API_KEY: {
+      label: 'OpenWeatherMap API Key',
+      placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get your API key from openweathermap.org',
+      required: true,
+    },
+  },
+  sentry: {
+    SENTRY_AUTH_TOKEN: {
+      label: 'Sentry Auth Token',
+      placeholder: 'sntrys_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Create at sentry.io/settings/account/api/auth-tokens',
+      required: true,
+    },
+  },
+  twitter: {
+    TWITTER_BEARER_TOKEN: {
+      label: 'Twitter Bearer Token',
+      placeholder: 'AAAAAAAAAAAAAAAAAAAAAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get from Twitter Developer Portal (API v2)',
+      required: true,
+    },
+  },
+  reddit: {
+    REDDIT_CLIENT_ID: {
+      label: 'Reddit Client ID',
+      placeholder: 'your_client_id_here',
+      description: 'From Reddit App Settings',
+      required: true,
+    },
+    REDDIT_CLIENT_SECRET: {
+      label: 'Reddit Client Secret',
+      placeholder: 'your_client_secret_here',
+      description: 'From Reddit App Settings',
+      required: true,
+    },
+  },
+  youtube: {
+    YOUTUBE_API_KEY: {
+      label: 'YouTube API Key',
+      placeholder: 'AIzaSyAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get from Google Cloud Console (YouTube Data API v3)',
+      required: true,
+    },
+  },
+  openai: {
+    OPENAI_API_KEY: {
+      label: 'OpenAI API Key',
+      placeholder: 'sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get from OpenAI Platform (platform.openai.com/api-keys)',
+      required: true,
+    },
+  },
+  anthropic: {
+    ANTHROPIC_API_KEY: {
+      label: 'Anthropic API Key',
+      placeholder: 'sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get from Anthropic Console (console.anthropic.com/)',
+      required: true,
+    },
+  },
+  perplexity: {
+    PERPLEXITY_API_KEY: {
+      label: 'Perplexity API Key',
+      placeholder: 'pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get from Perplexity API dashboard',
+      required: true,
+    },
+  },
+  replicate: {
+    REPLICATE_API_TOKEN: {
+      label: 'Replicate API Token',
+      placeholder: 'r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Get from Replicate account settings',
+      required: true,
+    },
+  },
+  sonarqube: {
+    SONARQUBE_URL: {
+      label: 'SonarQube Server URL',
+      placeholder: 'http://localhost:9000',
+      description: 'URL of your SonarQube server',
+      required: true,
+    },
+    SONARQUBE_TOKEN: {
+      label: 'SonarQube Authentication Token',
+      placeholder: 'squ_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      description: 'Generate from SonarQube: Administration > Security > Users',
       required: true,
     },
   },

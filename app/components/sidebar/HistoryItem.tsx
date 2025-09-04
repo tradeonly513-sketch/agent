@@ -3,9 +3,10 @@ import { classNames } from '~/utils/classNames';
 import { type ChatHistoryItem } from '~/lib/persistence';
 import WithTooltip from '~/components/ui/Tooltip';
 import { useEditChatDescription } from '~/lib/hooks';
-import { forwardRef, type ForwardedRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Checkbox } from '~/components/ui/Checkbox';
-import { Check } from 'lucide-react';
+import { Check, Download, Copy, Pencil, Trash2, MoreHorizontal } from 'lucide-react';
+import { Dropdown, DropdownItem, DropdownSeparator } from '~/components/ui/Dropdown';
 
 interface HistoryItemProps {
   item: ChatHistoryItem;
@@ -69,8 +70,8 @@ export function HistoryItem({
   return (
     <div
       className={classNames(
-        'group rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50/80 dark:hover:bg-gray-800/30 overflow-hidden flex justify-between items-center px-3 py-2 transition-colors',
-        { 'text-gray-900 dark:text-white bg-gray-50/80 dark:bg-gray-800/30': isActiveChat },
+        'group rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50/80 dark:hover:bg-gray-800/30 overflow-hidden flex justify-between items-center px-3 py-2.5 transition-all duration-200 ease-in-out hover:shadow-sm',
+        { 'text-gray-900 dark:text-white bg-gray-50/80 dark:bg-gray-800/30 shadow-sm': isActiveChat },
         { 'cursor-pointer': selectionMode },
       )}
       onClick={selectionMode ? handleItemClick : undefined}
@@ -106,85 +107,84 @@ export function HistoryItem({
           </button>
         </form>
       ) : (
-        <a
-          href={`/chat/${item.urlId}`}
-          className="flex w-full relative truncate block"
-          onClick={selectionMode ? handleItemClick : undefined}
-        >
-          <WithTooltip tooltip={currentDescription}>
-            <span className="truncate pr-24">{currentDescription}</span>
-          </WithTooltip>
-          <div
-            className={classNames(
-              'absolute right-0 top-0 bottom-0 flex items-center bg-transparent px-2 transition-colors',
-            )}
+        <>
+          <a
+            href={`/chat/${item.urlId}`}
+            className="flex w-full relative truncate block pr-12"
+            onClick={selectionMode ? handleItemClick : undefined}
           >
-            <div className="flex items-center gap-2.5 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChatActionButton
-                toolTipContent="Export"
-                icon="i-ph-download-duotone"
-                onClick={(event) => {
-                  event.preventDefault();
+            <WithTooltip tooltip={currentDescription} position="top" sideOffset={8}>
+              <span className="truncate">{currentDescription}</span>
+            </WithTooltip>
+          </a>
+          <div className="flex items-center gap-2.5 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-all duration-200 ease-in-out">
+            <Dropdown
+              trigger={
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-200 ease-in-out hover:scale-105"
+                  aria-label="More actions"
+                >
+                  <MoreHorizontal className="h-4 w-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" />
+                </button>
+              }
+              align="end"
+              sideOffset={8}
+            >
+              <DropdownItem
+                onSelect={() => {
                   exportChat(item.id);
                 }}
-              />
+                className="py-2.5 px-3 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors duration-150"
+              >
+                <Download className="h-4 w-4 mr-3 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium">Export</span>
+              </DropdownItem>
+
               {onDuplicate && (
-                <ChatActionButton
-                  toolTipContent="Duplicate"
-                  icon="i-ph-copy-duotone"
-                  onClick={(event) => {
-                    event.preventDefault();
+                <DropdownItem
+                  onSelect={() => {
                     onDuplicate?.(item.id);
                   }}
-                />
+                  className="py-2.5 px-3 hover:bg-green-50 dark:hover:bg-green-950/50 transition-colors duration-150"
+                >
+                  <Copy className="h-4 w-4 mr-3 text-green-600 dark:text-green-400" />
+                  <span className="text-sm font-medium">Duplicate</span>
+                </DropdownItem>
               )}
-              <ChatActionButton
-                toolTipContent="Rename"
-                icon="i-ph-pencil-duotone"
-                onClick={(event) => {
-                  event.preventDefault();
+
+              <DropdownItem
+                onSelect={() => {
                   toggleEditMode();
                 }}
-              />
-              <ChatActionButton
-                toolTipContent="Delete"
-                icon="i-ph-trash-duotone"
-                className="hover:text-red-500 dark:hover:text-red-400"
-                onClick={handleDeleteClick}
-              />
-            </div>
+                className="py-2.5 px-3 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition-colors duration-150"
+              >
+                <Pencil className="h-4 w-4 mr-3 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm font-medium">Rename</span>
+              </DropdownItem>
+
+              <DropdownSeparator />
+
+              <DropdownItem
+                onSelect={() => {
+                  if (onDelete) {
+                    // Create a synthetic event for onDelete
+                    const syntheticEvent = {
+                      preventDefault: () => {},
+                      stopPropagation: () => {},
+                    } as React.UIEvent;
+                    onDelete(syntheticEvent);
+                  }
+                }}
+                className="py-2.5 px-3 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors duration-150"
+              >
+                <Trash2 className="h-4 w-4 mr-3" />
+                <span className="text-sm font-medium">Delete</span>
+              </DropdownItem>
+            </Dropdown>
           </div>
-        </a>
+        </>
       )}
     </div>
   );
 }
-
-const ChatActionButton = forwardRef(
-  (
-    {
-      toolTipContent,
-      icon,
-      className,
-      onClick,
-    }: {
-      toolTipContent: string;
-      icon: string;
-      className?: string;
-      onClick: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
-      btnTitle?: string;
-    },
-    ref: ForwardedRef<HTMLButtonElement>,
-  ) => {
-    return (
-      <WithTooltip tooltip={toolTipContent} position="bottom" sideOffset={4}>
-        <button
-          ref={ref}
-          type="button"
-          className={`text-gray-400 dark:text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors ${icon} ${className ? className : ''}`}
-          onClick={onClick}
-        />
-      </WithTooltip>
-    );
-  },
-);

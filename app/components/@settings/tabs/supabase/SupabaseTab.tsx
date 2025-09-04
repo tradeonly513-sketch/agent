@@ -13,6 +13,7 @@ import {
   updateSupabaseConnection,
   fetchSupabaseStats,
   fetchProjectApiKeys,
+  initializeSupabaseConnection,
   type SupabaseProject,
 } from '~/lib/stores/supabase';
 
@@ -197,6 +198,14 @@ export default function SupabaseTab() {
       },
     },
   ];
+
+  // Initialize connection on component mount
+  useEffect(() => {
+    const initializeConnection = async () => {
+      await initializeSupabaseConnection();
+    };
+    initializeConnection();
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {

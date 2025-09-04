@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { classNames } from '~/utils/classNames';
-import type { GitHubAuthState } from '~/components/@settings/tabs/connections/types/GitHub';
+import type { GitHubAuthState } from '~/types/GitHub';
 import Cookies from 'js-cookie';
 import { getLocalStorage } from '~/lib/persistence';
 import { Plug, Plus, Loader2, CheckCircle, Clock } from 'lucide-react';

@@ -3,16 +3,14 @@ import type { NetlifyConnection, NetlifyUser } from '~/types/netlify';
 import { logStore } from './logs';
 import { toast } from 'react-toastify';
 
-// Initialize with stored connection or environment variable
+// Initialize with stored connection
 const storedConnection = typeof window !== 'undefined' ? localStorage.getItem('netlify_connection') : null;
-const envToken = import.meta.env.VITE_NETLIFY_ACCESS_TOKEN;
 
-// If we have an environment token but no stored connection, initialize with the env token
 const initialConnection: NetlifyConnection = storedConnection
   ? JSON.parse(storedConnection)
   : {
       user: null,
-      token: envToken || '',
+      token: '', // Token stored server-side only
       stats: undefined,
     };
 
@@ -20,34 +18,35 @@ export const netlifyConnection = atom<NetlifyConnection>(initialConnection);
 export const isConnecting = atom<boolean>(false);
 export const isFetchingStats = atom<boolean>(false);
 
-// Function to initialize Netlify connection with environment token
+// Function to initialize Netlify connection via server-side API
 export async function initializeNetlifyConnection() {
   const currentState = netlifyConnection.get();
 
   // If we already have a connection, don't override it
-  if (currentState.user || !envToken) {
+  if (currentState.user) {
     return;
   }
 
   try {
     isConnecting.set(true);
 
-    const response = await fetch('https://api.netlify.com/api/v1/user', {
-      headers: {
-        Authorization: `Bearer ${envToken}`,
-      },
-    });
+    const response = await fetch('/api/netlify-user');
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // No server-side token available, skip initialization
+        return;
+      }
+
       throw new Error(`Failed to connect to Netlify: ${response.statusText}`);
     }
 
     const userData = await response.json();
 
-    // Update the connection state
+    // Update the connection state (no token stored client-side)
     const connectionData: Partial<NetlifyConnection> = {
       user: userData as NetlifyUser,
-      token: envToken,
+      token: '', // Token stored server-side only
     };
 
     // Store in localStorage for persistence
@@ -57,7 +56,7 @@ export async function initializeNetlifyConnection() {
     updateNetlifyConnection(connectionData);
 
     // Fetch initial stats
-    await fetchNetlifyStats(envToken);
+    await fetchNetlifyStats();
   } catch (error) {
     console.error('Error initializing Netlify connection:', error);
     logStore.logError('Failed to initialize Netlify connection', { error });
@@ -77,22 +76,24 @@ export const updateNetlifyConnection = (updates: Partial<NetlifyConnection>) => 
   }
 };
 
-export async function fetchNetlifyStats(token: string) {
+export async function fetchNetlifyStats() {
   try {
     isFetchingStats.set(true);
 
-    const sitesResponse = await fetch('https://api.netlify.com/api/v1/sites', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+    const formData = new FormData();
+    formData.append('action', 'get_sites');
+
+    const response = await fetch('/api/netlify-user', {
+      method: 'POST',
+      body: formData,
     });
 
-    if (!sitesResponse.ok) {
-      throw new Error(`Failed to fetch sites: ${sitesResponse.status}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sites: ${response.status}`);
     }
 
-    const sites = (await sitesResponse.json()) as any;
+    const data = await response.json();
+    const sites = data.sites || [];
 
     const currentState = netlifyConnection.get();
     updateNetlifyConnection({

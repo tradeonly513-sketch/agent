@@ -1,0 +1,173 @@
+import { json } from '@remix-run/cloudflare';
+import { getApiKeysFromCookie } from '~/lib/api/cookies';
+import { withSecurity } from '~/lib/security';
+
+async function githubUserLoader({ request, context }: { request: Request; context: any }) {
+  try {
+    // Get API keys from cookies (server-side only)
+    const cookieHeader = request.headers.get('Cookie');
+    const apiKeys = getApiKeysFromCookie(cookieHeader);
+
+    // Try to get GitHub token from various sources
+    const githubToken =
+      apiKeys.GITHUB_API_KEY ||
+      apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
+      context?.cloudflare?.env?.GITHUB_TOKEN ||
+      context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
+      process.env.GITHUB_TOKEN ||
+      process.env.VITE_GITHUB_ACCESS_TOKEN;
+
+
+    if (!githubToken) {
+      return json({ error: 'GitHub token not found' }, { status: 401 });
+    }
+
+    // Make server-side request to GitHub API
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        Authorization: `Bearer ${githubToken}`,
+        'User-Agent': 'bolt.diy-app',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return json({ error: 'Invalid GitHub token' }, { status: 401 });
+      }
+
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    const userData = await response.json();
+
+    return json({
+      login: userData.login,
+      name: userData.name,
+      avatar_url: userData.avatar_url,
+      html_url: userData.html_url,
+      type: userData.type,
+    });
+  } catch (error) {
+    console.error('Error fetching GitHub user:', error);
+    return json(
+      {
+        error: 'Failed to fetch GitHub user information',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export const loader = withSecurity(githubUserLoader, {
+  rateLimit: true,
+  allowedMethods: ['GET'],
+});
+
+async function githubUserAction({ request, context }: { request: Request; context: any }) {
+  try {
+    const formData = await request.formData();
+    const action = formData.get('action');
+
+    // Get API keys from cookies (server-side only)
+    const cookieHeader = request.headers.get('Cookie');
+    const apiKeys = getApiKeysFromCookie(cookieHeader);
+
+    // Try to get GitHub token from various sources
+    const githubToken =
+      apiKeys.GITHUB_API_KEY ||
+      apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
+      context?.cloudflare?.env?.GITHUB_TOKEN ||
+      context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
+      process.env.GITHUB_TOKEN ||
+      process.env.VITE_GITHUB_ACCESS_TOKEN;
+
+    if (!githubToken) {
+      return json({ error: 'GitHub token not found' }, { status: 401 });
+    }
+
+    if (action === 'get_repos') {
+      // Fetch user repositories
+      const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          Authorization: `Bearer ${githubToken}`,
+          'User-Agent': 'bolt.diy-app',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
+
+      const repos = await response.json();
+
+      return json({
+        repos: repos.map((repo: any) => ({
+          id: repo.id,
+          name: repo.name,
+          full_name: repo.full_name,
+          html_url: repo.html_url,
+          description: repo.description,
+          private: repo.private,
+          language: repo.language,
+          updated_at: repo.updated_at,
+          stargazers_count: repo.stargazers_count || 0,
+          forks_count: repo.forks_count || 0,
+          topics: repo.topics || [],
+        })),
+      });
+    }
+
+    if (action === 'get_branches') {
+      const repoFullName = formData.get('repo');
+
+      if (!repoFullName) {
+        return json({ error: 'Repository name is required' }, { status: 400 });
+      }
+
+      // Fetch repository branches
+      const response = await fetch(`https://api.github.com/repos/${repoFullName}/branches`, {
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          Authorization: `Bearer ${githubToken}`,
+          'User-Agent': 'bolt.diy-app',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
+
+      const branches = await response.json();
+
+      return json({
+        branches: branches.map((branch: any) => ({
+          name: branch.name,
+          commit: {
+            sha: branch.commit.sha,
+            url: branch.commit.url,
+          },
+          protected: branch.protected,
+        })),
+      });
+    }
+
+    return json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    console.error('Error in GitHub user action:', error);
+    return json(
+      {
+        error: 'Failed to process GitHub request',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export const action = withSecurity(githubUserAction, {
+  rateLimit: true,
+  allowedMethods: ['POST'],
+});

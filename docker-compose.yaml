@@ -7,28 +7,19 @@ services:
       target: bolt-ai-production
     ports:
       - '5173:5173'
-    env_file: 
+    env_file:
+      # Only use .env for production - never .env.local
       - '.env'
-      - '.env.local'
     environment:
       - NODE_ENV=production
       - COMPOSE_PROFILES=production
-      # No strictly needed but serving as hints for Coolify
+      # Core application settings
       - PORT=5173
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - HuggingFace_API_KEY=${HuggingFace_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
-      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}
-      - OLLAMA_API_BASE_URL=${OLLAMA_API_BASE_URL}
-      - XAI_API_KEY=${XAI_API_KEY}
-      - TOGETHER_API_KEY=${TOGETHER_API_KEY}
-      - TOGETHER_API_BASE_URL=${TOGETHER_API_BASE_URL}
-      - AWS_BEDROCK_CONFIG=${AWS_BEDROCK_CONFIG}
-      - VITE_LOG_LEVEL=${VITE_LOG_LEVEL:-debug}
-      - DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX:-32768}
+      - VITE_LOG_LEVEL=warn
+      - DEFAULT_NUM_CTX=32768
       - RUNNING_IN_DOCKER=true
+      # API keys - these should be set in .env file, not exposed here
+      # DO NOT hardcode API keys in docker-compose.yaml for security
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     command: pnpm run dockerstart
@@ -39,7 +30,7 @@ services:
     image: bolt-ai:development
     build:
       target: bolt-ai-development
-    env_file: 
+    env_file:
       - '.env'
       - '.env.local'
     environment:
@@ -49,21 +40,13 @@ services:
       - VITE_HMR_PORT=5173
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
+      # Core application settings
       - PORT=5173
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - HuggingFace_API_KEY=${HuggingFace_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
-      - XAI_API_KEY=${XAI_API_KEY}
-      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}
-      - OLLAMA_API_BASE_URL=${OLLAMA_API_BASE_URL}
-      - TOGETHER_API_KEY=${TOGETHER_API_KEY}
-      - TOGETHER_API_BASE_URL=${TOGETHER_API_BASE_URL}
-      - AWS_BEDROCK_CONFIG=${AWS_BEDROCK_CONFIG}
-      - VITE_LOG_LEVEL=${VITE_LOG_LEVEL:-debug}
-      - DEFAULT_NUM_CTX=${DEFAULT_NUM_CTX:-32768}
+      - VITE_LOG_LEVEL=debug
+      - DEFAULT_NUM_CTX=32768
       - RUNNING_IN_DOCKER=true
+      # API keys are loaded from .env.local file for development
+      # DO NOT expose API keys directly in docker-compose for security
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     volumes:

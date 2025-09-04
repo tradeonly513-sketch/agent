@@ -12,7 +12,7 @@ import { useVercelDeploy } from '~/components/deploy/VercelDeploy.client';
 import { useNetlifyDeploy } from '~/components/deploy/NetlifyDeploy.client';
 import { useGitHubDeploy } from '~/components/deploy/GitHubDeploy.client';
 import { GitHubDeploymentDialog } from '~/components/deploy/GitHubDeploymentDialog';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Rocket, Loader2, Globe, Github, Cloud } from 'lucide-react';
 
 interface DeployButtonProps {
   onVercelDeploy?: () => Promise<void>;
@@ -92,45 +92,65 @@ export const DeployButton = ({ onVercelDeploy, onNetlifyDeploy, onGitHubDeploy }
 
   return (
     <>
-      <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden text-sm">
+      <div className="inline-block">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
             disabled={isDeploying || !activePreview || isStreaming}
-            className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7"
+            className={classNames(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
+              'bg-bolt-elements-button-primary-background',
+              'text-bolt-elements-button-primary-text',
+              'border border-bolt-elements-borderColor',
+              'transition-theme duration-150',
+              'hover:bg-bolt-elements-button-primary-backgroundHover',
+              'hover:text-bolt-elements-item-contentAccent',
+              'focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColorActive focus:ring-offset-1',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              'shrink-0',
+            )}
           >
-            {isDeploying ? `Deploying to ${deployingTo}...` : 'Deploy'}
-            <ChevronDown className="transition-transform" />
+            {isDeploying ? (
+              <Loader2 className="w-4 h-4 animate-spin text-bolt-elements-icon-primary" />
+            ) : (
+              <Rocket className="w-4 h-4 text-bolt-elements-icon-primary" />
+            )}
+            <span className="hidden sm:inline">{isDeploying ? `Deploying to ${deployingTo}...` : 'Deploy'}</span>
+            <ChevronDown className="w-3 h-3 text-bolt-elements-icon-tertiary transition-transform duration-200" />
           </DropdownMenu.Trigger>
+
           <DropdownMenu.Content
             className={classNames(
-              'z-[250]',
+              'min-w-[280px] z-50',
               'bg-bolt-elements-background-depth-2',
-              'rounded-lg shadow-lg',
               'border border-bolt-elements-borderColor',
-              'animate-in fade-in-0 zoom-in-95',
-              'py-1',
+              'rounded-xl shadow-xl',
+              'p-1',
+              'animate-in fade-in-0 zoom-in-95 duration-200',
             )}
-            sideOffset={5}
+            sideOffset={8}
             align="end"
+            alignOffset={-4}
           >
             <DropdownMenu.Item
               className={classNames(
-                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                'flex items-center w-full px-3 py-2 text-sm rounded-lg',
+                'text-bolt-elements-textPrimary',
+                'hover:bg-bolt-elements-item-backgroundActive',
+                'hover:text-bolt-elements-item-contentActive',
+                'focus:bg-bolt-elements-item-backgroundActive',
+                'focus:text-bolt-elements-item-contentActive',
+                'cursor-pointer select-none outline-none',
+                'transition-theme duration-150',
+                'gap-3',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !netlifyConn.user,
+                  'opacity-50 cursor-not-allowed': isDeploying || !activePreview || !netlifyConn.user,
                 },
               )}
               disabled={isDeploying || !activePreview || !netlifyConn.user}
               onClick={handleNetlifyDeployClick}
             >
-              <img
-                className="w-5 h-5"
-                height="24"
-                width="24"
-                crossOrigin="anonymous"
-                src="https://cdn.simpleicons.org/netlify"
-              />
-              <span className="mx-auto">
+              <Globe className="w-5 h-5 flex-shrink-0 text-bolt-elements-icon-secondary" />
+              <span className="flex-1 text-left">
                 {!netlifyConn.user ? 'No Netlify Account Connected' : 'Deploy to Netlify'}
               </span>
               {netlifyConn.user && <NetlifyDeploymentLink />}
@@ -138,60 +158,63 @@ export const DeployButton = ({ onVercelDeploy, onNetlifyDeploy, onGitHubDeploy }
 
             <DropdownMenu.Item
               className={classNames(
-                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                'flex items-center w-full px-3 py-2 text-sm rounded-lg',
+                'text-bolt-elements-textPrimary',
+                'hover:bg-bolt-elements-item-backgroundActive',
+                'hover:text-bolt-elements-item-contentActive',
+                'focus:bg-bolt-elements-item-backgroundActive',
+                'focus:text-bolt-elements-item-contentActive',
+                'cursor-pointer select-none outline-none',
+                'transition-theme duration-150',
+                'gap-3',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !vercelConn.user,
+                  'opacity-50 cursor-not-allowed': isDeploying || !activePreview || !vercelConn.user,
                 },
               )}
               disabled={isDeploying || !activePreview || !vercelConn.user}
               onClick={handleVercelDeployClick}
             >
-              <img
-                className="w-5 h-5 bg-black p-1 rounded"
-                height="24"
-                width="24"
-                crossOrigin="anonymous"
-                src="https://cdn.simpleicons.org/vercel/white"
-                alt="vercel"
-              />
-              <span className="mx-auto">{!vercelConn.user ? 'No Vercel Account Connected' : 'Deploy to Vercel'}</span>
+              <Rocket className="w-5 h-5 flex-shrink-0 text-bolt-elements-icon-secondary" />
+              <span className="flex-1 text-left">
+                {!vercelConn.user ? 'No Vercel Account Connected' : 'Deploy to Vercel'}
+              </span>
               {vercelConn.user && <VercelDeploymentLink />}
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
               className={classNames(
-                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                'flex items-center w-full px-3 py-2 text-sm rounded-lg',
+                'text-bolt-elements-textPrimary',
+                'hover:bg-bolt-elements-item-backgroundActive',
+                'hover:text-bolt-elements-item-contentActive',
+                'focus:bg-bolt-elements-item-backgroundActive',
+                'focus:text-bolt-elements-item-contentActive',
+                'cursor-pointer select-none outline-none',
+                'transition-theme duration-150',
+                'gap-3',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview,
+                  'opacity-50 cursor-not-allowed': isDeploying || !activePreview,
                 },
               )}
               disabled={isDeploying || !activePreview}
               onClick={handleGitHubDeployClick}
             >
-              <img
-                className="w-5 h-5"
-                height="24"
-                width="24"
-                crossOrigin="anonymous"
-                src="https://cdn.simpleicons.org/github"
-                alt="github"
-              />
-              <span className="mx-auto">Deploy to GitHub</span>
+              <Github className="w-5 h-5 flex-shrink-0 text-bolt-elements-icon-secondary" />
+              <span className="flex-1 text-left">Deploy to GitHub</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
               disabled
-              className="flex items-center w-full rounded-md px-4 py-2 text-sm text-bolt-elements-textTertiary gap-2 opacity-60 cursor-not-allowed"
+              className={classNames(
+                'flex items-center w-full px-3 py-2 text-sm rounded-lg',
+                'text-bolt-elements-textTertiary',
+                'cursor-not-allowed select-none',
+                'opacity-50',
+                'gap-3',
+              )}
             >
-              <img
-                className="w-5 h-5"
-                height="24"
-                width="24"
-                crossOrigin="anonymous"
-                src="https://cdn.simpleicons.org/cloudflare"
-                alt="cloudflare"
-              />
-              <span className="mx-auto">Deploy to Cloudflare (Coming Soon)</span>
+              <Cloud className="w-5 h-5 flex-shrink-0 text-bolt-elements-icon-secondary" />
+              <span className="flex-1 text-left">Deploy to Cloudflare (Coming Soon)</span>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>

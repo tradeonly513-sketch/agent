@@ -9,9 +9,13 @@ import { LLMManager } from '~/lib/modules/llm/manager';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { getApiKeysFromCookie, getProviderSettingsFromCookie } from '~/lib/api/cookies';
 import { createScopedLogger } from '~/utils/logger';
+import { withSecurity } from '~/lib/security';
 
 export async function action(args: ActionFunctionArgs) {
-  return llmCallAction(args);
+  return withSecurity(llmCallAction, {
+    rateLimit: true,
+    allowedMethods: ['POST'],
+  })(args);
 }
 
 async function getModelList(options: {

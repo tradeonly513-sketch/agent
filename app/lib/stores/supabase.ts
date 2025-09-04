@@ -44,6 +44,50 @@ if (savedCredentials && !initialState.credentials) {
 
 export const supabaseConnection = atom<SupabaseConnectionState>(initialState);
 
+// Function to initialize Supabase connection via server-side API
+export async function initializeSupabaseConnection() {
+  const currentState = supabaseConnection.get();
+
+  // If we already have a connection, don't override it
+  if (currentState.user) {
+    return;
+  }
+
+  try {
+    isConnecting.set(true);
+
+    const response = await fetch('/api/supabase-user');
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // No server-side token available, skip initialization
+        return;
+      }
+
+      throw new Error(`Failed to connect to Supabase: ${response.statusText}`);
+    }
+
+    const userData = await response.json();
+
+    // Update the connection state (no token stored client-side)
+    const connectionData: Partial<SupabaseConnectionState> = {
+      user: userData as SupabaseUser,
+      token: '', // Token stored server-side only
+    };
+
+    // Update the store
+    updateSupabaseConnection(connectionData);
+
+    // Fetch initial stats
+    await fetchSupabaseStatsViaAPI();
+  } catch (error) {
+    console.error('Error initializing Supabase connection:', error);
+  } finally {
+    isConnecting.set(false);
+  }
+}
+
+// Auto-initialize if there's a token
 if (initialState.token && !initialState.stats) {
   fetchSupabaseStats(initialState.token).catch(console.error);
 }
@@ -102,6 +146,37 @@ export function updateSupabaseConnection(connection: Partial<SupabaseConnectionS
   } else {
     localStorage.removeItem('supabase_connection');
     localStorage.removeItem('supabaseCredentials');
+  }
+}
+
+// Function to fetch Supabase stats via server-side API
+export async function fetchSupabaseStatsViaAPI() {
+  try {
+    isFetchingStats.set(true);
+
+    const formData = new FormData();
+    formData.append('action', 'get_projects');
+
+    const response = await fetch('/api/supabase-user', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch projects');
+    }
+
+    const data = await response.json();
+
+    updateSupabaseConnection({
+      user: data.user,
+      stats: data.stats,
+    });
+  } catch (error) {
+    console.error('Failed to fetch Supabase stats:', error);
+    throw error;
+  } finally {
+    isFetchingStats.set(false);
   }
 }
 

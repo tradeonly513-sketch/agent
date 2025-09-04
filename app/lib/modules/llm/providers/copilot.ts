@@ -136,7 +136,7 @@ export default class CopilotProvider extends BaseProvider {
       throw new Error(`Missing API key for ${this.name} provider`);
     }
 
-    console.log(`Copilot: Using API key (first 8 chars): ${apiKey.substring(0, 8)}...`);
+    console.log(`Copilot: API key found and configured (length: ${apiKey.length})`);
 
     const openai = createOpenAI({
       baseURL: 'https://models.github.ai/inference',

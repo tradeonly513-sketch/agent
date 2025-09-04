@@ -122,32 +122,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     const mcpService = MCPService.getInstance();
 
     /*
-     * Ensure MCP service is initialized with user configuration
-     * This simulates what should happen when MCP store initializes from localStorage
+     * MCP service initialization is now handled by the client-side MCP store
+     * which loads user configurations from localStorage and calls the API endpoints
+     * This ensures user-configured MCP servers are properly initialized
      */
-    const githubConfig = {
-      mcpServers: {
-        github: {
-          type: 'stdio' as const,
-          command: 'npx',
-          args: ['-y', '@modelcontextprotocol/server-github'],
-          env: process.env.GITHUB_PERSONAL_ACCESS_TOKEN
-            ? {
-                GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-              }
-            : undefined,
-        },
-      },
-    };
-
-    // Check if MCP service has tools, if not, initialize it
-    const currentTools = mcpService.toolsWithoutExecute;
-
-    if (Object.keys(currentTools).length === 0) {
-      logger.info('MCP Service has no tools, initializing with GitHub configuration...');
-      await mcpService.updateConfig(githubConfig);
-      logger.info('MCP Service initialized with GitHub server');
-    }
 
     const totalMessageContent = messages.reduce((acc, message) => acc + message.content, '');
     logger.debug(`Total message length: ${totalMessageContent.split(' ').length}, words`);
@@ -157,8 +135,20 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     const mcpToolNames = Object.keys(mcpTools);
     logger.debug(`MCP Service has ${mcpToolNames.length} tools available:`, mcpToolNames);
 
+    // Get tool grouping suggestions for model optimization
+    const toolGroupingSuggestion = mcpService.getToolGroupingSuggestion();
+
+    if (toolGroupingSuggestion.overallRecommendation) {
+      logger.info(
+        'MCP Model Optimization Suggestion:',
+        `${toolGroupingSuggestion.overallRecommendation.provider}/${toolGroupingSuggestion.overallRecommendation.model} - ${toolGroupingSuggestion.overallRecommendation.reasoning}`,
+      );
+    }
+
     if (mcpToolNames.length === 0) {
-      logger.warn('MCP Service has no tools available - this explains why LLM cannot use GitHub tools');
+      logger.info(
+        'MCP Service has no tools available - LLM will not be able to use MCP tools. Configure MCP servers in settings to enable external tool capabilities.',
+      );
     }
 
     let lastChunk: string | undefined = undefined;
@@ -282,9 +272,16 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           tools: mcpService.toolsWithoutExecute,
           maxSteps: maxLLMSteps,
           onStepFinish: ({ toolCalls }) => {
-            // add tool call annotations for frontend processing
+            // add tool call annotations for frontend processing with model context
             toolCalls.forEach((toolCall) => {
-              mcpService.processToolCall(toolCall, dataStream);
+              mcpService.processToolCall(toolCall, dataStream, {
+                currentModel: {
+                  provider: provider || 'OpenAI',
+                  model: model || 'gpt-4o-mini',
+                },
+
+                // Note: serverModelMappings could be added here when available from client
+              });
             });
           },
           onFinish: async ({ text: content, finishReason, usage }) => {

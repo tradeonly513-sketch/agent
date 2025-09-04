@@ -40,48 +40,74 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
   }, []);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       {/* Export Chat Button */}
       {chatStarted && shouldShowButtons && <ExportChatButton exportChat={exportChat} />}
 
       {/* Sync Button */}
       {shouldShowButtons && (
-        <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden text-sm">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger
-              disabled={isSyncing}
-              className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7"
-            >
-              {isSyncing ? 'Syncing...' : 'Sync'}
-              <ChevronDown className="transition-transform" />
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger
+            disabled={isSyncing}
+            className={classNames(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
+              'bg-bolt-elements-button-primary-background',
+              'text-bolt-elements-button-primary-text',
+              'border border-bolt-elements-borderColor',
+              'transition-theme duration-150',
+              'hover:bg-bolt-elements-button-primary-backgroundHover',
+              'hover:text-bolt-elements-item-contentAccent',
+              'focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColorActive focus:ring-offset-1',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              'shrink-0',
+            )}
+          >
+            {isSyncing ? (
+              <Loader2 className="w-4 h-4 animate-spin text-bolt-elements-icon-primary" />
+            ) : (
+              <CloudDownload className="w-4 h-4 text-bolt-elements-icon-primary" />
+            )}
+            <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
+            <ChevronDown className="w-3 h-3 text-bolt-elements-icon-tertiary transition-transform duration-200" />
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Content
+            className={classNames(
+              'min-w-[220px] z-50',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
+              'rounded-xl shadow-xl',
+              'p-1',
+              'animate-in fade-in-0 zoom-in-95 duration-200',
+            )}
+            sideOffset={8}
+            align="end"
+            alignOffset={-4}
+          >
+            <DropdownMenu.Item
               className={classNames(
-                'min-w-[240px] z-[250]',
-                'bg-white dark:bg-[#141414]',
-                'rounded-lg shadow-lg',
-                'border border-gray-200/50 dark:border-gray-800/50',
-                'animate-in fade-in-0 zoom-in-95',
-                'py-1',
+                'flex items-center w-full px-3 py-2 text-sm rounded-lg',
+                'text-bolt-elements-textPrimary',
+                'hover:bg-bolt-elements-item-backgroundActive',
+                'hover:text-bolt-elements-item-contentActive',
+                'focus:bg-bolt-elements-item-backgroundActive',
+                'focus:text-bolt-elements-item-contentActive',
+                'cursor-pointer select-none outline-none',
+                'transition-theme duration-150',
+                'gap-2',
               )}
-              sideOffset={5}
-              align="end"
+              onClick={handleSyncFiles}
+              disabled={isSyncing}
             >
-              <DropdownMenu.Item
-                className={classNames(
-                  'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                )}
-                onClick={handleSyncFiles}
-                disabled={isSyncing}
-              >
-                <div className="flex items-center gap-2">
-                  {isSyncing ? <Loader2 className="animate-spin" /> : <CloudDownload />}
-                  <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
-                </div>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </div>
+              {isSyncing ? (
+                <Loader2 className="w-4 h-4 animate-spin text-bolt-elements-icon-primary" />
+              ) : (
+                <CloudDownload className="w-4 h-4 text-bolt-elements-icon-secondary" />
+              )}
+              <span>{isSyncing ? 'Syncing Files...' : 'Sync Files'}</span>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       )}
 
       {/* Deploy Button */}
@@ -89,18 +115,26 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
 
       {/* Bug Report Button */}
       {shouldShowButtons && (
-        <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden text-sm">
-          <button
-            onClick={() =>
-              window.open('https://github.com/stackblitz-labs/bolt.diy/issues/new?template=bug_report.yml', '_blank')
-            }
-            className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.5"
-            title="Report Bug"
-          >
-            <Bug />
-            <span>Report Bug</span>
-          </button>
-        </div>
+        <button
+          onClick={() =>
+            window.open('https://github.com/stackblitz-labs/bolt.diy/issues/new?template=bug_report.yml', '_blank')
+          }
+          className={classNames(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
+            'bg-bolt-elements-button-primary-background',
+            'text-bolt-elements-button-primary-text',
+            'border border-bolt-elements-borderColor',
+            'transition-theme duration-150',
+            'hover:bg-bolt-elements-button-primary-backgroundHover',
+            'hover:text-bolt-elements-item-contentAccent',
+            'focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColorActive focus:ring-offset-1',
+            'shrink-0',
+          )}
+          title="Report Bug"
+        >
+          <Bug className="w-4 h-4" />
+          <span className="hidden sm:inline">Report Bug</span>
+        </button>
       )}
     </div>
   );
