@@ -1,6 +1,7 @@
 import { initializeVercelConnection } from '../stores/vercel';
 import { initializeSupabaseConnection } from '../stores/supabase';
 import { initializeNetlifyConnection } from '../stores/netlify';
+import { initializeGitHubConnection } from '../stores/github';
 import { logStore } from '../stores/logs';
 
 /**
@@ -99,36 +100,8 @@ export class ApiInitializationService {
 
   private async initializeGitHubApi(): Promise<void> {
     try {
-      // Try to initialize GitHub connection via server-side API
-      const response = await fetch('/api/github-user');
-
-      if (response.ok) {
-        const userData = await response.json();
-
-        // Create connection object for the UI
-        const connectionData = {
-          user: userData,
-          token: '', // Token is stored server-side only
-          tokenType: 'classic' as const,
-        };
-
-        // Store minimal connection info (no token)
-        localStorage.setItem(
-          'github_connection',
-          JSON.stringify({
-            user: userData,
-            tokenType: 'classic',
-          }),
-        );
-
-        // Fetch repositories/stats via server-side API
-        await this.fetchGitHubStatsViaAPI();
-
-        logStore.logSystem('GitHub API initialized successfully');
-      } else if (response.status === 401) {
-        // No GitHub token available, skip silently
-        console.log('No GitHub token available for initialization');
-      }
+      await initializeGitHubConnection();
+      logStore.logSystem('GitHub API initialized successfully');
     } catch (error) {
       console.warn('GitHub API initialization failed:', error);
     }
@@ -140,55 +113,6 @@ export class ApiInitializationService {
       logStore.logSystem('Netlify API initialized successfully');
     } catch (error) {
       console.warn('Netlify API initialization failed:', error);
-    }
-  }
-
-  private async fetchGitHubStatsViaAPI(): Promise<void> {
-    try {
-      // Get repositories via server-side API
-      const reposResponse = await fetch('/api/github-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'get_repos' }),
-      });
-
-      if (reposResponse.ok) {
-        const reposData = (await reposResponse.json()) as { repos: any[] };
-
-        // Update connection with repositories data
-        const existingConnection = JSON.parse(localStorage.getItem('github_connection') || '{}');
-        const updatedConnection = {
-          ...existingConnection,
-          stats: {
-            repos: reposData.repos || [],
-            recentActivity: [],
-            languages: {},
-            totalGists: 0,
-            publicRepos: 0,
-            privateRepos: 0,
-            stars: 0,
-            forks: 0,
-            followers: 0,
-            publicGists: 0,
-            privateGists: 0,
-            lastUpdated: new Date().toISOString(),
-            organizations: [],
-            totalBranches: 0,
-            totalContributors: 0,
-            totalIssues: 0,
-            totalPullRequests: 0,
-            mostUsedLanguages: [],
-            recentCommits: 0,
-            accountAge: 0,
-          },
-        };
-
-        localStorage.setItem('github_connection', JSON.stringify(updatedConnection));
-      }
-    } catch (error) {
-      console.warn('Failed to fetch GitHub stats during initialization:', error);
     }
   }
 }

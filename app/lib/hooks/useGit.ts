@@ -7,15 +7,27 @@ import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 
 const lookupSavedPassword = (url: string) => {
-  const domain = url.split('/')[2];
-  const gitCreds = Cookies.get(`git:${domain}`);
-
-  if (!gitCreds) {
+  if (!url || typeof url !== 'string') {
+    console.log('Invalid URL provided to lookupSavedPassword:', url);
     return null;
   }
 
   try {
+    const domain = url.split('/')[2];
+
+    if (!domain) {
+      console.log('Could not extract domain from URL:', url);
+      return null;
+    }
+
+    const gitCreds = Cookies.get(`git:${domain}`);
+
+    if (!gitCreds) {
+      return null;
+    }
+
     const { username, password } = JSON.parse(gitCreds || '{}');
+
     return { username, password };
   } catch (error) {
     console.log(`Failed to parse Git Cookie ${error}`);
@@ -24,8 +36,23 @@ const lookupSavedPassword = (url: string) => {
 };
 
 const saveGitAuth = (url: string, auth: GitAuth) => {
-  const domain = url.split('/')[2];
-  Cookies.set(`git:${domain}`, JSON.stringify(auth));
+  if (!url || typeof url !== 'string') {
+    console.log('Invalid URL provided to saveGitAuth:', url);
+    return;
+  }
+
+  try {
+    const domain = url.split('/')[2];
+
+    if (!domain) {
+      console.log('Could not extract domain from URL:', url);
+      return;
+    }
+
+    Cookies.set(`git:${domain}`, JSON.stringify(auth));
+  } catch (error) {
+    console.log(`Failed to save Git auth: ${error}`);
+  }
 };
 
 export function useGit() {
@@ -46,6 +73,17 @@ export function useGit() {
     async (url: string, retryCount = 0) => {
       if (!webcontainer || !fs || !ready) {
         throw new Error('Webcontainer not initialized. Please try again later.');
+      }
+
+      if (!url || typeof url !== 'string') {
+        throw new Error('Invalid repository URL provided.');
+      }
+
+      // Validate URL format
+      try {
+        new URL(url);
+      } catch {
+        throw new Error('Invalid repository URL format. Please provide a valid Git repository URL.');
       }
 
       fileData.current = {};

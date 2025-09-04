@@ -7,3 +7,8 @@ export { default } from './useViewport';
 export { useFeatures } from './useFeatures';
 export { useNotifications } from './useNotifications';
 export { useConnectionStatus } from './useConnectionStatus';
+export { useGitHubAPI } from './useGitHubAPI';
+export { useGitHubConnection } from './useGitHubConnection';
+export { useGitHubStats, useGitHubRepositories } from './useGitHubStats';
+export { useRepositoryPush } from './useRepositoryPush';
+export { useRepositorySearch } from './useRepositorySearch';

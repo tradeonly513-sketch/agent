@@ -7,13 +7,12 @@ import McpServerList from '~/components/@settings/tabs/mcp/McpServerList';
 import McpServerWizard from '~/components/@settings/tabs/mcp/McpServerWizard';
 import EnhancedMcpServerListItem from '~/components/@settings/tabs/mcp/EnhancedMcpServerListItem';
 import ToolBrowser from '~/components/@settings/tabs/mcp/ToolBrowser';
-import ModelConfigurationTab from '~/components/@settings/tabs/mcp/ModelConfigurationTab';
 import { Button } from '~/components/ui/Button';
 import { Badge } from '~/components/ui/Badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/Tabs';
 import { Textarea } from '~/components/ui/Textarea';
 import { Input } from '~/components/ui/Input';
-import { RotateCcw, ExternalLink, Save, Settings, Play, Pause, CheckCircle, Server, Wrench, Brain } from 'lucide-react';
+import { RotateCcw, ExternalLink, Save, Settings, Play, Pause, CheckCircle, Server, Wrench } from 'lucide-react';
 
 const EXAMPLE_MCP_CONFIG: MCPConfig = {
   mcpServers: {
@@ -99,8 +98,6 @@ export default function McpTab() {
         mcpConfig: parsedConfig,
         maxLLMSteps,
         enabledServers: settings.enabledServers,
-        serverModelMappings: settings.serverModelMappings,
-        globalFallbackModel: settings.globalFallbackModel,
         version: settings.version,
       });
       toast.success('MCP configuration saved');
@@ -253,7 +250,7 @@ export default function McpTab() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 !bg-bolt-elements-background-depth-2 !border-bolt-elements-borderColor">
+        <TabsList className="grid w-full grid-cols-3 !bg-bolt-elements-background-depth-2 !border-bolt-elements-borderColor">
           <TabsTrigger
             value="servers"
             className="flex items-center gap-2 !bg-transparent !text-bolt-elements-textSecondary data-[state=active]:!bg-bolt-elements-background-depth-1 data-[state=active]:!text-bolt-elements-textPrimary hover:!bg-bolt-elements-item-backgroundActive hover:!text-bolt-elements-textPrimary"
@@ -267,13 +264,6 @@ export default function McpTab() {
           >
             <Wrench className="w-4 h-4" />
             Tools
-          </TabsTrigger>
-          <TabsTrigger
-            value="models"
-            className="flex items-center gap-2 !bg-transparent !text-bolt-elements-textSecondary data-[state=active]:!bg-bolt-elements-background-depth-1 data-[state=active]:!text-bolt-elements-textPrimary hover:!bg-bolt-elements-item-backgroundActive hover:!text-bolt-elements-textPrimary"
-          >
-            <Brain className="w-4 h-4" />
-            Models
           </TabsTrigger>
           <TabsTrigger
             value="config"
@@ -412,11 +402,6 @@ export default function McpTab() {
         {/* Tool Browser Tab */}
         <TabsContent value="tools" className="space-y-6">
           <ToolBrowser serverTools={serverTools} />
-        </TabsContent>
-
-        {/* Model Configuration Tab */}
-        <TabsContent value="models" className="space-y-6">
-          <ModelConfigurationTab serverTools={serverTools} />
         </TabsContent>
 
         {/* Configuration Tab */}

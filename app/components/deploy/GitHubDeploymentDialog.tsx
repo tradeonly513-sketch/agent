@@ -9,7 +9,7 @@ import type { GitHubUserResponse, GitHubRepoInfo } from '~/types/GitHub';
 import { logStore } from '~/lib/stores/logs';
 import { chatId } from '~/lib/persistence/useChatHistory';
 import { useStore } from '@nanostores/react';
-import { GitHubAuthDialog } from '~/components/@settings/tabs/connections/components/GitHubAuthDialog';
+import { GitHubConnection } from '~/components/@settings/tabs/github/components/GitHubConnection';
 import { SearchInput, EmptyState, StatusIndicator, Badge } from '~/components/ui';
 import {
   CheckCircle,
@@ -692,7 +692,30 @@ export function GitHubDeploymentDialog({ isOpen, onClose, projectName, files }: 
         </Dialog.Portal>
 
         {/* GitHub Auth Dialog */}
-        <GitHubAuthDialog isOpen={showAuthDialog} onClose={handleAuthDialogClose} />
+        {/* GitHub Auth Dialog */}
+        {showAuthDialog && (
+          <Dialog.Root open={showAuthDialog} onOpenChange={handleAuthDialogClose}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]" />
+              <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4">
+                <Dialog.Content className="bg-white dark:bg-bolt-elements-background-depth-1 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark shadow-xl max-w-md w-full p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
+                      Connect GitHub
+                    </h3>
+                    <button
+                      onClick={handleAuthDialogClose}
+                      className="p-2 rounded-lg hover:bg-bolt-elements-background-depth-2 transition-colors"
+                    >
+                      <X className="w-4 h-4 text-bolt-elements-textSecondary" />
+                    </button>
+                  </div>
+                  <GitHubConnection connectionTest={null} onTestConnection={() => {}} />
+                </Dialog.Content>
+              </div>
+            </Dialog.Portal>
+          </Dialog.Root>
+        )}
       </Dialog.Root>
     );
   }
@@ -941,7 +964,29 @@ export function GitHubDeploymentDialog({ isOpen, onClose, projectName, files }: 
       </Dialog.Portal>
 
       {/* GitHub Auth Dialog */}
-      <GitHubAuthDialog isOpen={showAuthDialog} onClose={handleAuthDialogClose} />
+      {showAuthDialog && (
+        <Dialog.Root open={showAuthDialog} onOpenChange={handleAuthDialogClose}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]" />
+            <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4">
+              <Dialog.Content className="bg-white dark:bg-bolt-elements-background-depth-1 rounded-lg border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark shadow-xl max-w-md w-full p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
+                    Connect GitHub
+                  </h3>
+                  <button
+                    onClick={handleAuthDialogClose}
+                    className="p-2 rounded-lg hover:bg-bolt-elements-background-depth-2 transition-colors"
+                  >
+                    <X className="w-4 h-4 text-bolt-elements-textSecondary" />
+                  </button>
+                </div>
+                <GitHubConnection connectionTest={null} onTestConnection={() => {}} />
+              </Dialog.Content>
+            </div>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
     </Dialog.Root>
   );
 }

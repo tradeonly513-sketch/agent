@@ -2,51 +2,23 @@ import { create } from 'zustand';
 import type { MCPConfig, MCPServerTools } from '~/lib/services/mcpService';
 import { mcpConfigSchema } from '~/lib/services/mcpService';
 import { z } from 'zod';
-import {
-  validateModelForToolCalling,
-  getRecommendedModelsForServer,
-  type ToolCallingCapability,
-} from '~/lib/services/model-capabilities';
 
 const MCP_SETTINGS_KEY = 'mcp_settings';
-const CURRENT_VERSION = '2.0.0'; // Increment version for new model mapping feature
+const CURRENT_VERSION = '1.0.0';
 const isBrowser = typeof window !== 'undefined';
-
-export type ServerModelMapping = {
-  provider: string;
-  model: string;
-  enabled: boolean; // Whether to use custom model for this server
-};
-
-export type ModelValidationResult = {
-  isSupported: boolean;
-  capability: ToolCallingCapability;
-  warnings: string[];
-  recommendations: string[];
-};
 
 type MCPSettings = {
   version?: string;
   mcpConfig: MCPConfig;
   maxLLMSteps: number;
   enabledServers: Record<string, boolean>;
-  serverModelMappings: Record<string, ServerModelMapping>; // serverName -> model config
-  globalFallbackModel?: ServerModelMapping; // Default model when server-specific not set
 };
-
-const serverModelMappingSchema = z.object({
-  provider: z.string(),
-  model: z.string(),
-  enabled: z.boolean().default(true),
-});
 
 const mcpSettingsSchema = z.object({
   version: z.string().optional(),
   mcpConfig: mcpConfigSchema,
   maxLLMSteps: z.number().min(1).max(20).default(5),
   enabledServers: z.record(z.boolean()).default({}),
-  serverModelMappings: z.record(serverModelMappingSchema).default({}),
-  globalFallbackModel: serverModelMappingSchema.optional(),
 });
 
 const defaultSettings: MCPSettings = {
@@ -56,12 +28,6 @@ const defaultSettings: MCPSettings = {
     mcpServers: {},
   },
   enabledServers: {},
-  serverModelMappings: {},
-  globalFallbackModel: {
-    provider: 'OpenAI',
-    model: 'gpt-4o-mini',
-    enabled: true,
-  },
 };
 
 type Store = {
@@ -81,14 +47,6 @@ type Actions = {
   removeServer: (serverName: string) => Promise<void>;
   resetToDefaults: () => Promise<void>;
   getValidationErrors: () => string[];
-
-  // Model mapping actions
-  setServerModel: (serverName: string, mapping: ServerModelMapping) => Promise<void>;
-  removeServerModel: (serverName: string) => Promise<void>;
-  setGlobalFallbackModel: (mapping: ServerModelMapping) => Promise<void>;
-  validateServerModel: (serverName: string, provider: string, model: string) => ModelValidationResult;
-  getRecommendedModels: (serverName: string) => string[];
-  getServerModel: (serverName: string) => ServerModelMapping | null;
 };
 
 // Helper functions for localStorage operations with better error handling
@@ -140,8 +98,6 @@ const validateAndMigrateSettings = (rawData: any): { settings: MCPSettings; erro
     rawData = {
       ...rawData,
       version: CURRENT_VERSION,
-      serverModelMappings: {},
-      globalFallbackModel: defaultSettings.globalFallbackModel,
     };
     console.log('MCP Store: Migrated settings from v1.0.0 to v2.0.0');
   }
@@ -156,13 +112,6 @@ const validateAndMigrateSettings = (rawData: any): { settings: MCPSettings; erro
     }
 
     // Set default values for new fields if missing
-    if (!validatedSettings.serverModelMappings) {
-      validatedSettings.serverModelMappings = {};
-    }
-
-    if (!validatedSettings.globalFallbackModel) {
-      validatedSettings.globalFallbackModel = defaultSettings.globalFallbackModel;
-    }
 
     return { settings: validatedSettings, errors };
   } catch (validationError) {
@@ -191,33 +140,6 @@ const validateAndMigrateSettings = (rawData: any): { settings: MCPSettings; erro
           }
         }
         partialSettings.enabledServers = validEnabledServers;
-      }
-
-      // Salvage serverModelMappings if valid
-      if (rawData.serverModelMappings && typeof rawData.serverModelMappings === 'object') {
-        const validMappings: Record<string, ServerModelMapping> = {};
-
-        for (const [serverName, mapping] of Object.entries(rawData.serverModelMappings)) {
-          if (
-            mapping &&
-            typeof mapping === 'object' &&
-            typeof (mapping as any).provider === 'string' &&
-            typeof (mapping as any).model === 'string'
-          ) {
-            validMappings[serverName] = mapping as ServerModelMapping;
-          }
-        }
-        partialSettings.serverModelMappings = validMappings;
-      }
-
-      // Salvage globalFallbackModel if valid
-      if (
-        rawData.globalFallbackModel &&
-        typeof rawData.globalFallbackModel === 'object' &&
-        typeof rawData.globalFallbackModel.provider === 'string' &&
-        typeof rawData.globalFallbackModel.model === 'string'
-      ) {
-        partialSettings.globalFallbackModel = rawData.globalFallbackModel as ServerModelMapping;
       }
 
       // Try to salvage MCP config
@@ -503,109 +425,6 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
 
       return ['Unknown validation error'];
     }
-  },
-
-  // Model mapping actions
-  setServerModel: async (serverName: string, mapping: ServerModelMapping) => {
-    const currentSettings = get().settings;
-    const newSettings = {
-      ...currentSettings,
-      serverModelMappings: {
-        ...currentSettings.serverModelMappings,
-        [serverName]: mapping,
-      },
-    };
-
-    try {
-      set(() => ({ isUpdatingConfig: true }));
-
-      if (isBrowser) {
-        const success = safeSetToLocalStorage(MCP_SETTINGS_KEY, JSON.stringify(newSettings));
-
-        if (!success) {
-          console.warn('MCP Store: Failed to save model mapping to localStorage');
-        }
-      }
-
-      set(() => ({ settings: newSettings }));
-    } catch (error) {
-      throw error;
-    } finally {
-      set(() => ({ isUpdatingConfig: false }));
-    }
-  },
-
-  removeServerModel: async (serverName: string) => {
-    const currentSettings = get().settings;
-    const { [serverName]: _, ...remainingMappings } = currentSettings.serverModelMappings;
-
-    const newSettings = {
-      ...currentSettings,
-      serverModelMappings: remainingMappings,
-    };
-
-    try {
-      set(() => ({ isUpdatingConfig: true }));
-
-      if (isBrowser) {
-        const success = safeSetToLocalStorage(MCP_SETTINGS_KEY, JSON.stringify(newSettings));
-
-        if (!success) {
-          console.warn('MCP Store: Failed to save settings to localStorage');
-        }
-      }
-
-      set(() => ({ settings: newSettings }));
-    } catch (error) {
-      throw error;
-    } finally {
-      set(() => ({ isUpdatingConfig: false }));
-    }
-  },
-
-  setGlobalFallbackModel: async (mapping: ServerModelMapping) => {
-    const currentSettings = get().settings;
-    const newSettings = {
-      ...currentSettings,
-      globalFallbackModel: mapping,
-    };
-
-    try {
-      set(() => ({ isUpdatingConfig: true }));
-
-      if (isBrowser) {
-        const success = safeSetToLocalStorage(MCP_SETTINGS_KEY, JSON.stringify(newSettings));
-
-        if (!success) {
-          console.warn('MCP Store: Failed to save global fallback model to localStorage');
-        }
-      }
-
-      set(() => ({ settings: newSettings }));
-    } catch (error) {
-      throw error;
-    } finally {
-      set(() => ({ isUpdatingConfig: false }));
-    }
-  },
-
-  validateServerModel: (serverName: string, provider: string, model: string): ModelValidationResult => {
-    return validateModelForToolCalling(provider, model);
-  },
-
-  getRecommendedModels: (serverName: string): string[] => {
-    // Return model names from all preference levels
-    const excellent = getRecommendedModelsForServer(serverName, 'excellent');
-    const good = getRecommendedModelsForServer(serverName, 'good');
-    const budget = getRecommendedModelsForServer(serverName, 'budget');
-
-    // Combine and deduplicate
-    return [...new Set([...excellent, ...good, ...budget])];
-  },
-
-  getServerModel: (serverName: string): ServerModelMapping | null => {
-    const settings = get().settings;
-    return settings.serverModelMappings[serverName] || settings.globalFallbackModel || null;
   },
 }));
 

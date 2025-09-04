@@ -71,6 +71,12 @@ export default class AnthropicProvider extends BaseProvider {
     const res = (await response.json()) as any;
     const staticModelIds = this.staticModels.map((m) => m.name);
 
+    // Check if response has data property and is an array
+    if (!res?.data || !Array.isArray(res.data)) {
+      console.warn('Anthropic API did not return expected data format:', res);
+      return [];
+    }
+
     const data = res.data.filter((model: any) => model.type === 'model' && !staticModelIds.includes(model.id));
 
     return data.map((m: any) => {

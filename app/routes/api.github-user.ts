@@ -72,8 +72,27 @@ export const loader = withSecurity(githubUserLoader, {
 
 async function githubUserAction({ request, context }: { request: Request; context: any }) {
   try {
-    const formData = await request.formData();
-    const action = formData.get('action');
+    let action: string | null = null;
+    let repoFullName: string | null = null;
+    let searchQuery: string | null = null;
+    let perPage: number = 30;
+
+    // Handle both JSON and form data
+    const contentType = request.headers.get('Content-Type') || '';
+
+    if (contentType.includes('application/json')) {
+      const jsonData = (await request.json()) as any;
+      action = jsonData.action;
+      repoFullName = jsonData.repo;
+      searchQuery = jsonData.query;
+      perPage = jsonData.per_page || 30;
+    } else {
+      const formData = await request.formData();
+      action = formData.get('action') as string;
+      repoFullName = formData.get('repo') as string;
+      searchQuery = formData.get('query') as string;
+      perPage = parseInt(formData.get('per_page') as string) || 30;
+    }
 
     // Get API keys from cookies (server-side only)
     const cookieHeader = request.headers.get('Cookie');
@@ -138,8 +157,6 @@ async function githubUserAction({ request, context }: { request: Request; contex
     }
 
     if (action === 'get_branches') {
-      const repoFullName = formData.get('repo');
-
       if (!repoFullName) {
         return json({ error: 'Repository name is required' }, { status: 400 });
       }
@@ -175,6 +192,72 @@ async function githubUserAction({ request, context }: { request: Request; contex
           },
           protected: branch.protected,
         })),
+      });
+    }
+
+    if (action === 'search_repos') {
+      if (!searchQuery) {
+        return json({ error: 'Search query is required' }, { status: 400 });
+      }
+
+      // Search repositories using GitHub API
+      const response = await fetch(
+        `https://api.github.com/search/repositories?q=${encodeURIComponent(searchQuery)}&per_page=${perPage}&sort=updated`,
+        {
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+            Authorization: `Bearer ${githubToken}`,
+            'User-Agent': 'bolt.diy-app',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
+
+      const searchData = (await response.json()) as {
+        total_count: number;
+        incomplete_results: boolean;
+        items: Array<{
+          id: number;
+          name: string;
+          full_name: string;
+          html_url: string;
+          description: string | null;
+          private: boolean;
+          language: string | null;
+          updated_at: string;
+          stargazers_count: number;
+          forks_count: number;
+          topics: string[];
+          owner: {
+            login: string;
+            avatar_url: string;
+          };
+        }>;
+      };
+
+      return json({
+        repos: searchData.items.map((repo) => ({
+          id: repo.id,
+          name: repo.name,
+          full_name: repo.full_name,
+          html_url: repo.html_url,
+          description: repo.description,
+          private: repo.private,
+          language: repo.language,
+          updated_at: repo.updated_at,
+          stargazers_count: repo.stargazers_count || 0,
+          forks_count: repo.forks_count || 0,
+          topics: repo.topics || [],
+          owner: {
+            login: repo.owner.login,
+            avatar_url: repo.owner.avatar_url,
+          },
+        })),
+        total_count: searchData.total_count,
+        incomplete_results: searchData.incomplete_results,
       });
     }
 

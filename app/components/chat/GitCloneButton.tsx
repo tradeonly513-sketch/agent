@@ -6,7 +6,7 @@ import { generateId } from '~/utils/fileUtils';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { LoadingOverlay } from '~/components/ui/LoadingOverlay';
-import { RepositorySelectionDialog } from '~/components/@settings/tabs/connections/components/RepositorySelectionDialog';
+import { RepositorySelectionDialogRefactored as RepositorySelectionDialog } from '~/components/@settings/tabs/github/components/RepositorySelectionDialogRefactored';
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
 import type { IChatMetadata } from '~/lib/persistence/db';
@@ -48,7 +48,12 @@ export default function GitCloneButton({ importChat, className }: GitCloneButton
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleClone = async (repoUrl: string) => {
+    console.log('GitCloneButton handleClone called with URL:', repoUrl);
+    console.log('URL type:', typeof repoUrl);
+    console.log('URL length:', repoUrl?.length);
+
     if (!ready) {
+      console.log('WebContainer not ready, returning');
       return;
     }
 

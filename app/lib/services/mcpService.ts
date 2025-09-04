@@ -17,6 +17,7 @@ import {
   TOOL_NO_EXECUTE_FUNCTION,
 } from '~/utils/constants';
 import { createScopedLogger } from '~/utils/logger';
+import { getCapabilitySummary, getRecommendedModelsForServer } from '~/lib/services/model-capabilities';
 
 const logger = createScopedLogger('mcp-service');
 
@@ -1273,7 +1274,7 @@ export class MCPService {
         let modelContext;
 
         if (options?.currentModel) {
-          const { getCapabilitySummary, getRecommendedModelsForServer } = require('~/lib/services/model-capabilities');
+          // Functions are now imported at the top of the file
 
           // Get current model compatibility
           const currentCompatibility = getCapabilitySummary(options.currentModel.provider, options.currentModel.model);
@@ -1891,8 +1892,10 @@ export class MCPService {
     // Simple strategy: use model recommendations for the server with the most tool calls
     const dominantServer = Object.entries(serverToolCounts).sort(([, a], [, b]) => b - a)[0][0];
 
-    // Import the model capabilities to get recommendations
-    const { getBestModelForToolCalling, getRecommendedModelsForServer } = require('~/lib/services/model-capabilities');
+    /*
+     * Import the model capabilities to get recommendations
+     * Functions are now imported at the top of the file
+     */
 
     const recommendedModels = getRecommendedModelsForServer(dominantServer, 'excellent');
 
@@ -1982,7 +1985,8 @@ export class MCPService {
     // Analyze each server
     for (const [serverName, tools] of this._toolsByServer.entries()) {
       const capabilities = this._serverCapabilities.get(serverName) || [];
-      const { getRecommendedModelsForServer } = require('~/lib/services/model-capabilities');
+
+      // Functions are now imported at the top of the file
       const recommendations = getRecommendedModelsForServer(serverName, 'excellent');
 
       serverGroups.push({

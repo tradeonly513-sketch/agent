@@ -117,7 +117,7 @@ export const Dialog = memo(({ children, className, showCloseButton = true, onClo
       <RadixDialog.Content asChild>
         <motion.div
           className={classNames(
-            'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-bolt-elements-background-depth-1 rounded-lg shadow-xl border border-bolt-elements-borderColor z-[9999] w-[520px] focus:outline-none',
+            'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-3 dark:bg-bolt-elements-background-depth-3 rounded-lg shadow-xl border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor-dark z-[9999] w-[520px] focus:outline-none',
             className,
           )}
           initial="closed"
@@ -209,7 +209,7 @@ export function ConfirmationDialog({
   return (
     <RadixDialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog showCloseButton={false}>
-        <div className="p-6 bg-bolt-elements-background-depth-1 relative z-10">
+        <div className="p-6 bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-3 relative z-10">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="mb-4">{description}</DialogDescription>
           <div className="flex justify-end space-x-2">
@@ -383,7 +383,7 @@ export function SelectionDialog({
   return (
     <RadixDialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog showCloseButton={false}>
-        <div className="p-6 bg-bolt-elements-background-depth-1 relative z-10">
+        <div className="p-6 bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-3 relative z-10">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="mt-2 mb-4">
             Select the items you want to include and click{' '}

@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { Button } from '~/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/Card';
 import { Badge } from '~/components/ui/Badge';
-import { classNames } from '~/utils/classNames';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import type { CustomPrompt } from '~/lib/common/prompt-library';
-import { Settings, Trash2, Calendar, AlertCircle } from 'lucide-react';
+import { Settings, Trash2, Calendar, AlertCircle, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { CustomPromptCreationDialog } from './CustomPromptCreationDialog';
 
 interface CustomPromptManagerProps {
   className?: string;
@@ -27,6 +27,7 @@ const COMPLEXITY_CONFIG = {
 
 export const CustomPromptManager = ({ className }: CustomPromptManagerProps) => {
   const [customPrompts, setCustomPrompts] = useState<CustomPrompt[]>([]);
+  const [isCreationDialogOpen, setIsCreationDialogOpen] = useState(false);
 
   // Load custom prompts
   useEffect(() => {
@@ -69,27 +70,6 @@ export const CustomPromptManager = ({ className }: CustomPromptManagerProps) => 
     });
   };
 
-  if (customPrompts.length === 0) {
-    return (
-      <motion.div
-        className={classNames('flex flex-col items-center justify-center py-12 px-6 text-center', className)}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
-          <Settings className="w-8 h-8 text-purple-500" />
-        </div>
-
-        <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-2">No Custom Prompts</h3>
-
-        <p className="text-bolt-elements-textSecondary mb-6 max-w-md">
-          Custom prompts are currently disabled. Only built-in prompts are available.
-        </p>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       className={className}
@@ -104,6 +84,15 @@ export const CustomPromptManager = ({ className }: CustomPromptManagerProps) => 
             View your personal AI assistant prompts (editing disabled)
           </p>
         </div>
+        <Button
+          size="sm"
+          variant="default"
+          onClick={() => setIsCreationDialogOpen(true)}
+          className="bg-purple-500 hover:bg-purple-600 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Prompt
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -191,12 +180,34 @@ export const CustomPromptManager = ({ className }: CustomPromptManagerProps) => 
       </div>
 
       {customPrompts.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-bolt-elements-textSecondary">
-            No custom prompts found. Create your first one to get started!
+        <motion.div
+          className="flex flex-col items-center justify-center py-12 px-6 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
+            <Settings className="w-8 h-8 text-purple-500" />
+          </div>
+
+          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-2">No Custom Prompts Yet</h3>
+
+          <p className="text-bolt-elements-textSecondary mb-6 max-w-md">
+            Create your first custom prompt to get started! Click the "Create Prompt" button above to design your custom
+            AI assistant.
           </p>
-        </div>
+        </motion.div>
       )}
+
+      {/* Custom Prompt Creation Dialog */}
+      <CustomPromptCreationDialog
+        isOpen={isCreationDialogOpen}
+        onClose={() => setIsCreationDialogOpen(false)}
+        onPromptCreated={() => {
+          // Refresh the prompts list after creating a new one
+          setCustomPrompts(PromptLibrary.getCustomPrompts());
+        }}
+      />
     </motion.div>
   );
 };
