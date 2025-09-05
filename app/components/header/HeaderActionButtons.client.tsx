@@ -3,7 +3,6 @@ import { useStore } from '@nanostores/react';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { DeployButton } from '~/components/deploy/DeployButton';
 import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportChatButton';
-import { useGit } from '~/lib/hooks/useGit';
 import { toast } from 'react-toastify';
 import { classNames } from '~/utils/classNames';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -13,11 +12,10 @@ interface HeaderActionButtonsProps {
   chatStarted: boolean;
 }
 
-export function HeaderActionButtons({ chatStarted: _chatStarted }: HeaderActionButtonsProps) {
+export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
-  const { handleSyncFiles, isSyncing } = useGit();
 
   const shouldShowButtons = activePreview;
 
@@ -25,6 +23,13 @@ export function HeaderActionButtons({ chatStarted: _chatStarted }: HeaderActionB
     // Export chat functionality
     toast.info('Export chat functionality would be implemented here');
   };
+
+  const handleSyncFiles = () => {
+    // Sync functionality would be implemented here
+    toast.info('Sync functionality would be implemented here');
+  };
+
+  const isSyncing = false;
 
   return (
     <div className="flex items-center gap-2">

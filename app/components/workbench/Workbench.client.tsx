@@ -47,7 +47,6 @@ import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportCh
 import { useChatHistory } from '~/lib/persistence';
 import { streamingState } from '~/lib/stores/streaming';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { useGit } from '~/lib/hooks/useGit';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -324,7 +323,7 @@ export const Workbench = memo(
     const isSmallViewport = useViewport(1024);
     const streaming = useStore(streamingState);
     const { exportChat } = useChatHistory();
-    const { handleSyncFiles, isSyncing } = useGit();
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
