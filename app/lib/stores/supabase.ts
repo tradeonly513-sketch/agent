@@ -48,38 +48,57 @@ export const supabaseConnection = atom<SupabaseConnectionState>(initialState);
 export async function initializeSupabaseConnection() {
   const currentState = supabaseConnection.get();
 
+  console.log('initializeSupabaseConnection called, current user:', currentState.user);
+
   // If we already have a connection, don't override it
   if (currentState.user) {
+    console.log('Supabase already connected, skipping initialization');
     return;
   }
 
   try {
     isConnecting.set(true);
+    console.log('Fetching Supabase user from server-side API...');
 
     const response = await fetch('/api/supabase-user');
 
     if (!response.ok) {
       if (response.status === 401) {
-        // No server-side token available, skip initialization
+        console.log('No server-side Supabase token available, skipping initialization');
         return;
       }
 
       throw new Error(`Failed to connect to Supabase: ${response.statusText}`);
     }
 
-    const userData = await response.json();
+    const userData = (await response.json()) as { user: any; projects?: any[] };
+    console.log('Supabase user data received:', userData);
 
-    // Update the connection state (no token stored client-side)
+    // Update the connection state (indicate server-side token is available)
     const connectionData: Partial<SupabaseConnectionState> = {
-      user: userData as SupabaseUser,
-      token: '', // Token stored server-side only
+      user: {
+        id: userData.user?.id || 'unknown',
+        name: userData.user?.name || 'Supabase User',
+        email: userData.user?.email || 'user@supabase.co',
+        role: 'Admin',
+        created_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+      } as SupabaseUser,
+      token: 'SERVER_SIDE_TOKEN', // Placeholder indicating server-side token is available
+      stats: userData.projects
+        ? {
+            projects: userData.projects,
+            totalProjects: userData.projects.length,
+          }
+        : undefined,
     };
+
+    console.log('Updating Supabase connection with:', connectionData);
 
     // Update the store
     updateSupabaseConnection(connectionData);
 
-    // Fetch initial stats
-    await fetchSupabaseStatsViaAPI();
+    console.log('Supabase initialization completed successfully');
   } catch (error) {
     console.error('Error initializing Supabase connection:', error);
   } finally {
@@ -166,11 +185,16 @@ export async function fetchSupabaseStatsViaAPI() {
       throw new Error('Failed to fetch projects');
     }
 
-    const data = (await response.json()) as { user: any; stats: any };
+    const data = (await response.json()) as { user: any; projects?: any[] };
 
     updateSupabaseConnection({
       user: data.user,
-      stats: data.stats,
+      stats: data.projects
+        ? {
+            projects: data.projects,
+            totalProjects: data.projects.length,
+          }
+        : undefined,
     });
   } catch (error) {
     console.error('Failed to fetch Supabase stats:', error);

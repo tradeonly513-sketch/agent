@@ -27,6 +27,8 @@ export function SupabaseConnection() {
 
   const currentChatId = useStore(chatId);
 
+  // Note: Initialization is now handled in useSupabaseConnection hook
+
   useEffect(() => {
     const handleOpenConnectionDialog = () => {
       setIsDialogOpen(true);

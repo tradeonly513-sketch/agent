@@ -12,6 +12,7 @@ import {
   isFetchingStats,
   updateVercelConnection,
   fetchVercelStats,
+  fetchVercelStatsViaAPI,
   initializeVercelConnection,
 } from '~/lib/stores/vercel';
 
@@ -44,42 +45,33 @@ export default function VercelTab() {
   const [connectionTest, setConnectionTest] = useState<ConnectionTestResult | null>(null);
   const [isProjectActionLoading, setIsProjectActionLoading] = useState(false);
 
-  // Connection testing function
+  // Connection testing function - tests server-side token
   const testConnection = async () => {
-    if (!connection.token) {
-      setConnectionTest({
-        status: 'error',
-        message: 'No token provided',
-        timestamp: Date.now(),
-      });
-      return;
-    }
-
     setConnectionTest({
       status: 'testing',
       message: 'Testing connection...',
     });
 
     try {
-      const response = await fetch('https://api.vercel.com/v2/user', {
+      const response = await fetch('/api/vercel-user', {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${connection.token}`,
           'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
         const data = (await response.json()) as any;
-        const user = data.user || data;
         setConnectionTest({
           status: 'success',
-          message: `Connected successfully as ${user.username || user.email || 'Vercel User'}`,
+          message: `Connected successfully using environment token as ${data.username || data.email || 'Vercel User'}`,
           timestamp: Date.now(),
         });
       } else {
+        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
         setConnectionTest({
           status: 'error',
-          message: `Connection failed: ${response.status} ${response.statusText}`,
+          message: `Connection failed: ${errorData.error || `${response.status} ${response.statusText}`}`,
           timestamp: Date.now(),
         });
       }
@@ -204,18 +196,38 @@ export default function VercelTab() {
     },
   ];
 
-  // Initialize connection on component mount
+  // Initialize connection on component mount - check server-side token first
   useEffect(() => {
     const initializeConnection = async () => {
-      await initializeVercelConnection();
+      try {
+        // First try to initialize using server-side token
+        await initializeVercelConnection();
+
+        // If no connection was established, the user will need to manually enter a token
+        const currentState = vercelConnection.get();
+
+        if (!currentState.user) {
+          console.log('No server-side Vercel token available, manual connection required');
+        }
+      } catch (error) {
+        console.error('Failed to initialize Vercel connection:', error);
+      }
     };
     initializeConnection();
   }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (connection.user && connection.token) {
-        await fetchVercelStats(connection.token);
+      if (connection.user) {
+        // Use server-side API if we have a connected user
+        try {
+          await fetchVercelStatsViaAPI();
+        } catch {
+          // Fallback to direct API if server-side fails and we have a token
+          if (connection.token) {
+            await fetchVercelStats(connection.token);
+          }
+        }
       }
     };
     fetchProjects();
@@ -226,20 +238,21 @@ export default function VercelTab() {
     isConnecting.set(true);
 
     try {
-      const response = await fetch('https://api.vercel.com/v2/user', {
+      const response = await fetch('/api/vercel-user', {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${connection.token}`,
           'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
-        throw new Error('Invalid token or unauthorized');
+        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errorData.error || 'Invalid token or unauthorized');
       }
 
       const userData = (await response.json()) as any;
       updateVercelConnection({
-        user: userData.user || userData, // Handle both possible structures
+        user: userData, // Use the user data directly from the API response
         token: connection.token,
       });
 

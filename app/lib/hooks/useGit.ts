@@ -132,7 +132,7 @@ export function useGit() {
           onProgress: (event) => {
             console.log('Git clone progress:', event);
           },
-          onAuth: (baseUrl) => {
+          onAuth: async (baseUrl) => {
             let auth = lookupSavedPassword(baseUrl);
 
             if (auth) {
@@ -142,6 +142,47 @@ export function useGit() {
 
             console.log('Repository requires authentication:', baseUrl);
 
+            // Try to get GitHub API token from server
+            try {
+              const response = await fetch('/api/github-user');
+
+              if (response.ok) {
+                const userData = (await response.json()) as { login?: string; error?: string };
+
+                if (userData && !userData.error) {
+                  /*
+                   * Use token-based authentication - we need to get the actual token
+                   * For GitHub API token, username can be anything and password is the token
+                   */
+                  const tokenResponse = await fetch('/api/github-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_token' }),
+                  });
+
+                  if (tokenResponse.ok) {
+                    const tokenData = (await tokenResponse.json()) as { token?: string };
+
+                    if (tokenData.token) {
+                      console.log('Using GitHub API token for authentication');
+                      auth = {
+                        username: userData.login || 'token',
+                        password: tokenData.token,
+                      };
+
+                      // Save for future use
+                      saveGitAuth(baseUrl, auth);
+
+                      return auth;
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.log('Failed to get GitHub API token:', error);
+            }
+
+            // Fall back to manual credential entry
             if (confirm('This repository requires authentication. Would you like to enter your GitHub credentials?')) {
               auth = {
                 username: prompt('Enter username') || '',

@@ -62,44 +62,33 @@ export default function SupabaseTab() {
   const [isProjectActionLoading, setIsProjectActionLoading] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-  // Connection testing function
+  // Connection testing function - uses server-side API to test environment token
   const testConnection = async () => {
-    if (!connection.token) {
-      setConnectionTest({
-        status: 'error',
-        message: 'No token provided',
-        timestamp: Date.now(),
-      });
-      return;
-    }
-
     setConnectionTest({
       status: 'testing',
       message: 'Testing connection...',
     });
 
     try {
-      const response = await fetch('/api/supabase', {
-        method: 'POST',
+      const response = await fetch('/api/supabase-user', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          token: connection.token,
-        }),
       });
 
       if (response.ok) {
         const data = (await response.json()) as any;
         setConnectionTest({
           status: 'success',
-          message: `Connected successfully. Found ${data.stats?.totalProjects || 0} projects`,
+          message: `Connected successfully using environment token. Found ${data.projects?.length || 0} projects`,
           timestamp: Date.now(),
         });
       } else {
+        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
         setConnectionTest({
           status: 'error',
-          message: `Connection failed: ${response.status} ${response.statusText}`,
+          message: `Connection failed: ${errorData.error || `${response.status} ${response.statusText}`}`,
           timestamp: Date.now(),
         });
       }
@@ -199,10 +188,22 @@ export default function SupabaseTab() {
     },
   ];
 
-  // Initialize connection on component mount
+  // Initialize connection on component mount - check server-side token first
   useEffect(() => {
     const initializeConnection = async () => {
-      await initializeSupabaseConnection();
+      try {
+        // First try to initialize using server-side token
+        await initializeSupabaseConnection();
+
+        // If no connection was established, the user will need to manually enter a token
+        const currentState = supabaseConnection.get();
+
+        if (!currentState.user) {
+          console.log('No server-side Supabase token available, manual connection required');
+        }
+      } catch (error) {
+        console.error('Failed to initialize Supabase connection:', error);
+      }
     };
     initializeConnection();
   }, []);

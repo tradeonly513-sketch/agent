@@ -54,19 +54,23 @@ export const isFetchingStats = atom<boolean>(false);
 export async function initializeVercelConnection() {
   const currentState = vercelConnection.get();
 
+  console.log('initializeVercelConnection called, current user:', currentState.user);
+
   // If we already have a connection, don't override it
   if (currentState.user) {
+    console.log('Vercel already connected, skipping initialization');
     return;
   }
 
   try {
     isConnecting.set(true);
+    console.log('Fetching Vercel user from server-side API...');
 
     const response = await fetch('/api/vercel-user');
 
     if (!response.ok) {
       if (response.status === 401) {
-        // No server-side token available, skip initialization
+        console.log('No server-side Vercel token available, skipping initialization');
         return;
       }
 
@@ -74,12 +78,15 @@ export async function initializeVercelConnection() {
     }
 
     const userData = await response.json();
+    console.log('Vercel user data received:', userData);
 
-    // Update the connection state (no token stored client-side)
+    // Update the connection state (indicate server-side token is available)
     const connectionData: Partial<VercelConnection> = {
       user: userData as any,
-      token: '', // Token stored server-side only
+      token: 'SERVER_SIDE_TOKEN', // Placeholder indicating server-side token is available
     };
+
+    console.log('Updating Vercel connection with:', connectionData);
 
     // Store in localStorage for persistence
     if (typeof window !== 'undefined') {
@@ -90,7 +97,10 @@ export async function initializeVercelConnection() {
     updateVercelConnection(connectionData);
 
     // Fetch initial stats
+    console.log('Fetching Vercel stats...');
     await fetchVercelStatsViaAPI();
+
+    console.log('Vercel initialization completed successfully');
   } catch (error) {
     console.error('Error initializing Vercel connection:', error);
   } finally {
