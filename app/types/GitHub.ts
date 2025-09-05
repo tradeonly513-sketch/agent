@@ -107,6 +107,14 @@ export interface GitHubStats {
   recentActivity: GitHubEvent[];
   languages: GitHubLanguageStats;
   totalGists: number;
+  publicRepos: number;
+  privateRepos: number;
+  stars: number;
+  forks: number;
+  followers: number;
+  publicGists: number;
+  privateGists: number;
+  lastUpdated: string;
 }
 
 export interface GitHubConnection {
@@ -114,6 +122,7 @@ export interface GitHubConnection {
   token: string;
   tokenType: 'classic' | 'fine-grained';
   stats?: GitHubStats;
+  rateLimit?: GitHubRateLimits;
 }
 
 export interface GitHubTokenInfo {

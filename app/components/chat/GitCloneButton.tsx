@@ -6,14 +6,16 @@ import { generateId } from '~/utils/fileUtils';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { LoadingOverlay } from '~/components/ui/LoadingOverlay';
-import { RepositorySelectionDialog } from '~/components/@settings/tabs/connections/components/RepositorySelectionDialog';
+
+// import { RepositorySelectionDialog } from '~/components/@settings/tabs/connections/components/RepositorySelectionDialog';
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
 import type { IChatMetadata } from '~/lib/persistence/db';
 import { X, Github, GitBranch } from 'lucide-react';
 
-// Import GitLab connection for unified repository access
+// Import GitLab and GitHub connections for unified repository access
 import GitLabConnection from '~/components/@settings/tabs/connections/gitlab/GitLabConnection';
+import GitHubConnection from '~/components/@settings/tabs/connections/github/GitHubConnection';
 
 const IGNORE_PATTERNS = [
   'node_modules/**',
@@ -58,6 +60,8 @@ export default function GitCloneButton({ importChat, className }: GitCloneButton
     }
 
     setLoading(true);
+    setIsDialogOpen(false);
+    setSelectedProvider(null);
 
     try {
       const { workdir, data } = await gitClone(repoUrl);
@@ -248,14 +252,38 @@ ${escapeBoltTags(file.content)}
 
       {/* GitHub Repository Selection */}
       {isDialogOpen && selectedProvider === 'github' && (
-        <RepositorySelectionDialog
-          isOpen={true}
-          onClose={() => {
-            setIsDialogOpen(false);
-            setSelectedProvider(null);
-          }}
-          onSelect={handleClone}
-        />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-950 rounded-xl shadow-xl border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-bolt-elements-borderColor dark:border-bolt-elements-borderColor flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
+                  <Github className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
+                    Import GitHub Repository
+                  </h3>
+                  <p className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary">
+                    Clone a repository from GitHub to your workspace
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  setSelectedProvider(null);
+                }}
+                className="p-2 rounded-lg bg-transparent hover:bg-bolt-elements-background-depth-1 dark:hover:bg-bolt-elements-background-depth-1 text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary dark:hover:text-bolt-elements-textPrimary transition-all duration-200 hover:scale-105 active:scale-95"
+              >
+                <X className="w-5 h-5 transition-transform duration-200 hover:rotate-90" />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+              <GitHubConnection onCloneRepository={handleClone} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* GitLab Repository Selection */}

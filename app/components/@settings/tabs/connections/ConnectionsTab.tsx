@@ -1,12 +1,10 @@
 import { motion } from 'framer-motion';
 import React, { Suspense, useState } from 'react';
 import { classNames } from '~/utils/classNames';
-import ConnectionDiagnostics from './ConnectionDiagnostics';
-import { Button } from '~/components/ui/Button';
 import VercelConnection from './VercelConnection';
 
 // Use React.lazy for dynamic imports
-const GitHubConnection = React.lazy(() => import('./GithubConnection'));
+const GitHubConnection = React.lazy(() => import('./github/GitHubConnection'));
 const GitlabConnection = React.lazy(() => import('./gitlab/GitLabConnection'));
 const NetlifyConnection = React.lazy(() => import('./NetlifyConnection'));
 
@@ -22,47 +20,24 @@ const LoadingFallback = () => (
 
 export default function ConnectionsTab() {
   const [isEnvVarsExpanded, setIsEnvVarsExpanded] = useState(false);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <motion.div
-        className="flex items-center justify-between gap-2"
+        className="flex items-center gap-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex items-center gap-2">
-          <div className="i-ph:plugs-connected w-5 h-5 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
-          <h2 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
-            Connection Settings
-          </h2>
-        </div>
-        <Button
-          onClick={() => setShowDiagnostics(!showDiagnostics)}
-          variant="outline"
-          className="flex items-center gap-2 hover:bg-bolt-elements-item-backgroundActive/10 hover:text-bolt-elements-textPrimary dark:hover:bg-bolt-elements-item-backgroundActive/10 dark:hover:text-bolt-elements-textPrimary transition-colors"
-        >
-          {showDiagnostics ? (
-            <>
-              <div className="i-ph:eye-slash w-4 h-4" />
-              Hide Diagnostics
-            </>
-          ) : (
-            <>
-              <div className="i-ph:wrench w-4 h-4" />
-              Troubleshoot Connections
-            </>
-          )}
-        </Button>
+        <div className="i-ph:plugs-connected w-5 h-5 text-bolt-elements-item-contentAccent dark:text-bolt-elements-item-contentAccent" />
+        <h2 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
+          Connection Settings
+        </h2>
       </motion.div>
       <p className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary">
         Manage your external service connections and integrations
       </p>
-
-      {/* Diagnostics Tool - Conditionally rendered */}
-      {showDiagnostics && <ConnectionDiagnostics />}
 
       {/* Environment Variables Info - Collapsible */}
       <motion.div
@@ -172,8 +147,7 @@ export default function ConnectionsTab() {
           <span className="font-medium">Troubleshooting Tip:</span>
         </p>
         <p className="mb-2">
-          If you're having trouble with connections, try using the troubleshooting tool at the top of this page. It can
-          help diagnose and fix common connection issues.
+          If you're having trouble with connections, here are some troubleshooting tips to help resolve common issues.
         </p>
         <p>For persistent issues:</p>
         <ol className="list-decimal list-inside pl-4 mt-1">
