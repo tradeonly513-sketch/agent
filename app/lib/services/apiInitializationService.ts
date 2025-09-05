@@ -13,6 +13,7 @@ export class ApiInitializationService {
   private _initialized = false;
   private _initializationPromise: Promise<void> | null = null;
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
   static getInstance(): ApiInitializationService {

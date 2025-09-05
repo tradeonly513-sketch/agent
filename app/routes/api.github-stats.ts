@@ -74,11 +74,8 @@ async function githubStatsLoader({ request, context }: { request: Request; conte
 
     // Calculate comprehensive stats
     const now = new Date();
-    const totalRepos = allRepos.length;
     const publicRepos = allRepos.filter((repo) => !repo.private).length;
     const privateRepos = allRepos.filter((repo) => repo.private).length;
-    const _forkedRepos = allRepos.filter((repo) => repo.fork).length;
-    const _originalRepos = allRepos.filter((repo) => !repo.fork).length;
 
     // Language statistics
     const languageStats = new Map<string, number>();
@@ -88,43 +85,15 @@ async function githubStatsLoader({ request, context }: { request: Request; conte
       }
     });
 
-    const _topLanguages = Array.from(languageStats.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([language, count]) => ({ language, count }));
-
     // Activity stats
     const totalStars = allRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
     const totalForks = allRepos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
-    const _totalWatchers = allRepos.reduce((sum, repo) => sum + (repo.watchers_count || 0), 0);
 
     // Recent activity (repos updated in last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const _recentRepos = allRepos.filter((repo) => new Date(repo.updated_at) > thirtyDaysAgo).length;
-
-    // Repository size stats
-    const repoSizes = allRepos.map((repo) => repo.size || 0);
-    const totalSize = repoSizes.reduce((sum, size) => sum + size, 0);
-    const _averageSize = totalRepos > 0 ? Math.round(totalSize / totalRepos) : 0;
-
     // Popular repositories (top 10 by stars)
-    const _popularRepos = allRepos
-      .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
-      .slice(0, 10)
-      .map((repo) => ({
-        id: repo.id,
-        name: repo.name,
-        full_name: repo.full_name,
-        html_url: repo.html_url,
-        description: repo.description,
-        language: repo.language,
-        stargazers_count: repo.stargazers_count || 0,
-        forks_count: repo.forks_count || 0,
-        updated_at: repo.updated_at,
-        private: repo.private,
-      }));
 
     const stats: GitHubStats = {
       repos: allRepos.map((repo) => ({

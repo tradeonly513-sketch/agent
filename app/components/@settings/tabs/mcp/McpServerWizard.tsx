@@ -86,7 +86,7 @@ import {
 import type { MCPServerConfig } from '~/lib/services/mcpService';
 
 // Progress indicator component
-const ProgressIndicator = ({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) => {
+const ProgressIndicator = ({ currentStep }: { currentStep: number }) => {
   const steps = [
     { label: 'Choose Template', description: 'Select or create server' },
     { label: 'Configure', description: 'Set up authentication' },
@@ -100,7 +100,6 @@ const ProgressIndicator = ({ currentStep, totalSteps }: { currentStep: number; t
           const stepNumber = index + 1;
           const isActive = stepNumber === currentStep;
           const isCompleted = stepNumber < currentStep;
-          const isPending = stepNumber > currentStep;
 
           return (
             <div key={step.label} className="flex items-center flex-1">
@@ -1253,7 +1252,7 @@ export default function McpServerWizard({ onAddServer }: McpServerWizardProps) {
             Add MCP Server
           </DialogTitle>
 
-          <ProgressIndicator currentStep={getCurrentStepNumber()} totalSteps={3} />
+          <ProgressIndicator currentStep={getCurrentStepNumber()} />
 
           {step === 'template' && (
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 animate-in fade-in-0 duration-300">

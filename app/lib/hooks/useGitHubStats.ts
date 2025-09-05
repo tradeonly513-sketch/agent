@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import type { GitHubStats, GitHubConnection } from '~/types/GitHub';
-import { GitHubApiService } from '~/lib/services/githubApiService';
+import { GitHubApiService } from '~/lib/services/GitHubApiService';
 
 export interface UseGitHubStatsState {
   stats: GitHubStats | null;

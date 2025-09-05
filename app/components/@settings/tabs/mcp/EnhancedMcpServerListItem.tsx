@@ -268,9 +268,7 @@ const detectServerType = (serverName: string, config: any): string | null => {
 
   // Try to match by URL for HTTP servers
   if (config.url) {
-    const _urlStr = config.url.toLowerCase();
-
-    // Add other URL-based detections here if needed
+    // Add URL-based detections here if needed
   }
 
   return null;

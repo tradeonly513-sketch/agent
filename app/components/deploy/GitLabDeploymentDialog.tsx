@@ -7,7 +7,7 @@ import { getLocalStorage } from '~/lib/persistence/localStorage';
 import { logStore } from '~/lib/stores/logs';
 import { chatId } from '~/lib/persistence/useChatHistory';
 import { useStore } from '@nanostores/react';
-import { SearchInput, EmptyState, StatusIndicator, Badge } from '~/components/ui';
+import { SearchInput, Badge } from '~/components/ui';
 import type { GitLabUserResponse, GitLabProjectInfo } from '~/types/GitLab';
 
 interface GitLabDeploymentDialogProps {
@@ -25,10 +25,8 @@ export function GitLabDeploymentDialog({ isOpen, onClose, projectName, files }: 
   const [recentProjects, setRecentProjects] = useState<GitLabProjectInfo[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<GitLabProjectInfo[]>([]);
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
-  const [isFetchingProjects, setIsFetchingProjects] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [createdProjectUrl, setCreatedProjectUrl] = useState('');
-  const [pushedFiles, setPushedFiles] = useState<{ path: string; size: number }[]>([]);
   const currentChatId = useStore(chatId);
 
   // Load GitLab connection on mount
@@ -65,8 +63,6 @@ export function GitLabDeploymentDialog({ isOpen, onClose, projectName, files }: 
   }, [projectSearchQuery, recentProjects]);
 
   const fetchRecentProjects = async (token: string, gitlabUrl: string) => {
-    setIsFetchingProjects(true);
-
     try {
       const response = await fetch(`${gitlabUrl}/api/v4/projects?membership=true&per_page=20`, {
         headers: {
@@ -86,7 +82,6 @@ export function GitLabDeploymentDialog({ isOpen, onClose, projectName, files }: 
       console.error('Failed to fetch GitLab projects:', error);
       toast.error('Failed to fetch your GitLab projects');
     } finally {
-      setIsFetchingProjects(false);
     }
   };
 
@@ -194,8 +189,7 @@ export function GitLabDeploymentDialog({ isOpen, onClose, projectName, files }: 
       const project = targetProject as any;
 
       // Push files to repository
-      const pushedFilesList = await pushFilesToRepository(project.id, connection.token, gitlabUrl);
-      setPushedFiles(pushedFilesList);
+      await pushFilesToRepository(project.id, connection.token, gitlabUrl);
       setCreatedProjectUrl(project.web_url);
 
       logStore.logInfo('GitLab deployment completed', {
@@ -215,7 +209,6 @@ export function GitLabDeploymentDialog({ isOpen, onClose, projectName, files }: 
 
   const handleClose = () => {
     setShowSuccessDialog(false);
-    setPushedFiles([]);
     setCreatedProjectUrl('');
     onClose();
   };

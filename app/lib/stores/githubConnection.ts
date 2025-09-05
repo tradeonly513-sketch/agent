@@ -1,7 +1,7 @@
 import { atom, computed } from 'nanostores';
 import Cookies from 'js-cookie';
 import { logStore } from '~/lib/stores/logs';
-import { gitHubApiService } from '~/lib/services/githubApiService';
+import { GitHubApiService } from '~/lib/services/GitHubApiService';
 import { calculateStatsSummary } from '~/utils/githubStats';
 import type { GitHubConnection } from '~/types/GitHub';
 
@@ -78,14 +78,14 @@ export const githubConnectionStore = {
 
     try {
       // Fetch user data
-      const { user, rateLimit } = await gitHubApiService.fetchUser(token, tokenType);
+      const apiService = new GitHubApiService({ token, tokenType });
+      const user = await apiService.getAuthenticatedUser();
 
       // Create connection object
       const connection: GitHubConnection = {
         user,
         token,
         tokenType,
-        rateLimit,
       };
 
       // Set cookies for client-side access
@@ -137,8 +137,7 @@ export const githubConnectionStore = {
     Cookies.remove('githubToken');
     Cookies.remove('git:github.com');
 
-    // Clear API service cache
-    gitHubApiService.clearCache();
+    // Clear API service cache would be handled per instance
 
     logStore.logInfo('Disconnected from GitHub', {
       type: 'system',
@@ -161,7 +160,8 @@ export const githubConnectionStore = {
     isGitHubLoadingStats.set(true);
 
     try {
-      const stats = await gitHubApiService.fetchStats(connection.token, connection.tokenType);
+      const apiService = new GitHubApiService({ token: connection.token, tokenType: connection.tokenType });
+      const stats = await apiService.generateComprehensiveStats(connection.user);
 
       // Update connection with stats
       const updatedConnection: GitHubConnection = {
@@ -214,7 +214,7 @@ export const githubConnectionStore = {
     const connection = githubConnectionAtom.get();
 
     if (connection.token) {
-      gitHubApiService.clearUserCache(connection.token);
+      // Cache clearing would be handled per instance
     }
   },
 

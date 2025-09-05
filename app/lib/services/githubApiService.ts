@@ -27,19 +27,19 @@ export interface GitHubApiError {
 }
 
 export class GitHubApiService {
-  private config: GitHubApiServiceConfig;
-  private baseURL: string;
+  private _config: GitHubApiServiceConfig;
+  private _baseURL: string;
 
   constructor(config: GitHubApiServiceConfig) {
-    this.config = config;
-    this.baseURL = config.baseURL || 'https://api.github.com';
+    this._config = config;
+    this._baseURL = config.baseURL || 'https://api.github.com';
   }
 
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
+  private async _makeRequestInternal<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this._baseURL}${endpoint}`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        Authorization: `${this.config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this.config.token}`,
+        Authorization: `${this._config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this._config.token}`,
         'User-Agent': 'Bolt.diy',
         ...options.headers,
       },
@@ -62,13 +62,19 @@ export class GitHubApiService {
   /**
    * Fetch all user repositories with pagination
    */
+  async getAuthenticatedUser(): Promise<GitHubUserResponse> {
+    return this._makeRequestInternal<GitHubUserResponse>('/user');
+  }
+
   async getAllUserRepositories(): Promise<GitHubRepoInfo[]> {
     const allRepos: GitHubRepoInfo[] = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore) {
-      const repos = await this.makeRequest<GitHubRepoInfo[]>(`/user/repos?per_page=100&page=${page}&sort=updated`);
+      const repos = await this._makeRequestInternal<GitHubRepoInfo[]>(
+        `/user/repos?per_page=100&page=${page}&sort=updated`,
+      );
 
       allRepos.push(...repos);
       hasMore = repos.length === 100; // If we got 100 repos, there might be more
@@ -83,15 +89,15 @@ export class GitHubApiService {
    */
   async getDetailedRepositoryInfo(owner: string, repo: string): Promise<DetailedRepoInfo> {
     const [repoInfo, branches] = await Promise.all([
-      this.makeRequest<GitHubRepoInfo>(`/repos/${owner}/${repo}`),
+      this._makeRequestInternal<GitHubRepoInfo>(`/repos/${owner}/${repo}`),
       this.getRepositoryBranches(owner, repo).catch(() => []),
     ]);
 
     // Try to get additional metrics
     const [contributors, issues, pullRequests] = await Promise.allSettled([
-      this.getRepositoryContributorsCount(owner, repo),
-      this.getRepositoryIssuesCount(owner, repo),
-      this.getRepositoryPullRequestsCount(owner, repo),
+      this._getRepositoryContributorsCount(owner, repo),
+      this._getRepositoryIssuesCount(owner, repo),
+      this._getRepositoryPullRequestsCount(owner, repo),
     ]);
 
     const detailedInfo: DetailedRepoInfo = {
@@ -109,17 +115,17 @@ export class GitHubApiService {
    * Get repository branches
    */
   async getRepositoryBranches(owner: string, repo: string): Promise<GitHubBranch[]> {
-    return this.makeRequest<GitHubBranch[]>(`/repos/${owner}/${repo}/branches`);
+    return this._makeRequestInternal<GitHubBranch[]>(`/repos/${owner}/${repo}/branches`);
   }
 
   /**
    * Get contributors count using Link header pagination info
    */
-  private async getRepositoryContributorsCount(owner: string, repo: string): Promise<number> {
-    const response = await fetch(`${this.baseURL}/repos/${owner}/${repo}/contributors?per_page=1`, {
+  private async _getRepositoryContributorsCount(owner: string, repo: string): Promise<number> {
+    const response = await fetch(`${this._baseURL}/repos/${owner}/${repo}/contributors?per_page=1`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        Authorization: `${this.config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this.config.token}`,
+        Authorization: `${this._config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this._config.token}`,
         'User-Agent': 'Bolt.diy',
       },
     });
@@ -143,11 +149,11 @@ export class GitHubApiService {
   /**
    * Get issues count using Link header pagination info
    */
-  private async getRepositoryIssuesCount(owner: string, repo: string): Promise<number> {
-    const response = await fetch(`${this.baseURL}/repos/${owner}/${repo}/issues?state=all&per_page=1`, {
+  private async _getRepositoryIssuesCount(owner: string, repo: string): Promise<number> {
+    const response = await fetch(`${this._baseURL}/repos/${owner}/${repo}/issues?state=all&per_page=1`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        Authorization: `${this.config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this.config.token}`,
+        Authorization: `${this._config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this._config.token}`,
         'User-Agent': 'Bolt.diy',
       },
     });
@@ -171,11 +177,11 @@ export class GitHubApiService {
   /**
    * Get pull requests count using Link header pagination info
    */
-  private async getRepositoryPullRequestsCount(owner: string, repo: string): Promise<number> {
-    const response = await fetch(`${this.baseURL}/repos/${owner}/${repo}/pulls?state=all&per_page=1`, {
+  private async _getRepositoryPullRequestsCount(owner: string, repo: string): Promise<number> {
+    const response = await fetch(`${this._baseURL}/repos/${owner}/${repo}/pulls?state=all&per_page=1`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        Authorization: `${this.config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this.config.token}`,
+        Authorization: `${this._config.tokenType === 'classic' ? 'token' : 'Bearer'} ${this._config.token}`,
         'User-Agent': 'Bolt.diy',
       },
     });
@@ -337,8 +343,8 @@ export class GitHubApiService {
 
       // Fetch additional data in parallel
       const [organizations, recentActivity] = await Promise.allSettled([
-        this.makeRequest<GitHubOrganization[]>('/user/orgs'),
-        this.makeRequest<any[]>(`/users/${userData.login}/events?per_page=10`),
+        this._makeRequestInternal<GitHubOrganization[]>('/user/orgs'),
+        this._makeRequestInternal<any[]>(`/users/${userData.login}/events?per_page=10`),
       ]);
 
       // Calculate aggregated metrics
@@ -346,17 +352,16 @@ export class GitHubApiService {
       const totalForks = detailedRepos.reduce((sum, repo) => sum + repo.forks_count, 0);
       const privateRepos = detailedRepos.filter((repo) => repo.private).length;
 
-      const accountAge = Math.floor((Date.now() - new Date(userData.created_at).getTime()) / (1000 * 60 * 60 * 24));
-
       const githubStats: GitHubStats = {
         repos: detailedRepos,
         recentActivity:
           recentActivity.status === 'fulfilled'
-            ? recentActivity.value.slice(0, 10).map((event) => ({
+            ? recentActivity.value.slice(0, 10).map((event: any) => ({
                 id: event.id,
                 type: event.type,
                 repo: { name: event.repo.name, url: event.repo.url },
                 created_at: event.created_at,
+                payload: event.payload || {},
               }))
             : [],
         languages: stats.languages,
@@ -377,8 +382,6 @@ export class GitHubApiService {
         totalIssues: stats.totalIssues,
         totalPullRequests: stats.totalPullRequests,
         mostUsedLanguages: stats.mostUsedLanguages,
-        recentCommits: 0, // Would be calculated from events
-        accountAge,
       };
 
       return githubStats;
