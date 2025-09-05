@@ -303,58 +303,16 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
 
       if (savedConfig) {
         try {
-          const rawSettings = JSON.parse(savedConfig);
-          const { settings, errors } = validateAndMigrateSettings(rawSettings);
-
-          if (errors.length > 0) {
-            console.warn('MCP Store: Configuration validation errors detected:', errors);
-            set(() => ({
-              error: `Configuration validation errors: ${errors.join('; ')}. Some settings have been reset to defaults.`,
-            }));
-          }
-
-          const sanitizedSettings = sanitizeMCPSettingsForLogging(settings);
-          console.log('MCP Store: validated settings:', JSON.stringify(sanitizedSettings, null, 2));
-          console.log(
-            'MCP Store: calling updateServerConfig with:',
-            JSON.stringify(sanitizeMCPConfigForLogging(settings.mcpConfig), null, 2),
-          );
-
-          try {
-            const serverTools = await updateServerConfig(settings.mcpConfig);
-            console.log('MCP Store: updateServerConfig returned:', Object.keys(serverTools));
-
-            set(() => ({ settings, serverTools, error: errors.length > 0 ? get().error : null }));
-
-            // Save the validated/migrated settings back to localStorage
-            const success = safeSetToLocalStorage(MCP_SETTINGS_KEY, JSON.stringify(settings));
-
-            if (!success) {
-              console.warn('MCP Store: Failed to save validated settings to localStorage');
-            }
-          } catch (configError) {
-            console.error('MCP Store: Failed to update server config:', configError);
-            set(() => ({
-              settings,
-              error: `Failed to initialize MCP servers: ${configError instanceof Error ? configError.message : String(configError)}`,
-            }));
-          }
-        } catch (parseError) {
-          console.error('Error parsing saved mcp config:', parseError);
-
-          // Clear corrupted data and use defaults
-          safeRemoveFromLocalStorage(MCP_SETTINGS_KEY);
-
-          const success = safeSetToLocalStorage(MCP_SETTINGS_KEY, JSON.stringify(defaultSettings));
-
-          set(() => ({
-            settings: defaultSettings,
-            error: `Corrupted configuration detected and reset to defaults. ${parseError instanceof Error ? parseError.message : String(parseError)}`,
-          }));
-
-          if (!success) {
-            console.error('MCP Store: Failed to save default settings to localStorage');
-          }
+          const settings = JSON.parse(savedConfig) as MCPSettings;
+          const serverTools = await updateServerConfig(settings.mcpConfig);
+          set(() => ({ settings, serverTools }));
+        } catch (error) {
+          console.error('Error parsing saved mcp config:', error);
+          console.log('Clearing corrupted MCP config and resetting to defaults');
+          // Clear corrupted config and set defaults
+          localStorage.removeItem(MCP_SETTINGS_KEY);
+          localStorage.setItem(MCP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+          set(() => ({ settings: defaultSettings }));
         }
       } else {
         console.log('MCP Store: no saved config found, using default settings');

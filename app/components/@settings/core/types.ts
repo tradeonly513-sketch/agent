@@ -11,11 +11,7 @@ export type TabType =
   | 'data'
   | 'cloud-providers'
   | 'local-providers'
-  | 'github'
-  | 'gitlab'
-  | 'netlify'
-  | 'vercel'
-  | 'supabase'
+  | 'connection'
   | 'event-logs'
   | 'mcp';
 
@@ -74,11 +70,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   data: 'Data Management',
   'cloud-providers': 'Cloud Providers',
   'local-providers': 'Local Providers',
-  github: 'GitHub',
-  gitlab: 'GitLab',
-  netlify: 'Netlify',
-  vercel: 'Vercel',
-  supabase: 'Supabase',
+  connection: 'Connections',
   'event-logs': 'Event Logs',
   mcp: 'MCP Servers',
 };

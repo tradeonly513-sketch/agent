@@ -10,8 +10,16 @@ import { Bot, Cpu, Zap } from 'lucide-react';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
 import { useToast } from '~/components/ui/use-toast';
 import { Progress } from '~/components/ui/Progress';
-import OllamaModelInstaller from './OllamaModelInstaller';
-import { Code, Database, Box, Loader2, RefreshCw, Trash2, Link, ExternalLink } from 'lucide-react';
+import ModelHealthIndicator, { ModelHealthSummary } from './ModelHealthIndicator';
+import { useLocalModelHealth } from '~/lib/hooks/useLocalModelHealth';
+import ModelPerformanceDashboard from './ModelPerformanceDashboard';
+import LMStudioModelManager from './LMStudioModelManager';
+import OpenAILikeModelManager from './OpenAILikeModelManager';
+import ErrorBoundary from './ErrorBoundary';
+import { ProviderCardSkeleton } from './LoadingSkeleton';
+import LocalProvidersGuide from './LocalProvidersGuide';
+import EndpointStatusDashboard from './EndpointStatusDashboard';
+import Cookies from 'js-cookie';
 
 // Add type for provider names to ensure type safety
 type ProviderName = 'Ollama' | 'LMStudio' | 'OpenAILike';
@@ -53,21 +61,6 @@ interface OllamaModel {
   };
 }
 
-interface OllamaPullResponse {
-  status: string;
-  completed?: number;
-  total?: number;
-  digest?: string;
-}
-
-const isOllamaPullResponse = (data: unknown): data is OllamaPullResponse => {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'status' in data &&
-    typeof (data as OllamaPullResponse).status === 'string'
-  );
-};
 
 export default function LocalProvidersTab() {
   const { providers, updateProviderSettings } = useSettings();
@@ -76,7 +69,27 @@ export default function LocalProvidersTab() {
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [showPerformanceDashboard, setShowPerformanceDashboard] = useState(false);
+  const [showModelManagement, setShowModelManagement] = useState(false);
+  const [showProvidersGuide, setShowProvidersGuide] = useState(false);
+  const [showEndpointStatus, setShowEndpointStatus] = useState(false);
+  const [isLoadingProviders, setIsLoadingProviders] = useState(true);
   const { toast } = useToast();
+  const { startMonitoring, stopMonitoring } = useLocalModelHealth();
+
+  // Get API keys from cookies
+  const getApiKeyFromCookies = useCallback((providerName: string): string | undefined => {
+    try {
+      const apiKeysString = Cookies.get('apiKeys');
+      if (apiKeysString) {
+        const apiKeys = JSON.parse(apiKeysString);
+        return apiKeys[providerName];
+      }
+    } catch (error) {
+      console.error('Error parsing API keys from cookies:', error);
+    }
+    return undefined;
+  }, []);
 
   // Effect to filter and sort providers
   useEffect(() => {
@@ -130,6 +143,7 @@ export default function LocalProvidersTab() {
       return a.name.localeCompare(b.name);
     });
     setFilteredProviders(sorted);
+    setIsLoadingProviders(false);
   }, [providers, updateProviderSettings]);
 
   // Add effect to update category toggle state based on provider states
@@ -138,20 +152,55 @@ export default function LocalProvidersTab() {
     setCategoryEnabled(newCategoryState);
   }, [filteredProviders]);
 
-  // Fetch Ollama models when enabled
+  // Start/stop health monitoring based on provider enabled state
   useEffect(() => {
-    const ollamaProvider = filteredProviders.find((p) => p.name === 'Ollama');
+    const providersToMonitor = filteredProviders.filter(
+      (provider) => provider.settings.enabled && provider.settings.baseUrl
+    );
 
-    if (ollamaProvider?.settings.enabled) {
-      fetchOllamaModels();
-    }
-  }, [filteredProviders]);
+    const providersToStop = filteredProviders.filter(
+      (provider) => !provider.settings.enabled && provider.settings.baseUrl
+    );
 
-  const fetchOllamaModels = async () => {
+    // Start monitoring for enabled providers
+    providersToMonitor.forEach((provider) => {
+      const providerType =
+        provider.name === 'LMStudio' ? 'LMStudio' : provider.name === 'OpenAILike' ? 'OpenAILike' : 'Ollama';
+      startMonitoring(providerType, provider.settings.baseUrl!);
+    });
+
+    // Stop monitoring for disabled providers
+    providersToStop.forEach((provider) => {
+      const providerType =
+        provider.name === 'LMStudio' ? 'LMStudio' : provider.name === 'OpenAILike' ? 'OpenAILike' : 'Ollama';
+      stopMonitoring(providerType, provider.settings.baseUrl!);
+    });
+
+    // Cleanup function
+    return () => {
+      filteredProviders.forEach((provider) => {
+        const providerType =
+          provider.name === 'LMStudio' ? 'LMStudio' : provider.name === 'OpenAILike' ? 'OpenAILike' : 'Ollama';
+        if (provider.settings.baseUrl) {
+          stopMonitoring(providerType, provider.settings.baseUrl);
+        }
+      });
+    };
+  }, [filteredProviders, startMonitoring, stopMonitoring]);
+
+  const fetchOllamaModels = useCallback(async () => {
     try {
       setIsLoadingModels(true);
 
-      const response = await fetch('http://127.0.0.1:11434/api/tags');
+      const ollamaProvider = filteredProviders.find((p) => p.name === 'Ollama');
+      const baseUrl = ollamaProvider?.settings.baseUrl || OLLAMA_API_URL;
+
+      const response = await fetch(`${baseUrl}/api/tags`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = (await response.json()) as { models: OllamaModel[] };
 
       setOllamaModels(
@@ -162,14 +211,27 @@ export default function LocalProvidersTab() {
       );
     } catch (error) {
       console.error('Error fetching Ollama models:', error);
+      toast('Failed to fetch Ollama models. Make sure Ollama is running.');
     } finally {
       setIsLoadingModels(false);
     }
-  };
+  }, [filteredProviders, toast]);
+
+  // Fetch Ollama models when enabled
+  useEffect(() => {
+    const ollamaProvider = filteredProviders.find((p) => p.name === 'Ollama');
+
+    if (ollamaProvider?.settings.enabled) {
+      fetchOllamaModels();
+    }
+  }, [filteredProviders, fetchOllamaModels]);
 
   const updateOllamaModel = async (modelName: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${OLLAMA_API_URL}/api/pull`, {
+      const ollamaProvider = filteredProviders.find((p) => p.name === 'Ollama');
+      const baseUrl = ollamaProvider?.settings.baseUrl || OLLAMA_API_URL;
+
+      const response = await fetch(`${baseUrl}/api/pull`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: modelName }),
@@ -198,7 +260,7 @@ export default function LocalProvidersTab() {
         for (const line of lines) {
           const rawData = JSON.parse(line);
 
-          if (!isOllamaPullResponse(rawData)) {
+          if (!isOllamaPullProgress(rawData)) {
             console.error('Invalid response format:', rawData);
             continue;
           }
@@ -221,7 +283,7 @@ export default function LocalProvidersTab() {
         }
       }
 
-      const updatedResponse = await fetch('http://127.0.0.1:11434/api/tags');
+      const updatedResponse = await fetch(`${baseUrl}/api/tags`);
       const updatedData = (await updatedResponse.json()) as { models: OllamaModel[] };
       const updatedModel = updatedData.models.find((m) => m.name === modelName);
 
@@ -278,7 +340,10 @@ export default function LocalProvidersTab() {
 
   const handleDeleteOllamaModel = async (modelName: string) => {
     try {
-      const response = await fetch(`${OLLAMA_API_URL}/api/delete`, {
+      const ollamaProvider = filteredProviders.find((p) => p.name === 'Ollama');
+      const baseUrl = ollamaProvider?.settings.baseUrl || OLLAMA_API_URL;
+
+      const response = await fetch(`${baseUrl}/api/delete`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -295,7 +360,7 @@ export default function LocalProvidersTab() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       console.error(`Error deleting ${modelName}:`, errorMessage);
-      toast(`Failed to delete ${modelName}`);
+      toast(`Failed to delete ${modelName}: ${errorMessage}`);
     }
   };
 
@@ -375,50 +440,227 @@ export default function LocalProvidersTab() {
   );
 
   return (
-    <div
-      className={classNames(
-        'rounded-lg bg-bolt-elements-background text-bolt-elements-textPrimary shadow-sm p-4',
-        'hover:bg-bolt-elements-background-depth-2',
-        'transition-all duration-200',
-      )}
-      role="region"
-      aria-label="Local Providers Configuration"
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error('LocalProvidersTab error:', error, errorInfo);
+        toast('An error occurred in the local providers section');
+      }}
     >
-      <motion.div
-        className="space-y-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <div
+        className={classNames(
+          'rounded-lg bg-bolt-elements-background text-bolt-elements-textPrimary shadow-sm p-4',
+          'hover:bg-bolt-elements-background-depth-2',
+          'transition-all duration-200',
+        )}
+        role="region"
+        aria-label="Local Providers Configuration"
       >
+        <motion.div
+          className="space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
         {/* Header section */}
-        <div className="flex items-center justify-between gap-4 border-b border-bolt-elements-borderColor pb-4">
-          <div className="flex items-center gap-3">
-            <motion.div
-              className={classNames(
-                'w-10 h-10 flex items-center justify-center rounded-xl',
-                'bg-purple-500/10 text-purple-500',
-              )}
-              whileHover={{ scale: 1.05 }}
-            >
-              <Cpu className="w-6 h-6" />
-            </motion.div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-bolt-elements-textPrimary">Local AI Models</h2>
+        <div className="flex flex-col gap-4 border-b border-bolt-elements-borderColor pb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <motion.div
+                className={classNames(
+                  'w-10 h-10 flex items-center justify-center rounded-xl',
+                  'bg-purple-500/10 text-purple-500',
+                )}
+                whileHover={{ scale: 1.05 }}
+              >
+                <BiChip className="w-6 h-6" />
+              </motion.div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-bolt-elements-textPrimary">Local AI Models</h2>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-500">BETA</span>
+                </div>
+                <p className="text-sm text-bolt-elements-textSecondary">Configure and manage your local AI providers</p>
               </div>
-              <p className="text-sm text-bolt-elements-textSecondary">Configure and manage your local AI providers</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-bolt-elements-textSecondary">Enable All</span>
+              <Switch
+                checked={categoryEnabled}
+                onCheckedChange={handleToggleCategory}
+                aria-label="Toggle all local providers"
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-bolt-elements-textSecondary">Enable All</span>
-            <Switch
-              checked={categoryEnabled}
-              onCheckedChange={handleToggleCategory}
-              aria-label="Toggle all local providers"
-            />
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowPerformanceDashboard(!showPerformanceDashboard)}
+              className={classNames(
+                'px-3 py-2 rounded-lg text-sm font-medium',
+                'bg-bolt-elements-background-depth-3',
+                'hover:bg-bolt-elements-background-depth-4',
+                'text-bolt-elements-textPrimary',
+                'transition-colors duration-200',
+                'flex items-center gap-2',
+                showPerformanceDashboard ? 'bg-purple-500/10 text-purple-500' : ''
+              )}
+            >
+              <div className="i-ph:chart-line w-4 h-4" />
+              {showPerformanceDashboard ? 'Hide Performance' : 'Show Performance'}
+            </button>
+
+            <button
+              onClick={() => setShowModelManagement(!showModelManagement)}
+              className={classNames(
+                'px-3 py-2 rounded-lg text-sm font-medium',
+                'bg-bolt-elements-background-depth-3',
+                'hover:bg-bolt-elements-background-depth-4',
+                'text-bolt-elements-textPrimary',
+                'transition-colors duration-200',
+                'flex items-center gap-2',
+                showModelManagement ? 'bg-purple-500/10 text-purple-500' : ''
+              )}
+            >
+              <div className="i-ph:robot w-4 h-4" />
+              {showModelManagement ? 'Hide Models' : 'Manage Models'}
+            </button>
+
+            <button
+              onClick={() => setShowProvidersGuide(!showProvidersGuide)}
+              className={classNames(
+                'px-3 py-2 rounded-lg text-sm font-medium',
+                'bg-bolt-elements-background-depth-3',
+                'hover:bg-bolt-elements-background-depth-4',
+                'text-bolt-elements-textPrimary',
+                'transition-colors duration-200',
+                'flex items-center gap-2',
+                showProvidersGuide ? 'bg-purple-500/10 text-purple-500' : ''
+              )}
+            >
+              <div className="i-ph:book-open w-4 h-4" />
+              {showProvidersGuide ? 'Hide Guide' : 'Providers Guide'}
+            </button>
+
+            <button
+              onClick={() => setShowEndpointStatus(!showEndpointStatus)}
+              className={classNames(
+                'px-3 py-2 rounded-lg text-sm font-medium',
+                'bg-bolt-elements-background-depth-3',
+                'hover:bg-bolt-elements-background-depth-4',
+                'text-bolt-elements-textPrimary',
+                'transition-colors duration-200',
+                'flex items-center gap-2',
+                showEndpointStatus ? 'bg-purple-500/10 text-purple-500' : ''
+              )}
+            >
+              <div className="i-ph:plug w-4 h-4" />
+              {showEndpointStatus ? 'Hide Status' : 'Endpoint Status'}
+            </button>
           </div>
         </div>
+
+        {/* Health Summary */}
+        <ModelHealthSummary />
+
+        {/* Performance Dashboard */}
+        <AnimatePresence>
+          {showPerformanceDashboard && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ModelPerformanceDashboard />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Model Management Dashboard */}
+        <AnimatePresence>
+          {showModelManagement && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {/* LM Studio Model Manager */}
+              {(() => {
+                const lmStudioProvider = filteredProviders.find((p) => p.name === 'LMStudio');
+                return lmStudioProvider?.settings.enabled && lmStudioProvider.settings.baseUrl ? (
+                  <LMStudioModelManager
+                    baseUrl={lmStudioProvider.settings.baseUrl}
+                  />
+                ) : null;
+              })()}
+
+              {/* OpenAI-like Model Manager */}
+              {(() => {
+                const openAILikeProvider = filteredProviders.find((p) => p.name === 'OpenAILike');
+                return openAILikeProvider?.settings.enabled && openAILikeProvider.settings.baseUrl ? (
+                  <OpenAILikeModelManager
+                    baseUrl={openAILikeProvider.settings.baseUrl}
+                    apiKey={getApiKeyFromCookies('OpenAILike')}
+                    providerName="OpenAI-like"
+                  />
+                ) : null;
+              })()}
+
+              {/* Show message if no providers are enabled */}
+              {(() => {
+                const hasEnabledProviders = filteredProviders.some(
+                  (p) => (p.name === 'LMStudio' || p.name === 'OpenAILike') &&
+                         p.settings.enabled &&
+                         p.settings.baseUrl
+                );
+
+                return !hasEnabledProviders ? (
+                  <div className="p-8 text-center rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2">
+                    <div className="i-ph:info w-12 h-12 mx-auto text-bolt-elements-textTertiary mb-4" />
+                    <h3 className="text-lg font-medium text-bolt-elements-textPrimary mb-2">
+                      No Model Managers Available
+                    </h3>
+                    <p className="text-sm text-bolt-elements-textSecondary">
+                      Enable and configure LM Studio or OpenAI-like providers to manage their models.
+                    </p>
+                  </div>
+                ) : null;
+              })()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Providers Guide */}
+        <AnimatePresence>
+          {showProvidersGuide && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LocalProvidersGuide />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Endpoint Status Dashboard */}
+        <AnimatePresence>
+          {showEndpointStatus && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <EndpointStatusDashboard />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Ollama Section */}
         {filteredProviders
@@ -459,6 +701,21 @@ export default function LocalProvidersTab() {
                     <p className="text-sm text-bolt-elements-textSecondary mt-1">
                       {PROVIDER_DESCRIPTIONS[provider.name as ProviderName]}
                     </p>
+                    {provider.settings.enabled && provider.settings.baseUrl && (
+                      <div className="mt-2">
+                        <ModelHealthIndicator
+                          provider={
+                            provider.name === 'LMStudio'
+                              ? 'LMStudio'
+                              : provider.name === 'OpenAILike'
+                                ? 'OpenAILike'
+                                : 'Ollama'
+                          }
+                          baseUrl={provider.settings.baseUrl}
+                          showDetails={true}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <Switch
@@ -617,8 +874,26 @@ export default function LocalProvidersTab() {
                     )}
                   </div>
 
-                  {/* Model Installation Section */}
-                  <OllamaModelInstaller onModelInstalled={fetchOllamaModels} />
+                  {/* Model Installation Info */}
+                  <div className="mt-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="i-ph:info w-5 h-5 text-blue-500" />
+                      <h4 className="text-sm font-medium text-blue-600">Model Installation</h4>
+                    </div>
+                    <p className="text-sm text-blue-600/80">
+                      Use the Ollama app or CLI to install models. Installed models will appear here automatically.
+                      Visit{' '}
+                      <a
+                        href="https://ollama.com/library"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-600 underline"
+                      >
+                        ollama.com/library
+                      </a>{' '}
+                      to browse available models.
+                    </p>
+                  </div>
                 </motion.div>
               )}
             </motion.div>
@@ -626,11 +901,20 @@ export default function LocalProvidersTab() {
 
         {/* Other Providers Section */}
         <div className="border-t border-bolt-elements-borderColor pt-6 mt-8">
-          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">Other Local Providers</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredProviders
-              .filter((provider) => provider.name !== 'Ollama')
-              .map((provider, index) => (
+          <div className="flex items-center gap-3 mb-6">
+            <div className="i-ph:network w-5 h-5 text-bolt-elements-textSecondary" />
+            <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">Other Local Providers</h3>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {isLoadingProviders ? (
+              // Show loading skeletons
+              Array.from({ length: 2 }).map((_, index) => (
+                <ProviderCardSkeleton key={`skeleton-${index}`} />
+              ))
+            ) : (
+              filteredProviders
+                .filter((provider) => provider.name !== 'Ollama')
+                .map((provider, index) => (
                 <motion.div
                   key={provider.name}
                   className={classNames(
@@ -739,11 +1023,13 @@ export default function LocalProvidersTab() {
                     )}
                   </AnimatePresence>
                 </motion.div>
-              ))}
+              ))
+            )}
           </div>
         </div>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </ErrorBoundary>
   );
 }
 
