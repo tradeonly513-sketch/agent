@@ -21,8 +21,6 @@ import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
-import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
-import { PushToGitLabDialog } from '~/components/@settings/tabs/connections/gitlab/PushToGitLabDialog';
 
 import { usePreviewStore } from '~/lib/stores/previews';
 import { chatStore } from '~/lib/stores/chat';
@@ -310,8 +308,6 @@ export const Workbench = memo(
     const streaming = useStore(streamingState);
     const { exportChat } = useChatHistory();
     const [isSyncing, setIsSyncing] = useState(false);
-    const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
-    const [isPushGitlabDialogOpen, setIsPushGitlabDialogOpen] = useState(false);
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
@@ -452,28 +448,6 @@ export const Workbench = memo(
                                 <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
                               </div>
                             </DropdownMenu.Item>
-                            <DropdownMenu.Item
-                              className={classNames(
-                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                              )}
-                              onClick={() => setIsPushDialogOpen(true)}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="i-ph:git-branch" />
-                                <span>Push to GitHub</span>
-                              </div>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item
-                              className={classNames(
-                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
-                              )}
-                              onClick={() => setIsPushGitlabDialogOpen(true)}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="i-ph:gitlab-logo" />
-                                <span>Push to GitLab</span>
-                              </div>
-                            </DropdownMenu.Item>
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
                       </div>
@@ -534,68 +508,6 @@ export const Workbench = memo(
               </div>
             </div>
           </div>
-          <PushToGitHubDialog
-            isOpen={isPushDialogOpen}
-            onClose={() => setIsPushDialogOpen(false)}
-            onPush={async (repoName, username, token, isPrivate) => {
-              try {
-                console.log('Dialog onPush called with isPrivate =', isPrivate);
-
-                const commitMessage = prompt('Please enter a commit message:', 'Initial commit') || 'Initial commit';
-                const repoUrl = await workbenchStore.pushToRepository(
-                  'github',
-                  repoName,
-                  commitMessage,
-                  username,
-                  token,
-                  isPrivate,
-                );
-
-                if (_updateChatMestaData && !_metadata?.gitUrl) {
-                  _updateChatMestaData({
-                    ...(_metadata || {}),
-                    gitUrl: repoUrl,
-                  });
-                }
-
-                return repoUrl;
-              } catch (error) {
-                console.error('Error pushing to GitHub:', error);
-                toast.error('Failed to push to GitHub');
-                throw error;
-              }
-            }}
-          />
-          <PushToGitLabDialog
-            isOpen={isPushGitlabDialogOpen}
-            onClose={() => setIsPushGitlabDialogOpen(false)}
-            onPush={async (repoName, username, token, isPrivate, branchName) => {
-              try {
-                const commitMessage = prompt('Please enter a commit message:', 'Initial commit') || 'Initial commit';
-                const repoUrl = await workbenchStore.pushToRepository(
-                  'gitlab',
-                  repoName,
-                  commitMessage,
-                  username,
-                  token,
-                  isPrivate,
-                  branchName,
-                );
-
-                if (_updateChatMestaData && !_metadata?.gitUrl) {
-                  _updateChatMestaData({
-                    ...(_metadata || {}),
-                    gitUrl: repoUrl,
-                  });
-                }
-
-                return repoUrl;
-              } catch (error) {
-                toast.error('Failed to push to GitLab');
-                throw error;
-              }
-            }}
-          />
         </motion.div>
       )
     );

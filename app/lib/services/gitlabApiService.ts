@@ -105,7 +105,7 @@ export class GitLabApiService {
   private get _headers() {
     return {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${this._token}`,
+      'PRIVATE-TOKEN': this._token,
     };
   }
 
@@ -245,7 +245,8 @@ export class GitLabApiService {
       body: JSON.stringify({
         name,
         visibility: isPrivate ? 'private' : 'public',
-        initialize_with_readme: true,
+        initialize_with_readme: false, // Don't initialize with README to avoid conflicts
+        default_branch: 'main', // Explicitly set default branch
       }),
     });
 
@@ -289,7 +290,21 @@ export class GitLabApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to commit files: ${response.statusText}`);
+      let errorMessage = `Failed to commit files: ${response.status} ${response.statusText}`;
+
+      try {
+        const errorData = (await response.json()) as { message?: string; error?: string };
+
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch {
+        // If JSON parsing fails, keep the default error message
+      }
+
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -297,6 +312,109 @@ export class GitLabApiService {
 
   async getFile(projectId: number, filePath: string, ref: string): Promise<Response> {
     return this._request(`/projects/${projectId}/repository/files/${encodeURIComponent(filePath)}?ref=${ref}`);
+  }
+
+  async getProjectByPath(projectPath: string): Promise<GitLabProjectResponse | null> {
+    try {
+      const response = await this._request(`/projects/${encodeURIComponent(projectPath)}`);
+
+      if (response.ok) {
+        return await response.json();
+      }
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      throw new Error(`Failed to fetch project: ${response.status} ${response.statusText}`);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('404')) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async updateProjectVisibility(projectId: number, visibility: 'public' | 'private'): Promise<void> {
+    const response = await this._request(`/projects/${projectId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ visibility }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update project visibility: ${response.status} ${response.statusText}`);
+    }
+  }
+
+  async createProjectWithFiles(
+    name: string,
+    isPrivate: boolean,
+    files: Record<string, string>,
+  ): Promise<GitLabProjectResponse> {
+    // Create the project first
+    const project = await this.createProject(name, isPrivate);
+
+    // If we have files to commit, commit them
+    if (Object.keys(files).length > 0) {
+      const actions = Object.entries(files).map(([filePath, content]) => ({
+        action: 'create' as const,
+        file_path: filePath,
+        content,
+      }));
+
+      const commitRequest: GitLabCommitRequest = {
+        branch: 'main',
+        commit_message: 'Initial commit from Bolt.diy',
+        actions,
+      };
+
+      await this.commitFiles(project.id, commitRequest);
+    }
+
+    return project;
+  }
+
+  async updateProjectWithFiles(projectId: number, files: Record<string, string>): Promise<void> {
+    if (Object.keys(files).length === 0) {
+      return;
+    }
+
+    // For existing projects, we need to determine which files exist and which are new
+    const actions = Object.entries(files).map(([filePath, content]) => ({
+      action: 'create' as const, // Start with create, we'll handle conflicts in the API response
+      file_path: filePath,
+      content,
+    }));
+
+    const commitRequest: GitLabCommitRequest = {
+      branch: 'main',
+      commit_message: 'Update from Bolt.diy',
+      actions,
+    };
+
+    try {
+      await this.commitFiles(projectId, commitRequest);
+    } catch (error) {
+      // If we get file conflicts, retry with update actions
+      if (error instanceof Error && error.message.includes('already exists')) {
+        const updateActions = Object.entries(files).map(([filePath, content]) => ({
+          action: 'update' as const,
+          file_path: filePath,
+          content,
+        }));
+
+        const updateCommitRequest: GitLabCommitRequest = {
+          branch: 'main',
+          commit_message: 'Update from Bolt.diy',
+          actions: updateActions,
+        };
+
+        await this.commitFiles(projectId, updateCommitRequest);
+      } else {
+        throw error;
+      }
+    }
   }
 }
 

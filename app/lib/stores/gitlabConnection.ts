@@ -16,6 +16,35 @@ const gitlabConnectionAtom = atom<GitLabConnection>({
 
 const gitlabUrlAtom = atom('https://gitlab.com');
 
+// Initialize connection from localStorage on startup
+function initializeConnection() {
+  try {
+    const savedConnection = localStorage.getItem('gitlab_connection');
+
+    if (savedConnection) {
+      const parsed = JSON.parse(savedConnection);
+      parsed.tokenType = 'personal-access-token';
+
+      if (parsed.gitlabUrl) {
+        gitlabUrlAtom.set(parsed.gitlabUrl);
+      }
+
+      // Only set if we have a valid user
+      if (parsed.user) {
+        gitlabConnectionAtom.set(parsed);
+      }
+    }
+  } catch (error) {
+    console.error('Error initializing GitLab connection:', error);
+    localStorage.removeItem('gitlab_connection');
+  }
+}
+
+// Initialize on module load (client-side only)
+if (typeof window !== 'undefined') {
+  initializeConnection();
+}
+
 // Computed store for checking if connected
 export const isGitLabConnected = computed(gitlabConnectionAtom, (connection) => !!connection.user);
 
