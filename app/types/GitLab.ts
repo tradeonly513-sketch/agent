@@ -1,134 +1,103 @@
+// GitLab API Response Types
 export interface GitLabUserResponse {
-  login: string;
-  avatar_url: string;
-  html_url: string;
+  id: number;
+  username: string;
   name: string;
+  avatar_url: string;
+  web_url: string;
+  created_at: string;
   bio: string;
   public_repos: number;
   followers: number;
   following: number;
-  public_gists: number;
-  created_at: string;
-  updated_at: string;
-  username?: string;
 }
 
-export interface GitHubRepoInfo {
+export interface GitLabProjectInfo {
+  id: number;
   name: string;
-  full_name: string;
-  html_url: string;
+  path_with_namespace: string;
   description: string;
-  stargazers_count: number;
+  http_url_to_repo: string;
+  star_count: number;
   forks_count: number;
-  default_branch: string;
   updated_at: string;
-  language: string;
-  languages_url: string;
+  default_branch: string;
+  visibility: string;
 }
 
-export interface GitHubContent {
+export interface GitLabGroupInfo {
+  id: number;
   name: string;
-  path: string;
-  sha: string;
-  size: number;
-  url: string;
-  html_url: string;
-  git_url: string;
-  download_url: string;
-  type: string;
-  content: string;
-  encoding: string;
-}
-
-export interface GitHubBranch {
-  name: string;
-  commit: {
-    sha: string;
-    url: string;
-  };
-}
-
-export interface GitHubBlobResponse {
-  content: string;
-  encoding: string;
-  sha: string;
-  size: number;
-  url: string;
-}
-
-export interface GitHubOrganization {
-  login: string;
+  web_url: string;
   avatar_url: string;
-  description: string;
-  html_url: string;
 }
 
-export interface GitHubEvent {
-  id: string;
-  type: string;
-  created_at: string;
-  repo: {
+export interface GitLabEvent {
+  id: number;
+  action_name: string;
+  project_id: number;
+  project: {
     name: string;
-    url: string;
+    path_with_namespace: string;
   };
-  payload: {
-    action?: string;
-    ref?: string;
-    ref_type?: string;
-    description?: string;
-  };
+  created_at: string;
 }
 
-export interface GitHubLanguageStats {
-  [key: string]: number;
+export interface GitLabStats {
+  projects: GitLabProjectInfo[];
+  recentActivity: GitLabEvent[];
+  totalSnippets: number;
+  publicProjects: number;
+  privateProjects: number;
+  stars: number;
+  forks: number;
+  followers: number;
+  snippets: number;
+  groups: GitLabGroupInfo[];
+  lastUpdated: string;
 }
 
-export interface GitHubStats {
-  repos: GitHubRepoInfo[];
-  totalStars: number;
-  totalForks: number;
-  organizations: GitHubOrganization[];
-  recentActivity: GitHubEvent[];
-  languages: GitHubLanguageStats;
-  totalGists: number;
-}
-
-export interface GitHubConnection {
+export interface GitLabConnection {
   user: GitLabUserResponse | null;
   token: string;
-  tokenType: 'classic' | 'fine-grained';
-  stats?: GitHubStats;
+  tokenType: 'personal-access-token' | 'oauth';
+  stats?: GitLabStats;
+  rateLimit?: {
+    limit: number;
+    remaining: number;
+    reset: number;
+  };
+  gitlabUrl?: string;
 }
 
-export interface GitHubTokenInfo {
-  token: string;
-  scope: string[];
-  avatar_url: string;
-  name: string | null;
-  created_at: string;
-  followers: number;
+export interface GitLabProjectResponse {
+  id: number;
+  name: string;
+  path_with_namespace: string;
+  description: string;
+  web_url: string;
+  http_url_to_repo: string;
+  star_count: number;
+  forks_count: number;
+  updated_at: string;
+  default_branch: string;
+  visibility: string;
+  owner: {
+    id: number;
+    username: string;
+    name: string;
+  };
 }
 
-export interface GitHubRateLimits {
-  limit: number;
-  remaining: number;
-  reset: Date;
-  used: number;
+export interface GitLabCommitAction {
+  action: 'create' | 'update' | 'delete';
+  file_path: string;
+  content?: string;
+  encoding?: 'text' | 'base64';
 }
 
-export interface GitHubAuthState {
-  username: string;
-  tokenInfo: GitHubTokenInfo | null;
-  isConnected: boolean;
-  isVerifying: boolean;
-  isLoadingRepos: boolean;
-  rateLimits?: GitHubRateLimits;
-}
-
-export interface RepositoryStats {
-  totalFiles: number;
-  totalSize: number;
-  languages: Record<string, number>;
-  hasPackageJson: boolean;
-  hasDependencies: boolean;
+export interface GitLabCommitRequest {
+  branch: string;
+  commit_message: string;
+  actions: GitLabCommitAction[];
 }

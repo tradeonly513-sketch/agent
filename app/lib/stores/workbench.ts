@@ -874,62 +874,23 @@ export class WorkbenchStore {
       }
 
       if (isGitLab) {
-        const headers = {
-          'Private-Token': authToken,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        };
+        const { GitLabApiService: gitLabApiServiceClass } = await import('~/lib/services/gitlabApiService');
+        const gitLabApiService = new gitLabApiServiceClass(authToken, 'https://gitlab.com');
 
         // Check or create repo
-        let repo;
-        const repoUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}`;
+        let repo = await gitLabApiService.getProject(owner, repoName);
 
-        const res = await fetch(repoUrl, { headers });
-
-        if (!res.ok) {
-          const createRes = await fetch('https://gitlab.com/api/v4/projects', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              name: repoName,
-              visibility: isPrivate ? 'private' : 'public',
-              initialize_with_readme: true,
-            }),
-          });
-
-          if (!createRes.ok) {
-            throw new Error('Failed to create GitLab repository');
-          }
-
-          repo = (await createRes.json()) as any;
-          await new Promise((r) => setTimeout(r, 2000));
-        } else {
-          repo = (await res.json()) as any;
+        if (!repo) {
+          repo = await gitLabApiService.createProject(repoName, isPrivate);
+          await new Promise((r) => setTimeout(r, 2000)); // Wait for repo initialization
         }
 
-        // Check if branch exists
-        const branchRes = await fetch(
-          `https://gitlab.com/api/v4/projects/${repo.id}/repository/branches/${branchName}`,
-          {
-            headers,
-          },
-        );
+        // Check if branch exists, create if not
+        const branchRes = await gitLabApiService.getFile(repo.id, 'README.md', branchName).catch(() => null);
 
-        if (!branchRes.ok) {
+        if (!branchRes || !branchRes.ok) {
           // Create branch from default
-          const createBranchRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/repository/branches`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              branch: branchName,
-              ref: repo.default_branch,
-            }),
-          });
-
-          if (!createBranchRes.ok) {
-            throw new Error(`Failed to create branch ${branchName}`);
-          }
-
+          await gitLabApiService.createBranch(repo.id, branchName, repo.default_branch);
           await new Promise((r) => setTimeout(r, 1000));
         }
 
@@ -948,30 +909,21 @@ export class WorkbenchStore {
           [] as { action: 'create' | 'update'; file_path: string; content: string }[],
         );
 
+        // Check which files exist and update action accordingly
         for (const action of actions) {
-          const fileCheck = await fetch(
-            `https://gitlab.com/api/v4/projects/${repo.id}/repository/files/${encodeURIComponent(action.file_path)}?ref=${branchName}`,
-            { headers },
-          );
+          const fileCheck = await gitLabApiService.getFile(repo.id, action.file_path, branchName);
 
           if (fileCheck.ok) {
             action.action = 'update';
           }
         }
 
-        const commitRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/repository/commits`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            branch: branchName,
-            commit_message: commitMessage || 'Commit multiple files',
-            actions,
-          }),
+        // Commit all files
+        await gitLabApiService.commitFiles(repo.id, {
+          branch: branchName,
+          commit_message: commitMessage || 'Commit multiple files',
+          actions,
         });
-
-        if (!commitRes.ok) {
-          throw new Error('Failed to commit multiple files to GitLab');
-        }
 
         return repo.web_url;
       }

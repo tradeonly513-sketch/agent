@@ -13,7 +13,7 @@ import type { IChatMetadata } from '~/lib/persistence/db';
 import { X, Github, GitBranch } from 'lucide-react';
 
 // Import GitLab connection for unified repository access
-import GitLabConnection from '~/components/@settings/tabs/connections/GitlabConnection';
+import GitLabConnection from '~/components/@settings/tabs/connections/gitlab/GitLabConnection';
 
 const IGNORE_PATTERNS = [
   'node_modules/**',

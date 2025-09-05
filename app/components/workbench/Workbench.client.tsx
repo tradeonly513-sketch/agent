@@ -22,7 +22,7 @@ import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 import { PushToGitHubDialog } from '~/components/@settings/tabs/connections/components/PushToGitHubDialog';
-import { PushToGitLabDialog } from '~/components/@settings/tabs/connections/components/PushToGitLabDialog';
+import { PushToGitLabDialog } from '~/components/@settings/tabs/connections/gitlab/PushToGitLabDialog';
 
 import { usePreviewStore } from '~/lib/stores/previews';
 import { chatStore } from '~/lib/stores/chat';
@@ -551,9 +551,9 @@ export const Workbench = memo(
                   isPrivate,
                 );
 
-                if (updateChatMestaData && !metadata?.gitUrl) {
-                  updateChatMestaData({
-                    ...(metadata || {}),
+                if (_updateChatMestaData && !_metadata?.gitUrl) {
+                  _updateChatMestaData({
+                    ...(_metadata || {}),
                     gitUrl: repoUrl,
                   });
                 }
@@ -582,9 +582,9 @@ export const Workbench = memo(
                   branchName,
                 );
 
-                if (updateChatMestaData && !metadata?.gitUrl) {
-                  updateChatMestaData({
-                    ...(metadata || {}),
+                if (_updateChatMestaData && !_metadata?.gitUrl) {
+                  _updateChatMestaData({
+                    ...(_metadata || {}),
                     gitUrl: repoUrl,
                   });
                 }
@@ -601,7 +601,6 @@ export const Workbench = memo(
     );
   },
 );
-
 
 // View component for rendering content with motion transitions
 interface ViewProps extends HTMLMotionProps<'div'> {

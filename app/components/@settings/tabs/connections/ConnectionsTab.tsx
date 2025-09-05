@@ -7,7 +7,7 @@ import VercelConnection from './VercelConnection';
 
 // Use React.lazy for dynamic imports
 const GitHubConnection = React.lazy(() => import('./GithubConnection'));
-const GitlabConnection = React.lazy(() => import('./GitlabConnection'));
+const GitlabConnection = React.lazy(() => import('./gitlab/GitLabConnection'));
 const NetlifyConnection = React.lazy(() => import('./NetlifyConnection'));
 
 // Loading fallback component
