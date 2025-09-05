@@ -72,6 +72,53 @@ async function githubStatsLoader({ request, context }: { request: Request; conte
       }
     }
 
+    // Fetch branch counts for repositories (limit to first 50 repos to avoid rate limits)
+    const reposWithBranches = await Promise.allSettled(
+      allRepos.slice(0, 50).map(async (repo) => {
+        try {
+          const branchesResponse = await fetch(`https://api.github.com/repos/${repo.full_name}/branches?per_page=1`, {
+            headers: {
+              Accept: 'application/vnd.github.v3+json',
+              Authorization: `Bearer ${githubToken}`,
+              'User-Agent': 'bolt.diy-app',
+            },
+          });
+
+          if (branchesResponse.ok) {
+            const linkHeader = branchesResponse.headers.get('Link');
+            let branchesCount = 1; // At least 1 branch (default)
+
+            if (linkHeader) {
+              const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+
+              if (match) {
+                branchesCount = parseInt(match[1], 10);
+              }
+            }
+
+            return {
+              ...repo,
+              branches_count: branchesCount,
+            };
+          }
+
+          return repo;
+        } catch (error) {
+          console.warn(`Failed to fetch branches for ${repo.full_name}:`, error);
+          return repo;
+        }
+      }),
+    );
+
+    // Update repositories with branch information where available
+    allRepos = allRepos.map((repo, index) => {
+      if (index < reposWithBranches.length && reposWithBranches[index].status === 'fulfilled') {
+        return reposWithBranches[index].value;
+      }
+
+      return repo;
+    });
+
     // Calculate comprehensive stats
     const now = new Date();
     const publicRepos = allRepos.filter((repo) => !repo.private).length;

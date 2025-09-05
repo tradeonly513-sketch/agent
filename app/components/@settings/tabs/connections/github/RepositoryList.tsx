@@ -5,14 +5,23 @@ import type { GitHubRepoInfo } from '~/types/GitHub';
 
 interface RepositoryListProps {
   repositories: GitHubRepoInfo[];
-  onClone?: (repoUrl: string) => void;
+  onClone?: (repoUrl: string, branch?: string) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  showExtendedMetrics?: boolean;
+  connection?: any;
 }
 
 const MAX_REPOS_PER_PAGE = 20;
 
-export function RepositoryList({ repositories, onClone, onRefresh, isRefreshing }: RepositoryListProps) {
+export function RepositoryList({
+  repositories,
+  onClone,
+  onRefresh,
+  isRefreshing,
+  showExtendedMetrics,
+  connection,
+}: RepositoryListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
@@ -100,7 +109,13 @@ export function RepositoryList({ repositories, onClone, onRefresh, isRefreshing 
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentRepositories.map((repo) => (
-                <RepositoryCard key={repo.id} repo={repo} onClone={onClone} />
+                <RepositoryCard
+                  key={repo.id}
+                  repo={repo}
+                  onClone={onClone}
+                  showExtendedMetrics={showExtendedMetrics}
+                  connection={connection}
+                />
               ))}
             </div>
 

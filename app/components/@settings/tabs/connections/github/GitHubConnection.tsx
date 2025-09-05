@@ -10,7 +10,7 @@ import { StatsDisplay } from './StatsDisplay';
 import { RepositoryList } from './RepositoryList';
 
 interface GitHubConnectionProps {
-  onCloneRepository?: (repoUrl: string) => void;
+  onCloneRepository?: (repoUrl: string, branch?: string) => void;
 }
 
 export default function GitHubConnection({ onCloneRepository }: GitHubConnectionProps = {}) {
@@ -51,9 +51,11 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
     toast.info('Token type changes are managed in the main GitHub settings');
   };
 
-  const handleCloneRepository = (repoUrl: string) => {
+  const handleCloneRepository = (repoUrl: string, branch?: string) => {
+    console.log('GitHubConnection handleCloneRepository called with:', { repoUrl, branch });
+
     if (onCloneRepository) {
-      onCloneRepository(repoUrl);
+      onCloneRepository(repoUrl, branch);
     } else {
       window.open(repoUrl, '_blank');
     }
@@ -260,6 +262,8 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
                 onClone={handleCloneRepository}
                 onRefresh={handleRefreshStats}
                 isRefreshing={isLoading}
+                showExtendedMetrics={true}
+                connection={connection}
               />
             </div>
           </CollapsibleContent>

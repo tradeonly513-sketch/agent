@@ -1,19 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { GitHubRepoInfo } from '~/types/GitHub';
+import { BranchSelectionDialog } from './BranchSelectionDialog';
 
 interface RepositoryCardProps {
   repo: GitHubRepoInfo;
-  onClone?: (repoUrl: string) => void;
+  onClone?: (repoUrl: string, branch?: string) => void;
+  showExtendedMetrics?: boolean;
+  connection?: any;
 }
 
-export function RepositoryCard({ repo, onClone }: RepositoryCardProps) {
+export function RepositoryCard({ repo, onClone, showExtendedMetrics, connection }: RepositoryCardProps) {
+  const [isBranchDialogOpen, setIsBranchDialogOpen] = useState(false);
+
+  const handleClone = (repoUrl: string, branch: string) => {
+    if (onClone) {
+      onClone(repoUrl, branch);
+    }
+  };
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate to GitHub if clicking on buttons or other interactive elements
+    const target = e.target as HTMLElement;
+
+    if (target.closest('button') || target.closest('select') || target.closest('input')) {
+      return;
+    }
+
+    window.open(repo.html_url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
-    <a
-      key={repo.name}
-      href={repo.html_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group block p-4 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive transition-all duration-200"
+    <div
+      className="group block p-4 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive transition-all duration-200 cursor-pointer"
+      onClick={handleCardClick}
     >
       <div className="space-y-3">
         <div className="flex items-start justify-between">
@@ -73,6 +91,24 @@ export function RepositoryCard({ repo, onClone }: RepositoryCardProps) {
             <div className="i-ph:git-branch w-3.5 h-3.5" />
             {repo.default_branch}
           </span>
+          {showExtendedMetrics && (repo as any).branches_count && (
+            <span className="flex items-center gap-1" title="Total Branches">
+              <div className="i-ph:git-fork w-3.5 h-3.5" />
+              {(repo as any).branches_count}
+            </span>
+          )}
+          {showExtendedMetrics && (repo as any).contributors_count && (
+            <span className="flex items-center gap-1" title="Contributors">
+              <div className="i-ph:users w-3.5 h-3.5" />
+              {(repo as any).contributors_count}
+            </span>
+          )}
+          {showExtendedMetrics && (repo as any).issues_count !== undefined && (
+            <span className="flex items-center gap-1" title="Open Issues">
+              <div className="i-ph:circle w-3.5 h-3.5" />
+              {(repo as any).issues_count}
+            </span>
+          )}
           <span className="flex items-center gap-1" title="Last Updated">
             <div className="i-ph:clock w-3.5 h-3.5" />
             {new Date(repo.updated_at).toLocaleDateString(undefined, {
@@ -85,11 +121,8 @@ export function RepositoryCard({ repo, onClone }: RepositoryCardProps) {
             {onClone && (
               <button
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
-
-                  const cloneUrl = `https://github.com/${repo.full_name}.git`;
-                  onClone(cloneUrl);
+                  setIsBranchDialogOpen(true);
                 }}
                 className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors"
                 title="Clone repository"
@@ -98,13 +131,29 @@ export function RepositoryCard({ repo, onClone }: RepositoryCardProps) {
                 Clone
               </button>
             )}
-            <span className="flex items-center gap-1 group-hover:text-bolt-elements-item-contentAccent transition-colors">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(repo.html_url, '_blank', 'noopener,noreferrer');
+              }}
+              className="flex items-center gap-1 hover:text-bolt-elements-item-contentAccent transition-colors"
+              title="View on GitHub"
+            >
               <div className="i-ph:arrow-square-out w-3.5 h-3.5" />
               View
-            </span>
+            </button>
           </div>
         </div>
       </div>
-    </a>
+
+      {/* Branch Selection Dialog */}
+      <BranchSelectionDialog
+        isOpen={isBranchDialogOpen}
+        onClose={() => setIsBranchDialogOpen(false)}
+        repository={repo}
+        onClone={handleClone}
+        connection={connection}
+      />
+    </div>
   );
 }
