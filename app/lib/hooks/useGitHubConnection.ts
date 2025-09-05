@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
 import type { GitHubUserResponse, GitHubConnection } from '~/types/GitHub';
 import { useGitHubAPI } from './useGitHubAPI';
-import { githubConnection, isConnecting, updateGitHubConnection } from '../stores/github';
+import { githubConnection, isConnecting, updateGitHubConnection } from '~/lib/stores/github';
 
 export interface ConnectionState {
   isConnected: boolean;
@@ -31,7 +31,7 @@ export function useGitHubConnection(): UseGitHubConnectionReturn {
   const [isLoading, setIsLoading] = useState(true);
 
   // Create API instance - will update when connection changes
-  const githubAPI = useGitHubAPI(
+  useGitHubAPI(
     connection?.token
       ? { token: connection.token, tokenType: connection.tokenType }
       : { token: '', tokenType: 'classic' },

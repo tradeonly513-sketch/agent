@@ -59,6 +59,13 @@ class GitHubCache {
 class GitHubApiService {
   private _cache = new GitHubCache();
   private _baseUrl = 'https://api.github.com';
+  private _token?: string;
+  private _tokenType?: 'classic' | 'fine-grained';
+
+  constructor(options?: { token?: string; tokenType?: 'classic' | 'fine-grained' }) {
+    this._token = options?.token;
+    this._tokenType = options?.tokenType;
+  }
 
   private async _makeRequest<T>(
     endpoint: string,
@@ -333,6 +340,24 @@ class GitHubApiService {
     this._cache.delete(`user:${keyPrefix}`);
     this._cache.delete(`repos:${keyPrefix}`);
   }
+
+  // Alias methods for compatibility with existing hook usage
+  async generateComprehensiveStats(_user: any): Promise<GitHubStats> {
+    if (!this._token) {
+      throw new Error('GitHub token not provided');
+    }
+
+    return this.fetchStats(this._token, this._tokenType);
+  }
+
+  async getAllUserRepositories(): Promise<GitHubRepoInfo[]> {
+    if (!this._token) {
+      throw new Error('GitHub token not provided');
+    }
+
+    return this.fetchRepositories(this._token, this._tokenType);
+  }
 }
 
 export const gitHubApiService = new GitHubApiService();
+export { GitHubApiService };

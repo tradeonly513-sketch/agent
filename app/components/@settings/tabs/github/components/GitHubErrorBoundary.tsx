@@ -82,13 +82,9 @@ export class GitHubErrorBoundary extends Component<Props, State> {
 }
 
 // Higher-order component for wrapping components with error boundary
-export function withGitHubErrorBoundary<P extends object>(Component: React.ComponentType<P>) {
+export function withGitHubErrorBoundary<P extends object>(component: React.ComponentType<P>) {
   return function WrappedComponent(props: P) {
-    return (
-      <GitHubErrorBoundary>
-        <Component {...props} />
-      </GitHubErrorBoundary>
-    );
+    return <GitHubErrorBoundary>{React.createElement(component, props)}</GitHubErrorBoundary>;
   };
 }
 

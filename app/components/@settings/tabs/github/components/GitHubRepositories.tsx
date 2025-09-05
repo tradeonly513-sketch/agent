@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-import { Button } from '~/components/ui/Button';
-import { classNames } from '~/utils/classNames';
+import React from 'react';
 import type { GitHubRepoInfo } from '~/types/GitHub';
 
 interface GitHubRepositoriesProps {

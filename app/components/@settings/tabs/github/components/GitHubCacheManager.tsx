@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
-import { Database, Trash2, RefreshCw, Clock, HardDrive, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Database, Trash2, RefreshCw, Clock, HardDrive, CheckCircle } from 'lucide-react';
 
 interface CacheEntry {
   key: string;
@@ -26,8 +26,8 @@ interface GitHubCacheManagerProps {
 
 // Cache management utilities
 class CacheManagerService {
-  private static readonly CACHE_PREFIX = 'github_';
-  private static readonly CACHE_KEYS = [
+  private static readonly _cachePrefix = 'github_';
+  private static readonly _cacheKeys = [
     'github_connection',
     'github_stats_cache',
     'github_repositories_cache',
@@ -38,7 +38,7 @@ class CacheManagerService {
   static getCacheEntries(): CacheEntry[] {
     const entries: CacheEntry[] = [];
 
-    for (const key of this.CACHE_KEYS) {
+    for (const key of this._cacheKeys) {
       try {
         const data = localStorage.getItem(key);
 
@@ -84,7 +84,7 @@ class CacheManagerService {
   }
 
   static clearCache(keys?: string[]): void {
-    const keysToRemove = keys || this.CACHE_KEYS;
+    const keysToRemove = keys || this._cacheKeys;
 
     for (const key of keysToRemove) {
       localStorage.removeItem(key);

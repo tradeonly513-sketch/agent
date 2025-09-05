@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGitHubConnection, useGitHubStats } from '~/lib/hooks';
-import {
-  LoadingState,
-  ErrorState,
-  GitHubConnectionRequired,
-  ConnectionTestIndicator,
-  RepositoryCard,
-} from './components/shared';
+import { LoadingState, ErrorState, ConnectionTestIndicator, RepositoryCard } from './components/shared';
 import { GitHubConnection } from './components/GitHubConnection';
 import { GitHubUserProfile } from './components/GitHubUserProfile';
 import { GitHubStats } from './components/GitHubStats';

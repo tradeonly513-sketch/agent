@@ -65,7 +65,7 @@ export function PushToGitHubDialogRefactored({ isOpen, onClose, onPush }: PushTo
     }
 
     try {
-      const url = await pushToRepository({
+      await pushToRepository({
         repoName: repoName.trim(),
         isPrivate,
         description: description.trim() || undefined,
@@ -75,7 +75,7 @@ export function PushToGitHubDialogRefactored({ isOpen, onClose, onPush }: PushTo
       if (onPush) {
         await onPush(repoName, connection?.user?.login, connection?.token, isPrivate);
       }
-    } catch (error) {
+    } catch {
       // Error handling is done in the hook
     }
   };
@@ -88,7 +88,7 @@ export function PushToGitHubDialogRefactored({ isOpen, onClose, onPush }: PushTo
       if (onPush) {
         await onPush(repo.name, connection?.user?.login, connection?.token, repo.private);
       }
-    } catch (error) {
+    } catch {
       // Error handling is done in the hook
     }
   };

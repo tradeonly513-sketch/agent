@@ -132,26 +132,26 @@ export function useGitHubAPI(config: GitHubAPIConfig): UseGitHubAPIReturn {
 
   const getUserRepos = useCallback(
     async (options: { per_page?: number; page?: number } = {}): Promise<GitHubRepoInfo[]> => {
-      const { per_page = 100, page = 1 } = options;
-      return makeRequest<GitHubRepoInfo[]>(`/user/repos?per_page=${per_page}&page=${page}&sort=updated`);
+      const { per_page: perPage = 100, page = 1 } = options;
+      return makeRequest<GitHubRepoInfo[]>(`/user/repos?per_page=${perPage}&page=${page}&sort=updated`);
     },
     [makeRequest],
   );
 
   const getReposByUser = useCallback(
     async (username: string, options: { per_page?: number; page?: number } = {}): Promise<GitHubRepoInfo[]> => {
-      const { per_page = 100, page = 1 } = options;
-      return makeRequest<GitHubRepoInfo[]>(`/users/${username}/repos?per_page=${per_page}&page=${page}&sort=updated`);
+      const { per_page: perPage = 100, page = 1 } = options;
+      return makeRequest<GitHubRepoInfo[]>(`/users/${username}/repos?per_page=${perPage}&page=${page}&sort=updated`);
     },
     [makeRequest],
   );
 
   const searchRepositories = useCallback(
     async (query: string, options: { per_page?: number; page?: number } = {}): Promise<GitHubRepoInfo[]> => {
-      const { per_page = 30, page = 1 } = options;
+      const { per_page: perPage = 30, page = 1 } = options;
       const encodedQuery = encodeURIComponent(query);
       const response = await makeRequest<{ items: GitHubRepoInfo[] }>(
-        `/search/repositories?q=${encodedQuery}&per_page=${per_page}&page=${page}&sort=updated`,
+        `/search/repositories?q=${encodedQuery}&per_page=${perPage}&page=${page}&sort=updated`,
       );
 
       return response.items;
@@ -182,8 +182,8 @@ export function useGitHubAPI(config: GitHubAPIConfig): UseGitHubAPIReturn {
 
   const getUserEvents = useCallback(
     async (username: string, options: { per_page?: number } = {}): Promise<GitHubEvent[]> => {
-      const { per_page = 10 } = options;
-      return makeRequest<GitHubEvent[]>(`/users/${username}/events?per_page=${per_page}`);
+      const { per_page: perPage = 10 } = options;
+      return makeRequest<GitHubEvent[]>(`/users/${username}/events?per_page=${perPage}`);
     },
     [makeRequest],
   );

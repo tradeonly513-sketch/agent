@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
 import { useGitHubConnection } from '~/lib/hooks';
-import type { GitHubConnection as GitHubConnectionType } from '~/types/GitHub';
 
 interface ConnectionTestResult {
   status: 'success' | 'error' | 'testing';
@@ -17,7 +16,7 @@ interface GitHubConnectionProps {
 }
 
 export function GitHubConnection({ connectionTest, onTestConnection }: GitHubConnectionProps) {
-  const { connection, isConnected, isLoading, isConnecting, connect, disconnect, error } = useGitHubConnection();
+  const { isConnected, isLoading, isConnecting, connect, disconnect, error } = useGitHubConnection();
 
   const [token, setToken] = React.useState('');
   const [tokenType, setTokenType] = React.useState<'classic' | 'fine-grained'>('classic');
@@ -32,7 +31,7 @@ export function GitHubConnection({ connectionTest, onTestConnection }: GitHubCon
     try {
       await connect(token, tokenType);
       setToken(''); // Clear token on successful connection
-    } catch (error) {
+    } catch {
       // Error handling is done in the hook
     }
   };

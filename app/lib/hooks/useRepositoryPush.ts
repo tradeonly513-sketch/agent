@@ -3,7 +3,6 @@ import { toast } from 'react-toastify';
 import type { GitHubRepoInfo, GitHubConnection } from '~/types/GitHub';
 import { useGitHubAPI } from './useGitHubAPI';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { formatSize } from '~/utils/formatSize';
 
 export interface RepositoryPushOptions {
   repoName: string;

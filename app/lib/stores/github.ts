@@ -100,6 +100,8 @@ export async function fetchGitHubStatsViaAPI() {
         privateRepos: repos.filter((r: any) => r.private).length,
         stars: repos.reduce((sum: number, r: any) => sum + (r.stargazers_count || 0), 0),
         forks: repos.reduce((sum: number, r: any) => sum + (r.forks_count || 0), 0),
+        totalStars: repos.reduce((sum: number, r: any) => sum + (r.stargazers_count || 0), 0),
+        totalForks: repos.reduce((sum: number, r: any) => sum + (r.forks_count || 0), 0),
         followers: 0,
         publicGists: 0,
         privateGists: 0,
@@ -110,8 +112,6 @@ export async function fetchGitHubStatsViaAPI() {
         totalIssues: 0,
         totalPullRequests: 0,
         mostUsedLanguages: [],
-        recentCommits: 0,
-        accountAge: 0,
       },
     });
 

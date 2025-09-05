@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
 import { Button } from '~/components/ui/Button';
-import {
-  githubConnectionAtom,
-  githubConnectionStore,
-  isGitHubConnected,
-  isGitHubConnecting,
-  isGitHubLoadingStats,
-} from '~/lib/stores/githubConnection';
+import { useGitHubConnection } from '~/lib/hooks/useGitHubConnection';
 import { AuthDialog } from './AuthDialog';
 import { StatsDisplay } from './StatsDisplay';
 import { RepositoryList } from './RepositoryList';
@@ -21,10 +14,7 @@ interface GitHubConnectionProps {
 }
 
 export default function GitHubConnection({ onCloneRepository }: GitHubConnectionProps = {}) {
-  const connection = useStore(githubConnectionAtom);
-  const isConnected = useStore(isGitHubConnected);
-  const isConnecting = useStore(isGitHubConnecting);
-  const isLoadingStats = useStore(isGitHubLoadingStats);
+  const { connection, isConnected, isConnecting, isLoading, testConnection, disconnect } = useGitHubConnection();
 
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
@@ -35,7 +25,7 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
   };
 
   const handleDisconnect = () => {
-    githubConnectionStore.disconnect();
+    disconnect();
     setIsStatsExpanded(false);
     setIsReposExpanded(false);
     toast.success('Disconnected from GitHub');
@@ -43,15 +33,22 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
 
   const handleRefreshStats = async () => {
     try {
-      await githubConnectionStore.fetchStats();
-      toast.success('GitHub stats refreshed');
+      // For now, we'll just test the connection as a refresh
+      const isValid = await testConnection();
+
+      if (isValid) {
+        toast.success('GitHub connection verified');
+      } else {
+        toast.error('GitHub connection test failed');
+      }
     } catch (error) {
-      toast.error(`Failed to refresh stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Failed to refresh connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  const handleTokenTypeChange = (tokenType: 'classic' | 'fine-grained') => {
-    githubConnectionStore.updateTokenType(tokenType);
+  const handleTokenTypeChange = (_tokenType: 'classic' | 'fine-grained') => {
+    // Token type changes are not currently supported in the unified connection system
+    toast.info('Token type changes are managed in the main GitHub settings');
   };
 
   const handleCloneRepository = (repoUrl: string) => {
@@ -74,7 +71,7 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
             <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">GitHub</h3>
             <p className="text-sm text-bolt-elements-textSecondary">
               {isConnected
-                ? `Connected as ${connection.user?.login}`
+                ? `Connected as ${connection?.user?.login}`
                 : 'Connect your GitHub account to manage repositories'}
             </p>
           </div>
@@ -85,12 +82,12 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
             <>
               <Button
                 onClick={handleRefreshStats}
-                disabled={isLoadingStats}
+                disabled={isLoading}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
               >
-                {isLoadingStats ? (
+                {isLoading ? (
                   <>
                     <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
                     Refreshing...
@@ -149,7 +146,7 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
             {isConnected ? 'Connected' : 'Not Connected'}
           </span>
 
-          {connection.rateLimit && (
+          {connection?.rateLimit && (
             <span className="text-xs text-bolt-elements-textSecondary ml-auto">
               Rate limit: {connection.rateLimit.remaining}/{connection.rateLimit.limit}
             </span>
@@ -166,7 +163,7 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
                   <input
                     type="radio"
                     value={type}
-                    checked={connection.tokenType === type}
+                    checked={connection?.tokenType === type}
                     onChange={() => handleTokenTypeChange(type)}
                     className="mr-2 text-bolt-elements-item-contentAccent focus:ring-bolt-elements-item-contentAccent"
                   />
@@ -181,7 +178,7 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
       </div>
 
       {/* User Profile */}
-      {isConnected && connection.user && (
+      {isConnected && connection?.user && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -189,22 +186,22 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
         >
           <div className="flex items-center gap-4">
             <img
-              src={connection.user.avatar_url}
-              alt={connection.user.login}
+              src={connection?.user.avatar_url}
+              alt={connection?.user.login}
               className="w-12 h-12 rounded-full border-2 border-bolt-elements-item-contentAccent"
             />
             <div className="flex-1">
               <h4 className="text-sm font-medium text-bolt-elements-textPrimary">
-                {connection.user.name || connection.user.login}
+                {connection?.user.name || connection?.user.login}
               </h4>
-              <p className="text-sm text-bolt-elements-textSecondary">@{connection.user.login}</p>
-              {connection.user.bio && (
+              <p className="text-sm text-bolt-elements-textSecondary">@{connection?.user.login}</p>
+              {connection?.user.bio && (
                 <p className="text-xs text-bolt-elements-textTertiary mt-1 line-clamp-2">{connection.user.bio}</p>
               )}
             </div>
             <div className="text-right">
               <div className="text-sm font-medium text-bolt-elements-textPrimary">
-                {connection.user.public_repos?.toLocaleString() || 0}
+                {connection?.user.public_repos?.toLocaleString() || 0}
               </div>
               <div className="text-xs text-bolt-elements-textSecondary">repositories</div>
             </div>
@@ -213,7 +210,7 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
       )}
 
       {/* Stats Section */}
-      {isConnected && connection.stats && (
+      {isConnected && connection?.stats && (
         <Collapsible open={isStatsExpanded} onOpenChange={setIsStatsExpanded}>
           <CollapsibleTrigger asChild>
             <div className="flex items-center justify-between p-4 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive transition-all duration-200 cursor-pointer">
@@ -231,21 +228,21 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden">
             <div className="mt-4 p-4 rounded-lg bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor">
-              <StatsDisplay stats={connection.stats} onRefresh={handleRefreshStats} isRefreshing={isLoadingStats} />
+              <StatsDisplay stats={connection?.stats} onRefresh={handleRefreshStats} isRefreshing={isLoading} />
             </div>
           </CollapsibleContent>
         </Collapsible>
       )}
 
       {/* Repositories Section */}
-      {isConnected && connection.stats?.repos && connection.stats.repos.length > 0 && (
+      {isConnected && connection?.stats?.repos && connection.stats.repos.length > 0 && (
         <Collapsible open={isReposExpanded} onOpenChange={setIsReposExpanded}>
           <CollapsibleTrigger asChild>
             <div className="flex items-center justify-between p-4 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive transition-all duration-200 cursor-pointer">
               <div className="flex items-center gap-2">
                 <div className="i-ph:git-repository w-4 h-4 text-bolt-elements-item-contentAccent" />
                 <span className="text-sm font-medium text-bolt-elements-textPrimary">
-                  Repositories ({connection.stats.repos.length})
+                  Repositories ({connection?.stats?.repos?.length})
                 </span>
               </div>
               <div
@@ -259,10 +256,10 @@ export default function GitHubConnection({ onCloneRepository }: GitHubConnection
           <CollapsibleContent className="overflow-hidden">
             <div className="mt-4 p-4 rounded-lg bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor">
               <RepositoryList
-                repositories={connection.stats.repos}
+                repositories={connection?.stats?.repos}
                 onClone={handleCloneRepository}
                 onRefresh={handleRefreshStats}
-                isRefreshing={isLoadingStats}
+                isRefreshing={isLoading}
               />
             </div>
           </CollapsibleContent>

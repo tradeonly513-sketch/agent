@@ -28,18 +28,19 @@ export function NewRepositoryForm({
   error,
   className = '',
 }: NewRepositoryFormProps) {
-  const isValidRepoName = (name: string) => {
-    if (!name) {
-      return false;
-    }
-
-    if (name.length < 1 || name.length > 100) {
-      return false;
-    }
-
-    // GitHub repository name validation
-    return /^[a-zA-Z0-9._-]+$/.test(name);
-  };
+  /*
+   * Validation function for future use
+   * const isValidRepoName = (name: string) => {
+   *   if (!name) {
+   *     return false;
+   *   }
+   *   if (name.length < 1 || name.length > 100) {
+   *     return false;
+   *   }
+   *   // GitHub repository name validation
+   *   return /^[a-zA-Z0-9._-]+$/.test(name);
+   * };
+   */
 
   const validateRepoName = (name: string) => {
     if (!name) {

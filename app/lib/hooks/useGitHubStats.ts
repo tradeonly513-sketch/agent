@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import type { GitHubStats, GitHubConnection, GitHubUserResponse } from '~/types/GitHub';
-import { GitHubApiService } from '~/lib/services/GitHubApiService';
+import type { GitHubStats, GitHubConnection } from '~/types/GitHub';
+import { GitHubApiService } from '~/lib/services/githubApiService';
 
 export interface UseGitHubStatsState {
   stats: GitHubStats | null;
@@ -88,12 +88,14 @@ export function useGitHubStats(
         return () => clearTimeout(timeoutId);
       }
     }
+
+    return undefined;
   }, [autoFetch, connection, apiService, state.stats, isStale, isServerSide]);
 
   // Set up refresh interval if provided
   useEffect(() => {
     if (!refreshInterval || !connection) {
-      return;
+      return undefined;
     }
 
     const interval = setInterval(() => {

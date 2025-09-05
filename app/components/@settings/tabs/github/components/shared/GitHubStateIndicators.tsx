@@ -166,7 +166,7 @@ interface InformationStateProps {
 export function InformationState({
   title,
   message,
-  icon: Icon = Info,
+  icon = Info,
   onAction,
   actionLabel = 'Got it',
   size = 'md',
@@ -186,7 +186,7 @@ export function InformationState({
 
   return (
     <div className={classNames('flex flex-col items-center justify-center py-8 text-center', className)}>
-      <Icon className={classNames('text-blue-500 mb-2', sizeClasses[size])} />
+      {React.createElement(icon, { className: classNames('text-blue-500 mb-2', sizeClasses[size]) })}
       <h3 className={classNames('font-medium text-bolt-elements-textPrimary mb-1', textSizeClasses[size])}>{title}</h3>
       <p className={classNames('text-bolt-elements-textSecondary mb-4', textSizeClasses[size])}>{message}</p>
       {onAction && (
