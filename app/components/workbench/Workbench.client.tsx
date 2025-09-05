@@ -517,7 +517,7 @@ export const Workbench = memo(
                 console.log('Dialog onPush called with isPrivate =', isPrivate);
 
                 const commitMessage = prompt('Please enter a commit message:', 'Initial commit') || 'Initial commit';
-                const repoUrl = await workbenchStore.pushToGitHub(repoName, commitMessage, username, token, isPrivate);
+                const repoUrl = await workbenchStore.pushToRepository('github', repoName, commitMessage, username, token, isPrivate);
 
                 if (updateChatMestaData && !metadata?.gitUrl) {
                   updateChatMestaData({
