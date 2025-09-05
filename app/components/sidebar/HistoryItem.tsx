@@ -157,8 +157,8 @@ export function HistoryItem({
                   if (onDelete) {
                     // Create a synthetic event for onDelete
                     const syntheticEvent = {
-                      preventDefault: () => {},
-                      stopPropagation: () => {},
+                      preventDefault: () => undefined,
+                      stopPropagation: () => undefined,
                     } as React.UIEvent;
                     onDelete(syntheticEvent);
                   }

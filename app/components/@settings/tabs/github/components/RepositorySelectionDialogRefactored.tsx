@@ -246,7 +246,7 @@ export function RepositorySelectionDialogRefactored({ isOpen, onClose, onSelect 
                           filteredRepositories={filteredRepositories}
                           isLoading={activeTab === 'my-repos' ? isLoadingRepos : isSearching}
                           onRepositorySelect={handleRepositorySelect}
-                          onSearch={() => {}} // Search is handled above
+                          onSearch={() => undefined} // Search is handled above
                         />
                       )}
 

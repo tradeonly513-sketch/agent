@@ -1,6 +1,106 @@
 import { json, type ActionFunction } from '@remix-run/cloudflare';
 import type { SupabaseProject, ProjectStats } from '~/types/supabase';
 
+// Helper function to execute database queries via Supabase Management API
+async function executeDatabaseQuery(projectId: string, token: string, query: string): Promise<any> {
+  try {
+    const response = await fetch(`https://api.supabase.com/v1/projects/${projectId}/database/query`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      return result;
+    } else {
+      console.warn(`Database query failed for project ${projectId}:`, response.status, response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.warn(`Database query error for project ${projectId}:`, error);
+    return null;
+  }
+}
+
+// Helper function to fetch database statistics
+async function fetchDatabaseStats(
+  projectId: string,
+  token: string,
+): Promise<{
+  tables: number;
+  views: number;
+  functions: number;
+  size_mb: number;
+}> {
+  const stats = {
+    tables: 0,
+    views: 0,
+    functions: 0,
+    size_mb: 0,
+  };
+
+  try {
+    // Fetch table count
+    const tableQuery = `
+      SELECT count(*) as count
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
+    `;
+
+    const tableResult = await executeDatabaseQuery(projectId, token, tableQuery);
+
+    if (tableResult && tableResult.length > 0) {
+      stats.tables = parseInt(tableResult[0].count) || 0;
+    }
+
+    // Fetch view count
+    const viewQuery = `
+      SELECT count(*) as count
+      FROM information_schema.views
+      WHERE table_schema = 'public'
+    `;
+
+    const viewResult = await executeDatabaseQuery(projectId, token, viewQuery);
+
+    if (viewResult && viewResult.length > 0) {
+      stats.views = parseInt(viewResult[0].count) || 0;
+    }
+
+    // Fetch function count
+    const functionQuery = `
+      SELECT count(*) as count
+      FROM information_schema.routines
+      WHERE routine_schema = 'public'
+    `;
+
+    const functionResult = await executeDatabaseQuery(projectId, token, functionQuery);
+
+    if (functionResult && functionResult.length > 0) {
+      stats.functions = parseInt(functionResult[0].count) || 0;
+    }
+
+    // Fetch database size in MB
+    const sizeQuery = `
+      SELECT (pg_database_size(current_database()) / 1024 / 1024) as size_mb
+    `;
+
+    const sizeResult = await executeDatabaseQuery(projectId, token, sizeQuery);
+
+    if (sizeResult && sizeResult.length > 0) {
+      stats.size_mb = parseInt(sizeResult[0].size_mb) || 0;
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch database stats for project ${projectId}:`, error);
+  }
+
+  return stats;
+}
+
 // Helper function to fetch detailed project stats
 async function fetchProjectStats(projectId: string, token: string): Promise<ProjectStats | null> {
   try {
@@ -60,11 +160,17 @@ async function fetchProjectStats(projectId: string, token: string): Promise<Proj
       console.warn(`Failed to fetch functions stats for project ${projectId}:`, error);
     }
 
-    /*
-     * Note: Database stats (tables, views, functions, size) would require direct database access
-     * For now, we'll leave these as 0 and could be enhanced later with database queries
-     * or when Supabase provides these stats via their Management API
-     */
+    // Fetch database statistics using Management API database query endpoint
+    try {
+      const dbStats = await fetchDatabaseStats(projectId, token);
+      stats.database.tables = dbStats.tables;
+      stats.database.views = dbStats.views;
+      stats.database.functions = dbStats.functions;
+      stats.database.size_mb = dbStats.size_mb;
+      stats.database.size_bytes = dbStats.size_mb * 1024 * 1024; // Convert MB to bytes
+    } catch (error) {
+      console.warn(`Failed to fetch database stats for project ${projectId}:`, error);
+    }
 
     return stats;
   } catch (error) {
