@@ -21,7 +21,7 @@ mac:
   icon: assets/icons/icon.icns
   target:
     - dmg
-  identity: "Xinzhe Wang (RDQSC33B2X)"
+  identity: null
   category: "public.app-category.developer-tools"
   type: "distribution"
   hardenedRuntime: true
@@ -33,7 +33,6 @@ win:
   icon: assets/icons/icon.ico
   target:
     - nsis
-  signDlls: false
   artifactName: ${name}-${version}-${os}-${arch}.${ext}
 
 linux:

@@ -38,6 +38,8 @@ export interface GitHubRepoInfo {
   updated_at: string;
   language: string;
   languages_url: string;
+  private?: boolean;
+  topics?: string[];
 }
 
 export interface GitHubContent {

@@ -4,7 +4,6 @@ import { ActionRunner } from '~/lib/runtime/action-runner';
 import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
 import { webcontainer } from '~/lib/webcontainer';
 import type { ITerminal } from '~/types/terminal';
-import type { BoltShell } from '~/utils/shell';
 import { unreachable } from '~/utils/unreachable';
 import { EditorStore } from './editor';
 import { FilesStore, type FileMap } from './files';
@@ -19,7 +18,6 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
-import type { PreviewInfo } from '~/lib/stores/previews';
 
 const { saveAs } = fileSaver;
 
@@ -29,12 +27,6 @@ export interface ArtifactState {
   type?: string;
   closed: boolean;
   runner: ActionRunner;
-}
-
-interface GitLabProject {
-  id: number;
-  default_branch: string;
-  web_url: string;
 }
 
 export type ArtifactUpdateState = Pick<ArtifactState, 'title' | 'closed'>;
@@ -65,7 +57,6 @@ export class WorkbenchStore {
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
   #globalExecutionQueue = Promise.resolve();
-
   constructor() {
     if (import.meta.hot) {
       import.meta.hot.data.artifacts = this.artifacts;
@@ -88,15 +79,15 @@ export class WorkbenchStore {
     }
   }
 
-  addToExecutionQueue(callback: () => Promise<void>): void {
+  addToExecutionQueue(callback: () => Promise<void>) {
     this.#globalExecutionQueue = this.#globalExecutionQueue.then(() => callback());
   }
 
-  get previews(): ReadableAtom<PreviewInfo[]> {
+  get previews() {
     return this.#previewsStore.previews;
   }
 
-  get files(): MapStore<FileMap> {
+  get files() {
     return this.#filesStore.files;
   }
 
@@ -116,55 +107,55 @@ export class WorkbenchStore {
     return this.#filesStore.filesCount;
   }
 
-  get showTerminal(): ReadableAtom<boolean> {
+  get showTerminal() {
     return this.#terminalStore.showTerminal;
   }
-
-  get boltTerminal(): BoltShell | undefined {
-    return this.#terminalStore.boltTerminal as unknown as BoltShell;
+  get boltTerminal() {
+    return this.#terminalStore.boltTerminal;
   }
-
-  get alert(): ReadableAtom<ActionAlert | undefined> {
+  get alert() {
     return this.actionAlert;
   }
-
-  clearAlert(): void {
+  clearAlert() {
     this.actionAlert.set(undefined);
   }
 
-  get SupabaseAlert(): ReadableAtom<SupabaseAlert | undefined> {
+  get SupabaseAlert() {
     return this.supabaseAlert;
   }
 
-  clearSupabaseAlert(): void {
+  clearSupabaseAlert() {
     this.supabaseAlert.set(undefined);
   }
 
-  get DeployAlert(): ReadableAtom<DeployAlert | undefined> {
+  get DeployAlert() {
     return this.deployAlert;
   }
 
-  clearDeployAlert(): void {
+  clearDeployAlert() {
     this.deployAlert.set(undefined);
   }
 
-  toggleTerminal(value?: boolean): void {
+  toggleTerminal(value?: boolean) {
     this.#terminalStore.toggleTerminal(value);
   }
 
-  attachTerminal(terminal: ITerminal): void {
+  attachTerminal(terminal: ITerminal) {
     this.#terminalStore.attachTerminal(terminal);
   }
-
-  attachBoltTerminal(terminal: ITerminal): void {
+  attachBoltTerminal(terminal: ITerminal) {
     this.#terminalStore.attachBoltTerminal(terminal);
   }
 
-  onTerminalResize(cols: number, rows: number): void {
+  detachTerminal(terminal: ITerminal) {
+    this.#terminalStore.detachTerminal(terminal);
+  }
+
+  onTerminalResize(cols: number, rows: number) {
     this.#terminalStore.onTerminalResize(cols, rows);
   }
 
-  setDocuments(files: FileMap): void {
+  setDocuments(files: FileMap) {
     this.#editorStore.setDocuments(files);
 
     if (this.#filesStore.filesCount > 0 && this.currentDocument.get() === undefined) {
@@ -178,11 +169,11 @@ export class WorkbenchStore {
     }
   }
 
-  setShowWorkbench(show: boolean): void {
+  setShowWorkbench(show: boolean) {
     this.showWorkbench.set(show);
   }
 
-  setCurrentDocumentContent(newContent: string): void {
+  setCurrentDocumentContent(newContent: string) {
     const filePath = this.currentDocument.get()?.filePath;
 
     if (!filePath) {
@@ -215,7 +206,7 @@ export class WorkbenchStore {
     }
   }
 
-  setCurrentDocumentScrollPosition(position: ScrollPosition): void {
+  setCurrentDocumentScrollPosition(position: ScrollPosition) {
     const editorDocument = this.currentDocument.get();
 
     if (!editorDocument) {
@@ -227,17 +218,23 @@ export class WorkbenchStore {
     this.#editorStore.updateScrollPosition(filePath, position);
   }
 
-  setSelectedFile(filePath: string | undefined): void {
+  setSelectedFile(filePath: string | undefined) {
     this.#editorStore.setSelectedFile(filePath);
   }
 
-  async saveFile(filePath: string): Promise<void> {
+  async saveFile(filePath: string) {
     const documents = this.#editorStore.documents.get();
     const document = documents[filePath];
 
     if (document === undefined) {
       return;
     }
+
+    /*
+     * For scoped locks, we would need to implement diff checking here
+     * to determine if the user is modifying existing code or just adding new code
+     * This is a more complex feature that would be implemented in a future update
+     */
 
     await this.#filesStore.saveFile(filePath, document.value);
 
@@ -247,7 +244,7 @@ export class WorkbenchStore {
     this.unsavedFiles.set(newUnsavedFiles);
   }
 
-  async saveCurrentDocument(): Promise<void> {
+  async saveCurrentDocument() {
     const currentDocument = this.currentDocument.get();
 
     if (currentDocument === undefined) {
@@ -257,7 +254,7 @@ export class WorkbenchStore {
     await this.saveFile(currentDocument.filePath);
   }
 
-  resetCurrentDocument(): void {
+  resetCurrentDocument() {
     const currentDocument = this.currentDocument.get();
 
     if (currentDocument === undefined) {
@@ -274,38 +271,79 @@ export class WorkbenchStore {
     this.setCurrentDocumentContent(file.content);
   }
 
-  async saveAllFiles(): Promise<void> {
+  async saveAllFiles() {
     for (const filePath of this.unsavedFiles.get()) {
       await this.saveFile(filePath);
     }
   }
 
-  getFileModifcations(): Map<string, string> {
-    const raw = this.#filesStore.getFileModifications();
-
-    const map = new Map<string, string>();
-
-    if (!raw) {
-      return map;
-    }
-
-    for (const [key, value] of Object.entries(raw)) {
-      map.set(key, value.content); // Only if you want the `content`
-    }
-
-    return map;
+  getFileModifcations() {
+    return this.#filesStore.getFileModifications();
   }
 
-  getModifiedFiles(): string[] {
-    const modified = this.#filesStore.getModifiedFiles();
-    return modified ? Object.keys(modified) : [];
+  getModifiedFiles() {
+    return this.#filesStore.getModifiedFiles();
   }
 
-  resetAllFileModifications(): void {
+  resetAllFileModifications() {
     this.#filesStore.resetFileModifications();
   }
 
-  async createFile(filePath: string, content: string | Uint8Array = ''): Promise<boolean> {
+  /**
+   * Lock a file to prevent edits
+   * @param filePath Path to the file to lock
+   * @returns True if the file was successfully locked
+   */
+  lockFile(filePath: string) {
+    return this.#filesStore.lockFile(filePath);
+  }
+
+  /**
+   * Lock a folder and all its contents to prevent edits
+   * @param folderPath Path to the folder to lock
+   * @returns True if the folder was successfully locked
+   */
+  lockFolder(folderPath: string) {
+    return this.#filesStore.lockFolder(folderPath);
+  }
+
+  /**
+   * Unlock a file to allow edits
+   * @param filePath Path to the file to unlock
+   * @returns True if the file was successfully unlocked
+   */
+  unlockFile(filePath: string) {
+    return this.#filesStore.unlockFile(filePath);
+  }
+
+  /**
+   * Unlock a folder and all its contents to allow edits
+   * @param folderPath Path to the folder to unlock
+   * @returns True if the folder was successfully unlocked
+   */
+  unlockFolder(folderPath: string) {
+    return this.#filesStore.unlockFolder(folderPath);
+  }
+
+  /**
+   * Check if a file is locked
+   * @param filePath Path to the file to check
+   * @returns Object with locked status, lock mode, and what caused the lock
+   */
+  isFileLocked(filePath: string) {
+    return this.#filesStore.isFileLocked(filePath);
+  }
+
+  /**
+   * Check if a folder is locked
+   * @param folderPath Path to the folder to check
+   * @returns Object with locked status, lock mode, and what caused the lock
+   */
+  isFolderLocked(folderPath: string) {
+    return this.#filesStore.isFolderLocked(folderPath);
+  }
+
+  async createFile(filePath: string, content: string | Uint8Array = '') {
     try {
       const success = await this.#filesStore.createFile(filePath, content);
 
@@ -330,7 +368,7 @@ export class WorkbenchStore {
     }
   }
 
-  async createFolder(folderPath: string): Promise<boolean> {
+  async createFolder(folderPath: string) {
     try {
       return await this.#filesStore.createFolder(folderPath);
     } catch (error) {
@@ -339,7 +377,7 @@ export class WorkbenchStore {
     }
   }
 
-  async deleteFile(filePath: string): Promise<boolean> {
+  async deleteFile(filePath: string) {
     try {
       const currentDocument = this.currentDocument.get();
       const isCurrentFile = currentDocument?.filePath === filePath;
@@ -356,7 +394,7 @@ export class WorkbenchStore {
 
         if (isCurrentFile) {
           const files = this.files.get();
-          let nextFile: string | undefined;
+          let nextFile: string | undefined = undefined;
 
           for (const [path, dirent] of Object.entries(files)) {
             if (dirent?.type === 'file') {
@@ -376,7 +414,7 @@ export class WorkbenchStore {
     }
   }
 
-  async deleteFolder(folderPath: string): Promise<boolean> {
+  async deleteFolder(folderPath: string) {
     try {
       const currentDocument = this.currentDocument.get();
       const isInCurrentFolder = currentDocument?.filePath?.startsWith(folderPath + '/');
@@ -399,7 +437,7 @@ export class WorkbenchStore {
 
         if (isInCurrentFolder) {
           const files = this.files.get();
-          let nextFile: string | undefined;
+          let nextFile: string | undefined = undefined;
 
           for (const [path, dirent] of Object.entries(files)) {
             if (dirent?.type === 'file') {
@@ -419,15 +457,15 @@ export class WorkbenchStore {
     }
   }
 
-  abortAllActions(): void {
+  abortAllActions() {
     // TODO: what do we wanna do and how do we wanna recover from this?
   }
 
-  setReloadedMessages(messages: string[]): void {
+  setReloadedMessages(messages: string[]) {
     this.#reloadedMessages = new Set(messages);
   }
 
-  addArtifact({ messageId, title, id, type }: ArtifactCallbackData): void {
+  addArtifact({ messageId, title, id, type }: ArtifactCallbackData) {
     const artifact = this.#getArtifact(messageId);
 
     if (artifact) {
@@ -438,16 +476,6 @@ export class WorkbenchStore {
       this.artifactIdList.push(messageId);
     }
 
-    const getBoltTerminal = (): BoltShell => {
-      const terminal = this.boltTerminal;
-
-      if (!terminal) {
-        throw new Error('boltTerminal is undefined — ActionRunner cannot proceed');
-      }
-
-      return terminal;
-    };
-
     this.artifacts.setKey(messageId, {
       id,
       title,
@@ -455,7 +483,7 @@ export class WorkbenchStore {
       type,
       runner: new ActionRunner(
         webcontainer,
-        getBoltTerminal,
+        () => this.boltTerminal,
         (alert) => {
           if (this.#reloadedMessages.has(messageId)) {
             return;
@@ -481,7 +509,7 @@ export class WorkbenchStore {
     });
   }
 
-  updateArtifact({ messageId }: ArtifactCallbackData, state: Partial<ArtifactUpdateState>): void {
+  updateArtifact({ messageId }: ArtifactCallbackData, state: Partial<ArtifactUpdateState>) {
     const artifact = this.#getArtifact(messageId);
 
     if (!artifact) {
@@ -490,12 +518,12 @@ export class WorkbenchStore {
 
     this.artifacts.setKey(messageId, { ...artifact, ...state });
   }
+  addAction(data: ActionCallbackData) {
+    // this._addAction(data);
 
-  addAction(data: ActionCallbackData): void {
     this.addToExecutionQueue(() => this._addAction(data));
   }
-
-  async _addAction(data: ActionCallbackData): Promise<void> {
+  async _addAction(data: ActionCallbackData) {
     const { messageId } = data;
 
     const artifact = this.#getArtifact(messageId);
@@ -507,15 +535,14 @@ export class WorkbenchStore {
     return artifact.runner.addAction(data);
   }
 
-  runAction(data: ActionCallbackData, isStreaming = false): void {
+  runAction(data: ActionCallbackData, isStreaming: boolean = false) {
     if (isStreaming) {
       this.actionStreamSampler(data, isStreaming);
     } else {
       this.addToExecutionQueue(() => this._runAction(data, isStreaming));
     }
   }
-
-  async _runAction(data: ActionCallbackData, isStreaming = false): Promise<void> {
+  async _runAction(data: ActionCallbackData, isStreaming: boolean = false) {
     const { messageId } = data;
 
     const artifact = this.#getArtifact(messageId);
@@ -534,6 +561,12 @@ export class WorkbenchStore {
       const wc = await webcontainer;
       const fullPath = path.join(wc.workdir, data.action.filePath);
 
+      /*
+       * For scoped locks, we would need to implement diff checking here
+       * to determine if the AI is modifying existing code or just adding new code
+       * This is a more complex feature that would be implemented in a future update
+       */
+
       if (this.selectedFile.value !== fullPath) {
         this.setSelectedFile(fullPath);
       }
@@ -550,6 +583,10 @@ export class WorkbenchStore {
 
       this.#editorStore.updateFile(fullPath, data.action.content);
 
+      if (!isStreaming && data.action.content) {
+        await this.saveFile(fullPath);
+      }
+
       if (!isStreaming) {
         await artifact.runner.runAction(data);
         this.resetAllFileModifications();
@@ -559,16 +596,16 @@ export class WorkbenchStore {
     }
   }
 
-  actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming = false) => {
-    return this._runAction(data, isStreaming);
+  actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming: boolean = false) => {
+    return await this._runAction(data, isStreaming);
   }, 100); // TODO: remove this magic number to have it configurable
 
-  #getArtifact(id: string): ArtifactState | undefined {
+  #getArtifact(id: string) {
     const artifacts = this.artifacts.get();
     return artifacts[id];
   }
 
-  async downloadZip(): Promise<void> {
+  async downloadZip() {
     const zip = new JSZip();
     const files = this.files.get();
 
@@ -606,9 +643,9 @@ export class WorkbenchStore {
     saveAs(content, `${uniqueProjectName}.zip`);
   }
 
-  async syncFiles(targetHandle: FileSystemDirectoryHandle): Promise<string[]> {
+  async syncFiles(targetHandle: FileSystemDirectoryHandle) {
     const files = this.files.get();
-    const syncedFiles: string[] = [];
+    const syncedFiles = [];
 
     for (const [filePath, dirent] of Object.entries(files)) {
       if (dirent?.type === 'file' && !dirent.isBinary) {
@@ -643,9 +680,9 @@ export class WorkbenchStore {
     commitMessage?: string,
     username?: string,
     token?: string,
-    isPrivate = false,
-    branchName = 'main',
-  ): Promise<string> {
+    isPrivate: boolean = false,
+    branchName: string = 'main',
+  ) {
     try {
       const isGitHub = provider === 'github';
       const isGitLab = provider === 'gitlab';
@@ -664,240 +701,8 @@ export class WorkbenchStore {
       }
 
       if (isGitHub) {
+        // Initialize Octokit with the auth token
         const octokit = new Octokit({ auth: authToken });
-        let repo;
-
-        try {
-          const { data } = await octokit.repos.get({ owner, repo: repoName });
-          repo = data;
-
-          if (repo.private !== isPrivate) {
-            await octokit.repos.update({ owner, repo: repoName, private: isPrivate });
-            await new Promise((r) => setTimeout(r, 3000));
-          }
-        } catch (err: any) {
-          if (err.status === 404) {
-            const { data: newRepo } = await octokit.repos.createForAuthenticatedUser({
-              name: repoName,
-              private: isPrivate,
-              auto_init: true,
-            });
-            repo = newRepo;
-            await new Promise((r) => setTimeout(r, 2000));
-          } else {
-            throw err;
-          }
-        }
-
-        let baseRefSha;
-
-        try {
-          const { data: ref } = await octokit.git.getRef({
-            owner: repo.owner.login,
-            repo: repo.name,
-            ref: `heads/${branchName}`,
-          });
-          baseRefSha = ref.object.sha;
-        } catch (err: any) {
-          console.log(err);
-
-          // Branch doesn't exist — create it from default branch
-          const { data: defaultRef } = await octokit.git.getRef({
-            owner: repo.owner.login,
-            repo: repo.name,
-            ref: `heads/${repo.default_branch}`,
-          });
-
-          const { data: newRef } = await octokit.git.createRef({
-            owner: repo.owner.login,
-            repo: repo.name,
-            ref: `refs/heads/${branchName}`,
-            sha: defaultRef.object.sha,
-          });
-
-          baseRefSha = newRef.object.sha;
-        }
-
-        const blobs = await Promise.all(
-          Object.entries(files).map(async ([filePath, dirent]) => {
-            if (dirent?.type === 'file' && dirent.content) {
-              const { data: blob } = await octokit.git.createBlob({
-                owner: repo.owner.login,
-                repo: repo.name,
-                content: Buffer.from(dirent.content).toString('base64'),
-                encoding: 'base64',
-              });
-              return { path: extractRelativePath(filePath), sha: blob.sha };
-            }
-
-            return null;
-          }),
-        );
-
-        const validBlobs = blobs.filter(Boolean) as { path: string; sha: string }[];
-
-        const { data: newTree } = await octokit.git.createTree({
-          owner: repo.owner.login,
-          repo: repo.name,
-          base_tree: baseRefSha,
-          tree: validBlobs.map((b) => ({
-            path: b.path,
-            mode: '100644',
-            type: 'blob',
-            sha: b.sha,
-          })),
-        });
-
-        const { data: newCommit } = await octokit.git.createCommit({
-          owner: repo.owner.login,
-          repo: repo.name,
-          message: commitMessage || 'Initial commit',
-          tree: newTree.sha,
-          parents: [baseRefSha],
-        });
-
-        await octokit.git.updateRef({
-          owner: repo.owner.login,
-          repo: repo.name,
-          ref: `heads/${branchName}`,
-          sha: newCommit.sha,
-          force: true,
-        });
-
-        return repo.html_url;
-      }
-
-      if (isGitLab) {
-        const headers = {
-          'Private-Token': authToken,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        };
-
-        // Check or create repo
-        let repo;
-        const repoUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}`;
-        const res = await fetch(repoUrl, { headers });
-
-        if (!res.ok) {
-          const createRes = await fetch('https://gitlab.com/api/v4/projects', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              name: repoName,
-              visibility: isPrivate ? 'private' : 'public',
-              initialize_with_readme: true,
-            }),
-          });
-
-          if (!createRes.ok) {
-            throw new Error('Failed to create GitLab repository');
-          }
-
-          repo = (await createRes.json()) as GitLabProject;
-          await new Promise((r) => setTimeout(r, 2000));
-        } else {
-          repo = (await res.json()) as GitLabProject;
-        }
-
-        // Check if branch exists
-        const branchRes = await fetch(
-          `https://gitlab.com/api/v4/projects/${repo.id}/repository/branches/${branchName}`,
-          {
-            headers,
-          },
-        );
-
-        if (!branchRes.ok) {
-          // Create branch from default
-          const createBranchRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/repository/branches`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              branch: branchName,
-              ref: repo.default_branch,
-            }),
-          });
-
-          if (!createBranchRes.ok) {
-            throw new Error(`Failed to create branch ${branchName}`);
-          }
-
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-
-        const actions = Object.entries(files).reduce(
-          (acc, [filePath, dirent]) => {
-            if (dirent?.type === 'file' && dirent.content) {
-              acc.push({
-                action: 'create',
-                file_path: extractRelativePath(filePath),
-                content: dirent.content,
-              });
-            }
-
-            return acc;
-          },
-          [] as { action: 'create' | 'update'; file_path: string; content: string }[],
-        );
-
-        for (const action of actions) {
-          const fileCheck = await fetch(
-            `https://gitlab.com/api/v4/projects/${repo.id}/repository/files/${encodeURIComponent(action.file_path)}?ref=${branchName}`,
-            { headers },
-          );
-
-          if (fileCheck.ok) {
-            action.action = 'update';
-          }
-        }
-
-        const commitRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/repository/commits`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            branch: branchName,
-            commit_message: commitMessage || 'Commit multiple files',
-            actions,
-          }),
-        });
-
-        if (!commitRes.ok) {
-          throw new Error('Failed to commit multiple files to GitLab');
-        }
-
-        return repo.web_url;
-      }
-
-      // Should not reach here since we only handle GitHub and GitLab
-      throw new Error(`Unsupported provider: ${provider}`);
-    } catch (error) {
-      console.error('Error pushing to repository:', error);
-      throw error;
-    }
-  }
-
-  async pushToGitHub(
-    repoName: string,
-    commitMessage?: string,
-    githubUsername?: string,
-    ghToken?: string,
-    isPrivate: boolean = false,
-  ) {
-    try {
-      // Use cookies if username and token are not provided
-      const githubToken = ghToken || Cookies.get('githubToken');
-      const owner = githubUsername || Cookies.get('githubUsername');
-
-      if (!githubToken || !owner) {
-        throw new Error('GitHub token or username is not set in cookies or provided.');
-      }
-
-      // Log the isPrivate flag to verify it's being properly passed
-      console.log(`pushToGitHub called with isPrivate=${isPrivate}`);
-
-      // Initialize Octokit with the auth token
-      const octokit = new Octokit({ auth: githubToken });
 
       // Check if the repository already exists before creating it
       let repo: RestEndpointMethodTypes['repos']['get']['response']['data'];
@@ -1061,13 +866,120 @@ export class WorkbenchStore {
         }
       };
 
-      // Execute the push function with retry logic
-      const repoUrl = await pushFilesToRepo();
+        // Execute the push function with retry logic
+        const repoUrl = await pushFilesToRepo();
 
-      // Return the repository URL
-      return repoUrl;
+        // Return the repository URL
+        return repoUrl;
+      }
+
+      if (isGitLab) {
+        const headers = {
+          'Private-Token': authToken,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        };
+
+        // Check or create repo
+        let repo;
+        const repoUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}`;
+
+        const res = await fetch(repoUrl, { headers });
+
+        if (!res.ok) {
+          const createRes = await fetch('https://gitlab.com/api/v4/projects', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              name: repoName,
+              visibility: isPrivate ? 'private' : 'public',
+              initialize_with_readme: true,
+            }),
+          });
+
+          if (!createRes.ok) {
+            throw new Error('Failed to create GitLab repository');
+          }
+
+          repo = (await createRes.json()) as any;
+          await new Promise((r) => setTimeout(r, 2000));
+        } else {
+          repo = (await res.json()) as any;
+        }
+
+        // Check if branch exists
+        const branchRes = await fetch(
+          `https://gitlab.com/api/v4/projects/${repo.id}/repository/branches/${branchName}`,
+          {
+            headers,
+          },
+        );
+
+        if (!branchRes.ok) {
+          // Create branch from default
+          const createBranchRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/repository/branches`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              branch: branchName,
+              ref: repo.default_branch,
+            }),
+          });
+
+          if (!createBranchRes.ok) {
+            throw new Error(`Failed to create branch ${branchName}`);
+          }
+
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+
+        const actions = Object.entries(files).reduce(
+          (acc, [filePath, dirent]) => {
+            if (dirent?.type === 'file' && dirent.content) {
+              acc.push({
+                action: 'create',
+                file_path: extractRelativePath(filePath),
+                content: dirent.content,
+              });
+            }
+
+            return acc;
+          },
+          [] as { action: 'create' | 'update'; file_path: string; content: string }[],
+        );
+
+        for (const action of actions) {
+          const fileCheck = await fetch(
+            `https://gitlab.com/api/v4/projects/${repo.id}/repository/files/${encodeURIComponent(action.file_path)}?ref=${branchName}`,
+            { headers },
+          );
+
+          if (fileCheck.ok) {
+            action.action = 'update';
+          }
+        }
+
+        const commitRes = await fetch(`https://gitlab.com/api/v4/projects/${repo.id}/repository/commits`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            branch: branchName,
+            commit_message: commitMessage || 'Commit multiple files',
+            actions,
+          }),
+        });
+
+        if (!commitRes.ok) {
+          throw new Error('Failed to commit multiple files to GitLab');
+        }
+
+        return repo.web_url;
+      }
+
+      // Should not reach here since we only handle GitHub and GitLab
+      throw new Error(`Unsupported provider: ${provider}`);
     } catch (error) {
-      console.error('Error pushing to GitHub:', error);
+      console.error('Error pushing to repository:', error);
       throw error; // Rethrow the error for further handling
     }
   }
