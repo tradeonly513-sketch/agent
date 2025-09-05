@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useStore } from '@nanostores/react';
 import { netlifyConnection } from '~/lib/stores/netlify';
 import { vercelConnection } from '~/lib/stores/vercel';
-import { isGitLabConnected } from '~/lib/stores/gitlabConnection';
+import { gitlabConnection } from '~/lib/stores/gitlabConnection';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { streamingState } from '~/lib/stores/streaming';
 import { classNames } from '~/utils/classNames';
@@ -31,7 +31,7 @@ export const DeployButton = ({
 }: DeployButtonProps) => {
   const netlifyConn = useStore(netlifyConnection);
   const vercelConn = useStore(vercelConnection);
-  const gitlabIsConnected = useStore(isGitLabConnected);
+  const gitlabConn = useStore(gitlabConnection);
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
@@ -43,10 +43,10 @@ export const DeployButton = ({
   const { handleGitHubDeploy } = useGitHubDeploy();
   const { handleGitLabDeploy } = useGitLabDeploy();
   const [showGitHubDeploymentDialog, setShowGitHubDeploymentDialog] = useState(false);
-  const [showGitLabDeploymentDialog, setShowGitLabDeploymentDialog] = useState(false);
   const [githubDeploymentFiles, setGithubDeploymentFiles] = useState<Record<string, string> | null>(null);
-  const [gitlabDeploymentFiles, setGitlabDeploymentFiles] = useState<Record<string, string> | null>(null);
   const [githubProjectName, setGithubProjectName] = useState('');
+  const [showGitLabDeploymentDialog, setShowGitLabDeploymentDialog] = useState(false);
+  const [gitlabDeploymentFiles, setGitlabDeploymentFiles] = useState<Record<string, string> | null>(null);
   const [gitlabProjectName, setGitlabProjectName] = useState('');
 
   const handleVercelDeployClick = async () => {
@@ -218,10 +218,10 @@ export const DeployButton = ({
               className={classNames(
                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !gitlabIsConnected,
+                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !gitlabConn.user,
                 },
               )}
-              disabled={isDeploying || !activePreview || !gitlabIsConnected}
+              disabled={isDeploying || !activePreview || !gitlabConn.user}
               onClick={handleGitLabDeployClick}
             >
               <img
@@ -232,7 +232,7 @@ export const DeployButton = ({
                 src="https://cdn.simpleicons.org/gitlab"
                 alt="gitlab"
               />
-              <span className="mx-auto">{!gitlabIsConnected ? 'No GitLab Account Connected' : 'Deploy to GitLab'}</span>
+              <span className="mx-auto">{!gitlabConn.user ? 'No GitLab Account Connected' : 'Deploy to GitLab'}</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
