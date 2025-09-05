@@ -1,10 +1,9 @@
+import { useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { useState, useCallback } from 'react';
-import { streamingState } from '~/lib/stores/streaming';
-import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportChatButton';
-import { useChatHistory } from '~/lib/persistence';
 import { DeployButton } from '~/components/deploy/DeployButton';
+import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportChatButton';
+import { useGit } from '~/lib/hooks/useGit';
 import { toast } from 'react-toastify';
 import { classNames } from '~/utils/classNames';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -14,30 +13,18 @@ interface HeaderActionButtonsProps {
   chatStarted: boolean;
 }
 
-export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
+export function HeaderActionButtons({ chatStarted: _chatStarted }: HeaderActionButtonsProps) {
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
-  const isStreaming = useStore(streamingState);
-  const { exportChat } = useChatHistory();
-  const [isSyncing, setIsSyncing] = useState(false);
+  const { handleSyncFiles, isSyncing } = useGit();
 
-  const shouldShowButtons = !isStreaming && activePreview;
+  const shouldShowButtons = activePreview;
 
-  const handleSyncFiles = useCallback(async () => {
-    setIsSyncing(true);
-
-    try {
-      const directoryHandle = await window.showDirectoryPicker();
-      await workbenchStore.syncFiles(directoryHandle);
-      toast.success('Files synced successfully');
-    } catch (error) {
-      console.error('Error syncing files:', error);
-      toast.error('Failed to sync files');
-    } finally {
-      setIsSyncing(false);
-    }
-  }, []);
+  const exportChat = () => {
+    // Export chat functionality
+    toast.info('Export chat functionality would be implemented here');
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -109,7 +96,6 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       )}
-
       {/* Deploy Button */}
       {shouldShowButtons && <DeployButton />}
 
