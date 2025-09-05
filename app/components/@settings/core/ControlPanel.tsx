@@ -8,7 +8,7 @@ import { useNotifications } from '~/lib/hooks/useNotifications';
 import { tabConfigurationStore, resetTabConfiguration } from '~/lib/stores/settings';
 import { profileStore } from '~/lib/stores/profile';
 import type { TabType, Profile } from './types';
-import { TAB_LABELS, DEFAULT_TAB_CONFIG, TAB_DESCRIPTIONS } from './constants.tsx';
+import { TAB_LABELS, DEFAULT_TAB_CONFIG, TAB_DESCRIPTIONS } from './constants';
 import { DialogTitle } from '~/components/ui/Dialog';
 import { AvatarDropdown } from './AvatarDropdown';
 import BackgroundRays from '~/components/ui/BackgroundRays';
@@ -137,16 +137,9 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <CloudProvidersTab />;
       case 'local-providers':
         return <LocalProvidersTab />;
-      case 'github':
-        return <GitHubTab />;
-      case 'gitlab':
-        return <GitLabTab />;
-      case 'netlify':
-        return <NetlifyTab />;
-      case 'vercel':
-        return <VercelTab />;
-      case 'supabase':
-        return <SupabaseTab />;
+      case 'connection':
+        // Handle connection tab - this might need to be implemented
+        return null;
       case 'event-logs':
         return <EventLogsTab />;
       case 'mcp':

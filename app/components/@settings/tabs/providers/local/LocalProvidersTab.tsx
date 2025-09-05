@@ -6,7 +6,8 @@ import type { IProviderConfig } from '~/types/model';
 import { logStore } from '~/lib/stores/logs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
-import { Bot, Cpu, Zap } from 'lucide-react';
+import { Bot, Cpu, Zap, Code, Database, Box, Loader2, RefreshCw, Trash2, Link, ExternalLink } from 'lucide-react';
+import { BiChip } from 'react-icons/bi';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
 import { useToast } from '~/components/ui/use-toast';
 import { Progress } from '~/components/ui/Progress';
@@ -40,6 +41,23 @@ const PROVIDER_DESCRIPTIONS: Record<ProviderName, string> = {
 
 // Add a constant for the Ollama API base URL
 const OLLAMA_API_URL = 'http://127.0.0.1:11434';
+
+// Helper function to check if the data is a valid Ollama pull progress response
+function isOllamaPullProgress(data: any): data is {
+  status: string;
+  digest?: string;
+  total?: number;
+  completed?: number;
+} {
+  return (
+    data &&
+    typeof data === 'object' &&
+    typeof data.status === 'string' &&
+    (data.digest === undefined || typeof data.digest === 'string') &&
+    (data.total === undefined || typeof data.total === 'number') &&
+    (data.completed === undefined || typeof data.completed === 'number')
+  );
+}
 
 interface OllamaModel {
   name: string;
