@@ -137,6 +137,16 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <CloudProvidersTab />;
       case 'local-providers':
         return <LocalProvidersTab />;
+      case 'github':
+        return <GitHubTab />;
+      case 'gitlab':
+        return <GitLabTab />;
+      case 'netlify':
+        return <NetlifyTab />;
+      case 'vercel':
+        return <VercelTab />;
+      case 'supabase':
+        return <SupabaseTab />;
       case 'connection':
         // Handle connection tab - this might need to be implemented
         return null;

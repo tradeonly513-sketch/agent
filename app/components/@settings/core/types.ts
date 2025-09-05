@@ -11,6 +11,11 @@ export type TabType =
   | 'data'
   | 'cloud-providers'
   | 'local-providers'
+  | 'github'
+  | 'gitlab'
+  | 'netlify'
+  | 'vercel'
+  | 'supabase'
   | 'connection'
   | 'event-logs'
   | 'mcp';
