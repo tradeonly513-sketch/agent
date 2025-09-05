@@ -554,7 +554,7 @@ export default function GitLabConnection() {
               />
               <div className="mt-2 text-sm text-bolt-elements-textSecondary">
                 <a
-                  href={`${gitlabUrl}/-/profile/personal_access_tokens`}
+                  href={`${gitlabUrl}/-/user_settings/personal_access_tokens`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-bolt-elements-borderColorActive hover:underline inline-flex items-center gap-1"
