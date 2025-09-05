@@ -31,6 +31,7 @@ export interface GitHubRepoInfo {
   name: string;
   full_name: string;
   html_url: string;
+  clone_url?: string;
   description: string;
   stargazers_count: number;
   forks_count: number;
@@ -40,6 +41,17 @@ export interface GitHubRepoInfo {
   languages_url: string;
   private?: boolean;
   topics?: string[];
+  archived?: boolean;
+  fork?: boolean;
+  size?: number;
+  contributors_count?: number;
+  issues_count?: number;
+  pull_requests_count?: number;
+  branches_count?: number;
+  license?: {
+    spdx_id?: string;
+    name?: string;
+  };
 }
 
 export interface GitHubContent {
@@ -74,9 +86,12 @@ export interface GitHubBlobResponse {
 
 export interface GitHubOrganization {
   login: string;
+  name?: string;
   avatar_url: string;
   description: string;
   html_url: string;
+  public_repos?: number;
+  followers?: number;
 }
 
 export interface GitHubEvent {
@@ -115,6 +130,15 @@ export interface GitHubStats {
   publicGists: number;
   privateGists: number;
   lastUpdated: string;
+  totalBranches?: number;
+  totalContributors?: number;
+  totalIssues?: number;
+  totalPullRequests?: number;
+  mostUsedLanguages?: Array<{
+    language: string;
+    bytes: number;
+    repos: number;
+  }>;
 }
 
 export interface GitHubConnection {

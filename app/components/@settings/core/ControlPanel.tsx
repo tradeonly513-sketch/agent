@@ -22,6 +22,7 @@ import FeaturesTab from '~/components/@settings/tabs/features/FeaturesTab';
 import { DataTab } from '~/components/@settings/tabs/data/DataTab';
 import { EventLogsTab } from '~/components/@settings/tabs/event-logs/EventLogsTab';
 import GitHubTab from '~/components/@settings/tabs/github/GitHubTab';
+import GitLabTab from '~/components/@settings/tabs/gitlab/GitLabTab';
 import NetlifyTab from '~/components/@settings/tabs/netlify/NetlifyTab';
 import VercelTab from '~/components/@settings/tabs/vercel/VercelTab';
 import SupabaseTab from '~/components/@settings/tabs/supabase/SupabaseTab';
@@ -138,6 +139,8 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <LocalProvidersTab />;
       case 'github':
         return <GitHubTab />;
+      case 'gitlab':
+        return <GitLabTab />;
       case 'netlify':
         return <NetlifyTab />;
       case 'vercel':

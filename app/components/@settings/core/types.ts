@@ -12,6 +12,7 @@ export type TabType =
   | 'cloud-providers'
   | 'local-providers'
   | 'github'
+  | 'gitlab'
   | 'netlify'
   | 'vercel'
   | 'supabase'
@@ -74,6 +75,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   'cloud-providers': 'Cloud Providers',
   'local-providers': 'Local Providers',
   github: 'GitHub',
+  gitlab: 'GitLab',
   netlify: 'Netlify',
   vercel: 'Vercel',
   supabase: 'Supabase',
