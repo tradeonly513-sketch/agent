@@ -6,12 +6,15 @@ import {
   DISCOVERY_RATING_CATEGORY,
   getDiscoveryRating,
 } from '~/lib/persistence/message';
-import { MessageContents, JumpToBottom, AppCards, StartBuildingCard } from './components';
+import { MessageContents, JumpToBottom, AppCards, StartBuildingCard, SignInCard, AddPeanutsCard } from './components';
 import { APP_SUMMARY_CATEGORY } from '~/lib/persistence/messageAppSummary';
 import { useStore } from '@nanostores/react';
 import { chatStore } from '~/lib/stores/chat';
 import { pendingMessageStatusStore } from '~/lib/stores/status';
+import { userStore } from '~/lib/stores/auth';
+import { peanutsStore } from '~/lib/stores/peanuts';
 import { shouldDisplayMessage } from '~/lib/replay/SendChatMessage';
+import { AppFeatureStatus } from '~/lib/persistence/messageAppSummary';
 
 interface MessagesProps {
   id?: string;
@@ -23,6 +26,9 @@ interface MessagesProps {
 export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(
   ({ onLastMessageCheckboxChange, sendMessage }, ref) => {
     const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+    const user = useStore(userStore);
+    const appSummary = useStore(chatStore.appSummary);
+    const peanutsRemaining = useStore(peanutsStore.peanutsRemaining);
     const [showTopShadow, setShowTopShadow] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const messages = useStore(chatStore.messages);
@@ -271,6 +277,21 @@ export const Messages = React.forwardRef<HTMLDivElement, MessagesProps>(
               </>
             );
           })()}
+
+          {!user && appSummary?.mockupStatus === AppFeatureStatus.Validated && (
+            <SignInCard mockupStatus={appSummary.mockupStatus} onMount={scrollToBottom} />
+          )}
+
+          {user &&
+            appSummary?.mockupStatus === AppFeatureStatus.Validated &&
+            peanutsRemaining !== undefined &&
+            peanutsRemaining <= 0 && (
+              <AddPeanutsCard
+                mockupStatus={appSummary.mockupStatus}
+                peanutsRemaining={peanutsRemaining}
+                onMount={scrollToBottom}
+              />
+            )}
 
           {startPlanningRating === 10 && (
             <StartBuildingCard
