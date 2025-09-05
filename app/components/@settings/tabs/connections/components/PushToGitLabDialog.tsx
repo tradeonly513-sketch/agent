@@ -11,6 +11,54 @@ import { extractRelativePath } from '~/utils/diff';
 import { formatSize } from '~/utils/formatSize';
 import type { FileMap, File } from '~/lib/stores/files';
 
+// Import cache system
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+}
+
+class GitLabCache {
+  private _cache = new Map<string, CacheEntry<any>>();
+
+  set<T>(key: string, data: T, duration = CACHE_DURATION): void {
+    const timestamp = Date.now();
+    this._cache.set(key, {
+      data,
+      timestamp,
+      expiresAt: timestamp + duration,
+    });
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this._cache.get(key);
+
+    if (!entry) {
+      return null;
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      this._cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  clear(): void {
+    this._cache.clear();
+  }
+
+  isExpired(key: string): boolean {
+    const entry = this._cache.get(key);
+    return !entry || Date.now() > entry.expiresAt;
+  }
+}
+
+const gitlabCache = new GitLabCache();
+
 interface PushToGitLabDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -72,11 +120,20 @@ export function PushToGitLabDialog({ isOpen, onClose, onPush }: PushToGitLabDial
       return;
     }
 
+    // Check cache first
+    const cacheKey = `gitlab_recent_projects_${token}`;
+    const cachedProjects = gitlabCache.get<GitLabRepo[]>(cacheKey);
+
+    if (cachedProjects && !gitlabCache.isExpired(cacheKey)) {
+      setRecentProjects(cachedProjects);
+      return;
+    }
+
     try {
       setIsFetchingProjects(true);
 
       const response = await fetch(
-        'https://gitlab.com/api/v4/projects?membership=true&order_by=updated_at&sort=desc&per_page=5',
+        'https://gitlab.com/api/v4/projects?membership=true&order_by=updated_at&sort=desc&per_page=10',
         {
           headers: {
             Accept: 'application/json',
@@ -111,6 +168,9 @@ export function PushToGitLabDialog({ isOpen, onClose, onPush }: PushToGitLabDial
       }
 
       const rawProjects = await response.json();
+
+      // Cache the results
+      gitlabCache.set(cacheKey, rawProjects);
 
       // Basic validation of shape (you can enhance this if needed)
       const projects: GitLabRepo[] = Array.isArray(rawProjects)

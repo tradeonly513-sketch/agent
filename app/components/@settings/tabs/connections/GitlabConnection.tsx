@@ -87,6 +87,95 @@ const GitLabLogo = () => (
   </svg>
 );
 
+// Enhanced caching system for GitLab data
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const MAX_REPOS_PER_PAGE = 20;
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+}
+
+class GitLabCache {
+  private _cache = new Map<string, CacheEntry<any>>();
+
+  set<T>(key: string, data: T, duration = CACHE_DURATION): void {
+    const timestamp = Date.now();
+    this._cache.set(key, {
+      data,
+      timestamp,
+      expiresAt: timestamp + duration,
+    });
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this._cache.get(key);
+
+    if (!entry) {
+      return null;
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      this._cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  clear(): void {
+    this._cache.clear();
+  }
+
+  isExpired(key: string): boolean {
+    const entry = this._cache.get(key);
+    return !entry || Date.now() > entry.expiresAt;
+  }
+}
+
+const gitlabCache = new GitLabCache();
+
+// Enhanced API call with retry logic
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      // Don't retry on client errors (4xx) except 429 (rate limit)
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return response;
+      }
+
+      // Retry on server errors (5xx) and rate limits
+      if (response.status >= 500 || response.status === 429) {
+        if (attempt === maxRetries) {
+          return response;
+        }
+
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError!;
+}
+
 export default function GitLabConnection() {
   const [connection, setConnection] = useState<GitLabConnection>({
     user: null,
@@ -97,13 +186,19 @@ export default function GitLabConnection() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isFetchingStats, setIsFetchingStats] = useState(false);
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProjects, setFilteredProjects] = useState<GitLabProjectInfo[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
   const tokenTypeRef = React.useRef<'personal-access-token' | 'oauth'>('personal-access-token');
   const [gitlabUrl, setGitlabUrl] = useState('https://gitlab.com');
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout>();
 
   const fetchGitLabUser = async (token: string) => {
     try {
-      // Use server-side API endpoint or direct GitLab API call
-      const response = await fetch(`${gitlabUrl}/api/v4/user`, {
+      // Use server-side API endpoint or direct GitLab API call with retry
+      const response = await fetchWithRetry(`${gitlabUrl}/api/v4/user`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -176,11 +271,56 @@ export default function GitLabConnection() {
     }
   };
 
-  const fetchGitLabStats = async (token: string) => {
+  // Enhanced search with debouncing
+  const handleSearch = React.useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      setIsSearching(true);
+
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+        if (connection.stats?.projects) {
+          const filtered = connection.stats.projects.filter(
+            (project) =>
+              project.name.toLowerCase().includes(query.toLowerCase()) ||
+              project.path_with_namespace.toLowerCase().includes(query.toLowerCase()) ||
+              (project.description && project.description.toLowerCase().includes(query.toLowerCase())),
+          );
+          setFilteredProjects(filtered);
+          setCurrentPage(1);
+          setTotalPages(Math.ceil(filtered.length / MAX_REPOS_PER_PAGE));
+        }
+
+        setIsSearching(false);
+      }, 300);
+    },
+    [connection.stats?.projects],
+  );
+
+  const fetchGitLabStats = async (token: string, forceRefresh = false) => {
+    const cacheKey = `gitlab_stats_${token}_${gitlabUrl}`;
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cachedStats = gitlabCache.get<GitLabStats>(cacheKey);
+
+      if (cachedStats) {
+        setConnection((prev) => ({ ...prev, stats: cachedStats }));
+        setFilteredProjects(cachedStats.projects);
+        setTotalPages(Math.ceil(cachedStats.projects.length / MAX_REPOS_PER_PAGE));
+
+        return;
+      }
+    }
+
     setIsFetchingStats(true);
 
     try {
-      const userResponse = await fetch(`${gitlabUrl}/api/v4/user`, {
+      // Fetch user data with retry
+      const userResponse = await fetchWithRetry(`${gitlabUrl}/api/v4/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -197,13 +337,14 @@ export default function GitLabConnection() {
 
       const userData = (await userResponse.json()) as GitLabUserResponse;
 
+      // Fetch projects with pagination and progress tracking
       let allProjects: any[] = [];
       let page = 1;
-      let hasMore = true;
+      const maxPages = 10; // Limit to prevent excessive API calls
 
-      while (hasMore) {
-        const projectsResponse = await fetch(
-          `${gitlabUrl}/api/v4/projects?membership=true&min_access_level=20&per_page=100&page=${page}`,
+      while (page <= maxPages) {
+        const projectsResponse = await fetchWithRetry(
+          `${gitlabUrl}/api/v4/projects?membership=true&min_access_level=20&per_page=50&page=${page}&order_by=updated_at&sort=desc`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -214,15 +355,24 @@ export default function GitLabConnection() {
         }
 
         const projects = (await projectsResponse.json()) as any[];
+
+        if (projects.length === 0) {
+          break;
+        }
+
         allProjects = [...allProjects, ...projects];
 
-        hasMore = projects.length === 100;
+        // Break if we have enough projects for initial load
+        if (allProjects.length >= 100) {
+          break;
+        }
+
         page++;
       }
 
       const projectStats = calculateProjectStats(allProjects);
 
-      const eventsResponse = await fetch(`${gitlabUrl}/api/v4/events?per_page=10`, {
+      const eventsResponse = await fetchWithRetry(`${gitlabUrl}/api/v4/events?per_page=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -243,7 +393,7 @@ export default function GitLabConnection() {
       const totalForks = allProjects.reduce((sum, p) => sum + (p.forks_count || 0), 0);
       const privateProjects = allProjects.filter((p) => p.visibility === 'private').length;
 
-      const groupsResponse = await fetch(`${gitlabUrl}/api/v4/groups?min_access_level=10`, {
+      const groupsResponse = await fetchWithRetry(`${gitlabUrl}/api/v4/groups?min_access_level=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -253,7 +403,7 @@ export default function GitLabConnection() {
         groups = (await groupsResponse.json()) as GitLabGroupInfo[];
       }
 
-      const snippetsResponse = await fetch(`${gitlabUrl}/api/v4/snippets`, {
+      const snippetsResponse = await fetchWithRetry(`${gitlabUrl}/api/v4/snippets`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -278,6 +428,9 @@ export default function GitLabConnection() {
         lastUpdated: new Date().toISOString(),
       };
 
+      // Cache the stats
+      gitlabCache.set(cacheKey, stats);
+
       const currentConnection = JSON.parse(localStorage.getItem('gitlab_connection') || '{}');
       const currentUser = currentConnection.user || connection.user;
 
@@ -291,6 +444,11 @@ export default function GitLabConnection() {
 
       localStorage.setItem('gitlab_connection', JSON.stringify({ ...updatedConnection, gitlabUrl }));
       setConnection(updatedConnection);
+
+      // Update filtered projects
+      setFilteredProjects(projectStats.projects);
+      setTotalPages(Math.ceil(projectStats.projects.length / MAX_REPOS_PER_PAGE));
+
       toast.success('GitLab stats refreshed');
     } catch (error) {
       console.error('Error fetching GitLab stats:', error);
@@ -396,6 +554,15 @@ export default function GitLabConnection() {
 
     loadSavedConnection();
   }, []);
+
+  // Initialize filtered projects when stats are loaded
+  useEffect(() => {
+    if (connection.stats?.projects) {
+      setFilteredProjects(connection.stats.projects);
+      setTotalPages(Math.ceil(connection.stats.projects.length / MAX_REPOS_PER_PAGE));
+      setCurrentPage(1);
+    }
+  }, [connection.stats?.projects]);
 
   // Ensure cookies are updated when connection changes
   useEffect(() => {
@@ -756,67 +923,158 @@ export default function GitLabConnection() {
                     </div>
                   </div>
 
-                  {/* Repositories Section */}
+                  {/* Enhanced Repositories Section */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-bolt-elements-textPrimary">Recent Repositories</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {connection.stats.projects.map((repo) => {
-                        return (
-                          <a
-                            key={repo.name}
-                            href={repo.http_url_to_repo}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group block p-4 rounded-lg bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive dark:hover:border-bolt-elements-borderColorActive transition-all duration-200"
-                          >
-                            <div className="space-y-3">
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="i-ph:git-repository w-4 h-4 text-bolt-elements-icon-info dark:text-bolt-elements-icon-info" />
-                                  <h5 className="text-sm font-medium text-bolt-elements-textPrimary group-hover:text-bolt-elements-item-contentAccent transition-colors">
-                                    {repo.name}
-                                  </h5>
-                                </div>
-                                <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
-                                  <span className="flex items-center gap-1" title="Stars">
-                                    <div className="i-ph:star w-3.5 h-3.5 text-bolt-elements-icon-warning" />
-                                    {repo.star_count.toLocaleString()}
-                                  </span>
-                                  {/*<span className="flex items-center gap-1" title="Forks">*/}
-                                  {/*  <div className="i-ph:git-fork w-3.5 h-3.5 text-bolt-elements-icon-info" />*/}
-                                  {/*  {repo.forks_count.toLocaleString()}*/}
-                                  {/*</span>*/}
-                                </div>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-bolt-elements-textPrimary">
+                        Repositories ({filteredProjects.length})
+                      </h4>
+                      <Button
+                        onClick={() => fetchGitLabStats(connection.token, true)}
+                        disabled={isFetchingStats}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        {isFetchingStats ? (
+                          <div className="i-ph:spinner animate-spin w-4 h-4" />
+                        ) : (
+                          <div className="i-ph:arrows-clockwise w-4 h-4" />
+                        )}
+                        Refresh
+                      </Button>
+                    </div>
+
+                    {/* Search Input */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search repositories..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearch(e.target.value)}
+                        className="w-full px-4 py-2 pl-10 rounded-lg bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary"
+                      />
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                        {isSearching ? (
+                          <div className="i-ph:spinner animate-spin w-4 h-4 text-bolt-elements-textSecondary" />
+                        ) : (
+                          <div className="i-ph:magnifying-glass w-4 h-4 text-bolt-elements-textSecondary" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Repository Grid with Pagination */}
+                    <div className="space-y-4">
+                      {isFetchingStats ? (
+                        // Show skeleton loaders while fetching
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Array.from({ length: MAX_REPOS_PER_PAGE }).map((_, index) => (
+                            <RepositorySkeleton key={index} />
+                          ))}
+                        </div>
+                      ) : filteredProjects.length === 0 ? (
+                        <div className="text-center py-8 text-bolt-elements-textSecondary">
+                          {searchQuery ? 'No repositories found matching your search.' : 'No repositories available.'}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {filteredProjects
+                              .slice((currentPage - 1) * MAX_REPOS_PER_PAGE, currentPage * MAX_REPOS_PER_PAGE)
+                              .map((repo) => {
+                                return (
+                                  <a
+                                    key={repo.name}
+                                    href={repo.http_url_to_repo}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group block p-4 rounded-lg bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive dark:hover:border-bolt-elements-borderColorActive transition-all duration-200"
+                                  >
+                                    <div className="space-y-3">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <div className="i-ph:git-repository w-4 h-4 text-bolt-elements-icon-info dark:text-bolt-elements-icon-info" />
+                                          <h5 className="text-sm font-medium text-bolt-elements-textPrimary group-hover:text-bolt-elements-item-contentAccent transition-colors">
+                                            {repo.name}
+                                          </h5>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
+                                          <span className="flex items-center gap-1" title="Stars">
+                                            <div className="i-ph:star w-3.5 h-3.5 text-bolt-elements-icon-warning" />
+                                            {repo.star_count.toLocaleString()}
+                                          </span>
+                                          {/*<span className="flex items-center gap-1" title="Forks">*/}
+                                          {/*  <div className="i-ph:git-fork w-3.5 h-3.5 text-bolt-elements-icon-info" />*/}
+                                          {/*  {repo.forks_count.toLocaleString()}*/}
+                                          {/*</span>*/}
+                                        </div>
+                                      </div>
+
+                                      {repo.description && (
+                                        <p className="text-xs text-bolt-elements-textSecondary line-clamp-2">
+                                          {repo.description}
+                                        </p>
+                                      )}
+
+                                      <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
+                                        <span className="flex items-center gap-1" title="Default Branch">
+                                          <div className="i-ph:git-branch w-3.5 h-3.5" />
+                                          {repo.default_branch}
+                                        </span>
+                                        <span className="flex items-center gap-1" title="Last Updated">
+                                          <div className="i-ph:clock w-3.5 h-3.5" />
+                                          {new Date(repo.updated_at).toLocaleDateString(undefined, {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                          })}
+                                        </span>
+                                        <span className="flex items-center gap-1 ml-auto group-hover:text-bolt-elements-item-contentAccent transition-colors">
+                                          <div className="i-ph:arrow-square-out w-3.5 h-3.5" />
+                                          View
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </a>
+                                );
+                              })}
+                          </div>
+
+                          {/* Pagination Controls */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-between pt-4 border-t border-bolt-elements-borderColor">
+                              <div className="text-sm text-bolt-elements-textSecondary">
+                                Showing {Math.min((currentPage - 1) * MAX_REPOS_PER_PAGE + 1, filteredProjects.length)}{' '}
+                                to {Math.min(currentPage * MAX_REPOS_PER_PAGE, filteredProjects.length)} of{' '}
+                                {filteredProjects.length} repositories
                               </div>
-
-                              {repo.description && (
-                                <p className="text-xs text-bolt-elements-textSecondary line-clamp-2">
-                                  {repo.description}
-                                </p>
-                              )}
-
-                              <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
-                                <span className="flex items-center gap-1" title="Default Branch">
-                                  <div className="i-ph:git-branch w-3.5 h-3.5" />
-                                  {repo.default_branch}
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                  disabled={currentPage === 1}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <div className="i-ph:caret-left w-4 h-4" />
+                                  Previous
+                                </Button>
+                                <span className="text-sm text-bolt-elements-textSecondary px-3">
+                                  {currentPage} of {totalPages}
                                 </span>
-                                <span className="flex items-center gap-1" title="Last Updated">
-                                  <div className="i-ph:clock w-3.5 h-3.5" />
-                                  {new Date(repo.updated_at).toLocaleDateString(undefined, {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })}
-                                </span>
-                                <span className="flex items-center gap-1 ml-auto group-hover:text-bolt-elements-item-contentAccent transition-colors">
-                                  <div className="i-ph:arrow-square-out w-3.5 h-3.5" />
-                                  View
-                                </span>
+                                <Button
+                                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                                  disabled={currentPage === totalPages}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  Next
+                                  <div className="i-ph:caret-right w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
-                          </a>
-                        );
-                      })}
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -829,12 +1087,36 @@ export default function GitLabConnection() {
   );
 }
 
+// Enhanced loading components
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center p-4">
       <div className="flex items-center gap-2">
         <div className="i-ph:spinner-gap-bold animate-spin w-4 h-4" />
         <span className="text-bolt-elements-textSecondary">Loading...</span>
+      </div>
+    </div>
+  );
+}
+
+function RepositorySkeleton() {
+  return (
+    <div className="p-4 rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor animate-pulse">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-bolt-elements-background-depth-2 rounded" />
+            <div className="w-24 h-4 bg-bolt-elements-background-depth-2 rounded" />
+          </div>
+          <div className="w-16 h-4 bg-bolt-elements-background-depth-2 rounded" />
+        </div>
+        <div className="w-full h-3 bg-bolt-elements-background-depth-2 rounded" />
+        <div className="w-3/4 h-3 bg-bolt-elements-background-depth-2 rounded" />
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-3 bg-bolt-elements-background-depth-2 rounded" />
+          <div className="w-16 h-3 bg-bolt-elements-background-depth-2 rounded" />
+          <div className="w-8 h-3 bg-bolt-elements-background-depth-2 rounded ml-auto" />
+        </div>
       </div>
     </div>
   );
