@@ -6,6 +6,7 @@ import { classNames } from '~/utils/classNames';
 import { getLocalStorage } from '~/lib/persistence';
 import { motion, AnimatePresence } from 'framer-motion';
 import Cookies from 'js-cookie';
+import { X } from 'lucide-react';
 
 // Import UI components
 import { Input, SearchInput, Badge, FilterChip } from '~/components/ui';
@@ -563,14 +564,15 @@ export function RepositorySelectionDialog({ isOpen, onClose, onSelect }: Reposit
               <Dialog.Close
                 onClick={handleClose}
                 className={classNames(
-                  'p-2 rounded-lg transition-all duration-200 ease-in-out bg-transparent',
+                  'p-2 rounded-lg bg-transparent transition-all duration-200',
                   'text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary',
                   'dark:text-bolt-elements-textTertiary-dark dark:hover:text-bolt-elements-textPrimary-dark',
-                  'hover:bg-bolt-elements-background-depth-2 dark:hover:bg-bolt-elements-background-depth-3',
-                  'focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColor dark:focus:ring-bolt-elements-borderColor-dark',
+                  'hover:bg-bolt-elements-background-depth-1 dark:hover:bg-bolt-elements-background-depth-1',
+                  'hover:scale-105 active:scale-95',
+                  'focus:outline-none focus:ring-2 focus:ring-bolt-elements-borderColor dark:focus:ring-bolt-elements-borderColor',
                 )}
               >
-                <span className="i-ph:x block w-5 h-5" aria-hidden="true" />
+                <X className="w-5 h-5 transition-transform duration-200 hover:rotate-90" aria-hidden="true" />
                 <span className="sr-only">Close dialog</span>
               </Dialog.Close>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { logStore } from '~/lib/stores/logs';
@@ -86,6 +86,24 @@ const GitLabLogo = () => (
     />
   </svg>
 );
+
+// Component to handle GitLab avatar with CORS fallback
+const GitLabAvatarWithFallback: React.FC<{
+  avatarUrl: string;
+  username?: string;
+  name?: string;
+}> = ({ avatarUrl, username, name }) => {
+  // Always show fallback for GitLab avatars due to COEP violations
+  // GitLab avatar URLs don't provide proper CORS headers and cause:
+  // net::ERR_BLOCKED_BY_RESPONSE.NotSameOriginAfterDefaultedToSameOriginByCoep
+  
+  // Always return fallback avatar to prevent COEP errors
+  return (
+    <div className="w-full h-full rounded-full bg-bolt-elements-item-contentAccent dark:bg-bolt-elements-item-contentAccent flex items-center justify-center text-white font-semibold text-sm">
+      {(name || username || 'U').charAt(0).toUpperCase()}
+    </div>
+  );
+};
 
 // Enhanced caching system for GitLab data
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -176,7 +194,11 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3)
   throw lastError!;
 }
 
-export default function GitLabConnection() {
+interface GitLabConnectionProps {
+  onCloneRepository?: (repoUrl: string) => void;
+}
+
+export default function GitLabConnection({ onCloneRepository }: GitLabConnectionProps = {}) {
   const [connection, setConnection] = useState<GitLabConnection>({
     user: null,
     token: '',
@@ -220,16 +242,25 @@ export default function GitLabConnection() {
 
       const user: GitLabUserResponse = await response.json();
 
+      // Debug: Log the actual API response
+      console.log('GitLab API user response:', user);
+
       // Validate that we received a user object
       if (!user || !user.username) {
         console.error('Invalid user data received:', user);
         throw new Error('Invalid user data received');
       }
 
+      // Handle different avatar URL fields that GitLab might return
+      const processedUser = {
+        ...user,
+        avatar_url: user.avatar_url || (user as any).avatarUrl || (user as any).profile_image_url || null,
+      };
+
       // Use the response data
       setConnection((prev) => ({
         ...prev,
-        user,
+        user: processedUser,
         token,
         tokenType: tokenTypeRef.current,
         rateLimit,
@@ -299,6 +330,17 @@ export default function GitLabConnection() {
     },
     [connection.stats?.projects],
   );
+
+  // Handle cloning GitLab repositories
+  const handleCloneRepository = React.useCallback((repo: GitLabProjectInfo) => {
+    if (onCloneRepository) {
+      // Use the provided clone handler (from GitCloneButton)
+      onCloneRepository(repo.http_url_to_repo);
+    } else {
+      // Fallback: open in new tab (current behavior)
+      window.open(repo.http_url_to_repo, '_blank');
+    }
+  }, [onCloneRepository]);
 
   const fetchGitLabStats = async (token: string, forceRefresh = false) => {
     const cacheKey = `gitlab_stats_${token}_${gitlabUrl}`;
@@ -819,11 +861,19 @@ export default function GitLabConnection() {
         {connection.user && connection.stats && (
           <div className="mt-6 border-t border-bolt-elements-borderColor dark:border-bolt-elements-borderColor pt-6">
             <div className="flex items-center gap-4 p-4 bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 rounded-lg mb-4">
-              <img
-                src={connection.user.avatar_url}
-                alt={connection.user.username}
-                className="w-12 h-12 rounded-full border-2 border-bolt-elements-item-contentAccent dark:border-bolt-elements-item-contentAccent"
-              />
+              <div className="w-12 h-12 rounded-full border-2 border-bolt-elements-item-contentAccent dark:border-bolt-elements-item-contentAccent flex items-center justify-center bg-bolt-elements-background-depth-2 dark:bg-bolt-elements-background-depth-2 overflow-hidden">
+                {connection.user.avatar_url && connection.user.avatar_url !== 'null' && connection.user.avatar_url !== '' ? (
+                  <GitLabAvatarWithFallback
+                    avatarUrl={connection.user.avatar_url}
+                    username={connection.user.username}
+                    name={connection.user.name}
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-bolt-elements-item-contentAccent dark:bg-bolt-elements-item-contentAccent flex items-center justify-center text-white font-semibold text-sm">
+                    {(connection.user.name || connection.user.username || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
               <div>
                 <h4 className="text-sm font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
                   {connection.user.name || connection.user.username}
@@ -1029,10 +1079,24 @@ export default function GitLabConnection() {
                                             day: 'numeric',
                                           })}
                                         </span>
-                                        <span className="flex items-center gap-1 ml-auto group-hover:text-bolt-elements-item-contentAccent transition-colors">
-                                          <div className="i-ph:arrow-square-out w-3.5 h-3.5" />
-                                          View
-                                        </span>
+                                        <div className="flex items-center gap-2 ml-auto">
+                                          <button
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              handleCloneRepository(repo);
+                                            }}
+                                            className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors"
+                                            title="Clone repository"
+                                          >
+                                            <div className="i-ph:git-branch w-3.5 h-3.5" />
+                                            Clone
+                                          </button>
+                                          <span className="flex items-center gap-1 group-hover:text-bolt-elements-item-contentAccent transition-colors">
+                                            <div className="i-ph:arrow-square-out w-3.5 h-3.5" />
+                                            View
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
                                   </a>
