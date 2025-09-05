@@ -1,6 +1,61 @@
 import { useState, useMemo, useEffect } from 'react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { Dialog, DialogTitle } from '~/components/ui/Dialog';
+
+// Helper function to sanitize config for UI display
+function sanitizeConfigForDisplay(config: any): any {
+  const sanitized = { ...config };
+
+  // Sanitize environment variables
+  if (sanitized.env) {
+    sanitized.env = {};
+
+    for (const [key, value] of Object.entries(config.env)) {
+      if (isSensitiveEnvVar(key)) {
+        sanitized.env[key] = '[REDACTED]';
+      } else {
+        sanitized.env[key] = value;
+      }
+    }
+  }
+
+  // Sanitize headers
+  if (sanitized.headers) {
+    sanitized.headers = {};
+
+    for (const [key, value] of Object.entries(config.headers)) {
+      if (isSensitiveHeader(key)) {
+        sanitized.headers[key] = '[REDACTED]';
+      } else {
+        sanitized.headers[key] = value;
+      }
+    }
+  }
+
+  return sanitized;
+}
+
+function isSensitiveEnvVar(key: string): boolean {
+  const sensitivePatterns = [
+    /api[_-]?key/i,
+    /secret/i,
+    /token/i,
+    /password/i,
+    /auth/i,
+    /credential/i,
+    /bearer/i,
+    /authorization/i,
+    /private[_-]?key/i,
+    /access[_-]?token/i,
+    /refresh[_-]?token/i,
+  ];
+  return sensitivePatterns.some((pattern) => pattern.test(key));
+}
+
+function isSensitiveHeader(key: string): boolean {
+  const sensitivePatterns = [/authorization/i, /api[_-]?key/i, /bearer/i, /token/i, /secret/i];
+  return sensitivePatterns.some((pattern) => pattern.test(key));
+}
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Textarea } from '~/components/ui/Textarea';
@@ -1601,6 +1656,18 @@ export default function McpServerWizard({ onAddServer }: McpServerWizardProps) {
                         No environment variables added. Add API keys, tokens, or other configuration here.
                       </p>
                     )}
+
+                    {Object.keys(customEnvVars).length > 0 && (
+                      <div className="mt-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>
+                            <strong>Security:</strong> Environment variables containing sensitive data may be visible in
+                            system process lists. Consider using secure credential storage for production use.
+                          </span>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -1644,31 +1711,42 @@ export default function McpServerWizard({ onAddServer }: McpServerWizardProps) {
                     </div>
 
                     {Object.keys(customEnvVars).length > 0 && (
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {Object.entries(customEnvVars).map(([key, value]) => (
-                          <div
-                            key={key}
-                            className="flex items-center gap-2 p-2 bg-bolt-elements-background-depth-2 rounded"
-                          >
-                            <code className="flex-1 text-xs font-mono">{key}</code>
-                            <Input
-                              type="password"
-                              value={value}
-                              onChange={(e) => handleEnvVarChange(key, e.target.value)}
-                              className="flex-1 text-xs"
-                            />
-                            <Button
-                              type="button"
-                              onClick={() => handleRemoveEnvVar(key)}
-                              size="sm"
-                              variant="outline"
-                              className="px-2"
+                      <>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {Object.entries(customEnvVars).map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex items-center gap-2 p-2 bg-bolt-elements-background-depth-2 rounded"
                             >
-                              <span className="i-ph:trash text-xs" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                              <code className="flex-1 text-xs font-mono">{key}</code>
+                              <Input
+                                type="password"
+                                value={value}
+                                onChange={(e) => handleEnvVarChange(key, e.target.value)}
+                                className="flex-1 text-xs"
+                              />
+                              <Button
+                                type="button"
+                                onClick={() => handleRemoveEnvVar(key)}
+                                size="sm"
+                                variant="outline"
+                                className="px-2"
+                              >
+                                <span className="i-ph:trash text-xs" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>
+                              <strong>Security:</strong> Headers containing sensitive data may be visible in logs.
+                              Consider using secure credential storage for production use.
+                            </span>
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
                 </TabsContent>
@@ -1722,31 +1800,42 @@ export default function McpServerWizard({ onAddServer }: McpServerWizardProps) {
                     </div>
 
                     {Object.keys(customEnvVars).length > 0 && (
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {Object.entries(customEnvVars).map(([key, value]) => (
-                          <div
-                            key={key}
-                            className="flex items-center gap-2 p-2 bg-bolt-elements-background-depth-2 rounded"
-                          >
-                            <code className="flex-1 text-xs font-mono">{key}</code>
-                            <Input
-                              type="password"
-                              value={value}
-                              onChange={(e) => handleEnvVarChange(key, e.target.value)}
-                              className="flex-1 text-xs"
-                            />
-                            <Button
-                              type="button"
-                              onClick={() => handleRemoveEnvVar(key)}
-                              size="sm"
-                              variant="outline"
-                              className="px-2"
+                      <>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {Object.entries(customEnvVars).map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex items-center gap-2 p-2 bg-bolt-elements-background-depth-2 rounded"
                             >
-                              <span className="i-ph:trash text-xs" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                              <code className="flex-1 text-xs font-mono">{key}</code>
+                              <Input
+                                type="password"
+                                value={value}
+                                onChange={(e) => handleEnvVarChange(key, e.target.value)}
+                                className="flex-1 text-xs"
+                              />
+                              <Button
+                                type="button"
+                                onClick={() => handleRemoveEnvVar(key)}
+                                size="sm"
+                                variant="outline"
+                                className="px-2"
+                              >
+                                <span className="i-ph:trash text-xs" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>
+                              <strong>Security:</strong> Headers containing sensitive data may be visible in logs.
+                              Consider using secure credential storage for production use.
+                            </span>
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
                 </TabsContent>
@@ -1810,13 +1899,15 @@ export default function McpServerWizard({ onAddServer }: McpServerWizardProps) {
                         </div>
                       ))}
 
-                      <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                        <h4 className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
-                          🔒 Security Notice
+                      <div className="mt-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                        <h4 className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1 flex items-center gap-1">
+                          <span className="text-base">⚠️</span>
+                          Security Warning
                         </h4>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                          API keys are stored locally and passed securely to the MCP server via environment variables.
-                          They are never sent to external services.
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                          <strong>Important:</strong> API keys are passed to MCP servers via environment variables.
+                          While they are stored securely and not logged, they may be visible in system process lists.
+                          Use caution with sensitive credentials.
                         </p>
                       </div>
                     </CardContent>
@@ -1837,7 +1928,7 @@ export default function McpServerWizard({ onAddServer }: McpServerWizardProps) {
                     <CardContent>
                       <div className="bg-bolt-elements-background-depth-1 p-3 rounded-lg">
                         <pre className="text-xs text-bolt-elements-textSecondary">
-                          {JSON.stringify(selectedTemplate.config, null, 2)}
+                          {JSON.stringify(sanitizeConfigForDisplay(selectedTemplate.config), null, 2)}
                         </pre>
                       </div>
                     </CardContent>

@@ -1,6 +1,61 @@
 import { useState } from 'react';
 import { Switch } from '~/components/ui/Switch';
 import { Button } from '~/components/ui/Button';
+
+// Helper function to sanitize config for UI display
+function sanitizeConfigForDisplay(config: any): any {
+  const sanitized = { ...config };
+
+  // Sanitize environment variables
+  if (sanitized.env) {
+    sanitized.env = {};
+
+    for (const [key, value] of Object.entries(config.env)) {
+      if (isSensitiveEnvVar(key)) {
+        sanitized.env[key] = '[REDACTED]';
+      } else {
+        sanitized.env[key] = value;
+      }
+    }
+  }
+
+  // Sanitize headers
+  if (sanitized.headers) {
+    sanitized.headers = {};
+
+    for (const [key, value] of Object.entries(config.headers)) {
+      if (isSensitiveHeader(key)) {
+        sanitized.headers[key] = '[REDACTED]';
+      } else {
+        sanitized.headers[key] = value;
+      }
+    }
+  }
+
+  return sanitized;
+}
+
+function isSensitiveEnvVar(key: string): boolean {
+  const sensitivePatterns = [
+    /api[_-]?key/i,
+    /secret/i,
+    /token/i,
+    /password/i,
+    /auth/i,
+    /credential/i,
+    /bearer/i,
+    /authorization/i,
+    /private[_-]?key/i,
+    /access[_-]?token/i,
+    /refresh[_-]?token/i,
+  ];
+  return sensitivePatterns.some((pattern) => pattern.test(key));
+}
+
+function isSensitiveHeader(key: string): boolean {
+  const sensitivePatterns = [/authorization/i, /api[_-]?key/i, /bearer/i, /token/i, /secret/i];
+  return sensitivePatterns.some((pattern) => pattern.test(key));
+}
 import { Badge } from '~/components/ui/Badge';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
@@ -213,7 +268,7 @@ const detectServerType = (serverName: string, config: any): string | null => {
 
   // Try to match by URL for HTTP servers
   if (config.url) {
-    const urlStr = config.url.toLowerCase();
+    const _urlStr = config.url.toLowerCase();
 
     // Add other URL-based detections here if needed
   }
@@ -683,7 +738,7 @@ export default function EnhancedMcpServerListItem({
               </summary>
               <div className="mt-2 p-3 rounded-md bg-bolt-elements-background-depth-2">
                 <pre className="text-xs text-bolt-elements-textSecondary font-mono">
-                  {JSON.stringify(mcpServer.config, null, 2)}
+                  {JSON.stringify(sanitizeConfigForDisplay(mcpServer.config), null, 2)}
                 </pre>
               </div>
             </details>

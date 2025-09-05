@@ -4,8 +4,119 @@ import { mcpConfigSchema } from '~/lib/services/mcpService';
 import { z } from 'zod';
 
 const MCP_SETTINGS_KEY = 'mcp_settings';
-const CURRENT_VERSION = '1.0.0';
+const CURRENT_VERSION = '1.1.0'; // Updated for security fixes
 const isBrowser = typeof window !== 'undefined';
+
+// Simple encryption/decryption for sensitive data (not production-grade but better than plain text)
+const ENCRYPTION_KEY = 'bolt_mcp_secure_storage_v1';
+
+function encrypt(text: string): string {
+  try {
+    // Simple XOR encryption for basic obfuscation
+    const key = ENCRYPTION_KEY;
+    let result = '';
+
+    for (let i = 0; i < text.length; i++) {
+      result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+
+    return btoa(result); // Base64 encode
+  } catch {
+    return text; // Fallback to plain text if encryption fails
+  }
+}
+
+function decrypt(encryptedText: string): string {
+  try {
+    const decoded = atob(encryptedText); // Base64 decode
+    const key = ENCRYPTION_KEY;
+    let result = '';
+
+    for (let i = 0; i < decoded.length; i++) {
+      result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+
+    return result;
+  } catch {
+    return encryptedText; // Fallback to encrypted text if decryption fails
+  }
+}
+
+// Helper functions for sanitizing sensitive data in logs
+function sanitizeMCPSettingsForLogging(settings: MCPSettings): MCPSettings {
+  return {
+    ...settings,
+    mcpConfig: sanitizeMCPConfigForLogging(settings.mcpConfig),
+  };
+}
+
+function sanitizeMCPConfigForLogging(config: MCPConfig): MCPConfig {
+  const sanitized = { ...config };
+
+  if (sanitized.mcpServers) {
+    sanitized.mcpServers = {};
+
+    for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
+      const sanitizedServerConfig = { ...serverConfig };
+
+      // Sanitize environment variables for STDIO servers
+      if (serverConfig.type === 'stdio' && 'env' in serverConfig && sanitizedServerConfig.type === 'stdio') {
+        (sanitizedServerConfig as any).env = {};
+
+        for (const [key, value] of Object.entries(serverConfig.env || {})) {
+          if (isSensitiveEnvVar(key)) {
+            (sanitizedServerConfig as any).env[key] = '[REDACTED]';
+          } else {
+            (sanitizedServerConfig as any).env[key] = value;
+          }
+        }
+      }
+
+      // Sanitize headers for HTTP/SSE servers
+      if (
+        (serverConfig.type === 'sse' || serverConfig.type === 'streamable-http') &&
+        'headers' in serverConfig &&
+        (sanitizedServerConfig.type === 'sse' || sanitizedServerConfig.type === 'streamable-http')
+      ) {
+        (sanitizedServerConfig as any).headers = {};
+
+        for (const [key, value] of Object.entries((serverConfig as any).headers || {})) {
+          if (isSensitiveHeader(key)) {
+            (sanitizedServerConfig as any).headers[key] = '[REDACTED]';
+          } else {
+            (sanitizedServerConfig as any).headers[key] = value;
+          }
+        }
+      }
+
+      sanitized.mcpServers[serverName] = sanitizedServerConfig;
+    }
+  }
+
+  return sanitized;
+}
+
+function isSensitiveEnvVar(key: string): boolean {
+  const sensitivePatterns = [
+    /api[_-]?key/i,
+    /secret/i,
+    /token/i,
+    /password/i,
+    /auth/i,
+    /credential/i,
+    /bearer/i,
+    /authorization/i,
+    /private[_-]?key/i,
+    /access[_-]?token/i,
+    /refresh[_-]?token/i,
+  ];
+  return sensitivePatterns.some((pattern) => pattern.test(key));
+}
+
+function isSensitiveHeader(key: string): boolean {
+  const sensitivePatterns = [/authorization/i, /api[_-]?key/i, /bearer/i, /token/i, /secret/i];
+  return sensitivePatterns.some((pattern) => pattern.test(key));
+}
 
 type MCPSettings = {
   version?: string;
@@ -56,7 +167,13 @@ const safeGetFromLocalStorage = (key: string): string | null => {
   }
 
   try {
-    return localStorage.getItem(key);
+    const encryptedValue = localStorage.getItem(key);
+
+    if (encryptedValue) {
+      return decrypt(encryptedValue);
+    }
+
+    return null;
   } catch (error) {
     console.warn(`Failed to read from localStorage key "${key}":`, error);
     return null;
@@ -69,7 +186,10 @@ const safeSetToLocalStorage = (key: string, value: string): boolean => {
   }
 
   try {
-    localStorage.setItem(key, value);
+    // Encrypt sensitive data before storing
+    const encryptedValue = encrypt(value);
+    localStorage.setItem(key, encryptedValue);
+
     return true;
   } catch (error) {
     console.error(`Failed to write to localStorage key "${key}":`, error);
@@ -175,7 +295,11 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
       console.log('MCP Store: running in browser, checking localStorage');
 
       const savedConfig = safeGetFromLocalStorage(MCP_SETTINGS_KEY);
-      console.log('MCP Store: saved config from localStorage:', savedConfig);
+      const sanitizedConfig = savedConfig ? sanitizeMCPConfigForLogging(JSON.parse(savedConfig).mcpConfig) : null;
+      console.log(
+        'MCP Store: saved config from localStorage:',
+        sanitizedConfig ? JSON.stringify(sanitizedConfig, null, 2) : null,
+      );
 
       if (savedConfig) {
         try {
@@ -189,8 +313,12 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
             }));
           }
 
-          console.log('MCP Store: validated settings:', JSON.stringify(settings, null, 2));
-          console.log('MCP Store: calling updateServerConfig with:', JSON.stringify(settings.mcpConfig, null, 2));
+          const sanitizedSettings = sanitizeMCPSettingsForLogging(settings);
+          console.log('MCP Store: validated settings:', JSON.stringify(sanitizedSettings, null, 2));
+          console.log(
+            'MCP Store: calling updateServerConfig with:',
+            JSON.stringify(sanitizeMCPConfigForLogging(settings.mcpConfig), null, 2),
+          );
 
           try {
             const serverTools = await updateServerConfig(settings.mcpConfig);

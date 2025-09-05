@@ -248,6 +248,23 @@ export default function McpTab() {
         </div>
       </div>
 
+      {/* Security Warning */}
+      <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+        <div className="flex items-start gap-3">
+          <span className="text-yellow-600 dark:text-yellow-400 text-lg">⚠️</span>
+          <div>
+            <h4 className="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-1">
+              Security Notice: API Key Visibility
+            </h4>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400">
+              MCP servers configured with API keys may expose them in system process lists. Sensitive environment
+              variables are now redacted from logs, but consider using secure credential storage for production
+              deployments.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 !bg-bolt-elements-background-depth-2 !border-bolt-elements-borderColor">

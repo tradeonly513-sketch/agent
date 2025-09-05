@@ -6,8 +6,37 @@ import {
   convertToCoreMessages,
   formatDataStreamPart,
 } from 'ai';
-import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+// Browser-safe MCP stdio transport loading
+let stdioTransportLoaded = false;
+let experimentalStdioMcpTransport: any = null;
+
+async function loadStdioTransport() {
+  if (stdioTransportLoaded) {
+    return experimentalStdioMcpTransport;
+  }
+
+  if (typeof window !== 'undefined') {
+    // Return a stub for browser environment
+    return class StubStdioMCPTransport {
+      constructor() {
+        throw new Error('STDIO MCP transport is not available in browser environment');
+      }
+    };
+  }
+
+  try {
+    const { Experimental_StdioMCPTransport: stdioTransport } = await import('ai/mcp-stdio');
+    experimentalStdioMcpTransport = stdioTransport;
+    stdioTransportLoaded = true;
+
+    return stdioTransport;
+  } catch (error) {
+    console.warn('Failed to import Experimental_StdioMCPTransport:', error);
+    return null;
+  }
+}
 import { z } from 'zod';
 import type { ToolCallAnnotation } from '~/types/context';
 import {
@@ -651,7 +680,8 @@ export class MCPService {
   }
 
   async updateConfig(config: MCPConfig) {
-    logger.debug('updateConfig called with:', JSON.stringify(config, null, 2));
+    const sanitizedConfig = this._sanitizeMCPConfigForLogging(config);
+    logger.debug('updateConfig called with:', JSON.stringify(sanitizedConfig, null, 2));
     logger.debug('Number of servers in config:', Object.keys(config.mcpServers || {}).length);
 
     this._config = config;
@@ -690,11 +720,19 @@ export class MCPService {
   }
 
   private async _createStdioClient(serverName: string, config: STDIOServerConfig): Promise<MCPClient> {
+    // Create a sanitized config for logging (without sensitive environment variables)
+    const sanitizedConfig = this._sanitizeConfigForLogging(config);
     logger.debug(
-      `Creating STDIO client for '${serverName}' with command: '${config.command}' ${config.args?.join(' ') || ''}`,
+      `Creating STDIO client for '${serverName}' with command: '${sanitizedConfig.command}' ${sanitizedConfig.args?.join(' ') || ''}`,
     );
 
-    const client = await experimental_createMCPClient({ transport: new Experimental_StdioMCPTransport(config) });
+    const stdioTransport = await loadStdioTransport();
+
+    if (!stdioTransport) {
+      throw new Error('STDIO transport not available in browser environment');
+    }
+
+    const client = await experimental_createMCPClient({ transport: new stdioTransport(config) });
 
     return Object.assign(client, { serverName });
   }
@@ -776,7 +814,7 @@ export class MCPService {
   }
 
   private _resolveToolConflict(conflict: ToolConflict): void {
-    const { toolName, servers, resolutionStrategy, userPreference } = conflict;
+    const { toolName, resolutionStrategy, userPreference } = conflict;
 
     logger.info(`Resolving tool conflict for "${toolName}" using strategy: ${resolutionStrategy}`);
 
@@ -978,7 +1016,8 @@ export class MCPService {
     const createClientPromises = Object.entries(this._config?.mcpServers || []).map(async ([serverName, config]) => {
       let client: MCPClient | null = null;
 
-      logger.debug(`Processing server: ${serverName}`, JSON.stringify(config, null, 2));
+      const sanitizedConfig = this._sanitizeConfigForLogging(config as STDIOServerConfig);
+      logger.debug(`Processing server: ${serverName}`, JSON.stringify(sanitizedConfig, null, 2));
 
       try {
         client = await this._createMCPClientWithRetry(serverName, config);
@@ -1190,6 +1229,101 @@ export class MCPService {
     }
 
     return sanitized;
+  }
+
+  private _sanitizeMCPConfigForLogging(config: MCPConfig): MCPConfig {
+    const sanitized = { ...config };
+
+    if (sanitized.mcpServers) {
+      sanitized.mcpServers = {};
+
+      for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
+        const sanitizedServerConfig = { ...serverConfig };
+
+        // Sanitize environment variables for STDIO servers
+        if (serverConfig.type === 'stdio') {
+          const stdioConfig = serverConfig as STDIOServerConfig;
+
+          if (stdioConfig.env) {
+            (sanitizedServerConfig as any).env = {};
+
+            for (const [key, value] of Object.entries(stdioConfig.env)) {
+              if (this._isSensitiveEnvVar(key)) {
+                (sanitizedServerConfig as any).env[key] = '[REDACTED]';
+              } else {
+                (sanitizedServerConfig as any).env[key] = value;
+              }
+            }
+          }
+        }
+
+        // Sanitize headers for HTTP/SSE servers
+        if (serverConfig.type === 'sse' || serverConfig.type === 'streamable-http') {
+          const httpConfig = serverConfig as SSEServerConfig | StreamableHTTPServerConfig;
+
+          if (httpConfig.headers) {
+            (sanitizedServerConfig as any).headers = {};
+
+            for (const [key, value] of Object.entries(httpConfig.headers)) {
+              if (this._isSensitiveHeader(key)) {
+                (sanitizedServerConfig as any).headers[key] = '[REDACTED]';
+              } else {
+                (sanitizedServerConfig as any).headers[key] = value;
+              }
+            }
+          }
+        }
+
+        sanitized.mcpServers[serverName] = sanitizedServerConfig;
+      }
+    }
+
+    return sanitized;
+  }
+
+  private _sanitizeConfigForLogging(config: STDIOServerConfig): STDIOServerConfig {
+    const sanitized = { ...config };
+
+    // Remove sensitive environment variables from logging
+    if (sanitized.env) {
+      const sanitizedEnv: Record<string, string> = {};
+
+      for (const [key, value] of Object.entries(sanitized.env)) {
+        // Mask sensitive environment variable values
+        if (this._isSensitiveEnvVar(key)) {
+          sanitizedEnv[key] = '[REDACTED]';
+        } else {
+          sanitizedEnv[key] = value;
+        }
+      }
+      sanitized.env = sanitizedEnv;
+    }
+
+    return sanitized;
+  }
+
+  private _isSensitiveEnvVar(key: string): boolean {
+    const sensitivePatterns = [
+      /api[_-]?key/i,
+      /secret/i,
+      /token/i,
+      /password/i,
+      /auth/i,
+      /credential/i,
+      /bearer/i,
+      /authorization/i,
+      /private[_-]?key/i,
+      /access[_-]?token/i,
+      /refresh[_-]?token/i,
+    ];
+
+    return sensitivePatterns.some((pattern) => pattern.test(key));
+  }
+
+  private _isSensitiveHeader(key: string): boolean {
+    const sensitivePatterns = [/authorization/i, /api[_-]?key/i, /bearer/i, /token/i, /secret/i];
+
+    return sensitivePatterns.some((pattern) => pattern.test(key));
   }
 
   private async _sleep(ms: number): Promise<void> {
@@ -1887,8 +2021,6 @@ export class MCPService {
      * For now, we'll use a simple heuristic - if majority of tools are from one server type,
      * use that server's recommended model
      */
-    const serverArray = Array.from(serversInvolved);
-
     // Simple strategy: use model recommendations for the server with the most tool calls
     const dominantServer = Object.entries(serverToolCounts).sort(([, a], [, b]) => b - a)[0][0];
 
