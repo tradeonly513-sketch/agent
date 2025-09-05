@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import React, { Suspense } from 'react';
-import VercelConnection from './VercelConnection';
 
 // Use React.lazy for dynamic imports
 const GitHubConnection = React.lazy(() => import('./github/GitHubConnection'));
 const GitlabConnection = React.lazy(() => import('./gitlab/GitLabConnection'));
-const NetlifyConnection = React.lazy(() => import('./NetlifyConnection'));
+const NetlifyConnection = React.lazy(() => import('./netlify/NetlifyConnection'));
+const VercelConnection = React.lazy(() => import('./vercel/VercelConnection'));
 
 // Loading fallback component
 const LoadingFallback = () => (
