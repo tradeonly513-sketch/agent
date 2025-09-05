@@ -1,26 +1,26 @@
-import { initializeVercelConnection } from '../stores/vercel';
-import { initializeSupabaseConnection } from '../stores/supabase';
-import { initializeNetlifyConnection } from '../stores/netlify';
-import { initializeGitHubConnection } from '../stores/github';
-import { logStore } from '../stores/logs';
+import { initializeVercelConnection } from '~/lib/stores/vercel';
+import { initializeSupabaseConnection } from '~/lib/stores/supabase';
+import { initializeNetlifyConnection } from '~/lib/stores/netlify';
+import { initializeGitHubConnection } from '~/lib/stores/github';
+import { logStore } from '~/lib/stores/logs';
 
 /**
  * Global API initialization service that loads all API connections upfront
  * when the application starts
  */
 export class ApiInitializationService {
-  private static instance: ApiInitializationService;
-  private initialized = false;
-  private initializationPromise: Promise<void> | null = null;
+  private static _instance: ApiInitializationService;
+  private _initialized = false;
+  private _initializationPromise: Promise<void> | null = null;
 
   private constructor() {}
 
   static getInstance(): ApiInitializationService {
-    if (!ApiInitializationService.instance) {
-      ApiInitializationService.instance = new ApiInitializationService();
+    if (!ApiInitializationService._instance) {
+      ApiInitializationService._instance = new ApiInitializationService();
     }
 
-    return ApiInitializationService.instance;
+    return ApiInitializationService._instance;
   }
 
   /**
@@ -28,33 +28,33 @@ export class ApiInitializationService {
    */
   async initializeAllApis(): Promise<void> {
     // Prevent multiple initialization attempts
-    if (this.initialized || this.initializationPromise) {
-      return this.initializationPromise || Promise.resolve();
+    if (this._initialized || this._initializationPromise) {
+      return this._initializationPromise || Promise.resolve();
     }
 
-    this.initializationPromise = this.performInitialization();
-    await this.initializationPromise;
-    this.initialized = true;
+    this._initializationPromise = this._performInitialization();
+    await this._initializationPromise;
+    this._initialized = true;
 
-    return this.initializationPromise;
+    return this._initializationPromise;
   }
 
   /**
    * Check if all APIs have been initialized
    */
   isInitialized(): boolean {
-    return this.initialized;
+    return this._initialized;
   }
 
   /**
    * Reset initialization state (useful for testing or re-initialization)
    */
   reset(): void {
-    this.initialized = false;
-    this.initializationPromise = null;
+    this._initialized = false;
+    this._initializationPromise = null;
   }
 
-  private async performInitialization(): Promise<void> {
+  private async _performInitialization(): Promise<void> {
     try {
       logStore.logSystem('Starting global API initialization', {
         timestamp: new Date().toISOString(),
@@ -62,10 +62,10 @@ export class ApiInitializationService {
 
       // Initialize all API connections in parallel
       const initializationPromises: Promise<void>[] = [
-        this.initializeVercelApi(),
-        this.initializeSupabaseApi(),
-        this.initializeGitHubApi(),
-        this.initializeNetlifyApi(),
+        this._initializeVercelApi(),
+        this._initializeSupabaseApi(),
+        this._initializeGitHubApi(),
+        this._initializeNetlifyApi(),
       ];
 
       // Wait for all initializations to complete
@@ -80,7 +80,7 @@ export class ApiInitializationService {
     }
   }
 
-  private async initializeVercelApi(): Promise<void> {
+  private async _initializeVercelApi(): Promise<void> {
     try {
       await initializeVercelConnection();
       logStore.logSystem('Vercel API initialized successfully');
@@ -89,7 +89,7 @@ export class ApiInitializationService {
     }
   }
 
-  private async initializeSupabaseApi(): Promise<void> {
+  private async _initializeSupabaseApi(): Promise<void> {
     try {
       await initializeSupabaseConnection();
       logStore.logSystem('Supabase API initialized successfully');
@@ -98,7 +98,7 @@ export class ApiInitializationService {
     }
   }
 
-  private async initializeGitHubApi(): Promise<void> {
+  private async _initializeGitHubApi(): Promise<void> {
     try {
       await initializeGitHubConnection();
       logStore.logSystem('GitHub API initialized successfully');
@@ -107,7 +107,7 @@ export class ApiInitializationService {
     }
   }
 
-  private async initializeNetlifyApi(): Promise<void> {
+  private async _initializeNetlifyApi(): Promise<void> {
     try {
       await initializeNetlifyConnection();
       logStore.logSystem('Netlify API initialized successfully');

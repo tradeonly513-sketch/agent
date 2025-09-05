@@ -18,6 +18,19 @@ export default defineConfig((config) => {
     },
     build: {
       target: 'esnext',
+      rollupOptions: {
+        external: (id) => {
+          // Exclude ai/mcp-stdio from browser builds
+          if (id.includes('ai/mcp-stdio')) {
+            return true;
+          }
+
+          return false;
+        },
+      },
+    },
+    optimizeDeps: {
+      exclude: ['ai/mcp-stdio'],
     },
     plugins: [
       nodePolyfills({
