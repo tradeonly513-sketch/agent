@@ -179,7 +179,7 @@ async function fetchProjectStats(projectId: string, token: string): Promise<Proj
   }
 }
 
-export const action: ActionFunction = async ({ request }) => {
+export const action: ActionFunction = async ({ request, context }) => {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -187,9 +187,21 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     const { token } = (await request.json()) as any;
 
+    // Handle server-side token (from environment variables)
+    let actualToken = token;
+
+    if (token === 'SERVER_SIDE_TOKEN') {
+      // Try to get token from environment variables
+      actualToken = context?.cloudflare?.env?.VITE_SUPABASE_ACCESS_TOKEN || process.env.VITE_SUPABASE_ACCESS_TOKEN;
+
+      if (!actualToken) {
+        return json({ error: 'Supabase access token not configured in environment variables' }, { status: 401 });
+      }
+    }
+
     const projectsResponse = await fetch('https://api.supabase.com/v1/projects', {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${actualToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -213,10 +225,13 @@ export const action: ActionFunction = async ({ request }) => {
 
     const uniqueProjects = Array.from(uniqueProjectsMap.values());
 
-    // Fetch detailed stats for each project
+    // Fetch detailed stats for each project (only for active projects)
     const projectsWithStats = await Promise.all(
       uniqueProjects.map(async (project) => {
-        const stats = await fetchProjectStats(project.id, token);
+        // Only fetch stats for active/healthy projects to avoid 544 errors on inactive ones
+        const isActive = project.status === 'ACTIVE_HEALTHY' || project.status === 'ACTIVE';
+        const stats = isActive ? await fetchProjectStats(project.id, actualToken) : null;
+
         return {
           ...project,
           stats: stats || undefined,
