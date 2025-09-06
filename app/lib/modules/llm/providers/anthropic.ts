@@ -23,7 +23,16 @@ export class AnthropicProvider extends BaseProvider {
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
       maxCompletionTokens: 64000,
+      supportsSmartAI: false, // Base model without SmartAI
+    },
+    {
+      name: 'claude-opus-4-1-20250805-smartai',
+      label: 'Claude Opus 4.1 (SmartAI)',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 64000,
       supportsSmartAI: true,
+      isSmartAIEnabled: true,
     },
 
     /*
@@ -36,7 +45,16 @@ export class AnthropicProvider extends BaseProvider {
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
       maxCompletionTokens: 64000,
+      supportsSmartAI: false, // Base model without SmartAI
+    },
+    {
+      name: 'claude-sonnet-4-20250514-smartai',
+      label: 'Claude Sonnet 4 (SmartAI)',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 64000,
       supportsSmartAI: true,
+      isSmartAIEnabled: true,
     },
 
     /*
@@ -49,7 +67,16 @@ export class AnthropicProvider extends BaseProvider {
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
       maxCompletionTokens: 8192,
+      supportsSmartAI: false, // Base model without SmartAI
+    },
+    {
+      name: 'claude-3-5-sonnet-20241022-smartai',
+      label: 'Claude 3.5 Sonnet (SmartAI)',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 8192,
       supportsSmartAI: true,
+      isSmartAIEnabled: true,
     },
 
     // Claude 3 Haiku: 200k context, fastest and most cost-effective
@@ -59,7 +86,16 @@ export class AnthropicProvider extends BaseProvider {
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
       maxCompletionTokens: 4096,
+      supportsSmartAI: false, // Base model without SmartAI
+    },
+    {
+      name: 'claude-3-haiku-20240307-smartai',
+      label: 'Claude 3 Haiku (SmartAI)',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 4096,
       supportsSmartAI: true,
+      isSmartAIEnabled: true,
     },
   ];
 

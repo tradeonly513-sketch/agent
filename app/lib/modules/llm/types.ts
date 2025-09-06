@@ -14,6 +14,9 @@ export interface ModelInfo {
 
   /** Indicates if this model supports SmartAI enhanced feedback */
   supportsSmartAI?: boolean;
+
+  /** Indicates if SmartAI is currently enabled for this model variant */
+  isSmartAIEnabled?: boolean;
 }
 
 export interface ProviderInfo {

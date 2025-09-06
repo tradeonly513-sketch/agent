@@ -230,10 +230,15 @@ export async function streamText(props: {
     `Max tokens for model ${modelDetails.name} is ${safeMaxTokens} (capped from ${dynamicMaxTokens}) based on model limits`,
   );
 
-  // Check if SmartAI is enabled for supported models
+  /*
+   * Check if SmartAI is enabled for supported models
+   * SmartAI is enabled if either:
+   * 1. The model itself has isSmartAIEnabled flag (for models with SmartAI in name)
+   * 2. The user explicitly enabled it via message flag
+   */
   const isSmartAISupported =
     modelDetails?.supportsSmartAI && (provider.name === 'Anthropic' || provider.name === 'OpenAI');
-  const useSmartAI = smartAIEnabled && isSmartAISupported;
+  const useSmartAI = (modelDetails?.isSmartAIEnabled || smartAIEnabled) && isSmartAISupported;
 
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
