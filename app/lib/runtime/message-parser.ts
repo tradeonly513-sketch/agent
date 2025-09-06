@@ -14,6 +14,7 @@ const logger = createScopedLogger('MessageParser');
 
 export interface ArtifactCallbackData extends BoltArtifactData {
   messageId: string;
+  artifactId: string;
 }
 
 export interface ActionCallbackData {
@@ -36,6 +37,7 @@ export interface ParserCallbacks {
 
 interface ElementFactoryProps {
   messageId: string;
+  artifactId: string;
 }
 
 type ElementFactory = (props: ElementFactoryProps) => string;
@@ -49,6 +51,7 @@ interface MessageState {
   position: number;
   insideArtifact: boolean;
   insideAction: boolean;
+  artifactCounter: number;
   currentArtifact?: BoltArtifactData;
   currentAction: BoltActionData;
   actionId: number;
@@ -84,6 +87,7 @@ export class StreamingMessageParser {
         position: 0,
         insideAction: false,
         insideArtifact: false,
+        artifactCounter: 0,
         currentAction: { content: '' },
         actionId: 0,
       };
@@ -221,7 +225,11 @@ export class StreamingMessageParser {
               break;
             }
           } else if (artifactCloseIndex !== -1) {
-            this._options.callbacks?.onArtifactClose?.({ messageId, ...currentArtifact });
+            this._options.callbacks?.onArtifactClose?.({
+              messageId,
+              artifactId: currentArtifact.id,
+              ...currentArtifact,
+            });
 
             state.insideArtifact = false;
             state.currentArtifact = undefined;
@@ -254,7 +262,9 @@ export class StreamingMessageParser {
 
               const artifactTitle = this.#extractAttribute(artifactTag, 'title') as string;
               const type = this.#extractAttribute(artifactTag, 'type') as string;
-              const artifactId = this.#extractAttribute(artifactTag, 'id') as string;
+
+              // const artifactId = this.#extractAttribute(artifactTag, 'id') as string;
+              const artifactId = `${messageId}-${state.artifactCounter++}`;
 
               if (!artifactTitle) {
                 logger.warn('Artifact title missing');
@@ -274,11 +284,15 @@ export class StreamingMessageParser {
 
               state.currentArtifact = currentArtifact;
 
-              this._options.callbacks?.onArtifactOpen?.({ messageId, ...currentArtifact });
+              this._options.callbacks?.onArtifactOpen?.({
+                messageId,
+                artifactId: currentArtifact.id,
+                ...currentArtifact,
+              });
 
               const artifactFactory = this._options.artifactElement ?? createArtifactElement;
 
-              output += artifactFactory({ messageId });
+              output += artifactFactory({ messageId, artifactId });
 
               i = openTagEnd + 1;
             } else {

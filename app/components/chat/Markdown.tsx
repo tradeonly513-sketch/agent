@@ -34,49 +34,61 @@ export const Markdown = memo(
 
           if (className?.includes('__boltArtifact__')) {
             const messageId = node?.properties.dataMessageId as string;
+            const artifactId = node?.properties.dataArtifactId as string;
 
             if (!messageId) {
               logger.error(`Invalid message id ${messageId}`);
             }
 
-            return <Artifact messageId={messageId} />;
+            if (!artifactId) {
+              logger.error(`Invalid artifact id ${artifactId}`);
+            }
+
+            return <Artifact messageId={messageId} artifactId={artifactId} />;
           }
 
-          if (className?.includes('__boltSelectedElement__')) {
-            const messageId = node?.properties.dataMessageId as string;
-            const elementDataAttr = node?.properties.dataElement as string;
+          if (!artifactId) {
+            logger.error(`Invalid artifact id ${artifactId}`);
+          }
 
-            // Parse the element data if it exists
-            let elementData: any = null;
+          return <Artifact messageId={messageId} artifactId={artifactId} />;
+        }
 
-            if (elementDataAttr) {
-              try {
-                elementData = JSON.parse(elementDataAttr);
-              } catch (e) {
-                console.error('Failed to parse element data:', e);
-              }
+        if (className?.includes('__boltSelectedElement__')) {
+          const messageId = node?.properties.dataMessageId as string;
+          const elementDataAttr = node?.properties.dataElement as string;
+
+          // Parse the element data if it exists
+          let elementData: any = null;
+
+          if (elementDataAttr) {
+            try {
+              elementData = JSON.parse(elementDataAttr);
+            } catch (e) {
+              console.error('Failed to parse element data:', e);
             }
+          }
 
-            if (!messageId) {
-              logger.error(`Invalid message id ${messageId}`);
-            }
+          if (!messageId) {
+            logger.error(`Invalid message id ${messageId}`);
+          }
 
-            return (
-              <div className="bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded-lg p-3 my-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-mono bg-bolt-elements-background-depth-2 px-2 py-1 rounded text-bolt-elements-textTer">
-                    {elementData?.tagName}
-                  </span>
-                  {elementData?.className && (
-                    <span className="text-xs text-bolt-elements-textSecondary">.{elementData.className}</span>
-                  )}
-                </div>
-                <code className="block text-sm !text-bolt-elements-textSecondary !bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor p-2 rounded">
-                  {elementData?.displayText}
-                </code>
+          return (
+            <div className="bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded-lg p-3 my-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-mono bg-bolt-elements-background-depth-2 px-2 py-1 rounded text-bolt-elements-textTer">
+                  {elementData?.tagName}
+                </span>
+                {elementData?.className && (
+                  <span className="text-xs text-bolt-elements-textSecondary">.{elementData.className}</span>
+                )}
               </div>
-            );
-          }
+              <code className="block text-sm !text-bolt-elements-textSecondary !bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor p-2 rounded">
+                {elementData?.displayText}
+              </code>
+            </div>
+          );
+        }
 
           if (className?.includes('__boltThought__')) {
             return <ThoughtBox title="Thought process">{children}</ThoughtBox>;
