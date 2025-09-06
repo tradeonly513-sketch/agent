@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { StreamingMessageParser, type ActionCallback, type ArtifactCallback } from './message-parser';
+import { EnhancedStreamingMessageParser } from './enhanced-message-parser';
 
 interface ExpectedResult {
   output: string;
@@ -163,6 +164,76 @@ describe('StreamingMessageParser', () => {
    * Tests for: script files with shebang -> <boltAction type="file">
    * Tests for: code blocks without context -> no action created
    */
+});
+
+describe('EnhancedStreamingMessageParser', () => {
+  it('should detect shell commands in code blocks', () => {
+    const callbacks = {
+      onArtifactOpen: vi.fn(),
+      onArtifactClose: vi.fn(),
+      onActionOpen: vi.fn(),
+      onActionClose: vi.fn(),
+    };
+
+    const parser = new EnhancedStreamingMessageParser({
+      callbacks,
+    });
+
+    const input = '```bash\nnpm install && npm run dev\n```';
+    parser.parse('test_id', input);
+
+    expect(callbacks.onActionOpen).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: expect.objectContaining({
+          type: 'shell',
+          content: 'npm install && npm run dev',
+        }),
+      }),
+    );
+  });
+
+  it('should detect file creation from code blocks with context', () => {
+    const callbacks = {
+      onArtifactOpen: vi.fn(),
+      onArtifactClose: vi.fn(),
+      onActionOpen: vi.fn(),
+      onActionClose: vi.fn(),
+    };
+
+    const parser = new EnhancedStreamingMessageParser({
+      callbacks,
+    });
+
+    const input =
+      'Create a new file called index.js:\n\n```javascript\nfunction hello() {\n  console.log("Hello World");\n}\n```';
+    parser.parse('test_id', input);
+
+    expect(callbacks.onArtifactOpen).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: expect.stringContaining('artifact-'),
+        title: 'index.js',
+      }),
+    );
+  });
+
+  it('should not create actions for code blocks without context', () => {
+    const callbacks = {
+      onArtifactOpen: vi.fn(),
+      onArtifactClose: vi.fn(),
+      onActionOpen: vi.fn(),
+      onActionClose: vi.fn(),
+    };
+
+    const parser = new EnhancedStreamingMessageParser({
+      callbacks,
+    });
+
+    const input = 'Here is some code:\n\n```javascript\nfunction test() {}\n```';
+    parser.parse('test_id', input);
+
+    expect(callbacks.onArtifactOpen).not.toHaveBeenCalled();
+    expect(callbacks.onActionOpen).not.toHaveBeenCalled();
+  });
 });
 
 function runTest(input: string | string[], outputOrExpectedResult: string | ExpectedResult) {

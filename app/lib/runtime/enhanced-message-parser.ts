@@ -110,7 +110,7 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
           processed.add(blockHash);
           logger.debug(`Auto-wrapped code block as shell command instead of file`);
 
-          return this._wrapInShellAction(content);
+          return this._wrapInShellAction(content, messageId);
         }
 
         // Clean up the file path
@@ -190,10 +190,14 @@ ${content}
 </boltArtifact>`;
   }
 
-  private _wrapInShellAction(content: string): string {
-    return `<boltAction type="shell">
+  private _wrapInShellAction(content: string, messageId: string): string {
+    const artifactId = `artifact-${messageId}-${this._artifactCounter++}`;
+
+    return `<boltArtifact id="${artifactId}" title="Shell Command" type="shell">
+<boltAction type="shell">
 ${content.trim()}
-</boltAction>`;
+</boltAction>
+</boltArtifact>`;
   }
 
   private _normalizeFilePath(filePath: string): string {
@@ -518,7 +522,7 @@ ${content.trim()}
         processed.add(blockHash);
         logger.debug(`Auto-wrapped shell code block as command: ${language}`);
 
-        return this._wrapInShellAction(content);
+        return this._wrapInShellAction(content, _messageId);
       }
 
       // If it looks like a script, let the file detection patterns handle it

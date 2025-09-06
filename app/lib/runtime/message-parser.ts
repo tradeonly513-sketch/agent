@@ -97,8 +97,6 @@ export class StreamingMessageParser {
 
     while (i < input.length) {
       if (input.startsWith(BOLT_QUICK_ACTIONS_OPEN, i)) {
-        console.log('input:', input.slice(i));
-
         const actionsBlockEnd = input.indexOf(BOLT_QUICK_ACTIONS_CLOSE, i);
 
         if (actionsBlockEnd !== -1) {
@@ -395,8 +393,6 @@ function createQuickActionElement(props: Record<string, string>, label: string) 
     'data-bolt-quick-action="true"',
     ...Object.entries(props).map(([key, value]) => `data-${camelToDashCase(key)}=${JSON.stringify(value)}`),
   ];
-
-  console.log('elementProps', `<button ${elementProps.join(' ')}>${label}</button>`);
 
   return `<button ${elementProps.join(' ')}>${label}</button>`;
 }
