@@ -510,6 +510,10 @@ export class WorkbenchStore {
   }
 
   updateArtifact({ artifactId }: ArtifactCallbackData, state: Partial<ArtifactUpdateState>) {
+    if (!artifactId) {
+      return;
+    }
+
     const artifact = this.#getArtifact(artifactId);
 
     if (!artifact) {

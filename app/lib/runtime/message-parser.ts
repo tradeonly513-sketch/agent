@@ -14,7 +14,7 @@ const logger = createScopedLogger('MessageParser');
 
 export interface ArtifactCallbackData extends BoltArtifactData {
   messageId: string;
-  artifactId: string;
+  artifactId?: string;
 }
 
 export interface ActionCallbackData {
@@ -37,7 +37,7 @@ export interface ParserCallbacks {
 
 interface ElementFactoryProps {
   messageId: string;
-  artifactId: string;
+  artifactId?: string;
 }
 
 type ElementFactory = (props: ElementFactoryProps) => string;
