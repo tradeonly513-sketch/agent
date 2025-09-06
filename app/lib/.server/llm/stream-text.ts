@@ -141,13 +141,19 @@ export async function streamText(props: {
   } = props;
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
+  let smartAIEnabled = false;
   let processedMessages = messages.map((message) => {
     const newMessage = { ...message };
 
     if (message.role === 'user') {
-      const { model, provider, content } = extractPropertiesFromMessage(message);
+      const { model, provider, content, smartAI } = extractPropertiesFromMessage(message);
       currentModel = model;
       currentProvider = provider;
+
+      if (smartAI !== undefined) {
+        smartAIEnabled = smartAI;
+      }
+
       newMessage.content = sanitizeText(content);
     } else if (message.role == 'assistant') {
       newMessage.content = sanitizeText(message.content);
@@ -224,8 +230,10 @@ export async function streamText(props: {
     `Max tokens for model ${modelDetails.name} is ${safeMaxTokens} (capped from ${dynamicMaxTokens}) based on model limits`,
   );
 
-  // Check if this is a SmartAI model
-  const isSmartAI = modelDetails?.isSmartAI || currentModel.includes('-smartai');
+  // Check if SmartAI is enabled for supported models
+  const isSmartAISupported =
+    modelDetails?.supportsSmartAI && (provider.name === 'Anthropic' || provider.name === 'OpenAI');
+  const useSmartAI = smartAIEnabled && isSmartAISupported;
 
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
@@ -240,8 +248,8 @@ export async function streamText(props: {
       },
     }) ?? getSystemPrompt();
 
-  // Enhance system prompt for SmartAI models
-  if (isSmartAI) {
+  // Enhance system prompt for SmartAI if enabled and supported
+  if (useSmartAI) {
     systemPrompt = getSmartAISystemPrompt(systemPrompt);
   }
 

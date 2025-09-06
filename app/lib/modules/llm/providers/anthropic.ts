@@ -18,40 +18,12 @@ export class AnthropicProvider extends BaseProvider {
      * Claude 3.5 Sonnet: 200k context, excellent for complex reasoning and coding
      */
     {
-      name: 'claude-sonnet-4-20250514',
-      label: 'Claude Sonnet 4',
-      provider: 'Anthropic',
-      maxTokenAllowed: 200000,
-      maxCompletionTokens: 64000,
-    },
-    {
-      name: 'claude-sonnet-4-20250514-smartai',
-      label: 'Claude Sonnet 4 (SmartAI)',
-      provider: 'Anthropic',
-      maxTokenAllowed: 200000,
-      maxCompletionTokens: 64000,
-      isSmartAI: true,
-    },
-    {
-      name: 'claude-opus-4-1-20250805',
-      label: 'Claude Opus 4.1',
-      provider: 'Anthropic',
-      maxTokenAllowed: 200000,
-      maxCompletionTokens: 64000,
-    },
-    {
-      name: 'claude-3-7-sonnet-20250219',
-      label: 'Claude 3.7 Sonnet',
-      provider: 'Anthropic',
-      maxTokenAllowed: 200000,
-      maxCompletionTokens: 64000,
-    },
-    {
       name: 'claude-3-5-sonnet-20241022',
       label: 'Claude 3.5 Sonnet',
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
       maxCompletionTokens: 8192,
+      supportsSmartAI: true,
     },
 
     // Claude 3 Haiku: 200k context, fastest and most cost-effective
@@ -61,6 +33,7 @@ export class AnthropicProvider extends BaseProvider {
       provider: 'Anthropic',
       maxTokenAllowed: 200000,
       maxCompletionTokens: 4096,
+      supportsSmartAI: true,
     },
   ];
 
@@ -134,6 +107,7 @@ export class AnthropicProvider extends BaseProvider {
         provider: this.name,
         maxTokenAllowed: contextWindow,
         maxCompletionTokens,
+        supportsSmartAI: true, // All Anthropic models support SmartAI
       };
     });
   }

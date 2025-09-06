@@ -398,7 +398,7 @@ export const ModelSelector = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 truncate">
               <span className="truncate">{modelList.find((m) => m.name === model)?.label || 'Select model'}</span>
-              {modelList.find((m) => m.name === model)?.isSmartAI && (
+              {modelList.find((m) => m.name === model)?.supportsSmartAI && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30">
                   <span className="i-ph:sparkle text-xs text-blue-400" />
                   <span className="text-xs text-blue-400 font-medium">SmartAI</span>
@@ -524,7 +524,7 @@ export const ModelSelector = ({
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         {modelOption.label}
-                        {modelOption.isSmartAI && (
+                        {modelOption.supportsSmartAI && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30">
                             <span className="i-ph:sparkle text-xs text-blue-400" />
                             <span className="text-xs text-blue-400 font-medium">SmartAI</span>
