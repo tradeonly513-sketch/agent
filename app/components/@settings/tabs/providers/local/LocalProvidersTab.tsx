@@ -152,14 +152,14 @@ function SetupGuide({ onBack }: { onBack: () => void }) {
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="bg-transparent hover:bg-bolt-elements-background-depth-2"
+          className="bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-all duration-200 gap-2 px-3 py-2"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
         </Button>
         <div>
@@ -171,14 +171,14 @@ function SetupGuide({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Ollama Setup Section */}
-      <Card className="bg-bolt-elements-background-depth-2">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <Server className="w-5 h-5 text-purple-500" />
+      <Card className="bg-bolt-elements-background-depth-2 shadow-sm">
+        <CardHeader className="pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/20 flex items-center justify-center ring-1 ring-purple-500/30">
+              <Server className="w-6 h-6 text-purple-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">Ollama Setup</h3>
+              <h3 className="text-xl font-semibold text-bolt-elements-textPrimary">Ollama Setup</h3>
               <p className="text-sm text-bolt-elements-textSecondary">
                 Run large language models like Llama, Mistral, and CodeLlama locally
               </p>
@@ -268,14 +268,14 @@ function SetupGuide({ onBack }: { onBack: () => void }) {
       </Card>
 
       {/* LM Studio Setup Section */}
-      <Card className="bg-bolt-elements-background-depth-2">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Monitor className="w-5 h-5 text-blue-500" />
+      <Card className="bg-bolt-elements-background-depth-2 shadow-sm">
+        <CardHeader className="pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center ring-1 ring-blue-500/30">
+              <Monitor className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">LM Studio Setup</h3>
+              <h3 className="text-xl font-semibold text-bolt-elements-textPrimary">LM Studio Setup</h3>
               <p className="text-sm text-bolt-elements-textSecondary">
                 User-friendly interface for running local language models
               </p>
@@ -344,14 +344,14 @@ function SetupGuide({ onBack }: { onBack: () => void }) {
       </Card>
 
       {/* OpenAI-Compatible Setup Section */}
-      <Card className="bg-bolt-elements-background-depth-2">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <Globe className="w-5 h-5 text-green-500" />
+      <Card className="bg-bolt-elements-background-depth-2 shadow-sm">
+        <CardHeader className="pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/20 flex items-center justify-center ring-1 ring-green-500/30">
+              <Globe className="w-6 h-6 text-green-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-bolt-elements-textPrimary">OpenAI-Compatible APIs</h3>
+              <h3 className="text-xl font-semibold text-bolt-elements-textPrimary">OpenAI-Compatible APIs</h3>
               <p className="text-sm text-bolt-elements-textSecondary">Connect to any OpenAI-compatible API server</p>
             </div>
           </div>
@@ -446,14 +446,14 @@ function StatusDashboard({ onBack }: { onBack: () => void }) {
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="bg-transparent hover:bg-bolt-elements-background-depth-2"
+          className="bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-all duration-200 gap-2 px-3 py-2"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
         </Button>
         <div>
@@ -542,14 +542,21 @@ function ProviderCard({
   const Icon = PROVIDER_ICONS[provider.name as ProviderName];
 
   return (
-    <Card className="bg-bolt-elements-background-depth-2">
+    <Card className="bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 transition-all duration-300 shadow-sm hover:shadow-md border border-bolt-elements-borderColor hover:border-purple-500/30">
       <CardContent className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4 flex-1">
-            <div className="w-12 h-12 rounded-xl bg-bolt-elements-background-depth-3 flex items-center justify-center">
+            <div
+              className={classNames(
+                'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300',
+                provider.settings.enabled
+                  ? 'bg-gradient-to-br from-purple-500/20 to-purple-600/20 ring-1 ring-purple-500/30'
+                  : 'bg-bolt-elements-background-depth-3',
+              )}
+            >
               <Icon
                 className={classNames(
-                  'w-6 h-6',
+                  'w-6 h-6 transition-all duration-300',
                   provider.settings.enabled ? 'text-purple-500' : 'text-bolt-elements-textTertiary',
                 )}
               />
@@ -571,7 +578,7 @@ function ProviderCard({
                       type="text"
                       defaultValue={provider.settings.baseUrl}
                       placeholder={`Enter ${provider.name} base URL`}
-                      className="w-full px-3 py-2 rounded-lg text-sm bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-colors"
+                      className="w-full px-4 py-3 rounded-lg text-sm bg-bolt-elements-background-depth-4 border border-purple-500/30 text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-200 shadow-sm"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           onUpdateBaseUrl(e.currentTarget.value);
@@ -589,10 +596,10 @@ function ProviderCard({
                   ) : (
                     <button
                       onClick={onStartEditing}
-                      className="w-full px-3 py-2 rounded-lg text-sm bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor hover:border-purple-500/30 hover:bg-bolt-elements-background-depth-4 transition-colors text-left"
+                      className="w-full px-4 py-3 rounded-lg text-sm bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor hover:border-purple-500/30 hover:bg-bolt-elements-background-depth-4 hover:shadow-sm transition-all duration-200 text-left group"
                     >
-                      <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
-                        <Link className="w-4 h-4" />
+                      <div className="flex items-center gap-3 text-bolt-elements-textSecondary group-hover:text-bolt-elements-textPrimary">
+                        <Link className="w-4 h-4 group-hover:text-purple-500 transition-colors" />
                         <span className="font-mono">{provider.settings.baseUrl || 'Click to set base URL'}</span>
                       </div>
                     </button>
@@ -621,8 +628,8 @@ interface ModelCardProps {
 
 function ModelCard({ model, onUpdate, onDelete }: ModelCardProps) {
   return (
-    <Card className="bg-bolt-elements-background-depth-3">
-      <CardContent className="p-4">
+    <Card className="bg-bolt-elements-background-depth-3 hover:bg-bolt-elements-background-depth-4 transition-all duration-200 shadow-sm hover:shadow-md border border-bolt-elements-borderColor hover:border-purple-500/20">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -665,9 +672,9 @@ function ModelCard({ model, onUpdate, onDelete }: ModelCardProps) {
               onClick={onUpdate}
               disabled={model.status === 'updating'}
               className={classNames(
-                'flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-colors',
-                'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-all duration-200',
+                'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 hover:shadow-sm',
+                'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-purple-500/10',
               )}
             >
               {model.status === 'updating' ? (
@@ -686,9 +693,9 @@ function ModelCard({ model, onUpdate, onDelete }: ModelCardProps) {
               onClick={onDelete}
               disabled={model.status === 'updating'}
               className={classNames(
-                'flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-colors',
-                'bg-red-500/10 text-red-500 hover:bg-red-500/20',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-all duration-200',
+                'bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:shadow-sm',
+                'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-500/10',
               )}
             >
               <Trash2 className="w-3 h-3" />
@@ -991,50 +998,52 @@ export default function LocalProvidersTab() {
     <ErrorBoundary>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center ring-1 ring-purple-500/30">
               <Cpu className="w-6 h-6 text-purple-500" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-bolt-elements-textPrimary">Local AI Providers</h2>
+              <h2 className="text-2xl font-semibold text-bolt-elements-textPrimary">Local AI Providers</h2>
               <p className="text-sm text-bolt-elements-textSecondary">Configure and manage your local AI models</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setViewMode('guide')}
-              className="bg-transparent hover:bg-bolt-elements-background-depth-2"
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Setup Guide
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setViewMode('status')}
-              className="bg-transparent hover:bg-bolt-elements-background-depth-2"
-            >
-              <Activity className="w-4 h-4 mr-2" />
-              Status
-            </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-bolt-elements-textSecondary">Enable All</span>
+              <span className="text-sm font-medium text-bolt-elements-textSecondary">Enable All</span>
               <Switch
                 checked={categoryEnabled}
                 onCheckedChange={handleToggleCategory}
                 aria-label="Toggle all local providers"
               />
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('guide')}
+                className="bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 border-bolt-elements-borderColor hover:border-purple-500/30 transition-all duration-200 gap-2"
+              >
+                <BookOpen className="w-4 h-4" />
+                Setup Guide
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('status')}
+                className="bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 border-bolt-elements-borderColor hover:border-purple-500/30 transition-all duration-200 gap-2"
+              >
+                <Activity className="w-4 h-4" />
+                Status
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Provider Cards */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredProviders.map((provider) => (
-            <div key={provider.name}>
+            <div key={provider.name} className="space-y-4">
               <ProviderCard
                 provider={provider}
                 onToggle={(enabled) => handleToggleProvider(provider, enabled)}
