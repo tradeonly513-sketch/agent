@@ -12,6 +12,22 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
   private _processedCodeBlocks = new Map<string, Set<string>>();
   private _artifactCounter = 0;
 
+  // Optimized command pattern lookup
+  private _commandPatternMap = new Map<string, RegExp>([
+    ['npm', /^(npm|yarn|pnpm)\s+(install|run|start|build|dev|test|init|create|add|remove)/],
+    ['git', /^(git)\s+(add|commit|push|pull|clone|status|checkout|branch|merge|rebase|init|remote|fetch|log)/],
+    ['docker', /^(docker|docker-compose)\s+/],
+    ['build', /^(make|cmake|gradle|mvn|cargo|go)\s+/],
+    ['network', /^(curl|wget|ping|ssh|scp|rsync)\s+/],
+    ['webcontainer', /^(cat|chmod|cp|echo|hostname|kill|ln|ls|mkdir|mv|ps|pwd|rm|rmdir|xxd)\s*/],
+    ['webcontainer-extended', /^(alias|cd|clear|env|false|getconf|head|sort|tail|touch|true|uptime|which)\s*/],
+    ['interpreters', /^(node|python|python3|java|go|rust|ruby|php|perl)\s+/],
+    ['text-processing', /^(grep|sed|awk|cut|tr|sort|uniq|wc|diff)\s+/],
+    ['archive', /^(tar|zip|unzip|gzip|gunzip)\s+/],
+    ['process', /^(ps|top|htop|kill|killall|jobs|nohup)\s*/],
+    ['system', /^(df|du|free|uname|whoami|id|groups|date|uptime)\s*/],
+  ]);
+
   constructor(options: StreamingMessageParserOptions = {}) {
     super(options);
   }
@@ -51,30 +67,42 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
     // First, detect and handle shell commands separately
     enhanced = this._detectAndWrapShellCommands(messageId, enhanced, processed);
 
-    // Regex patterns for detecting code blocks with file indicators
+    // Optimized regex patterns with better performance
     const patterns = [
-      // Pattern 1: Explicit file creation/modification mentions
-      /(?:create|update|modify|edit|write|add|generate|here'?s?|file:?)\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?(?:called\s+)?[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
+      // Pattern 1: File path followed by code block (most common, check first)
+      {
+        regex: /(?:^|\n)([\/\w\-\.]+\.\w+):?\s*\n+```(\w*)\n([\s\S]*?)```/gim,
+        type: 'file_path'
+      },
 
-      // Pattern 2: Code blocks with filename comments
-      /```(\w*)\n(?:\/\/|#|<!--)\s*(?:file:?|filename:?)\s*([\/\w\-\.]+\.\w+).*?\n([\s\S]*?)```/gi,
+      // Pattern 2: Explicit file creation mentions
+      {
+        regex: /(?:create|update|modify|edit|write|add|generate|here'?s?|file:?)\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?(?:called\s+)?[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
+        type: 'explicit_create'
+      },
 
-      // Pattern 3: File path followed by code block
-      /(?:^|\n)([\/\w\-\.]+\.\w+):?\s*\n+```(\w*)\n([\s\S]*?)```/gim,
+      // Pattern 3: Code blocks with filename comments
+      {
+        regex: /```(\w*)\n(?:\/\/|#|<!--)\s*(?:file:?|filename:?)\s*([\/\w\-\.]+\.\w+).*?\n([\s\S]*?)```/gi,
+        type: 'comment_filename'
+      },
 
       // Pattern 4: Code block with "in <filename>" context
-      /(?:in|for|update)\s+[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
+      {
+        regex: /(?:in|for|update)\s+[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
+        type: 'in_filename'
+      },
 
-      // Pattern 5: HTML/Component files with clear structure
-      /```(?:jsx?|tsx?|html?|vue|svelte)\n(<[\w\-]+[^>]*>[\s\S]*?<\/[\w\-]+>[\s\S]*?)```/gi,
-
-      // Pattern 6: Package.json or config files
-      /```(?:json)?\n(\{[\s\S]*?"(?:name|version|scripts|dependencies|devDependencies)"[\s\S]*?\})```/gi,
+      // Pattern 5: Structured files (package.json, components)
+      {
+        regex: /```(?:json|jsx?|tsx?|html?|vue|svelte)\n(\{[\s\S]*?"(?:name|version|scripts|dependencies|devDependencies)"[\s\S]*?\}|<\w+[^>]*>[\s\S]*?<\/\w+>[\s\S]*?)```/gi,
+        type: 'structured_file'
+      }
     ];
 
-    // Process each pattern
+    // Process each pattern in order of likelihood
     for (const pattern of patterns) {
-      enhanced = enhanced.replace(pattern, (match, ...args) => {
+      enhanced = enhanced.replace(pattern.regex, (match, ...args) => {
         // Skip if already processed
         const blockHash = this._hashBlock(match);
 
@@ -86,22 +114,15 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
         let language: string;
         let content: string;
 
-        // Extract based on pattern
-        if (pattern.source.includes('file:?|filename:?')) {
-          // Pattern 2: filename in comment
+        // Extract based on pattern type
+        if (pattern.type === 'comment_filename') {
           [language, filePath, content] = args;
-        } else if (pattern.source.includes('<[\\w\\-]+[^>]*>')) {
-          // Pattern 5: HTML/Component detection
+        } else if (pattern.type === 'structured_file') {
           content = args[0];
-          language = 'jsx';
+          language = pattern.regex.source.includes('json') ? 'json' : 'jsx';
           filePath = this._inferFileNameFromContent(content, language);
-        } else if (pattern.source.includes('"name"|"version"')) {
-          // Pattern 6: package.json detection
-          content = args[0];
-          language = 'json';
-          filePath = 'package.json';
         } else {
-          // Other patterns
+          // file_path, explicit_create, in_filename patterns
           [filePath, language, content] = args;
         }
 
@@ -125,9 +146,9 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
         if (!this._hasFileContext(enhanced, match)) {
           // If no clear file context, skip unless it's an explicit file pattern
           const isExplicitFilePattern =
-            pattern.source.includes('file:?|filename:?') ||
-            pattern.source.includes('"name"|"version"') ||
-            pattern.source.includes('create|update|modify');
+            pattern.type === 'explicit_create' ||
+            pattern.type === 'comment_filename' ||
+            pattern.type === 'file_path';
 
           if (!isExplicitFilePattern) {
             return match; // Return original if no context
@@ -347,45 +368,6 @@ ${content.trim()}
   }
 
   private _isSingleLineCommand(line: string): boolean {
-    // WebContainer available commands + common development commands
-    const commandPatterns = [
-      // Package managers
-      /^(npm|yarn|pnpm)\s+(install|run|start|build|dev|test|init|create|add|remove)/,
-      /^(pip|conda|apt|brew|yum)\s+(install|update|upgrade|remove)/,
-
-      // Version control
-      /^(git)\s+(add|commit|push|pull|clone|status|checkout|branch|merge|rebase|init|remote|fetch|log)/,
-
-      // Container/virtualization
-      /^(docker|docker-compose)\s+/,
-
-      // Build tools
-      /^(make|cmake|gradle|mvn|cargo|go)\s+/,
-
-      // Network/download
-      /^(curl|wget|ping|ssh|scp|rsync)\s+/,
-
-      // WebContainer core commands (from prompts/discuss-prompt.ts)
-      /^(cat|chmod|cp|echo|hostname|kill|ln|ls|mkdir|mv|ps|pwd|rm|rmdir|xxd)\s*/,
-      /^(alias|cd|clear|env|false|getconf|head|sort|tail|touch|true|uptime|which)\s*/,
-      /^(code|jq|loadenv|wasm|xdg-open|command|exit|export|source)\s*/,
-
-      // Interpreters/runtimes
-      /^(node|python|python3|java|go|rust|ruby|php|perl)\s+/,
-
-      // Text processing
-      /^(grep|sed|awk|cut|tr|sort|uniq|wc|diff)\s+/,
-
-      // Archive/compression
-      /^(tar|zip|unzip|gzip|gunzip)\s+/,
-
-      // Process management
-      /^(ps|top|htop|kill|killall|jobs|nohup)\s*/,
-
-      // System info
-      /^(df|du|free|uname|whoami|id|groups|date|uptime)\s*/,
-    ];
-
     // Check for command chains with &&, ||, |, ;
     const hasChaining = /[;&|]{1,2}/.test(line);
 
@@ -406,13 +388,19 @@ ${content.trim()}
 
     // Remove prefixes to check the actual command
     let cleanLine = line;
-
     for (const prefix of prefixPatterns) {
       cleanLine = cleanLine.replace(prefix, '');
     }
 
-    // Single command check
-    return commandPatterns.some((pattern) => pattern.test(cleanLine)) || this._isSimpleCommand(cleanLine);
+    // Optimized O(1) lookup using Map
+    for (const [, pattern] of this._commandPatternMap) {
+      if (pattern.test(cleanLine)) {
+        return true;
+      }
+    }
+
+    // Fallback to simple command detection
+    return this._isSimpleCommand(cleanLine);
   }
 
   private _isCommandSequence(lines: string[]): boolean {
