@@ -629,14 +629,11 @@ function ModelCard({ model, onUpdate, onDelete }: ModelCardProps) {
               <h4 className="text-sm font-medium text-bolt-elements-textPrimary font-mono">{model.name}</h4>
               {model.status && model.status !== 'idle' && (
                 <span
-                  className={classNames(
-                    'px-2 py-0.5 rounded-full text-xs font-medium',
-                    {
-                      'bg-yellow-500/10 text-yellow-500': model.status === 'updating',
-                      'bg-green-500/10 text-green-500': model.status === 'updated',
-                      'bg-red-500/10 text-red-500': model.status === 'error',
-                    },
-                  )}
+                  className={classNames('px-2 py-0.5 rounded-full text-xs font-medium', {
+                    'bg-yellow-500/10 text-yellow-500': model.status === 'updating',
+                    'bg-green-500/10 text-green-500': model.status === 'updated',
+                    'bg-red-500/10 text-red-500': model.status === 'error',
+                  })}
                 >
                   {model.status === 'updating' && 'Updating'}
                   {model.status === 'updated' && 'Updated'}
@@ -942,7 +939,7 @@ export default function LocalProvidersTab() {
         prev.map((m) => (m.name === modelName ? { ...m, status: 'updated', progress: undefined } : m)),
       );
       toast(`Successfully updated ${modelName}`);
-    } catch (error) {
+    } catch {
       setOllamaModels((prev) =>
         prev.map((m) => (m.name === modelName ? { ...m, status: 'error', progress: undefined } : m)),
       );
@@ -968,7 +965,7 @@ export default function LocalProvidersTab() {
 
       setOllamaModels((current) => current.filter((m) => m.name !== modelName));
       toast(`Deleted ${modelName}`);
-    } catch (error) {
+    } catch {
       toast(`Failed to delete ${modelName}`, { type: 'error' });
     }
   };

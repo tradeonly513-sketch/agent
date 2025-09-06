@@ -20,7 +20,7 @@ export interface UseLocalModelHealthReturn {
  * React hook for monitoring local model health
  */
 export function useLocalModelHealth(options: UseLocalModelHealthOptions = {}): UseLocalModelHealthReturn {
-  const { autoStart = false, checkInterval } = options;
+  const { checkInterval } = options;
   const [healthStatuses, setHealthStatuses] = useState<ModelHealthStatus[]>([]);
 
   // Update health statuses when they change
@@ -151,6 +151,8 @@ export function useProviderHealth(
         stopMonitoring(provider, baseUrl);
       };
     }
+
+    return undefined;
   }, [autoStart, provider, baseUrl, checkInterval, startMonitoring, stopMonitoring]);
 
   return {

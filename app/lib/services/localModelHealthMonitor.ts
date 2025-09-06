@@ -1,33 +1,33 @@
 // Simple EventEmitter implementation for browser compatibility
 class SimpleEventEmitter {
-  private events: Record<string, Function[]> = {};
+  private _events: Record<string, ((...args: any[]) => void)[]> = {};
 
-  on(event: string, listener: Function): void {
-    if (!this.events[event]) {
-      this.events[event] = [];
+  on(event: string, listener: (...args: any[]) => void): void {
+    if (!this._events[event]) {
+      this._events[event] = [];
     }
 
-    this.events[event].push(listener);
+    this._events[event].push(listener);
   }
 
-  off(event: string, listener: Function): void {
-    if (!this.events[event]) {
+  off(event: string, listener: (...args: any[]) => void): void {
+    if (!this._events[event]) {
       return;
     }
 
-    this.events[event] = this.events[event].filter((l) => l !== listener);
+    this._events[event] = this._events[event].filter((l) => l !== listener);
   }
 
   emit(event: string, ...args: any[]): void {
-    if (!this.events[event]) {
+    if (!this._events[event]) {
       return;
     }
 
-    this.events[event].forEach((listener) => listener(...args));
+    this._events[event].forEach((listener) => listener(...args));
   }
 
   removeAllListeners(): void {
-    this.events = {};
+    this._events = {};
   }
 }
 
@@ -51,10 +51,10 @@ export interface HealthCheckResult {
 }
 
 export class LocalModelHealthMonitor extends SimpleEventEmitter {
-  private healthStatuses = new Map<string, ModelHealthStatus>();
-  private checkIntervals = new Map<string, NodeJS.Timeout>();
-  private readonly defaultCheckInterval = 30000; // 30 seconds
-  private readonly healthCheckTimeout = 10000; // 10 seconds
+  private _healthStatuses = new Map<string, ModelHealthStatus>();
+  private _checkIntervals = new Map<string, NodeJS.Timeout>();
+  private readonly _defaultCheckInterval = 30000; // 30 seconds
+  private readonly _healthCheckTimeout = 10000; // 10 seconds
 
   constructor() {
     super();
@@ -64,13 +64,13 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
    * Start monitoring a local provider
    */
   startMonitoring(provider: 'Ollama' | 'LMStudio' | 'OpenAILike', baseUrl: string, checkInterval?: number): void {
-    const key = this.getProviderKey(provider, baseUrl);
+    const key = this._getProviderKey(provider, baseUrl);
 
     // Stop existing monitoring if any
     this.stopMonitoring(provider, baseUrl);
 
     // Initialize status
-    this.healthStatuses.set(key, {
+    this._healthStatuses.set(key, {
       provider,
       baseUrl,
       status: 'unknown',
@@ -80,9 +80,9 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
     // Start periodic health checks
     const interval = setInterval(async () => {
       await this.performHealthCheck(provider, baseUrl);
-    }, checkInterval || this.defaultCheckInterval);
+    }, checkInterval || this._defaultCheckInterval);
 
-    this.checkIntervals.set(key, interval);
+    this._checkIntervals.set(key, interval);
 
     // Perform initial health check
     this.performHealthCheck(provider, baseUrl);
@@ -92,31 +92,31 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
    * Stop monitoring a local provider
    */
   stopMonitoring(provider: 'Ollama' | 'LMStudio' | 'OpenAILike', baseUrl: string): void {
-    const key = this.getProviderKey(provider, baseUrl);
+    const key = this._getProviderKey(provider, baseUrl);
 
-    const interval = this.checkIntervals.get(key);
+    const interval = this._checkIntervals.get(key);
 
     if (interval) {
       clearInterval(interval);
-      this.checkIntervals.delete(key);
+      this._checkIntervals.delete(key);
     }
 
-    this.healthStatuses.delete(key);
+    this._healthStatuses.delete(key);
   }
 
   /**
    * Get current health status for a provider
    */
   getHealthStatus(provider: 'Ollama' | 'LMStudio' | 'OpenAILike', baseUrl: string): ModelHealthStatus | undefined {
-    const key = this.getProviderKey(provider, baseUrl);
-    return this.healthStatuses.get(key);
+    const key = this._getProviderKey(provider, baseUrl);
+    return this._healthStatuses.get(key);
   }
 
   /**
    * Get all health statuses
    */
   getAllHealthStatuses(): ModelHealthStatus[] {
-    return Array.from(this.healthStatuses.values());
+    return Array.from(this._healthStatuses.values());
   }
 
   /**
@@ -126,11 +126,11 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
     provider: 'Ollama' | 'LMStudio' | 'OpenAILike',
     baseUrl: string,
   ): Promise<HealthCheckResult> {
-    const key = this.getProviderKey(provider, baseUrl);
+    const key = this._getProviderKey(provider, baseUrl);
     const startTime = Date.now();
 
     // Update status to checking
-    const currentStatus = this.healthStatuses.get(key);
+    const currentStatus = this._healthStatuses.get(key);
 
     if (currentStatus) {
       currentStatus.status = 'checking';
@@ -139,7 +139,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
     }
 
     try {
-      const result = await this.checkProviderHealth(provider, baseUrl);
+      const result = await this._checkProviderHealth(provider, baseUrl);
       const responseTime = Date.now() - startTime;
 
       // Update health status
@@ -154,7 +154,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
         version: result.version,
       };
 
-      this.healthStatuses.set(key, healthStatus);
+      this._healthStatuses.set(key, healthStatus);
       this.emit('statusChanged', healthStatus);
 
       return {
@@ -177,7 +177,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
         error: errorMessage,
       };
 
-      this.healthStatuses.set(key, healthStatus);
+      this._healthStatuses.set(key, healthStatus);
       this.emit('statusChanged', healthStatus);
 
       return {
@@ -191,21 +191,21 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
   /**
    * Check health of a specific provider
    */
-  private async checkProviderHealth(
+  private async _checkProviderHealth(
     provider: 'Ollama' | 'LMStudio' | 'OpenAILike',
     baseUrl: string,
   ): Promise<HealthCheckResult> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.healthCheckTimeout);
+    const timeoutId = setTimeout(() => controller.abort(), this._healthCheckTimeout);
 
     try {
       switch (provider) {
         case 'Ollama':
-          return await this.checkOllamaHealth(baseUrl, controller.signal);
+          return await this._checkOllamaHealth(baseUrl, controller.signal);
         case 'LMStudio':
-          return await this.checkLMStudioHealth(baseUrl, controller.signal);
+          return await this._checkLMStudioHealth(baseUrl, controller.signal);
         case 'OpenAILike':
-          return await this.checkOpenAILikeHealth(baseUrl, controller.signal);
+          return await this._checkOpenAILikeHealth(baseUrl, controller.signal);
         default:
           throw new Error(`Unsupported provider: ${provider}`);
       }
@@ -217,7 +217,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
   /**
    * Check Ollama health
    */
-  private async checkOllamaHealth(baseUrl: string, signal: AbortSignal): Promise<HealthCheckResult> {
+  private async _checkOllamaHealth(baseUrl: string, signal: AbortSignal): Promise<HealthCheckResult> {
     try {
       console.log(`[Health Check] Checking Ollama at ${baseUrl}`);
 
@@ -269,7 +269,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
   /**
    * Check LM Studio health
    */
-  private async checkLMStudioHealth(baseUrl: string, signal: AbortSignal): Promise<HealthCheckResult> {
+  private async _checkLMStudioHealth(baseUrl: string, signal: AbortSignal): Promise<HealthCheckResult> {
     try {
       // Normalize URL to ensure /v1 prefix
       const normalizedUrl = baseUrl.includes('/v1') ? baseUrl : `${baseUrl}/v1`;
@@ -329,7 +329,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
   /**
    * Check OpenAI-like provider health
    */
-  private async checkOpenAILikeHealth(baseUrl: string, signal: AbortSignal): Promise<HealthCheckResult> {
+  private async _checkOpenAILikeHealth(baseUrl: string, signal: AbortSignal): Promise<HealthCheckResult> {
     try {
       // Normalize URL to include /v1 if needed
       const normalizedUrl = baseUrl.includes('/v1') ? baseUrl : `${baseUrl}/v1`;
@@ -366,7 +366,7 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
   /**
    * Generate a unique key for a provider
    */
-  private getProviderKey(provider: string, baseUrl: string): string {
+  private _getProviderKey(provider: string, baseUrl: string): string {
     return `${provider}:${baseUrl}`;
   }
 
@@ -375,12 +375,12 @@ export class LocalModelHealthMonitor extends SimpleEventEmitter {
    */
   destroy(): void {
     // Clear all intervals
-    for (const interval of this.checkIntervals.values()) {
+    for (const interval of this._checkIntervals.values()) {
       clearInterval(interval);
     }
 
-    this.checkIntervals.clear();
-    this.healthStatuses.clear();
+    this._checkIntervals.clear();
+    this._healthStatuses.clear();
     this.removeAllListeners();
   }
 }
