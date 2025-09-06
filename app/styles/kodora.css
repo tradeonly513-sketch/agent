@@ -1,0 +1,13 @@
+/* ===== Kodora Brand (provisório, sem imagens) ===== */
+.text-gradient-kodora{
+  background: linear-gradient(135deg,#4df3ff 0%,#7a5cff 40%,#a855f7 70%,#ec63ff 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.kodora-subtle{ color:rgba(255,255,255,.85); }
+.btn-kodora{
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  padding:10px 14px;
+}
