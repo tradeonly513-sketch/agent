@@ -1,3 +1,4 @@
+// PATH: app/components/@settings/tabs/providers/cloud/CloudProvidersTab.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { Switch } from '~/components/ui/Switch';
 import { useSettings } from '~/lib/hooks/useSettings';
@@ -15,7 +16,6 @@ import { BiCodeBlock, BiChip } from 'react-icons/bi';
 import { FaCloud, FaBrain } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 
-// Add type for provider names to ensure type safety
 type ProviderName =
   | 'AmazonBedrock'
   | 'Anthropic'
@@ -32,7 +32,6 @@ type ProviderName =
   | 'Together'
   | 'XAI';
 
-// Update the PROVIDER_ICONS type to use the ProviderName type
 const PROVIDER_ICONS: Record<ProviderName, IconType> = {
   AmazonBedrock: SiAmazon,
   Anthropic: FaBrain,
@@ -50,10 +49,15 @@ const PROVIDER_ICONS: Record<ProviderName, IconType> = {
   XAI: BsRobot,
 };
 
-// Update PROVIDER_DESCRIPTIONS to use the same type
 const PROVIDER_DESCRIPTIONS: Partial<Record<ProviderName, string>> = {
-  Anthropic: 'Access Claude and other Anthropic models',
-  OpenAI: 'Use GPT-4, GPT-3.5, and other OpenAI models',
+  Anthropic: 'Claude (qualidade/razão). Requer chave própria.',
+  OpenAI: 'Modelos GPT. Requer chave própria.',
+  OpenRouter: 'Vários modelos com uma única API (alguns gratuitos).',
+  Google: 'Modelos Gemini (chave própria).',
+  Mistral: 'Modelos rápidos e baratos (chave própria).',
+  Deepseek: 'Modelos ótimos em código (chave própria).',
+  HuggingFace: 'Inference API/Endpoints (pode exigir chave).',
+  Groq: 'Serviço rápido para modelos suportados (chave própria).',
 };
 
 const CloudProvidersTab = () => {
@@ -62,7 +66,7 @@ const CloudProvidersTab = () => {
   const [filteredProviders, setFilteredProviders] = useState<IProviderConfig[]>([]);
   const [categoryEnabled, setCategoryEnabled] = useState<boolean>(false);
 
-  // Load and filter providers
+  // monta lista (só cloud)
   useEffect(() => {
     const newFilteredProviders = Object.entries(settings.providers || {})
       .filter(([key]) => !['Ollama', 'LMStudio', 'OpenAILike'].includes(key))
@@ -79,35 +83,30 @@ const CloudProvidersTab = () => {
     const sorted = newFilteredProviders.sort((a, b) => a.name.localeCompare(b.name));
     setFilteredProviders(sorted);
 
-    // Update category enabled state
     const allEnabled = newFilteredProviders.every((p) => p.settings.enabled);
     setCategoryEnabled(allEnabled);
   }, [settings.providers]);
 
   const handleToggleCategory = useCallback(
     (enabled: boolean) => {
-      // Update all providers
       filteredProviders.forEach((provider) => {
         settings.updateProviderSettings(provider.name, { ...provider.settings, enabled });
       });
-
       setCategoryEnabled(enabled);
-      toast.success(enabled ? 'All cloud providers enabled' : 'All cloud providers disabled');
+      toast.success(enabled ? 'Todos os provedores em nuvem ativados' : 'Todos os provedores em nuvem desativados');
     },
     [filteredProviders, settings],
   );
 
   const handleToggleProvider = useCallback(
     (provider: IProviderConfig, enabled: boolean) => {
-      // Update the provider settings in the store
       settings.updateProviderSettings(provider.name, { ...provider.settings, enabled });
-
       if (enabled) {
         logStore.logProvider(`Provider ${provider.name} enabled`, { provider: provider.name });
-        toast.success(`${provider.name} enabled`);
+        toast.success(`${provider.name} ativado`);
       } else {
         logStore.logProvider(`Provider ${provider.name} disabled`, { provider: provider.name });
-        toast.success(`${provider.name} disabled`);
+        toast.success(`${provider.name} desativado`);
       }
     },
     [settings],
@@ -116,19 +115,37 @@ const CloudProvidersTab = () => {
   const handleUpdateBaseUrl = useCallback(
     (provider: IProviderConfig, baseUrl: string) => {
       const newBaseUrl: string | undefined = baseUrl.trim() || undefined;
-
-      // Update the provider settings in the store
       settings.updateProviderSettings(provider.name, { ...provider.settings, baseUrl: newBaseUrl });
-
       logStore.logProvider(`Base URL updated for ${provider.name}`, {
         provider: provider.name,
         baseUrl: newBaseUrl,
       });
-      toast.success(`${provider.name} base URL updated`);
+      toast.success(`${provider.name}: endpoint atualizado`);
       setEditingProvider(null);
     },
     [settings],
   );
+
+  // Testar conexão: usa getDynamicModels se existir (ele já sabe como autenticar)
+  const testConnection = async (provider: IProviderConfig) => {
+    try {
+      if (typeof provider.getDynamicModels === 'function') {
+        const result = await provider.getDynamicModels(provider.settings as any);
+        const qtd =
+          Array.isArray(result) ? result.length : Array.isArray((result as any)?.data) ? (result as any).data.length : 0;
+        toast.success(`${provider.name}: conexão OK (${qtd} modelos listados)`);
+      } else {
+        // fallback “ping” bobo — só valida que há endpoint configurável
+        if (URL_CONFIGURABLE_PROVIDERS.includes(provider.name) && !provider.settings.baseUrl) {
+          toast.error(`${provider.name}: defina o endpoint/base URL antes de testar`);
+          return;
+        }
+        toast.success(`${provider.name}: configuração salva`);
+      }
+    } catch (e: any) {
+      toast.error(`${provider.name}: falha ao conectar${e?.message ? ` — ${e.message}` : ''}`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -151,12 +168,14 @@ const CloudProvidersTab = () => {
             </div>
             <div>
               <h4 className="text-md font-medium text-bolt-elements-textPrimary">Cloud Providers</h4>
-              <p className="text-sm text-bolt-elements-textSecondary">Connect to cloud-based AI models and services</p>
+              <p className="text-sm text-bolt-elements-textSecondary">
+                Conecte **sua própria** API (cobrança na sua conta). Chaves ficam salvas apenas no seu navegador.
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-bolt-elements-textSecondary">Enable All Cloud</span>
+            <span className="text-sm text-bolt-elements-textSecondary">Ativar todos</span>
             <Switch checked={categoryEnabled} onCheckedChange={handleToggleCategory} />
           </div>
         </div>
@@ -218,8 +237,8 @@ const CloudProvidersTab = () => {
                       <p className="text-xs text-bolt-elements-textSecondary mt-0.5">
                         {PROVIDER_DESCRIPTIONS[provider.name as keyof typeof PROVIDER_DESCRIPTIONS] ||
                           (URL_CONFIGURABLE_PROVIDERS.includes(provider.name)
-                            ? 'Configure custom endpoint for this provider'
-                            : 'Standard AI provider integration')}
+                            ? 'Permite configurar endpoint compatível'
+                            : 'Integração com provedor em nuvem')}
                       </p>
                     </div>
                     <Switch
@@ -228,6 +247,7 @@ const CloudProvidersTab = () => {
                     />
                   </div>
 
+                  {/* endpoint editável quando aplicável */}
                   {provider.settings.enabled && URL_CONFIGURABLE_PROVIDERS.includes(provider.name) && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
@@ -235,12 +255,12 @@ const CloudProvidersTab = () => {
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="flex items-center gap-2 mt-4">
+                      <div className="flex items-center gap-2 mt-3">
                         {editingProvider === provider.name ? (
                           <input
                             type="text"
                             defaultValue={provider.settings.baseUrl}
-                            placeholder={`Enter ${provider.name} base URL`}
+                            placeholder={`Endpoint base do ${provider.name}`}
                             className={classNames(
                               'flex-1 px-3 py-1.5 rounded-lg text-sm',
                               'bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor',
@@ -249,11 +269,8 @@ const CloudProvidersTab = () => {
                               'transition-all duration-200',
                             )}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleUpdateBaseUrl(provider, e.currentTarget.value);
-                              } else if (e.key === 'Escape') {
-                                setEditingProvider(null);
-                              }
+                              if (e.key === 'Enter') handleUpdateBaseUrl(provider, e.currentTarget.value);
+                              if (e.key === 'Escape') setEditingProvider(null);
                             }}
                             onBlur={(e) => handleUpdateBaseUrl(provider, e.target.value)}
                             autoFocus
@@ -266,23 +283,45 @@ const CloudProvidersTab = () => {
                             <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
                               <div className="i-ph:link text-sm" />
                               <span className="group-hover/url:text-purple-500 transition-colors">
-                                {provider.settings.baseUrl || 'Click to set base URL'}
+                                {provider.settings.baseUrl || 'Clique para definir o endpoint'}
                               </span>
                             </div>
                           </div>
                         )}
                       </div>
-
                       {providerBaseUrlEnvKeys[provider.name]?.baseUrlKey && (
                         <div className="mt-2 text-xs text-green-500">
                           <div className="flex items-center gap-1">
                             <div className="i-ph:info" />
-                            <span>Environment URL set in .env file</span>
+                            <span>Endpoint também pode vir do .env</span>
                           </div>
                         </div>
                       )}
                     </motion.div>
                   )}
+
+                  {/* ações */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {provider.getApiKeyLink && (
+                      <a
+                        href={provider.getApiKeyLink()}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs px-2 py-1 rounded-md bg-bolt-elements-item-backgroundDefault hover:bg-bolt-elements-item-backgroundActive text-bolt-elements-textPrimary inline-flex items-center gap-1"
+                      >
+                        <div className="i-ph:key" /> Obter API key
+                      </a>
+                    )}
+                    <button
+                      onClick={() => testConnection(provider)}
+                      className="text-xs px-2 py-1 rounded-md bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 inline-flex items-center gap-1"
+                    >
+                      <div className="i-ph:plug-charging" /> Testar conexão
+                    </button>
+                    <span className="ml-auto text-[11px] text-bolt-elements-textTertiary">
+                      As chaves ficam armazenadas **localmente**.
+                    </span>
+                  </div>
                 </div>
               </div>
 

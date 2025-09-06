@@ -1,3 +1,4 @@
+// PATH: app/components/@settings/tabs/providers/local/LocalProvidersTab.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { Switch } from '~/components/ui/Switch';
 import { useSettings } from '~/lib/hooks/useSettings';
@@ -15,25 +16,22 @@ import { useToast } from '~/components/ui/use-toast';
 import { Progress } from '~/components/ui/Progress';
 import OllamaModelInstaller from './OllamaModelInstaller';
 
-// Add type for provider names to ensure type safety
 type ProviderName = 'Ollama' | 'LMStudio' | 'OpenAILike';
 
-// Update the PROVIDER_ICONS type to use the ProviderName type
 const PROVIDER_ICONS: Record<ProviderName, IconType> = {
   Ollama: BsRobot,
   LMStudio: BsRobot,
   OpenAILike: TbBrandOpenai,
 };
 
-// Update PROVIDER_DESCRIPTIONS to use the same type
 const PROVIDER_DESCRIPTIONS: Record<ProviderName, string> = {
-  Ollama: 'Run open-source models locally on your machine',
-  LMStudio: 'Local model inference with LM Studio',
-  OpenAILike: 'Connect to OpenAI-compatible API endpoints',
+  Ollama: 'Rode modelos open-source 100% locais no seu PC.',
+  LMStudio: 'Servidor local compatível com OpenAI (porta 1234).',
+  OpenAILike: 'Aponte para qualquer endpoint compatível com OpenAI.',
 };
 
-// Add a constant for the Ollama API base URL
 const OLLAMA_API_URL = 'http://127.0.0.1:11434';
+const LMSTUDIO_DEFAULT_URL = 'http://127.0.0.1:1234';
 
 interface OllamaModel {
   name: string;
@@ -62,14 +60,8 @@ interface OllamaPullResponse {
   digest?: string;
 }
 
-const isOllamaPullResponse = (data: unknown): data is OllamaPullResponse => {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'status' in data &&
-    typeof (data as OllamaPullResponse).status === 'string'
-  );
-};
+const isOllamaPullResponse = (data: unknown): data is OllamaPullResponse =>
+  typeof data === 'object' && data !== null && 'status' in data;
 
 export default function LocalProvidersTab() {
   const { providers, updateProviderSettings } = useSettings();
@@ -80,7 +72,6 @@ export default function LocalProvidersTab() {
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Effect to filter and sort providers
   useEffect(() => {
     const newFilteredProviders = Object.entries(providers || {})
       .filter(([key]) => [...LOCAL_PROVIDERS, 'OpenAILike'].includes(key))
@@ -89,20 +80,13 @@ export default function LocalProvidersTab() {
         const envKey = providerBaseUrlEnvKeys[key]?.baseUrlKey;
         const envUrl = envKey ? (import.meta.env[envKey] as string | undefined) : undefined;
 
-        // Set base URL if provided by environment
         if (envUrl && !provider.settings.baseUrl) {
-          updateProviderSettings(key, {
-            ...provider.settings,
-            baseUrl: envUrl,
-          });
+          updateProviderSettings(key, { ...provider.settings, baseUrl: envUrl });
         }
 
         return {
           name: key,
-          settings: {
-            ...provider.settings,
-            baseUrl: provider.settings.baseUrl || envUrl,
-          },
+          settings: { ...provider.settings, baseUrl: provider.settings.baseUrl || envUrl },
           staticModels: provider.staticModels || [],
           getDynamicModels: provider.getDynamicModels,
           getApiKeyLink: provider.getApiKeyLink,
@@ -111,57 +95,30 @@ export default function LocalProvidersTab() {
         } as IProviderConfig;
       });
 
-    // Custom sort function to ensure LMStudio appears before OpenAILike
+    // ordem amigável: LMStudio, Ollama, OpenAILike
     const sorted = newFilteredProviders.sort((a, b) => {
-      if (a.name === 'LMStudio') {
-        return -1;
-      }
-
-      if (b.name === 'LMStudio') {
-        return 1;
-      }
-
-      if (a.name === 'OpenAILike') {
-        return 1;
-      }
-
-      if (b.name === 'OpenAILike') {
-        return -1;
-      }
-
-      return a.name.localeCompare(b.name);
+      const rank = (n: string) => (n === 'LMStudio' ? 0 : n === 'Ollama' ? 1 : n === 'OpenAILike' ? 2 : 3);
+      return rank(a.name) - rank(b.name);
     });
     setFilteredProviders(sorted);
   }, [providers, updateProviderSettings]);
 
-  // Add effect to update category toggle state based on provider states
   useEffect(() => {
     const newCategoryState = filteredProviders.every((p) => p.settings.enabled);
     setCategoryEnabled(newCategoryState);
   }, [filteredProviders]);
 
-  // Fetch Ollama models when enabled
   useEffect(() => {
     const ollamaProvider = filteredProviders.find((p) => p.name === 'Ollama');
-
-    if (ollamaProvider?.settings.enabled) {
-      fetchOllamaModels();
-    }
+    if (ollamaProvider?.settings.enabled) fetchOllamaModels();
   }, [filteredProviders]);
 
   const fetchOllamaModels = async () => {
     try {
       setIsLoadingModels(true);
-
-      const response = await fetch('http://127.0.0.1:11434/api/tags');
+      const response = await fetch(`${OLLAMA_API_URL}/api/tags`);
       const data = (await response.json()) as { models: OllamaModel[] };
-
-      setOllamaModels(
-        data.models.map((model) => ({
-          ...model,
-          status: 'idle' as const,
-        })),
-      );
+      setOllamaModels(data.models.map((m) => ({ ...m, status: 'idle' as const })));
     } catch (error) {
       console.error('Error fetching Ollama models:', error);
     } finally {
@@ -176,46 +133,31 @@ export default function LocalProvidersTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: modelName }),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update ${modelName}`);
-      }
+      if (!response.ok) throw new Error(`Failed to update ${modelName}`);
 
       const reader = response.body?.getReader();
-
-      if (!reader) {
-        throw new Error('No response reader available');
-      }
+      if (!reader) throw new Error('No response reader available');
 
       while (true) {
         const { done, value } = await reader.read();
-
-        if (done) {
-          break;
-        }
+        if (done) break;
 
         const text = new TextDecoder().decode(value);
         const lines = text.split('\n').filter(Boolean);
-
         for (const line of lines) {
-          const rawData = JSON.parse(line);
-
-          if (!isOllamaPullResponse(rawData)) {
-            console.error('Invalid response format:', rawData);
-            continue;
-          }
-
-          setOllamaModels((current) =>
-            current.map((m) =>
+          const raw = JSON.parse(line);
+          if (!isOllamaPullResponse(raw)) continue;
+          setOllamaModels((curr) =>
+            curr.map((m) =>
               m.name === modelName
                 ? {
                     ...m,
                     progress: {
-                      current: rawData.completed || 0,
-                      total: rawData.total || 0,
-                      status: rawData.status,
+                      current: raw.completed || 0,
+                      total: raw.total || 0,
+                      status: raw.status,
                     },
-                    newDigest: rawData.digest,
+                    newDigest: raw.digest,
                   }
                 : m,
             ),
@@ -223,11 +165,9 @@ export default function LocalProvidersTab() {
         }
       }
 
-      const updatedResponse = await fetch('http://127.0.0.1:11434/api/tags');
-      const updatedData = (await updatedResponse.json()) as { models: OllamaModel[] };
-      const updatedModel = updatedData.models.find((m) => m.name === modelName);
-
-      return updatedModel !== undefined;
+      const updated = await fetch(`${OLLAMA_API_URL}/api/tags`);
+      const updatedData = (await updated.json()) as { models: OllamaModel[] };
+      return !!updatedData.models.find((m) => m.name === modelName);
     } catch (error) {
       console.error(`Error updating ${modelName}:`, error);
       return false;
@@ -235,73 +175,72 @@ export default function LocalProvidersTab() {
   };
 
   const handleToggleCategory = useCallback(
-    async (enabled: boolean) => {
-      filteredProviders.forEach((provider) => {
-        updateProviderSettings(provider.name, { ...provider.settings, enabled });
-      });
-      toast(enabled ? 'All local providers enabled' : 'All local providers disabled');
+    (enabled: boolean) => {
+      filteredProviders.forEach((p) => updateProviderSettings(p.name, { ...p.settings, enabled }));
+      toast(enabled ? 'Todos os provedores locais ativados' : 'Todos os provedores locais desativados');
     },
-    [filteredProviders, updateProviderSettings],
+    [filteredProviders, updateProviderSettings, toast],
   );
 
   const handleToggleProvider = (provider: IProviderConfig, enabled: boolean) => {
-    updateProviderSettings(provider.name, {
-      ...provider.settings,
-      enabled,
-    });
-
-    if (enabled) {
-      logStore.logProvider(`Provider ${provider.name} enabled`, { provider: provider.name });
-      toast(`${provider.name} enabled`);
-    } else {
-      logStore.logProvider(`Provider ${provider.name} disabled`, { provider: provider.name });
-      toast(`${provider.name} disabled`);
-    }
+    updateProviderSettings(provider.name, { ...provider.settings, enabled });
+    logStore.logProvider(`${provider.name} ${enabled ? 'enabled' : 'disabled'}`, { provider: provider.name });
+    toast(`${provider.name} ${enabled ? 'ativado' : 'desativado'}`);
   };
 
   const handleUpdateBaseUrl = (provider: IProviderConfig, newBaseUrl: string) => {
-    updateProviderSettings(provider.name, {
-      ...provider.settings,
-      baseUrl: newBaseUrl,
-    });
-    toast(`${provider.name} base URL updated`);
+    updateProviderSettings(provider.name, { ...provider.settings, baseUrl: newBaseUrl });
+    toast(`${provider.name}: endpoint atualizado`);
     setEditingProvider(null);
   };
 
   const handleUpdateOllamaModel = async (modelName: string) => {
-    const updateSuccess = await updateOllamaModel(modelName);
-
-    if (updateSuccess) {
-      toast(`Updated ${modelName}`);
-    } else {
-      toast(`Failed to update ${modelName}`);
-    }
+    const ok = await updateOllamaModel(modelName);
+    toast(ok ? `Atualizado ${modelName}` : `Falha ao atualizar ${modelName}`);
   };
 
   const handleDeleteOllamaModel = async (modelName: string) => {
     try {
       const response = await fetch(`${OLLAMA_API_URL}/api/delete`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: modelName }),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete ${modelName}`);
-      }
-
-      setOllamaModels((current) => current.filter((m) => m.name !== modelName));
-      toast(`Deleted ${modelName}`);
+      if (!response.ok) throw new Error(`Failed to delete ${modelName}`);
+      setOllamaModels((cur) => cur.filter((m) => m.name !== modelName));
+      toast(`Removido ${modelName}`);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error(`Error deleting ${modelName}:`, errorMessage);
-      toast(`Failed to delete ${modelName}`);
+      console.error(err);
+      toast(`Falha ao remover ${modelName}`);
     }
   };
 
-  // Update model details display
+  // ping simples para provedores locais
+  const testLocalProvider = async (provider: IProviderConfig) => {
+    try {
+      const base = provider.settings.baseUrl?.trim();
+      if (!base) {
+        toast('Defina o endpoint primeiro');
+        return;
+      }
+      if (provider.name === 'Ollama') {
+        const r = await fetch(`${base}/api/tags`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        toast(`Ollama OK (${Array.isArray(j?.models) ? j.models.length : 0} modelos)`);
+        return;
+      }
+      // LM Studio / OpenAILike: padrão OpenAI /v1/models
+      const r = await fetch(`${base.replace(/\/$/, '')}/v1/models`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const n = Array.isArray(j?.data) ? j.data.length : 0;
+      toast(`${provider.name} OK (${n} modelos)`);
+    } catch (e: any) {
+      toast(`${provider.name}: falha ao conectar${e?.message ? ` — ${e.message}` : ''}`);
+    }
+  };
+
   const ModelDetails = ({ model }: { model: OllamaModel }) => (
     <div className="flex items-center gap-3 text-xs text-bolt-elements-textSecondary">
       <div className="flex items-center gap-1">
@@ -323,7 +262,6 @@ export default function LocalProvidersTab() {
     </div>
   );
 
-  // Update model actions to not use Tooltip
   const ModelActions = ({
     model,
     onUpdate,
@@ -351,7 +289,7 @@ export default function LocalProvidersTab() {
         {model.status === 'updating' ? (
           <div className="flex items-center gap-2">
             <div className="i-ph:spinner-gap-bold animate-spin w-4 h-4" />
-            <span className="text-sm">Updating...</span>
+            <span className="text-sm">Atualizando…</span>
           </div>
         ) : (
           <div className="i-ph:arrows-clockwise text-lg" />
@@ -392,39 +330,34 @@ export default function LocalProvidersTab() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        {/* Header section */}
+        {/* header */}
         <div className="flex items-center justify-between gap-4 border-b border-bolt-elements-borderColor pb-4">
           <div className="flex items-center gap-3">
             <motion.div
-              className={classNames(
-                'w-10 h-10 flex items-center justify-center rounded-xl',
-                'bg-purple-500/10 text-purple-500',
-              )}
+              className={classNames('w-10 h-10 flex items-center justify-center rounded-xl', 'bg-purple-500/10 text-purple-500')}
               whileHover={{ scale: 1.05 }}
             >
               <BiChip className="w-6 h-6" />
             </motion.div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-bolt-elements-textPrimary">Local AI Models</h2>
+                <h2 className="text-lg font-semibold text-bolt-elements-textPrimary">Modelos Locais</h2>
               </div>
-              <p className="text-sm text-bolt-elements-textSecondary">Configure and manage your local AI providers</p>
+              <p className="text-sm text-bolt-elements-textSecondary">
+                Rode modelos **no seu computador**. Seus dados não saem da máquina.
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-bolt-elements-textSecondary">Enable All</span>
-            <Switch
-              checked={categoryEnabled}
-              onCheckedChange={handleToggleCategory}
-              aria-label="Toggle all local providers"
-            />
+            <span className="text-sm text-bolt-elements-textSecondary">Ativar todos</span>
+            <Switch checked={categoryEnabled} onCheckedChange={handleToggleCategory} aria-label="Toggle all local providers" />
           </div>
         </div>
 
-        {/* Ollama Section */}
+        {/* OLLAMA */}
         {filteredProviders
-          .filter((provider) => provider.name === 'Ollama')
+          .filter((p) => p.name === 'Ollama')
           .map((provider) => (
             <motion.div
               key={provider.name}
@@ -438,7 +371,6 @@ export default function LocalProvidersTab() {
               animate={{ opacity: 1, y: 0 }}
               whileHover={{ scale: 1.01 }}
             >
-              {/* Provider Header */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <motion.div
@@ -471,22 +403,16 @@ export default function LocalProvidersTab() {
                 />
               </div>
 
-              {/* URL Configuration Section */}
               <AnimatePresence>
                 {provider.settings.enabled && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-4"
-                  >
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4">
                     <div className="flex flex-col gap-2">
                       <label className="text-sm text-bolt-elements-textSecondary">API Endpoint</label>
                       {editingProvider === provider.name ? (
                         <input
                           type="text"
                           defaultValue={provider.settings.baseUrl || OLLAMA_API_URL}
-                          placeholder="Enter Ollama base URL"
+                          placeholder="http://127.0.0.1:11434"
                           className={classNames(
                             'w-full px-3 py-2 rounded-lg text-sm',
                             'bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor',
@@ -495,11 +421,8 @@ export default function LocalProvidersTab() {
                             'transition-all duration-200',
                           )}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdateBaseUrl(provider, e.currentTarget.value);
-                            } else if (e.key === 'Escape') {
-                              setEditingProvider(null);
-                            }
+                            if (e.key === 'Enter') handleUpdateBaseUrl(provider, e.currentTarget.value);
+                            else if (e.key === 'Escape') setEditingProvider(null);
                           }}
                           onBlur={(e) => handleUpdateBaseUrl(provider, e.target.value)}
                           autoFocus
@@ -521,27 +444,42 @@ export default function LocalProvidersTab() {
                         </div>
                       )}
                     </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          testLocalProvider({
+                            ...provider,
+                            settings: { ...provider.settings, baseUrl: provider.settings.baseUrl || OLLAMA_API_URL },
+                          })
+                        }
+                        className="text-xs px-2 py-1 rounded-md bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 inline-flex items-center gap-1"
+                      >
+                        <div className="i-ph:plug-charging" /> Testar conexão
+                      </button>
+                      <span className="text-[11px] text-bolt-elements-textTertiary">
+                        Seus prompts e chaves não saem do computador.
+                      </span>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Ollama Models Section */}
+              {/* modelos do Ollama */}
               {provider.settings.enabled && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="i-ph:cube-duotone text-purple-500" />
-                      <h4 className="text-sm font-medium text-bolt-elements-textPrimary">Installed Models</h4>
+                      <h4 className="text-sm font-medium text-bolt-elements-textPrimary">Modelos instalados</h4>
                     </div>
                     {isLoadingModels ? (
                       <div className="flex items-center gap-2">
                         <div className="i-ph:spinner-gap-bold animate-spin w-4 h-4" />
-                        <span className="text-sm text-bolt-elements-textSecondary">Loading models...</span>
+                        <span className="text-sm text-bolt-elements-textSecondary">Carregando…</span>
                       </div>
                     ) : (
-                      <span className="text-sm text-bolt-elements-textSecondary">
-                        {ollamaModels.length} models available
-                      </span>
+                      <span className="text-sm text-bolt-elements-textSecondary">{ollamaModels.length} modelos</span>
                     )}
                   </div>
 
@@ -549,40 +487,26 @@ export default function LocalProvidersTab() {
                     {isLoadingModels ? (
                       <div className="space-y-3">
                         {Array.from({ length: 3 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-20 w-full bg-bolt-elements-background-depth-3 rounded-lg animate-pulse"
-                          />
+                          <div key={i} className="h-20 w-full bg-bolt-elements-background-depth-3 rounded-lg animate-pulse" />
                         ))}
                       </div>
                     ) : ollamaModels.length === 0 ? (
                       <div className="text-center py-8 text-bolt-elements-textSecondary">
                         <div className="i-ph:cube-transparent text-4xl mx-auto mb-2" />
-                        <p>No models installed yet</p>
+                        <p>Nenhum modelo instalado</p>
                         <p className="text-sm text-bolt-elements-textTertiary px-1">
-                          Browse models at{' '}
-                          <a
-                            href="https://ollama.com/library"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple-500 hover:underline inline-flex items-center gap-0.5 text-base font-medium"
-                          >
-                            ollama.com/library
-                            <div className="i-ph:arrow-square-out text-xs" />
+                          Veja{' '}
+                          <a href="https://ollama.com/library" target="_blank" rel="noopener noreferrer" className="text-purple-500 hover:underline inline-flex items-center gap-0.5 text-base font-medium">
+                            ollama.com/library <div className="i-ph:arrow-square-out text-xs" />
                           </a>{' '}
-                          and copy model names to install
+                          e instale pelo nome.
                         </p>
                       </div>
                     ) : (
                       ollamaModels.map((model) => (
                         <motion.div
                           key={model.name}
-                          className={classNames(
-                            'p-4 rounded-xl',
-                            'bg-bolt-elements-background-depth-3',
-                            'hover:bg-bolt-elements-background-depth-4',
-                            'transition-all duration-200',
-                          )}
+                          className={classNames('p-4 rounded-xl', 'bg-bolt-elements-background-depth-3', 'hover:bg-bolt-elements-background-depth-4', 'transition-all duration-200')}
                           whileHover={{ scale: 1.01 }}
                         >
                           <div className="flex items-center justify-between">
@@ -597,18 +521,13 @@ export default function LocalProvidersTab() {
                               model={model}
                               onUpdate={() => handleUpdateOllamaModel(model.name)}
                               onDelete={() => {
-                                if (window.confirm(`Are you sure you want to delete ${model.name}?`)) {
-                                  handleDeleteOllamaModel(model.name);
-                                }
+                                if (window.confirm(`Remover ${model.name}?`)) handleDeleteOllamaModel(model.name);
                               }}
                             />
                           </div>
                           {model.progress && (
                             <div className="mt-3">
-                              <Progress
-                                value={Math.round((model.progress.current / model.progress.total) * 100)}
-                                className="h-1"
-                              />
+                              <Progress value={Math.round((model.progress.current / model.progress.total) * 100)} className="h-1" />
                               <div className="flex justify-between mt-1 text-xs text-bolt-elements-textSecondary">
                                 <span>{model.progress.status}</span>
                                 <span>{Math.round((model.progress.current / model.progress.total) * 100)}%</span>
@@ -620,16 +539,15 @@ export default function LocalProvidersTab() {
                     )}
                   </div>
 
-                  {/* Model Installation Section */}
                   <OllamaModelInstaller onModelInstalled={fetchOllamaModels} />
                 </motion.div>
               )}
             </motion.div>
           ))}
 
-        {/* Other Providers Section */}
+        {/* DEMAIS LOCAIS (LM Studio / OpenAILike) */}
         <div className="border-t border-bolt-elements-borderColor pt-6 mt-8">
-          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">Other Local Providers</h3>
+          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-4">Outros provedores locais</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredProviders
               .filter((provider) => provider.name !== 'Ollama')
@@ -647,7 +565,6 @@ export default function LocalProvidersTab() {
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: 1.01 }}
                 >
-                  {/* Provider Header */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
                       <motion.div
@@ -667,13 +584,9 @@ export default function LocalProvidersTab() {
                         <div className="flex items-center gap-2">
                           <h3 className="text-md font-semibold text-bolt-elements-textPrimary">{provider.name}</h3>
                           <div className="flex gap-1">
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/10 text-green-500">
-                              Local
-                            </span>
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/10 text-green-500">Local</span>
                             {URL_CONFIGURABLE_PROVIDERS.includes(provider.name) && (
-                              <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-500">
-                                Configurable
-                              </span>
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-500">Configurable</span>
                             )}
                           </div>
                         </div>
@@ -682,29 +595,19 @@ export default function LocalProvidersTab() {
                         </p>
                       </div>
                     </div>
-                    <Switch
-                      checked={provider.settings.enabled}
-                      onCheckedChange={(checked) => handleToggleProvider(provider, checked)}
-                      aria-label={`Toggle ${provider.name} provider`}
-                    />
+                    <Switch checked={provider.settings.enabled} onCheckedChange={(c) => handleToggleProvider(provider, c)} aria-label={`Toggle ${provider.name}`} />
                   </div>
 
-                  {/* URL Configuration Section */}
                   <AnimatePresence>
                     {provider.settings.enabled && URL_CONFIGURABLE_PROVIDERS.includes(provider.name) && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4"
-                      >
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4">
                         <div className="flex flex-col gap-2">
                           <label className="text-sm text-bolt-elements-textSecondary">API Endpoint</label>
                           {editingProvider === provider.name ? (
                             <input
                               type="text"
-                              defaultValue={provider.settings.baseUrl}
-                              placeholder={`Enter ${provider.name} base URL`}
+                              defaultValue={provider.settings.baseUrl || (provider.name === 'LMStudio' ? LMSTUDIO_DEFAULT_URL : '')}
+                              placeholder={provider.name === 'LMStudio' ? LMSTUDIO_DEFAULT_URL : 'http://host:port'}
                               className={classNames(
                                 'w-full px-3 py-2 rounded-lg text-sm',
                                 'bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor',
@@ -713,11 +616,8 @@ export default function LocalProvidersTab() {
                                 'transition-all duration-200',
                               )}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleUpdateBaseUrl(provider, e.currentTarget.value);
-                                } else if (e.key === 'Escape') {
-                                  setEditingProvider(null);
-                                }
+                                if (e.key === 'Enter') handleUpdateBaseUrl(provider, e.currentTarget.value);
+                                else if (e.key === 'Escape') setEditingProvider(null);
                               }}
                               onBlur={(e) => handleUpdateBaseUrl(provider, e.target.value)}
                               autoFocus
@@ -734,10 +634,32 @@ export default function LocalProvidersTab() {
                             >
                               <div className="flex items-center gap-2 text-bolt-elements-textSecondary">
                                 <div className="i-ph:link text-sm" />
-                                <span>{provider.settings.baseUrl || 'Click to set base URL'}</span>
+                                <span>{provider.settings.baseUrl || (provider.name === 'LMStudio' ? LMSTUDIO_DEFAULT_URL : 'Clique para definir')}</span>
                               </div>
                             </div>
                           )}
+                        </div>
+
+                        <div className="mt-3">
+                          <button
+                            onClick={() =>
+                              testLocalProvider({
+                                ...provider,
+                                settings: {
+                                  ...provider.settings,
+                                  baseUrl:
+                                    provider.settings.baseUrl ||
+                                    (provider.name === 'LMStudio' ? LMSTUDIO_DEFAULT_URL : provider.settings.baseUrl),
+                                },
+                              })
+                            }
+                            className="text-xs px-2 py-1 rounded-md bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 inline-flex items-center gap-1"
+                          >
+                            <div className="i-ph:plug-charging" /> Testar conexão
+                          </button>
+                          <span className="ml-2 text-[11px] text-bolt-elements-textTertiary">
+                            Compatível com o padrão OpenAI <code>/v1/*</code>.
+                          </span>
                         </div>
                       </motion.div>
                     )}
@@ -751,27 +673,14 @@ export default function LocalProvidersTab() {
   );
 }
 
-// Helper component for model status badge
 function ModelStatusBadge({ status }: { status?: string }) {
-  if (!status || status === 'idle') {
-    return null;
-  }
-
+  if (!status || status === 'idle') return null;
   const statusConfig = {
-    updating: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Updating' },
-    updated: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'Updated' },
-    error: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Error' },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig];
-
-  if (!config) {
-    return null;
-  }
-
-  return (
-    <span className={classNames('px-2 py-0.5 rounded-full text-xs font-medium', config.bg, config.text)}>
-      {config.label}
-    </span>
-  );
+    updating: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', label: 'Atualizando' },
+    updated: { bg: 'bg-green-500/10', text: 'text-green-500', label: 'Atualizado' },
+    error: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Erro' },
+  } as const;
+  const cfg = (statusConfig as any)[status];
+  if (!cfg) return null;
+  return <span className={classNames('px-2 py-0.5 rounded-full text-xs font-medium', cfg.bg, cfg.text)}>{cfg.label}</span>;
 }
