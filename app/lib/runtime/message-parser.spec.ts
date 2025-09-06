@@ -156,6 +156,13 @@ describe('StreamingMessageParser', () => {
       runTest(input, expected);
     });
   });
+
+  /*
+   * Note: Enhanced parser tests should be added for shell command detection
+   * Tests for: npm install && npm run dev -> <boltAction type="shell">
+   * Tests for: script files with shebang -> <boltAction type="file">
+   * Tests for: code blocks without context -> no action created
+   */
 });
 
 function runTest(input: string | string[], outputOrExpectedResult: string | ExpectedResult) {
