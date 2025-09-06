@@ -210,7 +210,7 @@ describe('EnhancedStreamingMessageParser', () => {
 
     expect(callbacks.onArtifactOpen).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: expect.stringContaining('artifact-'),
+        id: expect.stringContaining('test_id-'),
         title: 'index.js',
       }),
     );
