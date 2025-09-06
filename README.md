@@ -48,13 +48,13 @@ Our fork includes numerous advanced features that were submitted as PRs to bolt.
 - **Optional guest mode** for quick access
 - Perfect for teams and organizations
 
-### ⚡ **Enhanced Deployment Options**
-- **Simplified Netlify deployment** with inline connection
-- **GitHub deployment** with repository creation
-- **Vercel integration** 
-- **Quick deploy buttons** for instant publishing
-- **Deployment history tracking**
-- Deploy anywhere with a single click
+### 📦 **Quick Deploy to Netlify**
+- **One-click Netlify deployment**
+- **Automatic build configuration**
+- **Environment variable management**
+- **Site preview functionality**
+- **Custom domain support**
+- Deploy your projects in seconds
 
 ### 🤖 **Extended AI Model Support**
 - **Claude 4 models** (Opus, Sonnet, Haiku)
@@ -64,39 +64,67 @@ Our fork includes numerous advanced features that were submitted as PRs to bolt.
 - **Automatic provider enablement** based on environment
 - Access to the latest and most powerful AI models
 
-### 🎨 **UI/UX Enhancements**
-- **Modern deploy dialog** instead of dropdown menus
-- **Improved file status indicators**
-- **Better error handling and user feedback**
+### 🎨 **Enhanced UI/UX Features**
+- **Project import from folders**
+- **GitHub template integration**
+- **Advanced model selector** with provider filtering
+- **Improved error handling** and user feedback
 - **Responsive design improvements**
-- **Animation and transition effects**
-- A more polished and professional experience
+- **Theme customization options**
+- A more intuitive development experience
 
-## 🎁 Coming Soon: Hosted Instances
+### 🔧 **Developer-Focused Improvements**
+- **Better TypeScript support**
+- **Enhanced debugging tools**
+- **Improved console output**
+- **Advanced file management**
+- **Git integration enhancements**
+- **Terminal improvements**
+- Tools built by developers, for developers
 
-We're excited to announce that **Hosted Bolt.gives Instances** will be available soon!
+## 💰 Coming Soon: Hosted Instances
 
-### 💰 Pricing
-- **Basic Instance**: Starting from just **$5 per month**
-- **Scalable Resources**: Donors can upgrade CPU, RAM, and storage
-- **Team Plans**: Collaborative workspaces for organizations
-- **Enterprise Solutions**: Custom deployments with dedicated support
-
-### 🌐 Benefits of Hosted Instances
-- No setup required - start coding immediately
-- Automatic updates and maintenance
-- Enhanced security and backups
+We will be offering **Hosted Bolt.gives Instances** starting from **$5 per month** for a basic instance with the ability for donors to upgrade their resources. This will provide:
+- Dedicated cloud environment
+- No setup required
+- Automatic updates
 - Priority support
-- Custom domain support
+- Custom domain options
 - Team collaboration features
 
-## 🛠️ Installation
+## 🚀 Latest Updates from bolt.diy
 
-### Prerequisites
-- Node.js 18+ 
-- pnpm package manager
+We regularly merge the latest improvements from bolt.diy including:
 
-### Quick Start
+### Recent Merged Features:
+- **GitLab Integration** - Full GitLab support alongside GitHub
+- **Branch Cloning Support** - Clone specific branches from repositories
+- **Token Limit Fixes** - Improved handling of model token limits
+- **Documentation Updates** - Enhanced help and documentation
+- **UI Improvements** - Better header layout and help accessibility
+- **Bug Fixes** - Various stability and performance improvements
+
+## 📊 Feature Comparison
+
+| Feature | bolt.diy | Bolt.gives |
+|---------|----------|------------|
+| Open Source | ✅ | ✅ |
+| Free to Use | ✅ | ✅ |
+| Claude 3.5 Support | ✅ | ✅ |
+| Claude 4 Models | ❌ | ✅ |
+| SmartAI Conversational Coding | ❌ | ✅ |
+| Save All System | ❌ | ✅ |
+| Import from Folder | ❌ | ✅ |
+| Multi-User Auth | ❌ | ✅ |
+| Quick Deploy to Netlify | ❌ | ✅ |
+| Auto-detect Ollama | ❌ | ✅ |
+| Hosted Instances | ❌ | Coming Soon |
+
+## 📦 Installation
+
+Bolt.gives maintains full compatibility with bolt.diy's installation process while adding additional features:
+
+### Quick Installation
 
 ```bash
 # Clone the repository
@@ -107,155 +135,78 @@ cd bolt.gives
 pnpm install
 
 # Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your API keys
+cp .env.example .env
 
-# Start development server
+# Start the development server
 pnpm run dev
 ```
 
-### Production Deployment
+### Docker Installation
 
 ```bash
-# Build for production
-pnpm run build
-
-# Start production server
-pnpm run start
+docker-compose up --build
 ```
-
-## 🔧 Configuration
 
 ### Environment Variables
 
-Create a `.env.local` file with:
+Create a `.env` file with your API keys:
 
 ```env
-# AI Providers
-OPENAI_API_KEY=your_openai_key
+# Core AI Providers
 ANTHROPIC_API_KEY=your_anthropic_key
-OLLAMA_API_BASE_URL=http://localhost:11434  # Auto-detected when set
+OPENAI_API_KEY=your_openai_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_key
 
-# Deployment Providers
+# Optional Providers
+GROQ_API_KEY=your_groq_key
+OLLAMA_API_BASE_URL=http://localhost:11434
+OPENROUTER_API_KEY=your_openrouter_key
+
+# Deployment (Bolt.gives Exclusive)
 NETLIFY_AUTH_TOKEN=your_netlify_token
-VERCEL_TOKEN=your_vercel_token
 GITHUB_TOKEN=your_github_token
-
-# Optional: Multi-User System
-JWT_SECRET=your_jwt_secret
-ENABLE_MULTI_USER=true
 ```
 
-## 📚 Documentation
+## 🛠️ Development
 
-### Key Features Documentation
+### Available Scripts
 
-- [Save All System Guide](docs/features/save-all.md)
-- [Import Projects Tutorial](docs/features/import-projects.md)
-- [Multi-User Setup](docs/features/multi-user.md)
-- [Deployment Guide](docs/features/deployment.md)
-- [AI Provider Configuration](docs/features/ai-providers.md)
+- `pnpm run dev` - Start development server
+- `pnpm run build` - Build for production
+- `pnpm run start` - Start production server
+- `pnpm run lint` - Run linting
+- `pnpm run typecheck` - Check TypeScript types
 
 ## 🤝 Contributing
 
-We welcome contributions! Our fork is actively maintained and we review PRs promptly.
-
-### How to Contribute
+We welcome contributions! Our exclusive features are what make Bolt.gives special:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-### Development Guidelines
-
-- Follow existing code style
-- Add tests for new features
-- Update documentation
-- Keep commits atomic and descriptive
-
-## 🔄 Differences from bolt.diy
-
-While we maintain compatibility with bolt.diy's core functionality, Bolt.gives includes:
-
-| Feature | bolt.diy | Bolt.gives |
-|---------|----------|------------|
-| Save All System | ❌ | ✅ |
-| Import Existing Projects | ❌ | ✅ |
-| Multi-User Support | ❌ | ✅ |
-| Claude 4 Models | ❌ | ✅ |
-| Auto-detect Ollama | ❌ | ✅ |
-| Enhanced Deploy Dialog | ❌ | ✅ |
-| GitHub Repository Creation | ❌ | ✅ |
-| Workspace Isolation | ❌ | ✅ |
-| Auto-save | ❌ | ✅ |
-| Hosted Instances | ❌ | ✅ Coming Soon |
-
-## 📈 Roadmap
-
-### Q1 2025
-- ✅ Save All System
-- ✅ Import Projects
-- ✅ Multi-User Authentication
-- ✅ Enhanced Deployment
-- 🔄 Hosted Instance Beta
-
-### Q2 2025
-- 📱 Mobile responsive editor
-- 🤝 Real-time collaboration
-- 📊 Analytics dashboard
-- 🔌 Plugin system
-- 🌐 Custom domain support
-
-### Future
-- 🤖 AI code review
-- 📦 Package registry integration
-- 🔒 Enterprise SSO
-- 📈 Performance monitoring
-- 🌍 Global CDN deployment
-
-## 💪 Why Choose Bolt.gives?
-
-1. **More Features**: We integrate community-requested features that aren't in bolt.diy
-2. **Active Development**: Regular updates and new features
-3. **Community Driven**: We listen to and implement user feedback
-4. **Professional Support**: Hosted instances come with dedicated support
-5. **Enterprise Ready**: Multi-user support and workspace isolation
-6. **Better UX**: Refined interface with modern design patterns
-
-## 📞 Support
-
-- **GitHub Issues**: [Report bugs or request features](https://github.com/embire2/bolt.gives/issues)
-- **Discord**: Join our community (coming soon)
-- **Email**: support@bolt.gives (for hosted instances)
-
-## 📄 License
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Original bolt.diy team for the foundation
-- All contributors who submitted PRs
-- The open-source community for continuous support
-- Our users for valuable feedback and suggestions
+- Original [bolt.diy](https://github.com/stackblitz-labs/bolt.diy) team for the foundation
+- All contributors who have submitted PRs and features
+- The open-source community for continuous support and feedback
 
-## 🚀 Get Started Now!
+## 📞 Support
 
-Ready to experience the enhanced features of Bolt.gives?
-
-1. **Try it locally**: Follow the installation guide above
-2. **Wait for hosted**: Join the waitlist for hosted instances
-3. **Contribute**: Help us make it even better
+- **GitHub Issues**: [Report bugs or request features](https://github.com/embire2/bolt.gives/issues)
+- **Community**: Join the discussion in our GitHub Discussions
+- **Email**: support@bolt.gives (coming soon)
 
 ---
 
-<p align="center">
-  <strong>Bolt.gives - Where AI Development Meets Professional Features</strong><br>
-  <em>Fork of bolt.diy with enterprise-grade enhancements</em>
-</p>
-
-<p align="center">
-  Made with ❤️ by the Bolt.gives community
-</p>
+<div align="center">
+  <strong>Built with ❤️ by the Bolt.gives Community</strong>
+  <br>
+  <em>Taking AI Development to the Next Level</em>
+</div>
