@@ -14,6 +14,32 @@ export class AnthropicProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     /*
+     * Claude Opus 4.1: Most powerful model for coding and reasoning
+     * Released August 5, 2025
+     */
+    {
+      name: 'claude-opus-4-1-20250805',
+      label: 'Claude Opus 4.1',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 64000,
+      supportsSmartAI: true,
+    },
+
+    /*
+     * Claude Sonnet 4: Hybrid instant/extended response model
+     * Released May 14, 2025
+     */
+    {
+      name: 'claude-sonnet-4-20250514',
+      label: 'Claude Sonnet 4',
+      provider: 'Anthropic',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 64000,
+      supportsSmartAI: true,
+    },
+
+    /*
      * Essential fallback models - only the most stable/reliable ones
      * Claude 3.5 Sonnet: 200k context, excellent for complex reasoning and coding
      */
