@@ -13,6 +13,22 @@ export interface SupabaseProject {
   region: string;
   created_at: string;
   status: string;
+  stats?: {
+    database?: {
+      tables: number;
+      size: string;
+    };
+    storage?: {
+      objects: number;
+      size: string;
+    };
+    functions?: {
+      count: number;
+    };
+    auth?: {
+      users: number;
+    };
+  };
 }
 
 export interface SupabaseStats {

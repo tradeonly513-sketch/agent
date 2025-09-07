@@ -1,7 +1,7 @@
 import { atom, computed } from 'nanostores';
 import Cookies from 'js-cookie';
 import { logStore } from '~/lib/stores/logs';
-import { gitHubApiService } from '~/lib/services/githubApiService';
+import { GitHubApiService as gitHubApiService } from '~/lib/services/githubApiService';
 import { calculateStatsSummary } from '~/utils/githubStats';
 import type { GitHubConnection } from '~/types/GitHub';
 

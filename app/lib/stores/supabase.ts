@@ -111,6 +111,15 @@ export function updateSupabaseConnection(connection: Partial<SupabaseConnectionS
   }
 }
 
+export function initializeSupabaseConnection() {
+  // Auto-connect using environment variable if available
+  const envToken = import.meta.env?.VITE_SUPABASE_ACCESS_TOKEN;
+  if (envToken && !supabaseConnection.get().token) {
+    updateSupabaseConnection({ token: envToken });
+    fetchSupabaseStats(envToken).catch(console.error);
+  }
+}
+
 export async function fetchSupabaseStats(token: string) {
   isFetchingStats.set(true);
 
