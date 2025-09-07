@@ -72,32 +72,34 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
       // Pattern 1: File path followed by code block (most common, check first)
       {
         regex: /(?:^|\n)([\/\w\-\.]+\.\w+):?\s*\n+```(\w*)\n([\s\S]*?)```/gim,
-        type: 'file_path'
+        type: 'file_path',
       },
 
       // Pattern 2: Explicit file creation mentions
       {
-        regex: /(?:create|update|modify|edit|write|add|generate|here'?s?|file:?)\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?(?:called\s+)?[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
-        type: 'explicit_create'
+        regex:
+          /(?:create|update|modify|edit|write|add|generate|here'?s?|file:?)\s+(?:a\s+)?(?:new\s+)?(?:file\s+)?(?:called\s+)?[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
+        type: 'explicit_create',
       },
 
       // Pattern 3: Code blocks with filename comments
       {
         regex: /```(\w*)\n(?:\/\/|#|<!--)\s*(?:file:?|filename:?)\s*([\/\w\-\.]+\.\w+).*?\n([\s\S]*?)```/gi,
-        type: 'comment_filename'
+        type: 'comment_filename',
       },
 
       // Pattern 4: Code block with "in <filename>" context
       {
         regex: /(?:in|for|update)\s+[`'"]*([\/\w\-\.]+\.\w+)[`'"]*:?\s*\n+```(\w*)\n([\s\S]*?)```/gi,
-        type: 'in_filename'
+        type: 'in_filename',
       },
 
       // Pattern 5: Structured files (package.json, components)
       {
-        regex: /```(?:json|jsx?|tsx?|html?|vue|svelte)\n(\{[\s\S]*?"(?:name|version|scripts|dependencies|devDependencies)"[\s\S]*?\}|<\w+[^>]*>[\s\S]*?<\/\w+>[\s\S]*?)```/gi,
-        type: 'structured_file'
-      }
+        regex:
+          /```(?:json|jsx?|tsx?|html?|vue|svelte)\n(\{[\s\S]*?"(?:name|version|scripts|dependencies|devDependencies)"[\s\S]*?\}|<\w+[^>]*>[\s\S]*?<\/\w+>[\s\S]*?)```/gi,
+        type: 'structured_file',
+      },
     ];
 
     // Process each pattern in order of likelihood
@@ -146,9 +148,7 @@ export class EnhancedStreamingMessageParser extends StreamingMessageParser {
         if (!this._hasFileContext(enhanced, match)) {
           // If no clear file context, skip unless it's an explicit file pattern
           const isExplicitFilePattern =
-            pattern.type === 'explicit_create' ||
-            pattern.type === 'comment_filename' ||
-            pattern.type === 'file_path';
+            pattern.type === 'explicit_create' || pattern.type === 'comment_filename' || pattern.type === 'file_path';
 
           if (!isExplicitFilePattern) {
             return match; // Return original if no context
@@ -388,6 +388,7 @@ ${content.trim()}
 
     // Remove prefixes to check the actual command
     let cleanLine = line;
+
     for (const prefix of prefixPatterns) {
       cleanLine = cleanLine.replace(prefix, '');
     }
