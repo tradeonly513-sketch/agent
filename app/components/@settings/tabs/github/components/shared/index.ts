@@ -1,4 +1,5 @@
 export { RepositoryCard } from './RepositoryCard';
+
 // GitHubDialog components not yet implemented
 export {
   LoadingState,

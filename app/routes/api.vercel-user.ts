@@ -9,10 +9,19 @@ async function vercelUserLoader({ request, context }: { request: Request; contex
     const apiKeys = getApiKeysFromCookie(cookieHeader);
 
     // Try to get Vercel token from various sources
-    const vercelToken =
+    let vercelToken =
       apiKeys.VITE_VERCEL_ACCESS_TOKEN ||
       context?.cloudflare?.env?.VITE_VERCEL_ACCESS_TOKEN ||
       process.env.VITE_VERCEL_ACCESS_TOKEN;
+
+    // Also check for token in request headers (for direct API calls)
+    if (!vercelToken) {
+      const authHeader = request.headers.get('Authorization');
+
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        vercelToken = authHeader.substring(7);
+      }
+    }
 
     if (!vercelToken) {
       return json({ error: 'Vercel token not found' }, { status: 401 });
@@ -78,10 +87,19 @@ async function vercelUserAction({ request, context }: { request: Request; contex
     const apiKeys = getApiKeysFromCookie(cookieHeader);
 
     // Try to get Vercel token from various sources
-    const vercelToken =
+    let vercelToken =
       apiKeys.VITE_VERCEL_ACCESS_TOKEN ||
       context?.cloudflare?.env?.VITE_VERCEL_ACCESS_TOKEN ||
       process.env.VITE_VERCEL_ACCESS_TOKEN;
+
+    // Also check for token in request headers (for direct API calls)
+    if (!vercelToken) {
+      const authHeader = request.headers.get('Authorization');
+
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        vercelToken = authHeader.substring(7);
+      }
+    }
 
     if (!vercelToken) {
       return json({ error: 'Vercel token not found' }, { status: 401 });

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import type { GitHubStats, GitHubConnection } from '~/types/GitHub';
-import { GitHubApiService } from '~/lib/services/GitHubApiService';
+import { gitHubApiService } from '~/lib/services/githubApiService';
 
 export interface UseGitHubStatsState {
   stats: GitHubStats | null;
@@ -42,16 +42,19 @@ export function useGitHubStats(
     lastUpdated: null,
   });
 
-  // Create API service instance when connection is available
+  // Configure API service when connection is available
   const apiService = useMemo(() => {
     if (!connection?.token) {
       return null;
     }
 
-    return new GitHubApiService({
+    // Configure the singleton instance with the current connection
+    gitHubApiService.configure({
       token: connection.token,
       tokenType: connection.tokenType,
     });
+
+    return gitHubApiService;
   }, [connection?.token, connection?.tokenType]);
 
   // Check if stats are stale
@@ -277,10 +280,13 @@ export function useGitHubRepositories(connection: GitHubConnection | null) {
       return null;
     }
 
-    return new GitHubApiService({
+    // Configure the singleton instance with the current connection
+    gitHubApiService.configure({
       token: connection.token,
       tokenType: connection.tokenType,
     });
+
+    return gitHubApiService;
   }, [connection?.token, connection?.tokenType]);
 
   const fetchRepositories = useCallback(async () => {

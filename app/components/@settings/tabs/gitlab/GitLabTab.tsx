@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useGitLabConnection } from '~/lib/stores/gitlabConnection';
-import GitLabConnection from '~/components/@settings/tabs/connections/gitlab/GitLabConnection';
-import { Button } from '~/components/ui/Button';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
-import { classNames } from '~/utils/classNames';
-import { ChevronDown } from 'lucide-react';
+import { useGitLabConnection } from '~/lib/hooks';
+import GitLabConnection from './components/GitLabConnection';
+import { StatsDisplay } from './components/StatsDisplay';
+import { RepositoryList } from './components/RepositoryList';
 
 // GitLab logo SVG component
 const GitLabLogo = () => (
@@ -17,12 +15,59 @@ const GitLabLogo = () => (
   </svg>
 );
 
+interface ConnectionTestResult {
+  status: 'success' | 'error' | 'testing';
+  message: string;
+  timestamp?: number;
+}
+
 export default function GitLabTab() {
-  const { connection, isConnected, stats } = useGitLabConnection();
-  const [isReposExpanded, setIsReposExpanded] = useState(false);
+  const { connection, isConnected, isLoading, error, testConnection, refreshStats } = useGitLabConnection();
+  const [connectionTest, setConnectionTest] = useState<ConnectionTestResult | null>(null);
+  const [isRefreshingStats, setIsRefreshingStats] = useState(false);
+
+  const handleTestConnection = async () => {
+    if (!connection?.user) {
+      setConnectionTest({
+        status: 'error',
+        message: 'No connection established',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    setConnectionTest({
+      status: 'testing',
+      message: 'Testing connection...',
+    });
+
+    try {
+      const isValid = await testConnection();
+
+      if (isValid) {
+        setConnectionTest({
+          status: 'success',
+          message: `Connected successfully as ${connection.user.username}`,
+          timestamp: Date.now(),
+        });
+      } else {
+        setConnectionTest({
+          status: 'error',
+          message: 'Connection test failed',
+          timestamp: Date.now(),
+        });
+      }
+    } catch (error) {
+      setConnectionTest({
+        status: 'error',
+        message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now(),
+      });
+    }
+  };
 
   // Loading state for initial connection check
-  if (!connection && !isConnected) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
@@ -35,6 +80,38 @@ export default function GitLabTab() {
             <span className="text-bolt-elements-textSecondary">Loading...</span>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Error state for connection issues
+  if (error && !connection) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <GitLabLogo />
+          <h2 className="text-lg font-medium text-bolt-elements-textPrimary">GitLab Integration</h2>
+        </div>
+        <div className="text-sm text-red-600 dark:text-red-400 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  // Not connected state
+  if (!isConnected || !connection) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <GitLabLogo />
+          <h2 className="text-lg font-medium text-bolt-elements-textPrimary">GitLab Integration</h2>
+        </div>
+        <p className="text-sm text-bolt-elements-textSecondary">
+          Connect your GitLab account to enable advanced repository management features, statistics, and seamless
+          integration.
+        </p>
+        <GitLabConnection connectionTest={connectionTest} onTestConnection={handleTestConnection} />
       </div>
     );
   }
@@ -55,11 +132,11 @@ export default function GitLabTab() {
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          {connection.get()?.rateLimit && (
+          {connection?.rateLimit && (
             <div className="flex items-center gap-2 px-3 py-1 bg-bolt-elements-background-depth-1 rounded-lg text-xs">
               <div className="i-ph:cloud w-4 h-4 text-bolt-elements-textSecondary" />
               <span className="text-bolt-elements-textSecondary">
-                API: {connection.get()?.rateLimit?.remaining}/{connection.get()?.rateLimit?.limit}
+                API: {connection.rateLimit.remaining}/{connection.rateLimit.limit}
               </span>
             </div>
           )}
@@ -71,7 +148,7 @@ export default function GitLabTab() {
       </p>
 
       {/* Connection Test Results */}
-      {/* connectionTest && (
+      {connectionTest && (
         <div
           className={`p-3 rounded-lg border ${
             connectionTest.status === 'success'
@@ -112,94 +189,115 @@ export default function GitLabTab() {
             </span>
           </div>
         </div>
-      ) */}
+      )}
 
       {/* GitLab Connection Component */}
-      <GitLabConnection />
+      <GitLabConnection connectionTest={connectionTest} onTestConnection={handleTestConnection} />
 
-      {/* Repositories Section */}
-      {isConnected && stats.get() && stats.get()?.projects && stats.get()!.projects!.length > 0 && (
+      {/* User Profile Section */}
+      {connection?.user && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="border-t border-bolt-elements-borderColor pt-6"
+        >
+          <div className="flex items-center gap-4 p-4 bg-bolt-elements-background-depth-1 rounded-lg">
+            <div className="w-12 h-12 rounded-full border-2 border-bolt-elements-item-contentAccent flex items-center justify-center bg-bolt-elements-background-depth-2 overflow-hidden">
+              {connection.user.avatar_url &&
+              connection.user.avatar_url !== 'null' &&
+              connection.user.avatar_url !== '' ? (
+                <img
+                  src={connection.user.avatar_url}
+                  alt={connection.user.username}
+                  className="w-full h-full rounded-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+
+                    const parent = target.parentElement;
+
+                    if (parent) {
+                      parent.innerHTML = (connection.user?.name || connection.user?.username || 'U')
+                        .charAt(0)
+                        .toUpperCase();
+                      parent.classList.add(
+                        'text-white',
+                        'font-semibold',
+                        'text-sm',
+                        'flex',
+                        'items-center',
+                        'justify-center',
+                      );
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-bolt-elements-item-contentAccent flex items-center justify-center text-white font-semibold text-sm">
+                  {(connection.user?.name || connection.user?.username || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-bolt-elements-textPrimary">
+                {connection.user?.name || connection.user?.username}
+              </h4>
+              <p className="text-sm text-bolt-elements-textSecondary">{connection.user?.username}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* GitLab Stats Section */}
+      {connection?.stats && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="border-t border-bolt-elements-borderColor pt-6"
         >
-          <Collapsible open={isReposExpanded} onOpenChange={setIsReposExpanded}>
-            <CollapsibleTrigger asChild>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-bolt-elements-background dark:bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive/70 dark:hover:border-bolt-elements-borderColorActive/70 transition-all duration-200">
-                <div className="flex items-center gap-2">
-                  <div className="i-ph:folder w-4 h-4 text-bolt-elements-item-contentAccent" />
-                  <span className="text-sm font-medium text-bolt-elements-textPrimary">
-                    All Repositories ({stats.get()?.projects?.length})
-                  </span>
-                </div>
-                <ChevronDown
-                  className={classNames(
-                    'w-4 h-4 transform transition-transform duration-200 text-bolt-elements-textSecondary',
-                    isReposExpanded ? 'rotate-180' : '',
-                  )}
-                />
-              </div>
-            </CollapsibleTrigger>
+          <h3 className="text-base font-medium text-bolt-elements-textPrimary mb-4">Statistics</h3>
+          <StatsDisplay
+            stats={connection.stats}
+            onRefresh={async () => {
+              setIsRefreshingStats(true);
 
-            <CollapsibleContent className="overflow-hidden">
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(isReposExpanded ? stats.get()?.projects : stats.get()?.projects?.slice(0, 12))?.map((repo: any) => (
-                    <div
-                      key={repo.id}
-                      className="p-4 rounded-lg border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-bolt-elements-textPrimary truncate">{repo.name}</h4>
-                          <p className="text-xs text-bolt-elements-textSecondary mt-1">{repo.path_with_namespace}</p>
-                          {repo.description && (
-                            <p className="text-xs text-bolt-elements-textSecondary mt-2 line-clamp-2">
-                              {repo.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-4 text-xs text-bolt-elements-textSecondary">
-                          <span className="flex items-center gap-1">
-                            <div className="i-ph:star w-3 h-3" />
-                            {repo.star_count}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <div className="i-ph:git-fork w-3 h-3" />
-                            {repo.forks_count}
-                          </span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(repo.http_url_to_repo, '_blank', 'noopener,noreferrer')}
-                          className="text-xs"
-                        >
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              try {
+                await refreshStats();
+              } catch (error) {
+                console.error('Failed to refresh stats:', error);
+              } finally {
+                setIsRefreshingStats(false);
+              }
+            }}
+            isRefreshing={isRefreshingStats}
+          />
+        </motion.div>
+      )}
 
-                {stats.get()?.projects && stats.get()!.projects!.length > 12 && !isReposExpanded && (
-                  <div className="text-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsReposExpanded(true)}
-                      className="text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary"
-                    >
-                      Show {(stats.get()?.projects?.length || 0) - 12} more repositories
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+      {/* GitLab Repositories Section */}
+      {connection?.stats?.projects && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="border-t border-bolt-elements-borderColor pt-6"
+        >
+          <RepositoryList
+            repositories={connection.stats.projects}
+            onRefresh={async () => {
+              setIsRefreshingStats(true);
+
+              try {
+                await refreshStats();
+              } catch (error) {
+                console.error('Failed to refresh repositories:', error);
+              } finally {
+                setIsRefreshingStats(false);
+              }
+            }}
+            isRefreshing={isRefreshingStats}
+          />
         </motion.div>
       )}
     </div>

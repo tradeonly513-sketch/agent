@@ -407,7 +407,7 @@ export default function SupabaseTab() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t border-bolt-elements-borderColor">
                           <div className="text-center">
                             <div className="text-sm font-semibold text-bolt-elements-textPrimary">
-                              {project.stats?.database.tables ?? '--'}
+                              {project.stats?.database?.tables ?? '--'}
                             </div>
                             <div className="text-xs text-bolt-elements-textSecondary flex items-center justify-center gap-1">
                               <div className="i-ph:table w-3 h-3" />
@@ -416,7 +416,7 @@ export default function SupabaseTab() {
                           </div>
                           <div className="text-center">
                             <div className="text-sm font-semibold text-bolt-elements-textPrimary">
-                              {project.stats?.storage.buckets ?? '--'}
+                              {project.stats?.storage?.buckets ?? '--'}
                             </div>
                             <div className="text-xs text-bolt-elements-textSecondary flex items-center justify-center gap-1">
                               <div className="i-ph:folder w-3 h-3" />
@@ -425,7 +425,7 @@ export default function SupabaseTab() {
                           </div>
                           <div className="text-center">
                             <div className="text-sm font-semibold text-bolt-elements-textPrimary">
-                              {project.stats?.functions.deployed ?? '--'}
+                              {project.stats?.functions?.deployed ?? '--'}
                             </div>
                             <div className="text-xs text-bolt-elements-textSecondary flex items-center justify-center gap-1">
                               <div className="i-ph:code w-3 h-3" />
@@ -434,7 +434,7 @@ export default function SupabaseTab() {
                           </div>
                           <div className="text-center">
                             <div className="text-sm font-semibold text-bolt-elements-textPrimary">
-                              {project.stats?.database.size_mb ? `${project.stats.database.size_mb} MB` : '--'}
+                              {project.stats?.database?.size_mb ? `${project.stats.database.size_mb} MB` : '--'}
                             </div>
                             <div className="text-xs text-bolt-elements-textSecondary flex items-center justify-center gap-1">
                               <div className="i-ph:database w-3 h-3" />
@@ -476,20 +476,20 @@ export default function SupabaseTab() {
                             <div className="space-y-1 text-xs text-bolt-elements-textSecondary">
                               <div className="flex justify-between">
                                 <span>Tables:</span>
-                                <span>{project.stats?.database.tables ?? '--'}</span>
+                                <span>{project.stats?.database?.tables ?? '--'}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Views:</span>
-                                <span>{project.stats?.database.views ?? '--'}</span>
+                                <span>{project.stats?.database?.views ?? '--'}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Functions:</span>
-                                <span>{project.stats?.database.functions ?? '--'}</span>
+                                <span>{project.stats?.database?.functions ?? '--'}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Size:</span>
                                 <span>
-                                  {project.stats?.database.size_mb ? `${project.stats.database.size_mb} MB` : '--'}
+                                  {project.stats?.database?.size_mb ? `${project.stats.database.size_mb} MB` : '--'}
                                 </span>
                               </div>
                             </div>
@@ -503,22 +503,22 @@ export default function SupabaseTab() {
                             <div className="space-y-1 text-xs text-bolt-elements-textSecondary">
                               <div className="flex justify-between">
                                 <span>Buckets:</span>
-                                <span>{project.stats?.storage.buckets ?? '--'}</span>
+                                <span>{project.stats?.storage?.buckets ?? '--'}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Files:</span>
-                                <span>{project.stats?.storage.files ?? '--'}</span>
+                                <span>{project.stats?.storage?.files ?? '--'}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Used:</span>
                                 <span>
-                                  {project.stats?.storage.used_gb ? `${project.stats.storage.used_gb} GB` : '--'}
+                                  {project.stats?.storage?.used_gb ? `${project.stats.storage.used_gb} GB` : '--'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Available:</span>
                                 <span>
-                                  {project.stats?.storage.available_gb
+                                  {project.stats?.storage?.available_gb
                                     ? `${project.stats.storage.available_gb} GB`
                                     : '--'}
                                 </span>
@@ -840,7 +840,7 @@ export default function SupabaseTab() {
                               totalProjects > 0
                                 ? Math.round(
                                     (connection.stats?.projects?.reduce(
-                                      (sum, p) => sum + (p.stats?.database.tables || 0),
+                                      (sum, p) => sum + (p.stats?.database?.tables || 0),
                                       0,
                                     ) || 0) / totalProjects,
                                   )
@@ -929,17 +929,22 @@ export default function SupabaseTab() {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       {(() => {
                         const totalDatabase =
-                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database.size_mb || 0), 0) ||
+                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database?.size_mb || 0), 0) ||
                           0;
                         const totalStorage =
-                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage.used_gb || 0), 0) || 0;
-                        const totalFunctions =
-                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.functions.deployed || 0), 0) ||
+                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage?.used_gb || 0), 0) ||
                           0;
+                        const totalFunctions =
+                          connection.stats?.projects?.reduce(
+                            (sum, p) => sum + (p.stats?.functions?.deployed || 0),
+                            0,
+                          ) || 0;
                         const totalTables =
-                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database.tables || 0), 0) || 0;
+                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database?.tables || 0), 0) ||
+                          0;
                         const totalBuckets =
-                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage.buckets || 0), 0) || 0;
+                          connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage?.buckets || 0), 0) ||
+                          0;
 
                         return [
                           {
@@ -1008,7 +1013,7 @@ export default function SupabaseTab() {
                       <div className="text-sm text-bolt-elements-textSecondary">
                         <div>
                           Tables:{' '}
-                          {connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database.tables || 0), 0) ||
+                          {connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.database?.tables || 0), 0) ||
                             '--'}
                         </div>
                         <div>
@@ -1016,7 +1021,7 @@ export default function SupabaseTab() {
                           {(() => {
                             const totalSize =
                               connection.stats?.projects?.reduce(
-                                (sum, p) => sum + (p.stats?.database.size_mb || 0),
+                                (sum, p) => sum + (p.stats?.database?.size_mb || 0),
                                 0,
                               ) || 0;
                             return totalSize > 0 ? `${totalSize} MB` : '--';
@@ -1032,7 +1037,7 @@ export default function SupabaseTab() {
                       <div className="text-sm text-bolt-elements-textSecondary">
                         <div>
                           Buckets:{' '}
-                          {connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage.buckets || 0), 0) ||
+                          {connection.stats?.projects?.reduce((sum, p) => sum + (p.stats?.storage?.buckets || 0), 0) ||
                             '--'}
                         </div>
                         <div>
@@ -1040,7 +1045,7 @@ export default function SupabaseTab() {
                           {(() => {
                             const totalUsed =
                               connection.stats?.projects?.reduce(
-                                (sum, p) => sum + (p.stats?.storage.used_gb || 0),
+                                (sum, p) => sum + (p.stats?.storage?.used_gb || 0),
                                 0,
                               ) || 0;
                             return totalUsed > 0 ? `${totalUsed} GB` : '--';
@@ -1057,14 +1062,14 @@ export default function SupabaseTab() {
                         <div>
                           Deployed:{' '}
                           {connection.stats?.projects?.reduce(
-                            (sum, p) => sum + (p.stats?.functions.deployed || 0),
+                            (sum, p) => sum + (p.stats?.functions?.deployed || 0),
                             0,
                           ) || '--'}
                         </div>
                         <div>
                           Invocations:{' '}
                           {connection.stats?.projects?.reduce(
-                            (sum, p) => sum + (p.stats?.functions.invocations || 0),
+                            (sum, p) => sum + (p.stats?.functions?.invocations || 0),
                             0,
                           ) || '--'}
                         </div>

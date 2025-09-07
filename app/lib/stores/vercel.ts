@@ -132,6 +132,7 @@ export async function autoConnectVercel() {
 export function initializeVercelConnection() {
   // Auto-connect using environment variable if available
   const envToken = import.meta.env?.VITE_VERCEL_ACCESS_TOKEN;
+
   if (envToken && !vercelConnection.get().token) {
     updateVercelConnection({ token: envToken });
     fetchVercelStats(envToken).catch(console.error);

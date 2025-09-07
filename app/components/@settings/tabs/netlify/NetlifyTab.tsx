@@ -103,21 +103,268 @@ export default function NetlifyTab() {
       icon: 'i-ph:arrows-clockwise',
       action: async (siteId: string) => {
         try {
-          const response = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/cache`, {
+          setIsActionLoading(true);
+
+          // Try to get site details first to check for build hooks
+          const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (!siteResponse.ok) {
+            const errorText = await siteResponse.text();
+
+            if (siteResponse.status === 404) {
+              toast.error('Site not found. This may be a free account limitation.');
+              return;
+            }
+
+            throw new Error(`Failed to get site details: ${errorText}`);
+          }
+
+          const siteData = (await siteResponse.json()) as any;
+
+          // Check if this looks like a free account (limited features)
+          const isFreeAccount = !siteData.plan || siteData.plan === 'free' || siteData.plan === 'starter';
+
+          // If site has build hooks, try triggering a build instead
+          if (siteData.build_settings && siteData.build_settings.repo_url) {
+            // Try to trigger a build by making a POST to the site's build endpoint
+            const buildResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${connection.token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                clear_cache: true,
+              }),
+            });
+
+            if (buildResponse.ok) {
+              toast.success('Build triggered with cache clear');
+              return;
+            } else if (buildResponse.status === 422) {
+              // Often indicates free account limitation
+              toast.warning('Build trigger failed. This feature may not be available on free accounts.');
+              return;
+            }
+          }
+
+          // Fallback: Try the standard cache purge endpoint
+          const cacheResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/purge_cache`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${connection.token}`,
             },
           });
 
-          if (!response.ok) {
-            throw new Error('Failed to clear cache');
+          if (!cacheResponse.ok) {
+            if (cacheResponse.status === 404) {
+              if (isFreeAccount) {
+                toast.warning('Cache purge not available on free accounts. Try triggering a build instead.');
+              } else {
+                toast.error('Cache purge endpoint not found. This feature may not be available.');
+              }
+
+              return;
+            }
+
+            const errorText = await cacheResponse.text();
+            throw new Error(`Cache purge failed: ${errorText}`);
           }
 
           toast.success('Site cache cleared successfully');
         } catch (err: unknown) {
           const error = err instanceof Error ? err.message : 'Unknown error';
           toast.error(`Failed to clear site cache: ${error}`);
+        } finally {
+          setIsActionLoading(false);
+        }
+      },
+    },
+    {
+      name: 'Manage Environment',
+      icon: 'i-ph:gear',
+      action: async (siteId: string) => {
+        try {
+          setIsActionLoading(true);
+
+          // Get site info first to check account type
+          const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (!siteResponse.ok) {
+            throw new Error('Failed to get site details');
+          }
+
+          const siteData = (await siteResponse.json()) as any;
+          const isFreeAccount = !siteData.plan || siteData.plan === 'free' || siteData.plan === 'starter';
+
+          // Get environment variables
+          const envResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/env`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (envResponse.ok) {
+            const envVars = (await envResponse.json()) as any[];
+            toast.success(`Environment variables loaded: ${envVars.length} variables`);
+          } else if (envResponse.status === 404) {
+            if (isFreeAccount) {
+              toast.info('Environment variables management is limited on free accounts');
+            } else {
+              toast.info('Site has no environment variables configured');
+            }
+          } else {
+            const errorText = await envResponse.text();
+            toast.error(`Failed to load environment variables: ${errorText}`);
+          }
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err.message : 'Unknown error';
+          toast.error(`Failed to load environment variables: ${error}`);
+        } finally {
+          setIsActionLoading(false);
+        }
+      },
+    },
+    {
+      name: 'Trigger Build',
+      icon: 'i-ph:rocket-launch',
+      action: async (siteId: string) => {
+        try {
+          setIsActionLoading(true);
+
+          const buildResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!buildResponse.ok) {
+            throw new Error('Failed to trigger build');
+          }
+
+          const buildData = (await buildResponse.json()) as any;
+          toast.success(`Build triggered successfully! ID: ${buildData.id}`);
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err.message : 'Unknown error';
+          toast.error(`Failed to trigger build: ${error}`);
+        } finally {
+          setIsActionLoading(false);
+        }
+      },
+    },
+    {
+      name: 'View Functions',
+      icon: 'i-ph:code',
+      action: async (siteId: string) => {
+        try {
+          setIsActionLoading(true);
+
+          // Get site info first to check account type
+          const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (!siteResponse.ok) {
+            throw new Error('Failed to get site details');
+          }
+
+          const siteData = (await siteResponse.json()) as any;
+          const isFreeAccount = !siteData.plan || siteData.plan === 'free' || siteData.plan === 'starter';
+
+          const functionsResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/functions`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (functionsResponse.ok) {
+            const functions = (await functionsResponse.json()) as any[];
+            toast.success(`Site has ${functions.length} serverless functions`);
+          } else if (functionsResponse.status === 404) {
+            if (isFreeAccount) {
+              toast.info('Functions may be limited or unavailable on free accounts');
+            } else {
+              toast.info('Site has no serverless functions');
+            }
+          } else {
+            const errorText = await functionsResponse.text();
+            toast.error(`Failed to load functions: ${errorText}`);
+          }
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err.message : 'Unknown error';
+          toast.error(`Failed to load functions: ${error}`);
+        } finally {
+          setIsActionLoading(false);
+        }
+      },
+    },
+    {
+      name: 'Site Analytics',
+      icon: 'i-ph:chart-bar',
+      action: async (siteId: string) => {
+        try {
+          setIsActionLoading(true);
+
+          // Get site info first to check account type
+          const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (!siteResponse.ok) {
+            throw new Error('Failed to get site details');
+          }
+
+          const siteData = (await siteResponse.json()) as any;
+          const isFreeAccount = !siteData.plan || siteData.plan === 'free' || siteData.plan === 'starter';
+
+          // Get site traffic data (if available)
+          const analyticsResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/traffic`, {
+            headers: {
+              Authorization: `Bearer ${connection.token}`,
+            },
+          });
+
+          if (analyticsResponse.ok) {
+            await analyticsResponse.json(); // Analytics data received
+            toast.success('Site analytics loaded successfully');
+          } else if (analyticsResponse.status === 404) {
+            if (isFreeAccount) {
+              toast.info('Analytics not available on free accounts. Showing basic site info instead.');
+            }
+
+            // Fallback to basic site info
+            toast.info(`Site: ${siteData.name} - Status: ${siteData.state || 'Unknown'}`);
+          } else {
+            const errorText = await analyticsResponse.text();
+
+            if (isFreeAccount) {
+              toast.info(
+                'Analytics unavailable on free accounts. Site info: ' +
+                  `${siteData.name} (${siteData.state || 'Unknown'})`,
+              );
+            } else {
+              toast.error(`Failed to load analytics: ${errorText}`);
+            }
+          }
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err.message : 'Unknown error';
+          toast.error(`Failed to load site analytics: ${error}`);
+        } finally {
+          setIsActionLoading(false);
         }
       },
     },

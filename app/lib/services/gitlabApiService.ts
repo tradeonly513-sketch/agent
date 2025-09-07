@@ -103,6 +103,13 @@ export class GitLabApiService {
   }
 
   private get _headers() {
+    // Log token format for debugging
+    console.log('GitLab API token info:', {
+      tokenLength: this._token.length,
+      tokenPrefix: this._token.substring(0, 10) + '...',
+      tokenType: this._token.startsWith('glpat-') ? 'personal-access-token' : 'unknown',
+    });
+
     return {
       'Content-Type': 'application/json',
       'PRIVATE-TOKEN': this._token,
@@ -124,7 +131,32 @@ export class GitLabApiService {
     const response = await this._request('/user');
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch user: ${response.status}`);
+      let errorMessage = `Failed to fetch user: ${response.status}`;
+
+      // Provide more specific error messages based on status code
+      if (response.status === 401) {
+        errorMessage =
+          '401 Unauthorized: Invalid or expired GitLab access token. Please check your token and ensure it has the required scopes (api, read_repository).';
+      } else if (response.status === 403) {
+        errorMessage = '403 Forbidden: GitLab access token does not have sufficient permissions.';
+      } else if (response.status === 404) {
+        errorMessage = '404 Not Found: GitLab API endpoint not found. Please check your GitLab URL configuration.';
+      } else if (response.status === 429) {
+        errorMessage = '429 Too Many Requests: GitLab API rate limit exceeded. Please try again later.';
+      }
+
+      // Try to get more details from response body
+      try {
+        const errorData = (await response.json()) as any;
+
+        if (errorData.message) {
+          errorMessage += ` Details: ${errorData.message}`;
+        }
+      } catch {
+        // If we can't parse the error response, continue with the default message
+      }
+
+      throw new Error(errorMessage);
     }
 
     const user: GitLabUserResponse = await response.json();
@@ -163,7 +195,16 @@ export class GitLabApiService {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.statusText}`);
+        let errorMessage = `Failed to fetch projects: ${response.status} ${response.statusText}`;
+
+        try {
+          const errorData = await response.json();
+          console.error('GitLab projects API error:', errorData);
+          errorMessage = `Failed to fetch projects: ${JSON.stringify(errorData)}`;
+        } catch (parseError) {
+          console.error('Could not parse GitLab error response:', parseError);
+        }
+        throw new Error(errorMessage);
       }
 
       const projects: any[] = await response.json();

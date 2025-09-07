@@ -11,6 +11,33 @@ const GitLabIcon = () => (
   </svg>
 );
 
+// Vercel icon component
+const VercelIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4">
+    <path fill="currentColor" d="M12 2L2 19.777h20L12 2z" />
+  </svg>
+);
+
+// Netlify icon component
+const NetlifyIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4">
+    <path
+      fill="currentColor"
+      d="M16.934 8.519a1.044 1.044 0 0 1 .303-.23l2.349-1.045a.983.983 0 0 1 .905 0c.264.12.49.328.651.599l.518 1.065c.17.35.17.761 0 1.11l-.518 1.065a1.119 1.119 0 0 1-.651.599l-2.35 1.045a1.013 1.013 0 0 1-.904 0l-2.35-1.045a1.119 1.119 0 0 1-.651-.599L13.718 9.02a1.2 1.2 0 0 1 0-1.11l.518-1.065a1.119 1.119 0 0 1 .651-.599l2.35-1.045a.983.983 0 0 1 .697-.061zm-6.051 5.751a1.044 1.044 0 0 1 .303-.23l2.349-1.045a.983.983 0 0 1 .905 0c.264.12.49.328.651.599l.518 1.065c.17.35.17.761 0 1.11l-.518 1.065a1.119 1.119 0 0 1-.651.599l-2.35 1.045a1.013 1.013 0 0 1-.904 0l-2.35-1.045a1.119 1.119 0 0 1-.651-.599l-.518-1.065a1.2 1.2 0 0 1 0-1.11l.518-1.065a1.119 1.119 0 0 1 .651-.599l2.35-1.045a.983.983 0 0 1 .697-.061z"
+    />
+  </svg>
+);
+
+// Supabase icon component
+const SupabaseIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4">
+    <path
+      fill="currentColor"
+      d="M21.362 9.354H12V.396a.396.396 0 0 0-.716-.233L2.203 12.424l-.401.562a1.04 1.04 0 0 0 .836 1.659H12V21.6a.396.396 0 0 0 .716.233l9.081-12.261.401-.562a1.04 1.04 0 0 0-.836-1.656z"
+    />
+  </svg>
+);
+
 export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string }>> = {
   profile: User,
   settings: Settings,
@@ -21,9 +48,9 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   'local-providers': Laptop,
   github: Github,
   gitlab: () => <GitLabIcon />,
-  netlify: Database,
-  vercel: Cloud,
-  supabase: Database,
+  netlify: () => <NetlifyIcon />,
+  vercel: () => <VercelIcon />,
+  supabase: () => <SupabaseIcon />,
   'event-logs': List,
   mcp: Wrench,
 };
@@ -76,8 +103,6 @@ export const DEFAULT_TAB_CONFIG = [
   { id: 'notifications', visible: true, window: 'user' as const, order: 9 },
   { id: 'event-logs', visible: true, window: 'user' as const, order: 10 },
   { id: 'mcp', visible: true, window: 'user' as const, order: 11 },
-  { id: 'profile', visible: true, window: 'user' as const, order: 12 },
-  { id: 'settings', visible: true, window: 'user' as const, order: 13 },
 
   // User Window Tabs (In dropdown, initially hidden)
 ];

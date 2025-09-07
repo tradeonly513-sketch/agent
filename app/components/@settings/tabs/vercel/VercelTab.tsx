@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useStore } from '@nanostores/react';
 import { logStore } from '~/lib/stores/logs';
+import type { VercelUserResponse } from '~/types/vercel';
 import { classNames } from '~/utils/classNames';
 import { Button } from '~/components/ui/Button';
+import { ServiceHeader, ConnectionTestIndicator } from '~/components/@settings/shared/service-integration';
+import { useConnectionTest } from '~/lib/hooks';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '~/components/ui/Collapsible';
+import Cookies from 'js-cookie';
 import {
   vercelConnection,
   isConnecting,
@@ -15,12 +19,6 @@ import {
   fetchVercelStatsViaAPI,
   initializeVercelConnection,
 } from '~/lib/stores/vercel';
-
-interface ConnectionTestResult {
-  status: 'success' | 'error' | 'testing';
-  message: string;
-  timestamp?: number;
-}
 
 interface ProjectAction {
   name: string;
@@ -42,159 +40,134 @@ export default function VercelTab() {
   const connecting = useStore(isConnecting);
   const fetchingStats = useStore(isFetchingStats);
   const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
-  const [connectionTest, setConnectionTest] = useState<ConnectionTestResult | null>(null);
   const [isProjectActionLoading, setIsProjectActionLoading] = useState(false);
 
-  // Connection testing function - tests server-side token
-  const testConnection = async () => {
-    setConnectionTest({
-      status: 'testing',
-      message: 'Testing connection...',
-    });
+  // Use shared connection test hook
+  const {
+    testResult: connectionTest,
+    testConnection,
+    isTestingConnection,
+  } = useConnectionTest({
+    testEndpoint: '/api/vercel-user',
+    serviceName: 'Vercel',
+    getUserIdentifier: (data: VercelUserResponse) =>
+      data.username || data.user?.username || data.email || data.user?.email || 'Vercel User',
+  });
 
-    try {
-      const response = await fetch('/api/vercel-user', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+  // Memoize project actions to prevent unnecessary re-renders
+  const projectActions: ProjectAction[] = useMemo(
+    () => [
+      {
+        name: 'Redeploy',
+        icon: 'i-ph:arrows-clockwise',
+        action: async (projectId: string) => {
+          try {
+            const response = await fetch(`https://api.vercel.com/v1/deployments`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${connection.token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                name: projectId,
+                target: 'production',
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to redeploy project');
+            }
+
+            toast.success('Project redeployment initiated');
+            await fetchVercelStats(connection.token);
+          } catch (err: unknown) {
+            const error = err instanceof Error ? err.message : 'Unknown error';
+            toast.error(`Failed to redeploy project: ${error}`);
+          }
         },
-      });
+      },
+      {
+        name: 'View Dashboard',
+        icon: 'i-ph:layout',
+        action: async (projectId: string) => {
+          window.open(`https://vercel.com/dashboard/${projectId}`, '_blank');
+        },
+      },
+      {
+        name: 'View Deployments',
+        icon: 'i-ph:rocket',
+        action: async (projectId: string) => {
+          window.open(`https://vercel.com/dashboard/${projectId}/deployments`, '_blank');
+        },
+      },
+      {
+        name: 'View Functions',
+        icon: 'i-ph:code',
+        action: async (projectId: string) => {
+          window.open(`https://vercel.com/dashboard/${projectId}/functions`, '_blank');
+        },
+      },
+      {
+        name: 'View Analytics',
+        icon: 'i-ph:chart-bar',
+        action: async (projectId: string) => {
+          const project = connection.stats?.projects.find((p) => p.id === projectId);
 
-      if (response.ok) {
-        const data = (await response.json()) as any;
-        setConnectionTest({
-          status: 'success',
-          message: `Connected successfully using environment token as ${data.username || data.email || 'Vercel User'}`,
-          timestamp: Date.now(),
-        });
-      } else {
-        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
-        setConnectionTest({
-          status: 'error',
-          message: `Connection failed: ${errorData.error || `${response.status} ${response.statusText}`}`,
-          timestamp: Date.now(),
-        });
-      }
-    } catch (error) {
-      setConnectionTest({
-        status: 'error',
-        message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now(),
-      });
-    }
-  };
-
-  // Project actions
-  const projectActions: ProjectAction[] = [
-    {
-      name: 'Redeploy',
-      icon: 'i-ph:arrows-clockwise',
-      action: async (projectId: string) => {
-        try {
-          const response = await fetch(`https://api.vercel.com/v1/deployments`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${connection.token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: projectId,
-              target: 'production',
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to redeploy project');
+          if (project) {
+            window.open(`https://vercel.com/${connection.user?.username}/${project.name}/analytics`, '_blank');
           }
+        },
+      },
+      {
+        name: 'View Domains',
+        icon: 'i-ph:globe',
+        action: async (projectId: string) => {
+          window.open(`https://vercel.com/dashboard/${projectId}/domains`, '_blank');
+        },
+      },
+      {
+        name: 'View Settings',
+        icon: 'i-ph:gear',
+        action: async (projectId: string) => {
+          window.open(`https://vercel.com/dashboard/${projectId}/settings`, '_blank');
+        },
+      },
+      {
+        name: 'View Logs',
+        icon: 'i-ph:scroll',
+        action: async (projectId: string) => {
+          window.open(`https://vercel.com/dashboard/${projectId}/logs`, '_blank');
+        },
+      },
+      {
+        name: 'Delete Project',
+        icon: 'i-ph:trash',
+        action: async (projectId: string) => {
+          try {
+            const response = await fetch(`https://api.vercel.com/v1/projects/${projectId}`, {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${connection.token}`,
+              },
+            });
 
-          toast.success('Project redeployment initiated');
-          await fetchVercelStats(connection.token);
-        } catch (err: unknown) {
-          const error = err instanceof Error ? err.message : 'Unknown error';
-          toast.error(`Failed to redeploy project: ${error}`);
-        }
-      },
-    },
-    {
-      name: 'View Dashboard',
-      icon: 'i-ph:layout',
-      action: async (projectId: string) => {
-        window.open(`https://vercel.com/dashboard/${projectId}`, '_blank');
-      },
-    },
-    {
-      name: 'View Deployments',
-      icon: 'i-ph:rocket',
-      action: async (projectId: string) => {
-        window.open(`https://vercel.com/dashboard/${projectId}/deployments`, '_blank');
-      },
-    },
-    {
-      name: 'View Functions',
-      icon: 'i-ph:code',
-      action: async (projectId: string) => {
-        window.open(`https://vercel.com/dashboard/${projectId}/functions`, '_blank');
-      },
-    },
-    {
-      name: 'View Analytics',
-      icon: 'i-ph:chart-bar',
-      action: async (projectId: string) => {
-        const project = connection.stats?.projects.find((p) => p.id === projectId);
+            if (!response.ok) {
+              throw new Error('Failed to delete project');
+            }
 
-        if (project) {
-          window.open(`https://vercel.com/${connection.user?.username}/${project.name}/analytics`, '_blank');
-        }
-      },
-    },
-    {
-      name: 'View Domains',
-      icon: 'i-ph:globe',
-      action: async (projectId: string) => {
-        window.open(`https://vercel.com/dashboard/${projectId}/domains`, '_blank');
-      },
-    },
-    {
-      name: 'View Settings',
-      icon: 'i-ph:gear',
-      action: async (projectId: string) => {
-        window.open(`https://vercel.com/dashboard/${projectId}/settings`, '_blank');
-      },
-    },
-    {
-      name: 'View Logs',
-      icon: 'i-ph:scroll',
-      action: async (projectId: string) => {
-        window.open(`https://vercel.com/dashboard/${projectId}/logs`, '_blank');
-      },
-    },
-    {
-      name: 'Delete Project',
-      icon: 'i-ph:trash',
-      action: async (projectId: string) => {
-        try {
-          const response = await fetch(`https://api.vercel.com/v1/projects/${projectId}`, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${connection.token}`,
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to delete project');
+            toast.success('Project deleted successfully');
+            await fetchVercelStats(connection.token);
+          } catch (err: unknown) {
+            const error = err instanceof Error ? err.message : 'Unknown error';
+            toast.error(`Failed to delete project: ${error}`);
           }
-
-          toast.success('Project deleted successfully');
-          await fetchVercelStats(connection.token);
-        } catch (err: unknown) {
-          const error = err instanceof Error ? err.message : 'Unknown error';
-          toast.error(`Failed to delete project: ${error}`);
-        }
+        },
+        requiresConfirmation: true,
+        variant: 'destructive',
       },
-      requiresConfirmation: true,
-      variant: 'destructive',
-    },
-  ];
+    ],
+    [connection.token],
+  ); // Only re-create when token changes
 
   // Initialize connection on component mount - check server-side token first
   useEffect(() => {
@@ -221,7 +194,7 @@ export default function VercelTab() {
       if (connection.user) {
         // Use server-side API if we have a connected user
         try {
-          await fetchVercelStatsViaAPI();
+          await fetchVercelStatsViaAPI(connection.token);
         } catch {
           // Fallback to direct API if server-side fails and we have a token
           if (connection.token) {
@@ -238,30 +211,55 @@ export default function VercelTab() {
     isConnecting.set(true);
 
     try {
-      const response = await fetch('/api/vercel-user', {
-        method: 'GET',
+      const token = connection.token;
+
+      if (!token.trim()) {
+        throw new Error('Token is required');
+      }
+
+      // First test the token directly with Vercel API
+      const testResponse = await fetch('https://api.vercel.com/v2/user', {
         headers: {
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'User-Agent': 'bolt.diy-app',
         },
       });
 
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errorData.error || 'Invalid token or unauthorized');
+      if (!testResponse.ok) {
+        if (testResponse.status === 401) {
+          throw new Error('Invalid Vercel token');
+        }
+
+        throw new Error(`Vercel API error: ${testResponse.status}`);
       }
 
-      const userData = (await response.json()) as any;
+      const userData = (await testResponse.json()) as VercelUserResponse;
+
+      // Set cookies for server-side API access
+      Cookies.set('VITE_VERCEL_ACCESS_TOKEN', token, { expires: 365 });
+
+      // Normalize the user data structure
+      const normalizedUser = userData.user || {
+        id: userData.id || '',
+        username: userData.username || '',
+        email: userData.email || '',
+        name: userData.name || '',
+        avatar: userData.avatar,
+      };
+
       updateVercelConnection({
-        user: userData, // Use the user data directly from the API response
-        token: connection.token,
+        user: normalizedUser,
+        token,
       });
 
-      await fetchVercelStats(connection.token);
+      await fetchVercelStats(token);
       toast.success('Successfully connected to Vercel');
     } catch (error) {
       console.error('Auth error:', error);
       logStore.logError('Failed to authenticate with Vercel', { error });
-      toast.error('Failed to connect to Vercel');
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to connect to Vercel';
+      toast.error(errorMessage);
       updateVercelConnection({ user: null, token: '' });
     } finally {
       isConnecting.set(false);
@@ -269,12 +267,14 @@ export default function VercelTab() {
   };
 
   const handleDisconnect = () => {
+    // Clear Vercel-related cookies
+    Cookies.remove('VITE_VERCEL_ACCESS_TOKEN');
+
     updateVercelConnection({ user: null, token: '' });
-    setConnectionTest(null);
     toast.success('Disconnected from Vercel');
   };
 
-  const handleProjectAction = async (projectId: string, action: ProjectAction) => {
+  const handleProjectAction = useCallback(async (projectId: string, action: ProjectAction) => {
     if (action.requiresConfirmation) {
       if (!confirm(`Are you sure you want to ${action.name.toLowerCase()}?`)) {
         return;
@@ -284,9 +284,9 @@ export default function VercelTab() {
     setIsProjectActionLoading(true);
     await action.action(projectId);
     setIsProjectActionLoading(false);
-  };
+  }, []);
 
-  const renderProjects = () => {
+  const renderProjects = useCallback(() => {
     if (fetchingStats) {
       return (
         <div className="flex items-center gap-2 text-sm text-bolt-elements-textSecondary">
@@ -329,7 +329,11 @@ export default function VercelTab() {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-bolt-elements-textPrimary">
-                      {connection.stats.projects.filter((p) => p.targets?.production?.alias?.length > 0).length}
+                      {
+                        connection.stats.projects.filter(
+                          (p) => p.targets?.production?.alias && p.targets.production.alias.length > 0,
+                        ).length
+                      }
                     </div>
                     <div className="text-xs text-bolt-elements-textSecondary">Deployed Projects</div>
                   </div>
@@ -434,7 +438,7 @@ export default function VercelTab() {
                           return lastDeploy && now - new Date(lastDeploy).getTime() < 7 * 24 * 60 * 60 * 1000;
                         }).length;
                         const totalDomains = connection.stats.projects.reduce(
-                          (sum, p) => sum + (p.targets?.production?.alias?.length || 0),
+                          (sum, p) => sum + (p.targets?.production?.alias ? p.targets.production.alias.length : 0),
                           0,
                         );
                         const avgDomainsPerProject =
@@ -466,7 +470,8 @@ export default function VercelTab() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {(() => {
                     const healthyProjects = connection.stats.projects.filter(
-                      (p) => p.latestDeployments?.[0]?.state === 'READY' && p.targets?.production?.alias?.length > 0,
+                      (p) =>
+                        p.latestDeployments?.[0]?.state === 'READY' && (p.targets?.production?.alias?.length ?? 0) > 0,
                     ).length;
                     const needsAttention = connection.stats.projects.filter(
                       (p) =>
@@ -697,90 +702,28 @@ export default function VercelTab() {
         </CollapsibleContent>
       </Collapsible>
     );
-  };
+  }, [
+    connection.stats,
+    fetchingStats,
+    isProjectsExpanded,
+    isProjectActionLoading,
+    handleProjectAction,
+    projectActions,
+  ]);
 
   console.log('connection', connection);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        className="flex items-center justify-between gap-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <div className="flex items-center gap-2">
-          <VercelLogo />
-          <h2 className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary">
-            Vercel Integration
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {connection.user && (
-            <Button
-              onClick={testConnection}
-              disabled={connectionTest?.status === 'testing'}
-              variant="outline"
-              className="flex items-center gap-2 hover:bg-bolt-elements-item-backgroundActive/10 hover:text-bolt-elements-textPrimary dark:hover:bg-bolt-elements-item-backgroundActive/10 dark:hover:text-bolt-elements-textPrimary transition-colors"
-            >
-              {connectionTest?.status === 'testing' ? (
-                <>
-                  <div className="i-ph:spinner-gap w-4 h-4 animate-spin" />
-                  Testing...
-                </>
-              ) : (
-                <>
-                  <div className="i-ph:plug-charging w-4 h-4" />
-                  Test Connection
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      </motion.div>
+      <ServiceHeader
+        icon={VercelLogo}
+        title="Vercel Integration"
+        description="Connect and manage your Vercel projects with advanced deployment controls and analytics"
+        onTestConnection={connection.user ? () => testConnection() : undefined}
+        isTestingConnection={isTestingConnection}
+      />
 
-      <p className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary">
-        Connect and manage your Vercel projects with advanced deployment controls and analytics
-      </p>
-
-      {/* Connection Test Results */}
-      {connectionTest && (
-        <motion.div
-          className={classNames('p-4 rounded-lg border', {
-            'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700':
-              connectionTest.status === 'success',
-            'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700': connectionTest.status === 'error',
-            'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700': connectionTest.status === 'testing',
-          })}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center gap-2">
-            {connectionTest.status === 'success' && (
-              <div className="i-ph:check-circle w-5 h-5 text-green-600 dark:text-green-400" />
-            )}
-            {connectionTest.status === 'error' && (
-              <div className="i-ph:warning-circle w-5 h-5 text-red-600 dark:text-red-400" />
-            )}
-            {connectionTest.status === 'testing' && (
-              <div className="i-ph:spinner-gap w-5 h-5 animate-spin text-blue-600 dark:text-blue-400" />
-            )}
-            <span
-              className={classNames('text-sm font-medium', {
-                'text-green-800 dark:text-green-200': connectionTest.status === 'success',
-                'text-red-800 dark:text-red-200': connectionTest.status === 'error',
-                'text-blue-800 dark:text-blue-200': connectionTest.status === 'testing',
-              })}
-            >
-              {connectionTest.message}
-            </span>
-          </div>
-          {connectionTest.timestamp && (
-            <p className="text-xs text-gray-500 mt-1">{new Date(connectionTest.timestamp).toLocaleString()}</p>
-          )}
-        </motion.div>
-      )}
+      <ConnectionTestIndicator testResult={connectionTest} />
 
       {/* Main Connection Component */}
       <motion.div
@@ -882,7 +825,7 @@ export default function VercelTab() {
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 rounded-lg">
                   <img
-                    src={`https://vercel.com/api/www/avatar?u=${connection.user?.username || connection.user?.user?.username}`}
+                    src={`https://vercel.com/api/www/avatar?u=${connection.user?.username}`}
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
                     alt="User Avatar"
@@ -890,10 +833,10 @@ export default function VercelTab() {
                   />
                   <div className="flex-1">
                     <h4 className="text-sm font-medium text-bolt-elements-textPrimary">
-                      {connection.user?.username || connection.user?.user?.username || 'Vercel User'}
+                      {connection.user?.username || 'Vercel User'}
                     </h4>
                     <p className="text-sm text-bolt-elements-textSecondary">
-                      {connection.user?.email || connection.user?.user?.email || 'No email available'}
+                      {connection.user?.email || 'No email available'}
                     </p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-bolt-elements-textSecondary">
                       <span className="flex items-center gap-1">

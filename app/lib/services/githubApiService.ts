@@ -8,8 +8,8 @@ import type {
 } from '~/types/GitHub';
 
 export interface GitHubApiServiceConfig {
-  token: string;
-  tokenType: 'classic' | 'fine-grained';
+  token?: string;
+  tokenType?: 'classic' | 'fine-grained';
   baseURL?: string;
 }
 
@@ -30,12 +30,24 @@ export class GitHubApiServiceClass {
   private _config: GitHubApiServiceConfig;
   private _baseURL: string;
 
-  constructor(config: GitHubApiServiceConfig) {
+  constructor(config: GitHubApiServiceConfig = {}) {
     this._config = config;
     this._baseURL = config.baseURL || 'https://api.github.com';
   }
 
+  /**
+   * Configure the service with authentication details
+   */
+  configure(config: GitHubApiServiceConfig): void {
+    this._config = { ...this._config, ...config };
+    this._baseURL = config.baseURL || this._baseURL;
+  }
+
   private async _makeRequestInternal<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (!this._config.token) {
+      throw new Error('GitHub token is required. Call configure() first.');
+    }
+
     const response = await fetch(`${this._baseURL}${endpoint}`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
@@ -390,7 +402,49 @@ export class GitHubApiServiceClass {
       throw error;
     }
   }
+
+  /**
+   * Fetch authenticated user and rate limit info
+   */
+  async fetchUser(
+    token: string,
+    tokenType: 'classic' | 'fine-grained' = 'classic',
+  ): Promise<{ user: GitHubUserResponse; rateLimit: any }> {
+    this.configure({ token, tokenType });
+
+    const [user, rateLimit] = await Promise.all([
+      this.getAuthenticatedUser(),
+      this._makeRequestInternal('/rate_limit'),
+    ]);
+
+    return { user, rateLimit };
+  }
+
+  /**
+   * Fetch comprehensive GitHub stats for authenticated user
+   */
+  async fetchStats(token: string, tokenType: 'classic' | 'fine-grained' = 'classic'): Promise<GitHubStats> {
+    this.configure({ token, tokenType });
+
+    const user = await this.getAuthenticatedUser();
+
+    return this.generateComprehensiveStats(user);
+  }
+
+  /**
+   * Clear all cached data
+   */
+  clearCache(): void {
+    // This is a placeholder - implement caching if needed
+  }
+
+  /**
+   * Clear user-specific cache
+   */
+  clearUserCache(_token: string): void {
+    // This is a placeholder - implement user-specific caching if needed
+  }
 }
 
 // Export an instance of the service
-export const GitHubApiService = new GitHubApiServiceClass();
+export const gitHubApiService = new GitHubApiServiceClass();
