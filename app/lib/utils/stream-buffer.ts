@@ -9,7 +9,7 @@ export class StreamBuffer {
   private _bufferSize = 0;
   private readonly _maxBufferSize: number;
   private readonly _flushInterval: number;
-  private _flushTimer: NodeJS.Timeout | null = null;
+  private _flushTimer: ReturnType<typeof setTimeout> | null = null;
   private _onFlush: (data: string) => void;
 
   constructor(options: { maxBufferSize?: number; flushInterval?: number; onFlush: (data: string) => void }) {
