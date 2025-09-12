@@ -7,7 +7,6 @@ import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
 import { fileChangeOptimizer } from './file-change-optimizer';
-import { resourceOptimizer } from './resource-optimizer';
 import type { FileMap } from '~/lib/stores/files';
 
 const logger = createScopedLogger('ActionRunner');
@@ -188,29 +187,14 @@ export class ActionRunner {
 
     this.#updateAction(actionId, { ...action, ...data.action, executed: !isStreaming });
 
-    // Debounce rapid file actions to reduce client load
-    if (action.type === 'file') {
-      const debouncedExecution = resourceOptimizer.debounce(
-        () => this.#executeAction(actionId, isStreaming),
-        `file-action-${actionId}`,
-        100, // 100ms debounce for file actions
-      );
-
-      this.#currentExecutionPromise = this.#currentExecutionPromise
-        .then(() => debouncedExecution())
-        .catch((error) => {
-          logger.error('Action execution promise failed:', error);
-        });
-    } else {
-      // Regular execution for non-file actions
-      this.#currentExecutionPromise = this.#currentExecutionPromise
-        .then(() => {
-          return this.#executeAction(actionId, isStreaming);
-        })
-        .catch((error) => {
-          logger.error('Action execution promise failed:', error);
-        });
-    }
+    // Execute actions sequentially
+    this.#currentExecutionPromise = this.#currentExecutionPromise
+      .then(() => {
+        return this.#executeAction(actionId, isStreaming);
+      })
+      .catch((error) => {
+        logger.error('Action execution promise failed:', error);
+      });
 
     await this.#currentExecutionPromise;
 
