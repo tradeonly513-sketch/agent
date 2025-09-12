@@ -10,6 +10,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
+import { serverSideProcessor } from './server-side-processor';
 
 export type Messages = Message[];
 
@@ -82,27 +83,31 @@ export async function streamText(props: {
   } = props;
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
-  let processedMessages = messages.map((message) => {
-    const newMessage = { ...message };
 
-    if (message.role === 'user') {
-      const { model, provider, content } = extractPropertiesFromMessage(message);
-      currentModel = model;
-      currentProvider = provider;
-      newMessage.content = sanitizeText(content);
-    } else if (message.role == 'assistant') {
-      newMessage.content = sanitizeText(message.content);
-    }
+  // Pre-process messages on server to reduce client load
+  let processedMessages = await serverSideProcessor.preprocessMessages(
+    messages.map((message, index) => {
+      const newMessage = { ...message, id: (message as any).id || `msg-${index}` };
 
-    // Sanitize all text parts in parts array, if present
-    if (Array.isArray(message.parts)) {
-      newMessage.parts = message.parts.map((part) =>
-        part.type === 'text' ? { ...part, text: sanitizeText(part.text) } : part,
-      );
-    }
+      if (message.role === 'user') {
+        const { model, provider, content } = extractPropertiesFromMessage(message);
+        currentModel = model;
+        currentProvider = provider;
+        newMessage.content = sanitizeText(content);
+      } else if (message.role == 'assistant') {
+        newMessage.content = sanitizeText(message.content);
+      }
 
-    return newMessage;
-  });
+      // Sanitize all text parts in parts array, if present
+      if (Array.isArray(message.parts)) {
+        newMessage.parts = message.parts.map((part) =>
+          part.type === 'text' ? { ...part, text: sanitizeText(part.text) } : part,
+        );
+      }
+
+      return newMessage;
+    }),
+  );
 
   const provider = PROVIDER_LIST.find((p) => p.name === currentProvider) || DEFAULT_PROVIDER;
   const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);

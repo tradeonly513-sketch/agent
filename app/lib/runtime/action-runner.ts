@@ -6,6 +6,9 @@ import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
+import { fileChangeOptimizer } from './file-change-optimizer';
+import { resourceOptimizer } from './resource-optimizer';
+import type { FileMap } from '~/lib/stores/files';
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -74,6 +77,20 @@ export class ActionRunner {
   onDeployAlert?: (alert: DeployAlert) => void;
   buildOutput?: { path: string; exitCode: number; output: string };
 
+  // File optimization tracking
+  #fileOptimizationEnabled = true;
+  #pendingFileChanges: Map<string, string> = new Map();
+  #existingFiles: Map<string, string> = new Map();
+  #userRequest: string = '';
+  #optimizationStats = {
+    totalFilesAnalyzed: 0,
+    filesSkipped: 0,
+    filesModified: 0,
+    filesCreated: 0,
+    optimizationRate: 0,
+    lastOptimization: null as Date | null,
+  };
+
   constructor(
     webcontainerPromise: Promise<WebContainer>,
     getShellTerminal: () => BoltShell,
@@ -86,6 +103,42 @@ export class ActionRunner {
     this.onAlert = onAlert;
     this.onSupabaseAlert = onSupabaseAlert;
     this.onDeployAlert = onDeployAlert;
+
+    // Log initialization at debug level
+    logger.debug('🚀 ActionRunner initialized with file optimization enabled');
+  }
+
+  /**
+   * Set the user request context for better optimization
+   */
+  setUserRequest(request: string) {
+    this.#userRequest = request;
+    logger.debug(`User request context set: "${request.substring(0, 100)}..."`);
+  }
+
+  /**
+   * Get optimization statistics
+   */
+  getOptimizationStats() {
+    return { ...this.#optimizationStats };
+  }
+
+  /**
+   * Enable or disable file optimization
+   */
+  setFileOptimizationEnabled(enabled: boolean) {
+    this.#fileOptimizationEnabled = enabled;
+    logger.info(`File optimization ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Force optimization of pending file changes
+   */
+  async flushPendingFileChanges() {
+    if (this.#pendingFileChanges.size > 0) {
+      logger.info(`Flushing ${this.#pendingFileChanges.size} pending file changes...`);
+      await this.#performFileOptimization();
+    }
   }
 
   addAction(data: ActionCallbackData) {
@@ -135,13 +188,29 @@ export class ActionRunner {
 
     this.#updateAction(actionId, { ...action, ...data.action, executed: !isStreaming });
 
-    this.#currentExecutionPromise = this.#currentExecutionPromise
-      .then(() => {
-        return this.#executeAction(actionId, isStreaming);
-      })
-      .catch((error) => {
-        logger.error('Action execution promise failed:', error);
-      });
+    // Debounce rapid file actions to reduce client load
+    if (action.type === 'file') {
+      const debouncedExecution = resourceOptimizer.debounce(
+        () => this.#executeAction(actionId, isStreaming),
+        `file-action-${actionId}`,
+        100, // 100ms debounce for file actions
+      );
+
+      this.#currentExecutionPromise = this.#currentExecutionPromise
+        .then(() => debouncedExecution())
+        .catch((error) => {
+          logger.error('Action execution promise failed:', error);
+        });
+    } else {
+      // Regular execution for non-file actions
+      this.#currentExecutionPromise = this.#currentExecutionPromise
+        .then(() => {
+          return this.#executeAction(actionId, isStreaming);
+        })
+        .catch((error) => {
+          logger.error('Action execution promise failed:', error);
+        });
+    }
 
     await this.#currentExecutionPromise;
 
@@ -316,6 +385,39 @@ export class ActionRunner {
     const webcontainer = await this.#webcontainer;
     const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
 
+    // Store file change for batch optimization
+    if (this.#fileOptimizationEnabled) {
+      this.#pendingFileChanges.set(relativePath, action.content);
+
+      // Try to get existing file content
+      try {
+        const existingContent = await webcontainer.fs.readFile(relativePath, 'utf-8');
+        this.#existingFiles.set(relativePath, existingContent);
+      } catch {
+        // File doesn't exist yet, that's okay
+        logger.debug(`File ${relativePath} doesn't exist yet, will be created`);
+      }
+
+      // Log verbose information about the file operation (debug level for less noise)
+      logger.debug(`📝 File operation queued: ${relativePath}`);
+      logger.debug(`  Action type: ${this.#existingFiles.has(relativePath) ? 'MODIFY' : 'CREATE'}`);
+      logger.debug(`  Content length: ${action.content.length} bytes`);
+      logger.debug(`  File type: ${relativePath.split('.').pop() || 'unknown'}`);
+
+      // Check if we should batch optimize
+      if (this.#pendingFileChanges.size >= 5 || this.#shouldOptimizeNow(action)) {
+        await this.#performFileOptimization();
+      } else {
+        // For now, still write the file but track it
+        await this.#writeFileWithLogging(webcontainer, relativePath, action.content);
+      }
+    } else {
+      // Optimization disabled, write directly
+      await this.#writeFileWithLogging(webcontainer, relativePath, action.content);
+    }
+  }
+
+  async #writeFileWithLogging(webcontainer: WebContainer, relativePath: string, content: string) {
     let folder = nodePath.dirname(relativePath);
 
     // remove trailing slashes
@@ -324,18 +426,143 @@ export class ActionRunner {
     if (folder !== '.') {
       try {
         await webcontainer.fs.mkdir(folder, { recursive: true });
-        logger.debug('Created folder', folder);
+        logger.debug(`✅ Created folder: ${folder}`);
       } catch (error) {
-        logger.error('Failed to create folder\n\n', error);
+        logger.error(`❌ Failed to create folder ${folder}:`, error);
       }
     }
 
     try {
-      await webcontainer.fs.writeFile(relativePath, action.content);
-      logger.debug(`File written ${relativePath}`);
+      const startTime = performance.now();
+      await webcontainer.fs.writeFile(relativePath, content);
+
+      const duration = performance.now() - startTime;
+
+      logger.debug(`✅ File written: ${relativePath} (${duration.toFixed(2)}ms)`);
+      logger.debug(`  Size: ${content.length} bytes`);
+      logger.debug(`  Lines: ${content.split('\n').length}`);
     } catch (error) {
-      logger.error('Failed to write file\n\n', error);
+      logger.error(`❌ Failed to write file ${relativePath}:`, error);
+      throw error;
     }
+  }
+
+  async #performFileOptimization() {
+    if (this.#pendingFileChanges.size === 0) {
+      return;
+    }
+
+    logger.debug('🔍 Starting file optimization analysis...');
+
+    const startTime = performance.now();
+
+    // Convert maps to FileMap format for the optimizer
+    const proposedChanges: FileMap = {};
+    const existingFiles: FileMap = {};
+
+    this.#pendingFileChanges.forEach((content, path) => {
+      proposedChanges[path] = {
+        type: 'file',
+        content,
+        isBinary: false,
+      };
+    });
+
+    this.#existingFiles.forEach((content, path) => {
+      existingFiles[path] = {
+        type: 'file',
+        content,
+        isBinary: false,
+      };
+    });
+
+    // Run optimization
+    const result = await fileChangeOptimizer.optimizeFileChanges(
+      proposedChanges,
+      existingFiles,
+      this.#userRequest || 'No specific request provided',
+    );
+
+    // Update stats
+    this.#optimizationStats.totalFilesAnalyzed += Object.keys(proposedChanges).length;
+    this.#optimizationStats.filesSkipped += result.skippedFiles.length;
+    this.#optimizationStats.filesModified += result.modifiedFiles.length;
+    this.#optimizationStats.filesCreated += result.createdFiles.length;
+    this.#optimizationStats.optimizationRate = result.optimizationRate;
+    this.#optimizationStats.lastOptimization = new Date();
+
+    const duration = performance.now() - startTime;
+    logger.debug(`⚡ Optimization completed in ${duration.toFixed(2)}ms`);
+    logger.debug(`📊 Optimization Results:`);
+    logger.debug(`  - Files analyzed: ${Object.keys(proposedChanges).length}`);
+    logger.debug(`  - Files written: ${Object.keys(result.optimizedFiles).length}`);
+    logger.debug(`  - Files skipped: ${result.skippedFiles.length}`);
+    logger.debug(`  - Optimization rate: ${result.optimizationRate.toFixed(1)}%`);
+
+    // Write optimized files
+    const webcontainer = await this.#webcontainer;
+
+    for (const [path, dirent] of Object.entries(result.optimizedFiles)) {
+      const content = dirent?.type === 'file' ? dirent.content : undefined;
+
+      if (content !== undefined) {
+        await this.#writeFileWithLogging(webcontainer, path, content);
+      }
+    }
+
+    // Log skipped files with reasons
+    if (result.skippedFiles.length > 0) {
+      logger.debug('⏩ Skipped files:');
+      result.skippedFiles.forEach((file) => {
+        const analysis = result.analysis.get(file);
+        logger.debug(`  - ${file}: ${analysis?.reason || 'Unknown reason'}`);
+      });
+    }
+
+    // Clear pending changes
+    this.#pendingFileChanges.clear();
+    this.#existingFiles.clear();
+
+    // Log optimization results without triggering alerts
+    if (result.optimizationRate > 20) {
+      // Log to console at debug level to avoid noise
+      logger.debug('═══════════════════════════════════════════════════════════');
+      logger.debug('✨ File Optimization Successfully Applied:');
+      logger.debug(`   Prevented ${result.skippedFiles.length} unnecessary file writes`);
+      logger.debug(`   Optimization rate: ${result.optimizationRate.toFixed(1)}%`);
+      logger.debug(`   Files analyzed: ${Object.keys(proposedChanges).length}`);
+      logger.debug(`   Files written: ${Object.keys(result.optimizedFiles).length}`);
+      logger.debug('═══════════════════════════════════════════════════════════');
+
+      /*
+       * Only show user alerts for errors, not optimizations
+       * The optimization is working correctly and shouldn't be shown as an error
+       */
+    }
+  }
+
+  #shouldOptimizeNow(action: ActionState): boolean {
+    // Optimize immediately for certain conditions
+    if (action.type === 'file') {
+      const filePath = action.filePath;
+
+      // Always optimize for large files
+      if (action.content.length > 10000) {
+        return true;
+      }
+
+      // Always optimize for generated files
+      if (filePath.includes('package-lock') || filePath.includes('.lock')) {
+        return true;
+      }
+
+      // Always optimize for build outputs
+      if (filePath.includes('/dist/') || filePath.includes('/build/')) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   #updateAction(id: string, newState: ActionStateUpdate) {
