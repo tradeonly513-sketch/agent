@@ -14,6 +14,8 @@ export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
   Github: 4096, // GitHub Models use OpenAI-compatible limits
   Anthropic: 64000, // Conservative limit for Claude 4 models (Opus: 32k, Sonnet: 64k)
   Google: 8192, // Gemini 1.5 Pro/Flash standard limit
+  Cerebras: 8192, // Cerebras ultra-fast inference models (Llama, Qwen) with 128k context
+  Cloudflare: 8192, // Cloudflare Workers AI models (varies by model, supports OpenAI GPT, Llama, Mistral)
   Cohere: 4000,
   DeepSeek: 8192, // Conservative default for V2.5 models, V3 models support 128k+ context
   Groq: 8192, // Uses API-provided completion limits (no artificial caps)
