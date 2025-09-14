@@ -13,7 +13,7 @@ import {
   type OnScrollCallback as OnEditorScroll,
 } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { IconButton } from '~/components/ui/IconButton';
-import { Slider, type SliderOptions } from '~/components/ui/Slider';
+import { Tabs, TabsList, TabsTrigger } from '~/components/ui/Tabs';
 import { workbenchStore, type WorkbenchViewType } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
@@ -41,21 +41,6 @@ interface WorkspaceProps {
 }
 
 const viewTransition = { ease: cubicEasingFn };
-
-const sliderOptions: SliderOptions<WorkbenchViewType> = {
-  left: {
-    value: 'code',
-    text: 'Code',
-  },
-  middle: {
-    value: 'diff',
-    text: 'Diff',
-  },
-  right: {
-    value: 'preview',
-    text: 'Preview',
-  },
-};
 
 const workbenchVariants = {
   closed: {
@@ -314,12 +299,6 @@ export const Workbench = memo(
     };
 
     useEffect(() => {
-      if (hasPreview) {
-        setSelectedView('preview');
-      }
-    }, [hasPreview]);
-
-    useEffect(() => {
       workbenchStore.setDocuments(files);
     }, [files]);
 
@@ -403,14 +382,17 @@ export const Workbench = memo(
                       }
                     }}
                   />
-                  <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
-                  <div className="ml-auto" />
+                  <Tabs value={selectedView} onValueChange={(value) => setSelectedView(value as WorkbenchViewType)}>
+                    <TabsList>
+                      <TabsTrigger value="code">Code</TabsTrigger>
+                      <TabsTrigger value="diff">Diff</TabsTrigger>
+                      <TabsTrigger value="preview">Preview</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  <div className="ml-auto flex items-center gap-2" />
                   {selectedView === 'code' && (
-                    <div className="flex overflow-y-auto">
-                      {/* Export Chat Button */}
+                    <div className="flex items-center gap-2">
                       <ExportChatButton exportChat={exportChat} />
-
-                      {/* Sync Button */}
                       <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden ml-1">
                         <DropdownMenu.Root>
                           <DropdownMenu.Trigger
@@ -451,8 +433,6 @@ export const Workbench = memo(
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
                       </div>
-
-                      {/* Toggle Terminal Button */}
                       <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden ml-1">
                         <button
                           onClick={() => {
@@ -466,13 +446,12 @@ export const Workbench = memo(
                       </div>
                     </div>
                   )}
-
                   {selectedView === 'diff' && (
                     <FileModifiedDropdown fileHistory={fileHistory} onSelectFile={handleSelectFile} />
                   )}
                   <IconButton
                     icon="i-ph:x-circle"
-                    className="-mr-1"
+                    className="ml-2"
                     size="xl"
                     onClick={() => {
                       workbenchStore.showWorkbench.set(false);
