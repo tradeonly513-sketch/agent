@@ -16,14 +16,14 @@ export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
   Google: 8192, // Gemini 1.5 Pro/Flash standard limit
   Cohere: 4000,
   DeepSeek: 8192, // Conservative default for V2.5 models, V3 models support 128k+ context
-  Groq: 8192,
+  Groq: 8192, // Uses API-provided completion limits (no artificial caps)
   HuggingFace: 4096,
-  Mistral: 8192,
-  Ollama: 8192,
+  Mistral: 8192, // Updated with dynamic discovery, models support 32k-256k context
+  Ollama: 8192, // Enhanced with intelligent model family detection
   OpenRouter: 8192,
-  Perplexity: 8192,
-  Together: 8192,
-  xAI: 8192,
+  Perplexity: 8192, // Updated to support 127k context models
+  Together: 8192, // Now uses API-provided context_length
+  xAI: 16000, // Grok models support 16k-32k completion tokens
   LMStudio: 8192,
   OpenAILike: 8192,
   AmazonBedrock: 8192,
@@ -35,7 +35,7 @@ export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
  * These models use internal reasoning tokens and have different API parameter requirements
  */
 export function isReasoningModel(modelName: string): boolean {
-  return /^(o1|o3|gpt-5)/i.test(modelName);
+  return /^(o1|o3|gpt-5|claude-.*-4|claude-4|grok.*reasoning|deepseek.*reasoner)/i.test(modelName);
 }
 
 // limits the number of model responses that can be returned in a single request
