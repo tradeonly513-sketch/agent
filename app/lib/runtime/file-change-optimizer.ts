@@ -26,18 +26,49 @@ export class FileChangeOptimizer {
   private _similarityThreshold = 0.95; // >= 95% similar => likely skip
   private _minimalChangeThreshold = 2; // < 2% change => skip
 
+  // Performance optimization settings
+  private _maxFileSizeForDiff = 1024 * 1024; // 1MB - skip diff for larger files
+  private _maxLinesForDiff = 10000; // Skip diff for files with more lines
+  private _similarityCache = new Map<string, { sim: number; changePct: number; timestamp: number }>();
+  private _cacheExpiry = 5 * 60 * 1000; // 5 minutes cache expiry
+  private _lastCleanupTime = 0;
+  private _cleanupInterval = 60 * 1000; // Clean cache every minute
+
   async optimizeFileChanges(
     proposedChanges: FileMap,
     existingFiles: FileMap,
     userRequest: string,
   ): Promise<OptimizationResult> {
+    // Input validation
+    if (!proposedChanges || typeof proposedChanges !== 'object') {
+      throw new Error('Invalid proposedChanges: must be a valid FileMap object');
+    }
+
+    if (!existingFiles || typeof existingFiles !== 'object') {
+      throw new Error('Invalid existingFiles: must be a valid FileMap object');
+    }
+
+    if (typeof userRequest !== 'string') {
+      userRequest = String(userRequest || '');
+    }
+
     const optimizedFiles: FileMap = {};
     const skippedFiles: string[] = [];
     const modifiedFiles: string[] = [];
     const createdFiles: string[] = [];
     const analysis: Map<string, FileChangeAnalysis> = new Map();
 
-    const intent = this.analyzeUserIntent(userRequest);
+    let intent;
+
+    try {
+      intent = this.analyzeUserIntent(userRequest);
+    } catch (error) {
+      logger.warn('Failed to analyze user intent, using defaults:', error);
+      intent = { isBugFix: false, isFeature: false, isRefactor: false, targetFiles: [] };
+    }
+
+    // Cleanup cache periodically
+    this._cleanupCache();
 
     for (const [path, dirent] of Object.entries(proposedChanges)) {
       const proposed = dirent?.type === 'file' ? dirent.content : '';
@@ -45,8 +76,66 @@ export class FileChangeOptimizer {
       const existing = existingDirent?.type === 'file' ? existingDirent.content : undefined;
 
       const fileType = this.getFileType(path);
-      const sim = this.computeLineSimilarity(existing ?? '', proposed);
-      const changePct = this.computeChangePercentage(existing ?? '', proposed);
+
+      let sim = 0;
+      let changePct = 100;
+
+      try {
+        // Check cache first
+        const cacheKey = this._getCacheKey(existing ?? '', proposed);
+        const cached = this._similarityCache.get(cacheKey);
+
+        if (cached && Date.now() - cached.timestamp < this._cacheExpiry) {
+          sim = cached.sim;
+          changePct = cached.changePct;
+        } else {
+          // Performance check - skip expensive diff for very large files
+          const existingSize = (existing ?? '').length;
+          const proposedSize = proposed.length;
+          const maxSize = Math.max(existingSize, proposedSize);
+
+          if (maxSize > this._maxFileSizeForDiff) {
+            logger.debug(`Skipping diff for large file ${path} (${maxSize} bytes)`);
+
+            // For large files, use simple heuristics
+            sim = existing === proposed ? 1 : 0;
+            changePct = existing === proposed ? 0 : 100;
+          } else {
+            const existingLines = (existing ?? '').split('\n').length;
+            const proposedLines = proposed.split('\n').length;
+            const maxLines = Math.max(existingLines, proposedLines);
+
+            if (maxLines > this._maxLinesForDiff) {
+              logger.debug(`Skipping diff for large file ${path} (${maxLines} lines)`);
+
+              // For files with many lines, use simple heuristics
+              sim = existing === proposed ? 1 : 0;
+              changePct = existing === proposed ? 0 : 100;
+            } else {
+              sim = this.computeLineSimilarity(existing ?? '', proposed);
+              changePct = this.computeChangePercentage(existing ?? '', proposed);
+            }
+          }
+
+          // Cache the result
+          this._similarityCache.set(cacheKey, {
+            sim,
+            changePct,
+            timestamp: Date.now(),
+          });
+
+          // Clean up old cache entries periodically
+          if (this._similarityCache.size > 1000) {
+            this._cleanupCache();
+          }
+        }
+      } catch (error) {
+        logger.warn(`Failed to compute similarity for ${path}:`, error);
+
+        // Default to conservative values - assume significant change
+        sim = 0;
+        changePct = 100;
+      }
 
       // New file
       if (existing === undefined) {
@@ -169,6 +258,8 @@ export class FileChangeOptimizer {
     return { optimizedFiles, skippedFiles, modifiedFiles, createdFiles, analysis, optimizationRate };
   }
 
+  // --- performance helpers -------------------------------------------------
+
   // --- intent & heuristics -------------------------------------------------
 
   analyzeUserIntent(request: string) {
@@ -205,58 +296,79 @@ export class FileChangeOptimizer {
   // --- diff & similarity ---------------------------------------------------
 
   computeChangePercentage(oldC: string, newC: string) {
+    if (typeof oldC !== 'string' || typeof newC !== 'string') {
+      logger.warn('Invalid input types for computeChangePercentage');
+      return 100; // Assume significant change
+    }
+
     if (oldC === newC) {
       return 0;
     }
 
-    const oldLines = oldC.split('\n').length;
-    const newLines = newC.split('\n').length;
-    const totalLines = Math.max(1, Math.max(oldLines, newLines));
+    try {
+      const oldLines = Math.max(1, oldC.split('\n').length);
+      const newLines = Math.max(1, newC.split('\n').length);
+      const totalLines = Math.max(1, Math.max(oldLines, newLines));
 
-    let added = 0;
-    let removed = 0;
+      let added = 0;
+      let removed = 0;
 
-    for (const part of diffLines(oldC, newC)) {
-      const lines = Math.max(0, part.value.split('\n').length - 1);
+      for (const part of diffLines(oldC, newC)) {
+        const lines = Math.max(0, part.value.split('\n').length - 1);
 
-      if (part.added) {
-        added += lines;
-      } else if (part.removed) {
-        removed += lines;
+        if (part.added) {
+          added += lines;
+        } else if (part.removed) {
+          removed += lines;
+        }
       }
+
+      const changes = added + removed;
+      const percentage = (changes / totalLines) * 100;
+
+      return Math.min(100, Math.max(0, percentage)); // Clamp between 0-100
+    } catch (error) {
+      logger.warn('Error computing change percentage:', error);
+      return 100; // Assume significant change on error
     }
-
-    const changes = added + removed;
-
-    return (changes / totalLines) * 100;
   }
 
   computeLineSimilarity(oldC: string, newC: string) {
+    if (typeof oldC !== 'string' || typeof newC !== 'string') {
+      logger.warn('Invalid input types for computeLineSimilarity');
+      return 0; // Assume no similarity
+    }
+
     if (oldC === newC) {
       return 1;
     }
 
-    const oldLines = oldC.split('\n').length;
-    const newLines = newC.split('\n').length;
-    const totalLines = Math.max(1, Math.max(oldLines, newLines));
+    try {
+      const oldLines = Math.max(1, oldC.split('\n').length);
+      const newLines = Math.max(1, newC.split('\n').length);
+      const totalLines = Math.max(1, Math.max(oldLines, newLines));
 
-    let added = 0;
-    let removed = 0;
+      let added = 0;
+      let removed = 0;
 
-    for (const part of diffLines(oldC, newC)) {
-      const lines = Math.max(0, part.value.split('\n').length - 1);
+      for (const part of diffLines(oldC, newC)) {
+        const lines = Math.max(0, part.value.split('\n').length - 1);
 
-      if (part.added) {
-        added += lines;
-      } else if (part.removed) {
-        removed += lines;
+        if (part.added) {
+          added += lines;
+        } else if (part.removed) {
+          removed += lines;
+        }
       }
+
+      const changes = added + removed;
+      const similarity = 1 - Math.min(1, changes / totalLines);
+
+      return Math.min(1, Math.max(0, similarity)); // Clamp between 0-1
+    } catch (error) {
+      logger.warn('Error computing line similarity:', error);
+      return 0; // Assume no similarity on error
     }
-
-    const changes = added + removed;
-    const similarity = 1 - Math.min(1, changes / totalLines);
-
-    return similarity;
   }
 
   // --- language-aware helpers ---------------------------------------------
@@ -304,12 +416,13 @@ export class FileChangeOptimizer {
 
   isProbablyUnnecessaryCreation(path: string, content: string, intent: ReturnType<typeof this.analyzeUserIntent>) {
     const ext = this.getFileType(path);
+    const intentString = intentText(intent);
 
-    if ((ext === 'md' || ext === 'txt') && !/readme|doc/i.test(intentText(intent))) {
+    if ((ext === 'md' || ext === 'txt') && !/readme|doc/i.test(intentString)) {
       return true;
     }
 
-    if (/\.test\.|\.spec\./.test(path) && !/test/i.test(intentText(intent))) {
+    if (/\.test\.|\.spec\./.test(path) && !/test/i.test(intentString)) {
       return true;
     }
 
@@ -318,6 +431,40 @@ export class FileChangeOptimizer {
     }
 
     return false;
+  }
+
+  private _cleanupCache(): void {
+    const now = Date.now();
+
+    // Only run cleanup periodically to avoid performance impact
+    if (now - this._lastCleanupTime < this._cleanupInterval) {
+      return;
+    }
+
+    this._lastCleanupTime = now;
+
+    const expiredKeys: string[] = [];
+
+    for (const [key, entry] of this._similarityCache.entries()) {
+      if (now - entry.timestamp > this._cacheExpiry) {
+        expiredKeys.push(key);
+      }
+    }
+
+    expiredKeys.forEach((key) => this._similarityCache.delete(key));
+
+    if (expiredKeys.length > 0) {
+      logger.debug(`Cleaned up ${expiredKeys.length} expired cache entries`);
+    }
+  }
+
+  private _getCacheKey(existing: string, proposed: string): string {
+    // Create a simple hash-like key for caching
+    const existingHash = existing.length.toString(36);
+    const proposedHash = proposed.length.toString(36);
+    const contentSample = (existing.slice(0, 100) + proposed.slice(0, 100)).replace(/\s/g, '').slice(0, 50);
+
+    return `${existingHash}-${proposedHash}-${contentSample}`;
   }
 }
 

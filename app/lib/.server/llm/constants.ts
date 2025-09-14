@@ -15,7 +15,7 @@ export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
   Anthropic: 64000, // Conservative limit for Claude 4 models (Opus: 32k, Sonnet: 64k)
   Google: 8192, // Gemini 1.5 Pro/Flash standard limit
   Cohere: 4000,
-  DeepSeek: 8192,
+  DeepSeek: 8192, // Conservative default for V2.5 models, V3 models support 128k+ context
   Groq: 8192,
   HuggingFace: 4096,
   Mistral: 8192,
@@ -35,12 +35,7 @@ export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
  * These models use internal reasoning tokens and have different API parameter requirements
  */
 export function isReasoningModel(modelName: string): boolean {
-  const result = /^(o1|o3|gpt-5)/i.test(modelName);
-
-  // DEBUG: Test regex matching
-  console.log(`REGEX TEST: "${modelName}" matches reasoning pattern: ${result}`);
-
-  return result;
+  return /^(o1|o3|gpt-5)/i.test(modelName);
 }
 
 // limits the number of model responses that can be returned in a single request

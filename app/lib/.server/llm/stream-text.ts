@@ -43,9 +43,38 @@ function getCompletionTokenLimit(modelDetails: any): number {
   return Math.min(MAX_TOKENS, 16384);
 }
 
-function sanitizeText(text: string): string {
-  let sanitized = text.replace(/<div class=\\"__boltThought__\\">.*?<\/div>/s, '');
-  sanitized = sanitized.replace(/<think>.*?<\/think>/s, '');
+function sanitizeText(text: unknown): string {
+  if (typeof text === 'string') {
+    return applySanitization(text);
+  }
+
+  if (Array.isArray(text)) {
+    const textContent = text.find(
+      (item): item is { type: 'text'; text: string } =>
+        item && typeof item === 'object' && item.type === 'text' && typeof item.text === 'string',
+    );
+    return textContent ? applySanitization(textContent.text) : '';
+  }
+
+  if (text == null) {
+    return '';
+  }
+
+  try {
+    return applySanitization(String(text));
+  } catch (error) {
+    console.warn('Failed to sanitize text content:', error);
+    return '';
+  }
+}
+
+function applySanitization(source: string): string {
+  if (!source) {
+    return '';
+  }
+
+  let sanitized = source.replace(/<div class=\\"__boltThought__\\">.*?<\/div>/gs, '');
+  sanitized = sanitized.replace(/<think>.*?<\/think>/gs, '');
   sanitized = sanitized.replace(/<boltAction type="file" filePath="package-lock\.json">[\s\S]*?<\/boltAction>/g, '');
 
   return sanitized.trim();

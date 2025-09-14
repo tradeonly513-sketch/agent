@@ -579,11 +579,8 @@ export class WorkbenchStore {
         this.currentView.set('code');
       }
 
-      const doc = this.#editorStore.documents.get()[fullPath];
-
-      if (!doc) {
-        await artifact.runner.runAction(data, isStreaming);
-      }
+      // Always forward file actions to runner so filesystem reflects streaming updates
+      await artifact.runner.runAction(data, isStreaming);
 
       this.#editorStore.updateFile(fullPath, data.action.content);
 

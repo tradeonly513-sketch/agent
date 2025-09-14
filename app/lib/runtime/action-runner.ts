@@ -473,17 +473,31 @@ export class ActionRunner {
 
   #shouldOptimizeNow(path: string, content: string) {
     // Heuristics: Write immediately if very large or likely to be needed right away
-    if (content.length > 100_000) {
-      return true;
-    } // avoid memory spikes in queue
 
-    if (/\.(lock|png|jpg|jpeg|gif|webp|svg|ico|woff2?)$/i.test(path)) {
+    // 1MB+ files should be written immediately to avoid memory issues
+    if (content.length > 1024 * 1024) {
       return true;
-    } // binaries, assets
+    }
 
-    if (/^dist\//.test(path)) {
+    // Binary and asset files should be written immediately
+    if (/\.(lock|png|jpg|jpeg|gif|webp|svg|ico|woff2?|pdf|zip|tar|gz)$/i.test(path)) {
       return true;
-    } // build outputs
+    }
+
+    // Build outputs and critical files should be written immediately
+    if (/^(dist|build|out|\.next)\//.test(path)) {
+      return true;
+    }
+
+    // Package manager files should be written immediately
+    if (/(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb)$/.test(path)) {
+      return true;
+    }
+
+    // Configuration files that might affect builds
+    if (/(tsconfig\.json|webpack\.config\.|vite\.config\.|rollup\.config\.)/.test(path)) {
+      return true;
+    }
 
     return false;
   }
