@@ -80,6 +80,8 @@ export class ActionRunner {
   #existingFiles: Map<string, string> = new Map();
   #userRequest: string = '';
   #optDebounceTimer: number | undefined;
+  #isStreamingMode: boolean = false;
+
   #optimizationStats = {
     totalFilesAnalyzed: 0,
     filesSkipped: 0,
@@ -179,9 +181,17 @@ export class ActionRunner {
           break;
         }
         case 'file': {
-          await this.#runFileAction(action);
+          const prevStreaming = this.#isStreamingMode;
+          this.#isStreamingMode = isStreaming;
+
+          try {
+            await this.#runFileAction(action);
+          } finally {
+            this.#isStreamingMode = prevStreaming;
+          }
           break;
         }
+
         case 'supabase': {
           try {
             await this.handleSupabaseAction(action as SupabaseAction);
@@ -334,6 +344,12 @@ export class ActionRunner {
 
     const webcontainer = await this.#webcontainer;
     const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
+
+    // In streaming mode, write through immediately to avoid UI stalls and timer starvation
+    if (this.#isStreamingMode) {
+      await this.#writeFileWithLogging(webcontainer, relativePath, action.content);
+      return;
+    }
 
     if (this.#fileOptimizationEnabled) {
       // Track proposed change
