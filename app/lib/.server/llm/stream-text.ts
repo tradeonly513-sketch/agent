@@ -1,6 +1,5 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
-import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
 import type { IProviderSetting } from '~/types/model';
 import { PromptLibrary } from '~/lib/common/prompt-library';
@@ -44,37 +43,25 @@ function getCompletionTokenLimit(modelDetails: any): number {
 }
 
 function sanitizeText(text: unknown): string {
+  let source: string;
+
   if (typeof text === 'string') {
-    return applySanitization(text);
+    source = text;
+  } else if (Array.isArray(text)) {
+    const firstText = (text as any[]).find((p) => p && typeof p === 'object' && p.type === 'text');
+    source = (firstText?.text as string) || '';
+  } else if (text == null) {
+    source = '';
+  } else {
+    try {
+      source = String(text);
+    } catch {
+      source = '';
+    }
   }
 
-  if (Array.isArray(text)) {
-    const textContent = text.find(
-      (item): item is { type: 'text'; text: string } =>
-        item && typeof item === 'object' && item.type === 'text' && typeof item.text === 'string',
-    );
-    return textContent ? applySanitization(textContent.text) : '';
-  }
-
-  if (text == null) {
-    return '';
-  }
-
-  try {
-    return applySanitization(String(text));
-  } catch (error) {
-    console.warn('Failed to sanitize text content:', error);
-    return '';
-  }
-}
-
-function applySanitization(source: string): string {
-  if (!source) {
-    return '';
-  }
-
-  let sanitized = source.replace(/<div class=\\"__boltThought__\\">.*?<\/div>/gs, '');
-  sanitized = sanitized.replace(/<think>.*?<\/think>/gs, '');
+  let sanitized = source.replace(/<div class=\\"__boltThought__\\">.*?<\/div>/s, '');
+  sanitized = sanitized.replace(/<think>.*?<\/think>/s, '');
   sanitized = sanitized.replace(/<boltAction type="file" filePath="package-lock\.json">[\s\S]*?<\/boltAction>/g, '');
 
   return sanitized.trim();
@@ -178,18 +165,24 @@ export async function streamText(props: {
     `Token limits for model ${modelDetails.name}: maxTokens=${safeMaxTokens}, maxTokenAllowed=${modelDetails.maxTokenAllowed}, maxCompletionTokens=${modelDetails.maxCompletionTokens}`,
   );
 
-  let systemPrompt =
-    PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
+  let systemPrompt = PromptLibrary.getPropmtFromLibraryWithProvider(
+    promptId || 'default',
+    {
       cwd: WORK_DIR,
       allowedHtmlElements: allowedHTMLElements,
       modificationTagName: MODIFICATIONS_TAG_NAME,
       designScheme,
+      chatMode,
+      contextOptimization,
       supabase: {
         isConnected: options?.supabaseConnection?.isConnected || false,
         hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
-    }) ?? getSystemPrompt();
+    },
+    currentProvider,
+    modelDetails,
+  );
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
