@@ -592,6 +592,9 @@ export class WorkbenchStore {
         await artifact.runner.runAction(data);
         this.resetAllFileModifications();
       }
+
+      // Flush any pending streaming-tracked file changes at end of non-streaming action
+      await artifact.runner.flushPendingFileChanges();
     } else {
       await artifact.runner.runAction(data);
     }

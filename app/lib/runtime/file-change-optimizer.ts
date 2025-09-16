@@ -280,9 +280,17 @@ export class FileChangeOptimizer {
     }
 
     if (intent.isBugFix) {
+      const ext = this.getFileType(path);
+
+      // For non-code files, consider edits relevant without logic tokens
+      if (ext === 'css' || ext === 'scss' || ext === 'html' || ext === 'json' || ext === 'yaml' || ext === 'yml') {
+        return true;
+      }
+
       // Look for code-like changes in patch
       const patch = createPatch(path, oldC, newC);
-      return /\b(function|class|if|return|throw|catch|await|async)\b/.test(patch);
+
+      return /\b(function|class|if|return|throw|catch|try|finally|await|async|import|export|=>)\b/.test(patch);
     }
 
     return true;
@@ -290,7 +298,7 @@ export class FileChangeOptimizer {
 
   seemsLikeLogicChange(path: string, oldC: string, newC: string) {
     const patch = createPatch(path, oldC, newC);
-    return /\b(function|class|if|return|throw|catch|await|async|=>)\b/.test(patch);
+    return /\b(function|class|if|return|throw|catch|try|finally|await|async|import|export|=>)\b/.test(patch);
   }
 
   // --- diff & similarity ---------------------------------------------------

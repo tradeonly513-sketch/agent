@@ -63,6 +63,15 @@ const mockModels: Record<string, ModelInfo> = {
     maxTokenAllowed: 128000,
     maxCompletionTokens: 4096,
   },
+
+  // Fast model (xAI) - should now be classified as speed-optimized
+  'grok-code-fast-1': {
+    name: 'grok-code-fast-1',
+    label: 'Grok Code Fast',
+    provider: 'xAI',
+    maxTokenAllowed: 128000,
+    maxCompletionTokens: 8192,
+  },
 };
 
 const basePromptOptions = {

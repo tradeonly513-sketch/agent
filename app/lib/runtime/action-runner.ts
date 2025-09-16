@@ -347,7 +347,19 @@ export class ActionRunner {
 
     // In streaming mode, write through immediately to avoid UI stalls and timer starvation
     if (this.#isStreamingMode) {
+      // Track pending change for end-of-stream optimization/statistics
+      try {
+        if (!this.#existingFiles.has(relativePath)) {
+          const existing = await webcontainer.fs.readFile(relativePath, 'utf-8');
+          this.#existingFiles.set(relativePath, existing);
+        }
+      } catch {
+        // file doesn't exist -> creation
+      }
+      this.#pendingFileChanges.set(relativePath, action.content);
+
       await this.#writeFileWithLogging(webcontainer, relativePath, action.content);
+
       return;
     }
 

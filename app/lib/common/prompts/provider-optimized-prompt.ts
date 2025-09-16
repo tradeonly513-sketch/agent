@@ -2,6 +2,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { WORK_DIR } from '~/utils/constants';
 import { allowedHTMLElements } from '~/utils/markdown';
+import { createScopedLogger } from '~/utils/logger';
 import { getProviderCategory, getCategoryConfig, type ProviderCategory } from './provider-categories';
 import {
   getTokenOptimizationConfig,
@@ -11,6 +12,8 @@ import {
   estimateTokenCount,
   type TokenOptimizationConfig,
 } from './token-optimizer';
+
+const logger = createScopedLogger('ProviderOptimizedPrompt');
 
 export interface ProviderOptimizedPromptOptions {
   cwd?: string;
@@ -658,6 +661,38 @@ class RunningCommandsInfoSection extends PromptSection {
 }
 
 /**
+ * Code fix triage section - minimal, surgical code fixes for speed-optimized models
+ */
+class CodeFixTriageSection extends PromptSection {
+  getSectionName(): string {
+    return 'code_fix_triage';
+  }
+
+  getContent(options: ProviderOptimizedPromptOptions, category: ProviderCategory): string {
+    // Only include for speed-optimized models (and optionally coding-specialized)
+    if (category !== 'speed-optimized' && category !== 'coding-specialized') {
+      return '';
+    }
+
+    return `<code_fix_triage>
+  ULTRA-FAST CODE FIXES - Surgical Approach:
+
+  1. IDENTIFY: Pinpoint exact issue location
+  2. MINIMAL PATCH: Change only what's broken
+  3. PRESERVE: Keep existing code structure intact
+  4. VERIFY: Ensure fix doesn't break related functionality
+
+  Speed Guidelines:
+  - Single-purpose fixes only
+  - No refactoring unless critical
+  - Maintain existing patterns and conventions
+  - Test the specific fix, not entire codebase
+  - Document only if fix isn't obvious
+</code_fix_triage>`;
+  }
+}
+
+/**
  * Build mode instructions section
  */
 class BuildModeInstructionsSection extends PromptSection {
@@ -717,6 +752,7 @@ class ProviderOptimizedPromptBuilder {
     new MobileAppInstructionsSection(),
     new CodeQualityStandardsSection(),
     new ProjectStructureStandardsSection(),
+    new CodeFixTriageSection(),
     new BuildModeInstructionsSection(),
     new RunningCommandsInfoSection(),
   ];
@@ -809,14 +845,14 @@ class ProviderOptimizedPromptBuilder {
 
     // Log optimization info for debugging
     const finalTokens = estimateTokenCount(prompt);
-    console.log(`[ProviderOptimizedPrompt] Generated prompt for ${this._options.providerName} (${this._category})`);
-    console.log(`[ProviderOptimizedPrompt] Token reduction: ${config.promptOptimizations.tokenReduction}%`);
-    console.log(`[ProviderOptimizedPrompt] Sections included: ${finalSections.map((s) => s.name).join(', ')}`);
+    logger.info(`Generated prompt for ${this._options.providerName} (${this._category})`);
+    logger.info(`Token reduction: ${config.promptOptimizations.tokenReduction}%`);
+    logger.info(`Sections included: ${finalSections.map((s) => s.name).join(', ')}`);
 
     if (tokenConfig && optimalSize) {
-      console.log(`[ProviderOptimizedPrompt] Token optimization: ${tokenConfig.optimizationLevel}`);
-      console.log(`[ProviderOptimizedPrompt] Estimated tokens: ${finalTokens}/${optimalSize.targetTokens} (target)`);
-      console.log(`[ProviderOptimizedPrompt] Context window: ${tokenConfig.maxContextTokens}`);
+      logger.info(`Token optimization: ${tokenConfig.optimizationLevel}`);
+      logger.info(`Estimated tokens: ${finalTokens}/${optimalSize.targetTokens} (target)`);
+      logger.info(`Context window: ${tokenConfig.maxContextTokens}`);
     }
 
     return prompt;

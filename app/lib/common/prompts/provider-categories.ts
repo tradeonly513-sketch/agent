@@ -1,4 +1,5 @@
 import type { ModelInfo } from '~/lib/modules/llm/types';
+import { isReasoningModel } from '~/lib/common/model-utils';
 
 export type ProviderCategory =
   | 'high-context' // Google, Anthropic (2M-200K context)
@@ -79,7 +80,7 @@ export const PROVIDER_CATEGORIES: Record<ProviderCategory, ProviderCategoryConfi
     },
     promptOptimizations: {
       tokenReduction: 60, // 60% reduction for speed
-      prioritizeSections: ['system_constraints', 'technology_preferences'],
+      prioritizeSections: ['code_fix_triage', 'system_constraints', 'technology_preferences'],
       excludeSections: ['design_instructions', 'mobile_app_instructions'],
       simplifyLanguage: true,
       enhanceCodeGuidelines: false,
@@ -185,16 +186,21 @@ export const PROVIDER_TO_CATEGORY: Record<string, ProviderCategory> = {
  * Determines the provider category based on provider name and model details
  */
 export function getProviderCategory(providerName: string, modelDetails?: ModelInfo): ProviderCategory {
-  // Special handling for reasoning models (detected by model name)
+  // Priority 1: Reasoning models (detected by model name)
+  if (modelDetails?.name && isReasoningModel(modelDetails.name)) {
+    return 'reasoning';
+  }
+
+  // Priority 2: Fast models (detected by model name patterns)
   if (modelDetails?.name) {
     const modelName = modelDetails.name.toLowerCase();
 
-    if (/^(o1|o3|gpt-5|claude-.*-4|claude-4|grok.*reasoning|deepseek.*reasoner)/i.test(modelName)) {
-      return 'reasoning';
+    if (/\b(fast|instant|flash|turbo)\b/i.test(modelName)) {
+      return 'speed-optimized';
     }
   }
 
-  // Use provider-based mapping
+  // Priority 3: Provider-based mapping
   return PROVIDER_TO_CATEGORY[providerName] || 'standard';
 }
 
