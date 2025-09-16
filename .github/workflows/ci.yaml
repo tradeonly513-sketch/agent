@@ -86,5 +86,5 @@ jobs:
       - name: Validate docker-compose configuration
         run: |
           echo "🐳 Validating docker-compose configuration..."
-          docker-compose config --quiet
+          docker compose config --quiet
           echo "✅ docker-compose configuration is valid"
