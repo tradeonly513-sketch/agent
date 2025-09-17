@@ -1,9 +1,9 @@
 /*
  * Maximum tokens for response generation (updated for modern model capabilities)
  * This serves as a fallback when model-specific limits are unavailable
- * Modern models like Claude 3.5, GPT-4o, and Gemini Pro support 128k+ tokens
+ * Most models support 32k-128k context, using conservative default for compatibility
  */
-export const MAX_TOKENS = 128000;
+export const MAX_TOKENS = 32000;
 
 /*
  * Provider-specific default completion token limits
@@ -12,7 +12,7 @@ export const MAX_TOKENS = 128000;
 export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
   OpenAI: 4096, // Standard GPT models (o1 models have much higher limits)
   Github: 4096, // GitHub Models use OpenAI-compatible limits
-  Anthropic: 64000, // Conservative limit for Claude 4 models (Opus: 32k, Sonnet: 64k)
+  Anthropic: 64000, // Claude Sonnet 4 supports 64k completion tokens
   Google: 8192, // Gemini 1.5 Pro/Flash standard limit
   Cerebras: 8192, // Cerebras ultra-fast inference models (Llama, Qwen) with 128k context
   Cloudflare: 8192, // Cloudflare Workers AI models (varies by model, supports OpenAI GPT, Llama, Mistral)
