@@ -89,11 +89,11 @@ export class PromptLibrary {
     });
   }
 
-  static getPropmtFromLibrary(promptId: string, options: PromptOptions) {
+  static getPromptFromLibrary(promptId: string, options: PromptOptions) {
     const prompt = this.library[promptId];
 
     if (!prompt) {
-      throw 'Prompt Now Found';
+      throw 'Prompt Not Found';
     }
 
     return this.library[promptId]?.get(options);
@@ -116,7 +116,7 @@ export class PromptLibrary {
   /**
    * Legacy method with provider awareness
    */
-  static getPropmtFromLibraryWithProvider(
+  static getPromptFromLibraryWithProvider(
     promptId: string,
     options: PromptOptions,
     providerName?: string,
@@ -133,6 +133,6 @@ export class PromptLibrary {
       return this.library['provider-optimized'].get(providerAwareOptions);
     }
 
-    return this.getPropmtFromLibrary(promptId, providerAwareOptions);
+    return this.getPromptFromLibrary(promptId, providerAwareOptions);
   }
 }

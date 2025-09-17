@@ -165,7 +165,7 @@ export async function streamText(props: {
     `Token limits for model ${modelDetails.name}: maxTokens=${safeMaxTokens}, maxTokenAllowed=${modelDetails.maxTokenAllowed}, maxCompletionTokens=${modelDetails.maxCompletionTokens}`,
   );
 
-  let systemPrompt = PromptLibrary.getPropmtFromLibraryWithProvider(
+  let systemPrompt = PromptLibrary.getPromptFromLibraryWithProvider(
     promptId || 'default',
     {
       cwd: WORK_DIR,
