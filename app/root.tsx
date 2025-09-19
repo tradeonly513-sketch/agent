@@ -82,11 +82,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 import { logStore } from './lib/stores/logs';
+import { initAuth } from './lib/stores/auth';
 
 export default function App() {
   const theme = useStore(themeStore);
 
   useEffect(() => {
+    initAuth().catch((error) => {
+      logStore.logError('Failed to initialize auth', error);
+    });
+
     logStore.logSystem('Application initialized', {
       theme,
       platform: navigator.platform,

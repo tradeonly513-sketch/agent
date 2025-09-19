@@ -1,17 +1,30 @@
 @use 'variables.scss';
 @use 'z-index.scss';
 @use 'animations.scss';
+@use 'base/cards.scss';
 @use 'components/terminal.scss';
 @use 'components/resize-handle.scss';
 @use 'components/code.scss';
 @use 'components/editor.scss';
 @use 'components/toast.scss';
+@use 'components/modal.scss';
 
 html,
 body {
   height: 100%;
   width: 100%;
   background-color: var(--bolt-elements-bg-depth-1);
+}
+
+/* Scoped form element overrides (Settings only) */
+.settings-scope {
+  input,
+  textarea,
+  select {
+    background-color: var(--bolt-elements-input-background);
+    color: var(--bolt-elements-input-text);
+    border-color: var(--bolt-elements-input-border);
+  }
 }
 
 :root {
@@ -70,4 +83,10 @@ body {
 
   // Firefox support for inverted colors
   scrollbar-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%) transparent;
+}
+
+/* Global: ensure Lucide icons never show white backgrounds */
+svg.lucide {
+  background-color: transparent !important;
+  fill: none !important;
 }
