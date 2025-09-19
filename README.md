@@ -207,6 +207,8 @@ The desktop app provides the same full functionality as the web version with add
 
 Bolt.diy features a modern, intuitive settings interface for managing AI providers and API keys. The settings are organized into dedicated panels for easy navigation and configuration.
 
+> 📖 **For detailed API key permissions and security best practices**, see [docs/api-keys.md](docs/api-keys.md)
+
 ### Accessing Provider Settings
 
 1. **Open Settings**: Click the settings icon (⚙️) in the sidebar to access the settings panel
