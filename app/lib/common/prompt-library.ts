@@ -1,7 +1,7 @@
-import { createUnifiedPrompt } from './prompts/unified-prompt';
 import { createProviderOptimizedPrompt } from './prompts/provider-optimized-prompt';
-import type { DesignScheme } from '~/types/design-scheme';
+import { createUnifiedPrompt } from './prompts/unified-prompt';
 import type { ModelInfo } from '~/lib/modules/llm/types';
+import type { DesignScheme } from '~/types/design-scheme';
 
 export interface PromptOptions {
   cwd: string;

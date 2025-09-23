@@ -10,6 +10,94 @@ interface FileWriteOperation {
   timestamp: number;
   priority: 'critical' | 'high' | 'normal' | 'low';
   size: number;
+  resolve: () => void;
+  reject: (error: Error) => void;
+}
+
+interface BackpressureOptions {
+  maxMemoryMB: number;
+  maxPendingOperations: number;
+  emergencyThresholdMB: number;
+  adaptiveBackpressure: boolean;
+}
+
+class BackpressureController {
+  private _options: BackpressureOptions;
+  private _currentMemoryMB = 0;
+  private _pendingOperationsCount = 0;
+  private _rejectedOperations = 0;
+  private _backpressureActive = false;
+
+  constructor(options: BackpressureOptions) {
+    this._options = options;
+  }
+
+  canAcceptOperation(operationSizeMB: number): { allowed: boolean; reason?: string } {
+    // Check memory limits
+    if (this._currentMemoryMB + operationSizeMB > this._options.maxMemoryMB) {
+      this._backpressureActive = true;
+      return {
+        allowed: false,
+        reason: `Memory limit exceeded: ${(this._currentMemoryMB + operationSizeMB).toFixed(2)}MB > ${this._options.maxMemoryMB}MB`,
+      };
+    }
+
+    // Check pending operations limit
+    if (this._pendingOperationsCount >= this._options.maxPendingOperations) {
+      this._backpressureActive = true;
+      return {
+        allowed: false,
+        reason: `Too many pending operations: ${this._pendingOperationsCount} >= ${this._options.maxPendingOperations}`,
+      };
+    }
+
+    // Emergency threshold check
+    if (this._currentMemoryMB > this._options.emergencyThresholdMB) {
+      this._backpressureActive = true;
+      return {
+        allowed: false,
+        reason: `Emergency memory threshold exceeded: ${this._currentMemoryMB.toFixed(2)}MB > ${this._options.emergencyThresholdMB}MB`,
+      };
+    }
+
+    this._backpressureActive = false;
+
+    return { allowed: true };
+  }
+
+  addOperation(sizeMB: number): void {
+    this._currentMemoryMB += sizeMB;
+    this._pendingOperationsCount++;
+  }
+
+  removeOperation(sizeMB: number): void {
+    this._currentMemoryMB = Math.max(0, this._currentMemoryMB - sizeMB);
+    this._pendingOperationsCount = Math.max(0, this._pendingOperationsCount - 1);
+  }
+
+  rejectOperation(): void {
+    this._rejectedOperations++;
+  }
+
+  isBackpressureActive(): boolean {
+    return this._backpressureActive;
+  }
+
+  getStats() {
+    return {
+      currentMemoryMB: this._currentMemoryMB,
+      pendingOperationsCount: this._pendingOperationsCount,
+      rejectedOperations: this._rejectedOperations,
+      backpressureActive: this._backpressureActive,
+      memoryUtilization: (this._currentMemoryMB / this._options.maxMemoryMB) * 100,
+    };
+  }
+
+  reset(): void {
+    this._currentMemoryMB = 0;
+    this._pendingOperationsCount = 0;
+    this._backpressureActive = false;
+  }
 }
 
 interface BulkDirectoryOperation {
@@ -31,6 +119,7 @@ export class BatchFileOperationsManager {
   private readonly _batchDelay: number;
   private _adaptiveBatchDelay: number;
   private _maxBatchSize = 100; // Maximum operations per batch
+  private _backpressureController: BackpressureController;
   private _stats = {
     totalFileWrites: 0,
     batchedFileWrites: 0,
@@ -40,52 +129,110 @@ export class BatchFileOperationsManager {
     averageBatchSize: 0,
     bulkOperations: 0,
     averageOperationTime: 0,
+    backpressureEvents: 0,
+    rejectedOperations: 0,
   };
 
   constructor(webcontainer: Promise<WebContainer>, batchDelayMs: number = 10) {
     this._webcontainer = webcontainer;
     this._batchDelay = batchDelayMs;
     this._adaptiveBatchDelay = batchDelayMs;
-    logger.debug(`BatchFileOperations initialized with ${batchDelayMs}ms delay`);
+
+    // Initialize backpressure controller with reasonable defaults
+    this._backpressureController = new BackpressureController({
+      maxMemoryMB: 100, // Max 100MB of pending file operations
+      maxPendingOperations: 500, // Max 500 pending operations
+      emergencyThresholdMB: 80, // Emergency threshold at 80MB
+      adaptiveBackpressure: true,
+    });
+
+    logger.debug(`BatchFileOperations initialized with ${batchDelayMs}ms delay and backpressure control`);
   }
 
   /**
-   * Schedule a file write operation for batching
+   * Schedule a file write operation for batching with backpressure handling
    */
   async scheduleFileWrite(relativePath: string, content: string): Promise<void> {
-    this._stats.totalFileWrites++;
+    return new Promise<void>((resolve, reject) => {
+      this._stats.totalFileWrites++;
 
-    const priority = this._detectFilePriority(relativePath, content);
-    const size = content.length;
+      const priority = this._detectFilePriority(relativePath, content);
+      const size = content.length;
+      const sizeMB = size / (1024 * 1024);
 
-    // Store the latest version of the file (overwrites previous pending writes)
-    this._pendingFileWrites.set(relativePath, {
-      relativePath,
-      content,
-      timestamp: Date.now(),
-      priority,
-      size,
+      // Check backpressure before accepting operation
+      const backpressureCheck = this._backpressureController.canAcceptOperation(sizeMB);
+
+      if (!backpressureCheck.allowed) {
+        this._stats.backpressureEvents++;
+        this._stats.rejectedOperations++;
+        this._backpressureController.rejectOperation();
+
+        // For critical operations, force immediate execution despite backpressure
+        if (priority === 'critical') {
+          logger.warn(`Critical operation forced despite backpressure: ${relativePath}`);
+          this.writeFileImmediate(relativePath, content).then(resolve).catch(reject);
+
+          return;
+        }
+
+        // Reject non-critical operations under backpressure
+        logger.warn(`Operation rejected due to backpressure: ${backpressureCheck.reason}`);
+        reject(new Error(`Backpressure: ${backpressureCheck.reason}`));
+
+        return;
+      }
+
+      // Track operation in backpressure controller
+      this._backpressureController.addOperation(sizeMB);
+
+      // Remove existing operation if updating same file
+      const existingOp = this._pendingFileWrites.get(relativePath);
+
+      if (existingOp) {
+        this._backpressureController.removeOperation(existingOp.size / (1024 * 1024));
+        existingOp.reject(new Error('Operation superseded by newer write'));
+      }
+
+      // Store the latest version of the file (overwrites previous pending writes)
+      this._pendingFileWrites.set(relativePath, {
+        relativePath,
+        content,
+        timestamp: Date.now(),
+        priority,
+        size,
+        resolve,
+        reject,
+      });
+
+      // Schedule directory creation for parent directory
+      const dirPath = nodePath.dirname(relativePath);
+
+      if (dirPath !== '.' && dirPath !== '/') {
+        this._scheduleBulkDirectoryCreate(dirPath);
+      }
+
+      // Critical files bypass batching
+      if (priority === 'critical') {
+        this.writeFileImmediate(relativePath, content)
+          .then(() => {
+            this._pendingFileWrites.delete(relativePath);
+            this._backpressureController.removeOperation(sizeMB);
+            resolve();
+          })
+          .catch((error) => {
+            this._pendingFileWrites.delete(relativePath);
+            this._backpressureController.removeOperation(sizeMB);
+            reject(error);
+          });
+        return;
+      }
+
+      // Adaptive batching based on priority and pending operations
+      this._scheduleAdaptiveBatch();
+
+      logger.debug(`Scheduled file write: ${relativePath} (${size} chars, ${priority} priority)`);
     });
-
-    // Schedule directory creation for parent directory
-    const dirPath = nodePath.dirname(relativePath);
-
-    if (dirPath !== '.' && dirPath !== '/') {
-      this._scheduleBulkDirectoryCreate(dirPath);
-    }
-
-    // Critical files bypass batching
-    if (priority === 'critical') {
-      await this.writeFileImmediate(relativePath, content);
-      this._pendingFileWrites.delete(relativePath);
-
-      return;
-    }
-
-    // Adaptive batching based on priority and pending operations
-    this._scheduleAdaptiveBatch();
-
-    logger.debug(`Scheduled file write: ${relativePath} (${size} chars, ${priority} priority)`);
   }
 
   /**
@@ -139,7 +286,17 @@ export class BatchFileOperationsManager {
       this._batchTimer = null;
     }
 
-    await this._executeBatch();
+    try {
+      await this._executeBatch();
+    } catch (error) {
+      // Ensure all pending operations are rejected on flush failure
+      for (const operation of this._pendingFileWrites.values()) {
+        operation.reject(new Error('Flush operation failed'));
+        this._backpressureController.removeOperation(operation.size / (1024 * 1024));
+      }
+      this._pendingFileWrites.clear();
+      throw error;
+    }
   }
 
   /**
@@ -270,7 +427,7 @@ export class BatchFileOperationsManager {
   }
 
   /**
-   * Write files in batch with priority ordering for better performance
+   * Write files in batch with priority ordering and proper promise resolution
    */
   private async _batchWriteFilesByPriority(webcontainer: WebContainer): Promise<void> {
     const writeOperations = Array.from(this._pendingFileWrites.values());
@@ -300,8 +457,12 @@ export class BatchFileOperationsManager {
     for (const operation of [...priorityGroups.critical, ...priorityGroups.high]) {
       try {
         await webcontainer.fs.writeFile(operation.relativePath, operation.content);
+        this._backpressureController.removeOperation(operation.size / (1024 * 1024));
+        operation.resolve();
         logger.debug(`Priority file write: ${operation.relativePath} (${operation.priority})`);
       } catch (error) {
+        this._backpressureController.removeOperation(operation.size / (1024 * 1024));
+        operation.reject(error as Error);
         logger.error(`Failed to write priority file ${operation.relativePath}:`, error);
       }
     }
@@ -313,8 +474,12 @@ export class BatchFileOperationsManager {
       const writePromises = parallelOperations.map(async (operation: FileWriteOperation) => {
         try {
           await webcontainer.fs.writeFile(operation.relativePath, operation.content);
+          this._backpressureController.removeOperation(operation.size / (1024 * 1024));
+          operation.resolve();
           logger.debug(`Parallel file write: ${operation.relativePath} (${operation.priority})`);
         } catch (error) {
+          this._backpressureController.removeOperation(operation.size / (1024 * 1024));
+          operation.reject(error as Error);
           logger.error(`Failed to write file ${operation.relativePath}:`, error);
         }
       });
@@ -369,6 +534,7 @@ export class BatchFileOperationsManager {
       adaptiveBatchDelay: this._adaptiveBatchDelay,
       batchingEfficiency:
         this._stats.totalFileWrites > 0 ? this._stats.batchedFileWrites / this._stats.totalFileWrites : 0,
+      backpressure: this._backpressureController.getStats(),
     };
   }
 
@@ -385,7 +551,10 @@ export class BatchFileOperationsManager {
       averageBatchSize: 0,
       bulkOperations: 0,
       averageOperationTime: 0,
+      backpressureEvents: 0,
+      rejectedOperations: 0,
     };
+    this._backpressureController.reset();
   }
 
   /**
@@ -393,7 +562,24 @@ export class BatchFileOperationsManager {
    */
   isOperatingEfficiently(): boolean {
     const stats = this.getStats();
-    return stats.batchingEfficiency > 0.5 && stats.averageBatchSize > 1;
+    return stats.batchingEfficiency > 0.5 && stats.averageBatchSize > 1 && !stats.backpressure.backpressureActive;
+  }
+
+  /**
+   * Check if backpressure is currently active
+   */
+  isBackpressureActive(): boolean {
+    return this._backpressureController.isBackpressureActive();
+  }
+
+  /**
+   * Force flush when backpressure is detected to relieve memory pressure
+   */
+  async flushDueToBackpressure(): Promise<void> {
+    if (this.isBackpressureActive()) {
+      logger.warn('Forcing flush due to backpressure');
+      await this.flush();
+    }
   }
 
   /**
@@ -479,19 +665,23 @@ export class BatchFileOperationsManager {
   }
 
   /**
-   * Schedule batch execution with adaptive timing
+   * Schedule batch execution with adaptive timing and backpressure awareness
    */
   private _scheduleAdaptiveBatch(): void {
     if (this._batchTimer) {
       clearTimeout(this._batchTimer);
     }
 
-    // Calculate adaptive delay based on pending operations and priorities
+    // Calculate adaptive delay based on pending operations, priorities, and backpressure
     const pendingOps = this._pendingFileWrites.size + this._pendingDirCreates.size;
     const hasHighPriority = Array.from(this._pendingFileWrites.values()).some((op) => op.priority === 'high');
+    const backpressureActive = this._backpressureController.isBackpressureActive();
 
     // Adjust batch delay based on conditions
-    if (hasHighPriority) {
+    if (backpressureActive) {
+      // Flush immediately under backpressure
+      this._adaptiveBatchDelay = 1;
+    } else if (hasHighPriority) {
       this._adaptiveBatchDelay = Math.max(5, this._batchDelay * 0.5);
     } else if (pendingOps > this._maxBatchSize * 0.8) {
       this._adaptiveBatchDelay = Math.max(5, this._batchDelay * 0.7);
@@ -502,6 +692,13 @@ export class BatchFileOperationsManager {
     this._batchTimer = setTimeout(() => {
       this._executeBatch().catch((error) => {
         logger.error('Batch execution failed:', error);
+
+        // Reject pending operations on batch failure
+        for (const operation of this._pendingFileWrites.values()) {
+          operation.reject(new Error('Batch execution failed'));
+          this._backpressureController.removeOperation(operation.size / (1024 * 1024));
+        }
+        this._pendingFileWrites.clear();
       });
       this._batchTimer = null;
     }, this._adaptiveBatchDelay) as unknown as number;

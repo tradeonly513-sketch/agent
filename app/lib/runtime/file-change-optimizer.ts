@@ -1,6 +1,6 @@
-import { createScopedLogger } from '~/utils/logger';
-import type { FileMap } from '~/lib/stores/files';
 import { diffLines, createPatch } from 'diff';
+import type { FileMap } from '~/lib/stores/files';
+import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('FileChangeOptimizer');
 

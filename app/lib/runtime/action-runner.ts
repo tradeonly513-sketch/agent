@@ -1,16 +1,31 @@
 import type { WebContainer } from '@webcontainer/api';
-import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
-import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
-import { createScopedLogger } from '~/utils/logger';
-import { unreachable } from '~/utils/unreachable';
-import type { ActionCallbackData } from './message-parser';
-import type { BoltShell } from '~/utils/shell';
 import { BatchFileOperationsManager } from './batch-file-operations';
-import { PredictiveDirectoryCreator } from './predictive-directory-creator';
+import { CircuitBreakerManager } from './circuit-breaker';
 
 import { fileChangeOptimizer } from './file-change-optimizer';
+import type { ActionCallbackData } from './message-parser';
+import { PerformanceMonitor } from './performance-monitor';
+import { PredictiveDirectoryCreator } from './predictive-directory-creator';
+import {
+  WebContainerRateLimiterManager,
+  WebContainerOperationType,
+  OperationPriority,
+} from './webcontainer-rate-limiter';
 import type { FileMap } from '~/lib/stores/files';
+import type {
+  ActionAlert,
+  BoltAction,
+  DeployAlert,
+  FileAction,
+  FileHistory,
+  SupabaseAction,
+  SupabaseAlert,
+} from '~/types/actions';
+import { createScopedLogger } from '~/utils/logger';
+import { path as nodePath } from '~/utils/path';
+import type { BoltShell } from '~/utils/shell';
+import { unreachable } from '~/utils/unreachable';
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -68,12 +83,175 @@ class ActionCommandError extends Error {
   }
 }
 
+interface QueuedOperation {
+  actionId: string;
+  operation: () => Promise<void>;
+  priority: 'critical' | 'high' | 'normal' | 'low';
+  type: 'file' | 'shell' | 'start' | 'build' | 'supabase';
+  dependencies?: string[]; // Operations that must complete first
+}
+
+class ConcurrencyController {
+  private _queues = new Map<string, Promise<void>>(); // Per-file queues
+  private _globalQueue = Promise.resolve(); // For operations requiring global serialization
+  private _concurrentOperations = new Set<string>();
+  private _maxConcurrency: number;
+  private _pendingOperations: QueuedOperation[] = [];
+  private _running = false;
+
+  constructor(maxConcurrency: number = 10) {
+    this._maxConcurrency = maxConcurrency;
+  }
+
+  async execute(operation: QueuedOperation): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const wrappedOperation: QueuedOperation = {
+        ...operation,
+        operation: async () => {
+          try {
+            await operation.operation();
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        },
+      };
+
+      this._pendingOperations.push(wrappedOperation);
+      this._scheduleExecution();
+    });
+  }
+
+  private _scheduleExecution(): void {
+    if (this._running) {
+      return;
+    }
+
+    this._running = true;
+    setImmediate(() => this._processQueue());
+  }
+
+  private async _processQueue(): Promise<void> {
+    while (this._pendingOperations.length > 0 && this._concurrentOperations.size < this._maxConcurrency) {
+      const operation = this._getNextReadyOperation();
+
+      if (!operation) {
+        break; // No operations ready to run
+      }
+
+      this._removeFromPending(operation);
+
+      if (this._requiresGlobalSerialization(operation)) {
+        // Execute in global queue
+        this._globalQueue = this._globalQueue.then(async () => {
+          await this._executeOperation(operation);
+        });
+        await this._globalQueue;
+      } else if (operation.type === 'file') {
+        // Execute in file-specific queue
+        const fileKey = this._getFileKey(operation);
+        const existingQueue = this._queues.get(fileKey) || Promise.resolve();
+
+        const newQueue = existingQueue.then(async () => {
+          await this._executeOperation(operation);
+        });
+
+        this._queues.set(fileKey, newQueue);
+
+        // Don't await here to allow parallel execution
+        newQueue.finally(() => {
+          if (this._queues.get(fileKey) === newQueue) {
+            this._queues.delete(fileKey);
+          }
+        });
+      } else {
+        // Execute immediately with concurrency control
+        this._executeOperation(operation);
+      }
+    }
+    this._running = false;
+  }
+
+  private _getNextReadyOperation(): QueuedOperation | null {
+    // Sort by priority: critical > high > normal > low
+    const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+
+    const sortedOps = this._pendingOperations
+      .filter((op) => this._dependenciesResolved(op))
+      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+    return sortedOps[0] || null;
+  }
+
+  private _dependenciesResolved(operation: QueuedOperation): boolean {
+    if (!operation.dependencies) {
+      return true;
+    }
+
+    return operation.dependencies.every((dep) => !this._concurrentOperations.has(dep));
+  }
+
+  private _removeFromPending(operation: QueuedOperation): void {
+    const index = this._pendingOperations.indexOf(operation);
+
+    if (index > -1) {
+      this._pendingOperations.splice(index, 1);
+    }
+  }
+
+  private async _executeOperation(operation: QueuedOperation): Promise<void> {
+    this._concurrentOperations.add(operation.actionId);
+
+    try {
+      await operation.operation();
+    } finally {
+      this._concurrentOperations.delete(operation.actionId);
+
+      // Schedule more operations if queue not empty
+      if (this._pendingOperations.length > 0) {
+        this._scheduleExecution();
+      }
+    }
+  }
+
+  private _requiresGlobalSerialization(operation: QueuedOperation): boolean {
+    return ['shell', 'start', 'build', 'supabase'].includes(operation.type);
+  }
+
+  private _getFileKey(operation: QueuedOperation): string {
+    /*
+     * For file operations, we need the actual file path for proper queuing
+     * This will be set when creating the operation
+     */
+    return operation.actionId; // This will be overridden when creating file operations
+  }
+
+  cancelAll(): void {
+    this._pendingOperations = [];
+    this._concurrentOperations.clear();
+    this._queues.clear();
+    this._globalQueue = Promise.resolve();
+  }
+
+  getStats() {
+    return {
+      pendingOperations: this._pendingOperations.length,
+      concurrentOperations: this._concurrentOperations.size,
+      activeFileQueues: this._queues.size,
+      maxConcurrency: this._maxConcurrency,
+    };
+  }
+}
+
 export class ActionRunner {
   #webcontainer: Promise<WebContainer>;
-  #currentExecutionPromise: Promise<void> = Promise.resolve();
+  #concurrencyController: ConcurrencyController;
   #shellTerminal: () => BoltShell;
   #batchFileOps: BatchFileOperationsManager;
   #predictiveDirectoryCreator: PredictiveDirectoryCreator;
+  #circuitBreakerManager = CircuitBreakerManager.getInstance();
+  #rateLimiter = WebContainerRateLimiterManager.getInstance().getRateLimiter('action-runner');
+  #performanceMonitor = new PerformanceMonitor();
   runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
   onAlert?: (alert: ActionAlert) => void;
@@ -111,12 +289,17 @@ export class ActionRunner {
     onDeployAlert?: (alert: DeployAlert) => void,
   ) {
     this.#webcontainer = webcontainerPromise;
+    this.#concurrencyController = new ConcurrencyController(8); // Allow up to 8 concurrent operations
     this.#shellTerminal = getShellTerminal;
     this.#batchFileOps = new BatchFileOperationsManager(webcontainerPromise);
     this.#predictiveDirectoryCreator = new PredictiveDirectoryCreator(webcontainerPromise);
     this.onAlert = onAlert;
     this.onSupabaseAlert = onSupabaseAlert;
     this.onDeployAlert = onDeployAlert;
+
+    // Register this ActionRunner with the performance monitor and start monitoring
+    this.#performanceMonitor.registerActionRunner(this);
+    this.#performanceMonitor.startMonitoring();
   }
 
   // Global cancellation methods
@@ -134,11 +317,11 @@ export class ActionRunner {
     // Clear active actions
     this.#activeActions.clear();
 
+    // Cancel all pending operations
+    this.#concurrencyController.cancelAll();
+
     // Create new abort controller for future actions
     this.#globalAbortController = new AbortController();
-
-    // Reset execution queue
-    this.#currentExecutionPromise = Promise.resolve();
   }
 
   isGloballyCancelled(): boolean {
@@ -169,14 +352,15 @@ export class ActionRunner {
       abortSignal: abortController.signal,
     });
 
-    this.#currentExecutionPromise.then(() => {
-      this.#updateAction(actionId, { status: 'running' });
-    });
+    // Status will be updated when operation actually starts executing
   }
 
   async runAction(data: ActionCallbackData, isStreaming: boolean = false) {
     const { actionId } = data;
     const action = this.actions.get()[actionId];
+
+    // Record activity for hang detection
+    this.#performanceMonitor.recordActivity();
 
     // Check for global cancellation
     if (this.isGloballyCancelled()) {
@@ -191,41 +375,73 @@ export class ActionRunner {
     }
 
     if (action.executed) {
-      return; // No return value here
+      return;
     }
 
     if (isStreaming && action.type !== 'file') {
-      return; // No return value here
+      return;
     }
 
     // Track active action
     this.#activeActions.add(actionId);
-
     this.#updateAction(actionId, { ...action, ...data.action, executed: !isStreaming });
 
-    this.#currentExecutionPromise = this.#currentExecutionPromise
-      .then(() => {
-        // Check cancellation again before execution
-        if (this.isGloballyCancelled()) {
-          this.#activeActions.delete(actionId);
-          this.#updateAction(actionId, { status: 'aborted' });
+    // Determine operation priority and type
+    const priority = this.#determineOperationPriority(action.type, data);
 
-          return Promise.resolve();
+    // Create operation for concurrency controller
+    const operation: QueuedOperation = {
+      actionId: action.type === 'file' ? (data.action as FileAction).filePath : actionId,
+      operation: async () => {
+        // Check cancellation before execution
+        if (this.isGloballyCancelled()) {
+          this.#updateAction(actionId, { status: 'aborted' });
+          return;
         }
 
-        return this.#executeAction(actionId, isStreaming);
-      })
-      .catch((error) => {
-        logger.error('Action execution promise failed:', error);
-        this.#activeActions.delete(actionId);
-      })
-      .finally(() => {
-        this.#activeActions.delete(actionId);
-      });
+        this.#updateAction(actionId, { status: 'running' });
+        await this.#executeAction(actionId, isStreaming);
+      },
+      priority,
+      type: action.type as any,
+    };
 
-    await this.#currentExecutionPromise;
+    try {
+      await this.#concurrencyController.execute(operation);
+    } catch (error) {
+      logger.error('Action execution failed:', error);
+      this.#updateAction(actionId, { status: 'failed', error: 'Action execution failed' });
+    } finally {
+      this.#activeActions.delete(actionId);
+    }
+  }
 
-    return;
+  #determineOperationPriority(actionType: string, data: ActionCallbackData): 'critical' | 'high' | 'normal' | 'low' {
+    // Critical operations that should run immediately
+    if (actionType === 'shell' || actionType === 'start' || actionType === 'build') {
+      return 'critical';
+    }
+
+    // High priority for important files
+    if (actionType === 'file') {
+      const filePath = (data.action as FileAction).filePath;
+
+      if (/(package\.json|index\.html|main\.[jt]sx?)$/.test(filePath)) {
+        return 'high';
+      }
+
+      // Large files should be processed quickly to avoid memory issues
+      if (data.action.content.length > 100000) {
+        return 'high';
+      }
+    }
+
+    // Supabase operations are normal priority
+    if (actionType === 'supabase') {
+      return 'normal';
+    }
+
+    return 'normal';
   }
 
   async #executeAction(actionId: string, isStreaming: boolean = false) {
@@ -242,15 +458,31 @@ export class ActionRunner {
     try {
       switch (action.type) {
         case 'shell': {
-          await this.#runShellAction(action);
+          const circuitBreaker = this.#circuitBreakerManager.getCircuitBreaker('shell-operations', {
+            failureThreshold: 3,
+            recoveryTimeout: 30000,
+            monitoringPeriod: 60000,
+            successThreshold: 2,
+            maxConcurrentRequests: 5,
+          });
+
+          await circuitBreaker.execute(() => this.#runShellAction(action), `shell-${actionId}`);
           break;
         }
         case 'file': {
+          const circuitBreaker = this.#circuitBreakerManager.getCircuitBreaker('file-operations', {
+            failureThreshold: 10,
+            recoveryTimeout: 15000,
+            monitoringPeriod: 60000,
+            successThreshold: 5,
+            maxConcurrentRequests: 20,
+          });
+
           const prevStreaming = this.#isStreamingMode;
           this.#isStreamingMode = isStreaming;
 
           try {
-            await this.#runFileAction(action);
+            await circuitBreaker.execute(() => this.#runFileAction(action), `file-${action.filePath}`);
           } finally {
             this.#isStreamingMode = prevStreaming;
           }
@@ -258,8 +490,19 @@ export class ActionRunner {
         }
 
         case 'supabase': {
+          const circuitBreaker = this.#circuitBreakerManager.getCircuitBreaker('supabase-operations', {
+            failureThreshold: 5,
+            recoveryTimeout: 45000,
+            monitoringPeriod: 120000,
+            successThreshold: 3,
+            maxConcurrentRequests: 3,
+          });
+
           try {
-            await this.handleSupabaseAction(action as SupabaseAction);
+            await circuitBreaker.execute(
+              () => this.handleSupabaseAction(action as SupabaseAction),
+              `supabase-${actionId}`,
+            );
           } catch (error: any) {
             // Update action status
             this.#updateAction(actionId, {
@@ -273,16 +516,32 @@ export class ActionRunner {
           break;
         }
         case 'build': {
-          const buildOutput = await this.#runBuildAction(action);
+          const circuitBreaker = this.#circuitBreakerManager.getCircuitBreaker('build-operations', {
+            failureThreshold: 2,
+            recoveryTimeout: 60000,
+            monitoringPeriod: 120000,
+            successThreshold: 1,
+            maxConcurrentRequests: 2,
+          });
+
+          const buildOutput = await circuitBreaker.execute(() => this.#runBuildAction(action), `build-${actionId}`);
 
           // Store build output for deployment
           this.buildOutput = buildOutput;
           break;
         }
         case 'start': {
-          // making the start app non blocking
+          const circuitBreaker = this.#circuitBreakerManager.getCircuitBreaker('start-operations', {
+            failureThreshold: 3,
+            recoveryTimeout: 45000,
+            monitoringPeriod: 120000,
+            successThreshold: 2,
+            maxConcurrentRequests: 3,
+          });
 
-          this.#runStartAction(action)
+          // making the start app non blocking
+          circuitBreaker
+            .execute(() => this.#runStartAction(action), `start-${actionId}`)
             .then(() => this.#updateAction(actionId, { status: 'complete' }))
             .catch((err: Error) => {
               if (action.abortSignal.aborted) {
@@ -512,7 +771,11 @@ export class ActionRunner {
 
     // Capture existing content if any (only when needed for optimization)
     try {
-      const existing = await webcontainer.fs.readFile(relativePath, 'utf-8');
+      const existing = await this.#rateLimiter.execute(
+        () => webcontainer.fs.readFile(relativePath, 'utf-8'),
+        WebContainerOperationType.READ,
+        OperationPriority.NORMAL,
+      );
       this.#existingFiles.set(relativePath, existing);
     } catch {
       // file doesn't exist -> creation
@@ -612,6 +875,26 @@ export class ActionRunner {
     return this.#predictiveDirectoryCreator.getStats();
   }
 
+  /** Get concurrency controller statistics */
+  getConcurrencyStats() {
+    return this.#concurrencyController.getStats();
+  }
+
+  /** Get circuit breaker statistics */
+  getCircuitBreakerStats() {
+    return this.#circuitBreakerManager.getAllStats();
+  }
+
+  /** Check if any circuit breakers are unhealthy */
+  hasUnhealthyCircuitBreakers() {
+    return this.#circuitBreakerManager.hasUnhealthyCircuitBreakers();
+  }
+
+  /** Get list of unhealthy circuit breakers */
+  getUnhealthyCircuitBreakers() {
+    return this.#circuitBreakerManager.getUnhealthyCircuitBreakers();
+  }
+
   /** Perform comprehensive directory structure analysis */
   async performComprehensiveDirectoryAnalysis() {
     try {
@@ -637,7 +920,12 @@ export class ActionRunner {
     try {
       const webcontainer = await this.#webcontainer;
       const historyPath = this.#getHistoryPath(filePath);
-      const content = await webcontainer.fs.readFile(historyPath, 'utf-8');
+
+      const content = await this.#rateLimiter.execute(
+        () => webcontainer.fs.readFile(historyPath, 'utf-8'),
+        WebContainerOperationType.READ,
+        OperationPriority.LOW,
+      );
 
       return JSON.parse(content);
     } catch (error) {
@@ -785,7 +1073,11 @@ export class ActionRunner {
     const webcontainer = await this.#webcontainer;
 
     // Create a new terminal specifically for the build
-    const buildProcess = await webcontainer.spawn('npm', ['run', 'build']);
+    const buildProcess = await this.#rateLimiter.execute(
+      () => webcontainer.spawn('npm', ['run', 'build']),
+      WebContainerOperationType.SPAWN,
+      OperationPriority.HIGH,
+    );
 
     let output = '';
     buildProcess.output.pipeTo(
@@ -835,7 +1127,11 @@ export class ActionRunner {
       const dirPath = nodePath.join(webcontainer.workdir, dir);
 
       try {
-        await webcontainer.fs.readdir(dirPath);
+        await this.#rateLimiter.execute(
+          () => webcontainer.fs.readdir(dirPath),
+          WebContainerOperationType.READ,
+          OperationPriority.LOW,
+        );
         buildDir = dirPath;
         break;
       } catch {
@@ -977,7 +1273,11 @@ export class ActionRunner {
             } // Skip flags
 
             try {
-              await webcontainer.fs.readFile(filePath);
+              await this.#rateLimiter.execute(
+                () => webcontainer.fs.readFile(filePath),
+                WebContainerOperationType.READ,
+                OperationPriority.LOW,
+              );
               existingFiles.push(filePath);
             } catch {
               // File doesn't exist, skip it
@@ -1014,7 +1314,11 @@ export class ActionRunner {
 
         try {
           const webcontainer = await this.#webcontainer;
-          await webcontainer.fs.readdir(targetDir);
+          await this.#rateLimiter.execute(
+            () => webcontainer.fs.readdir(targetDir),
+            WebContainerOperationType.READ,
+            OperationPriority.LOW,
+          );
         } catch {
           return {
             shouldModify: true,
@@ -1034,7 +1338,11 @@ export class ActionRunner {
 
         try {
           const webcontainer = await this.#webcontainer;
-          await webcontainer.fs.readFile(sourceFile);
+          await this.#rateLimiter.execute(
+            () => webcontainer.fs.readFile(sourceFile),
+            WebContainerOperationType.READ,
+            OperationPriority.LOW,
+          );
         } catch {
           return {
             shouldModify: false,

@@ -1,13 +1,7 @@
+import { Buffer } from 'node:buffer';
 import type { PathWatcherEvent, WebContainer } from '@webcontainer/api';
 import { getEncoding } from 'istextorbinary';
 import { map, type MapStore } from 'nanostores';
-import { Buffer } from 'node:buffer';
-import { path } from '~/utils/path';
-import { bufferWatchEvents } from '~/utils/buffer';
-import { WORK_DIR } from '~/utils/constants';
-import { computeFileModifications } from '~/utils/diff';
-import { createScopedLogger } from '~/utils/logger';
-import { unreachable } from '~/utils/unreachable';
 import {
   addLockedFile,
   removeLockedFile,
@@ -20,7 +14,18 @@ import {
   migrateLegacyLocks,
   clearCache,
 } from '~/lib/persistence/lockedFiles';
+import {
+  WebContainerRateLimiterManager,
+  WebContainerOperationType,
+  OperationPriority,
+} from '~/lib/runtime/webcontainer-rate-limiter';
+import { bufferWatchEvents } from '~/utils/buffer';
+import { WORK_DIR } from '~/utils/constants';
+import { computeFileModifications } from '~/utils/diff';
 import { getCurrentChatId } from '~/utils/fileLocks';
+import { createScopedLogger } from '~/utils/logger';
+import { path } from '~/utils/path';
+import { unreachable } from '~/utils/unreachable';
 
 const logger = createScopedLogger('FilesStore');
 
@@ -46,6 +51,7 @@ export type FileMap = Record<string, Dirent | undefined>;
 
 export class FilesStore {
   #webcontainer: Promise<WebContainer>;
+  #rateLimiter = WebContainerRateLimiterManager.getInstance().getRateLimiter('files-store');
 
   /**
    * Tracks the number of files without folders.
@@ -563,7 +569,12 @@ export class FilesStore {
         unreachable('Expected content to be defined');
       }
 
-      await webcontainer.fs.writeFile(relativePath, content);
+      // Rate limit file write operation
+      await this.#rateLimiter.execute(
+        () => webcontainer.fs.writeFile(relativePath, content),
+        WebContainerOperationType.WRITE,
+        OperationPriority.HIGH,
+      );
 
       if (!this.#modifiedFiles.has(filePath)) {
         this.#modifiedFiles.set(filePath, oldContent);
@@ -780,13 +791,23 @@ export class FilesStore {
       const dirPath = path.dirname(relativePath);
 
       if (dirPath !== '.') {
-        await webcontainer.fs.mkdir(dirPath, { recursive: true });
+        // Rate limit directory creation
+        await this.#rateLimiter.execute(
+          () => webcontainer.fs.mkdir(dirPath, { recursive: true }),
+          WebContainerOperationType.MKDIR,
+          OperationPriority.HIGH,
+        );
       }
 
       const isBinary = content instanceof Uint8Array;
 
       if (isBinary) {
-        await webcontainer.fs.writeFile(relativePath, Buffer.from(content));
+        // Rate limit binary file write
+        await this.#rateLimiter.execute(
+          () => webcontainer.fs.writeFile(relativePath, Buffer.from(content)),
+          WebContainerOperationType.WRITE,
+          OperationPriority.HIGH,
+        );
 
         const base64Content = Buffer.from(content).toString('base64');
         this.files.setKey(filePath, {
@@ -799,7 +820,13 @@ export class FilesStore {
         this.#modifiedFiles.set(filePath, base64Content);
       } else {
         const contentToWrite = (content as string).length === 0 ? ' ' : content;
-        await webcontainer.fs.writeFile(relativePath, contentToWrite);
+
+        // Rate limit text file write
+        await this.#rateLimiter.execute(
+          () => webcontainer.fs.writeFile(relativePath, contentToWrite),
+          WebContainerOperationType.WRITE,
+          OperationPriority.HIGH,
+        );
 
         this.files.setKey(filePath, {
           type: 'file',
@@ -830,7 +857,12 @@ export class FilesStore {
         throw new Error(`EINVAL: invalid folder path, create '${relativePath}'`);
       }
 
-      await webcontainer.fs.mkdir(relativePath, { recursive: true });
+      // Rate limit folder creation
+      await this.#rateLimiter.execute(
+        () => webcontainer.fs.mkdir(relativePath, { recursive: true }),
+        WebContainerOperationType.MKDIR,
+        OperationPriority.NORMAL,
+      );
 
       this.files.setKey(folderPath, { type: 'folder' });
 
@@ -853,7 +885,12 @@ export class FilesStore {
         throw new Error(`EINVAL: invalid file path, delete '${relativePath}'`);
       }
 
-      await webcontainer.fs.rm(relativePath);
+      // Rate limit file deletion
+      await this.#rateLimiter.execute(
+        () => webcontainer.fs.rm(relativePath),
+        WebContainerOperationType.DELETE,
+        OperationPriority.NORMAL,
+      );
 
       this.#deletedPaths.add(filePath);
 
@@ -885,7 +922,12 @@ export class FilesStore {
         throw new Error(`EINVAL: invalid folder path, delete '${relativePath}'`);
       }
 
-      await webcontainer.fs.rm(relativePath, { recursive: true });
+      // Rate limit folder deletion
+      await this.#rateLimiter.execute(
+        () => webcontainer.fs.rm(relativePath, { recursive: true }),
+        WebContainerOperationType.DELETE,
+        OperationPriority.NORMAL,
+      );
 
       this.#deletedPaths.add(folderPath);
 

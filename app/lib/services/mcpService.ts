@@ -1,3 +1,4 @@
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {
   experimental_createMCPClient,
   type ToolSet,
@@ -7,7 +8,6 @@ import {
   formatDataStreamPart,
 } from 'ai';
 import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { z } from 'zod';
 import type { ToolCallAnnotation } from '~/types/context';
 import {
@@ -26,7 +26,7 @@ export const stdioServerConfigSchema = z
     command: z.string().min(1, 'Command cannot be empty'),
     args: z.array(z.string()).optional(),
     cwd: z.string().optional(),
-    env: z.record(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
   })
   .transform((data) => ({
     ...data,
@@ -38,7 +38,7 @@ export const sseServerConfigSchema = z
   .object({
     type: z.enum(['sse']).optional(),
     url: z.string().url('URL must be a valid URL format'),
-    headers: z.record(z.string()).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
   })
   .transform((data) => ({
     ...data,
@@ -50,7 +50,7 @@ export const streamableHTTPServerConfigSchema = z
   .object({
     type: z.enum(['streamable-http']).optional(),
     url: z.string().url('URL must be a valid URL format'),
-    headers: z.record(z.string()).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
   })
   .transform((data) => ({
     ...data,
@@ -152,7 +152,9 @@ export class MCPService {
       return mcpServerConfigSchema.parse(config);
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
-        const errorMessages = validationError.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join('; ');
+        const errorMessages = validationError.issues
+          .map((err: any) => `${err.path.join('.')}: ${err.message}`)
+          .join('; ');
         throw new Error(`Invalid configuration for server "${serverName}": ${errorMessages}`);
       }
 
@@ -177,7 +179,7 @@ export class MCPService {
     const client = await experimental_createMCPClient({
       transport: new StreamableHTTPClientTransport(new URL(config.url), {
         requestInit: {
-          headers: config.headers,
+          headers: config.headers as HeadersInit,
         },
       }),
     });
@@ -189,7 +191,7 @@ export class MCPService {
     logger.debug(`Creating SSE client for ${serverName} with URL: ${config.url}`);
 
     const client = await experimental_createMCPClient({
-      transport: config,
+      transport: config as any,
     });
 
     return Object.assign(client, { serverName });
@@ -200,7 +202,7 @@ export class MCPService {
       `Creating STDIO client for '${serverName}' with command: '${config.command}' ${config.args?.join(' ') || ''}`,
     );
 
-    const client = await experimental_createMCPClient({ transport: new Experimental_StdioMCPTransport(config) });
+    const client = await experimental_createMCPClient({ transport: new Experimental_StdioMCPTransport(config as any) });
 
     return Object.assign(client, { serverName });
   }

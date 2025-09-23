@@ -1,8 +1,8 @@
+import { createOpenAI } from '@ai-sdk/openai';
+import type { LanguageModelV1 } from 'ai';
 import { BaseProvider } from '~/lib/modules/llm/base-provider';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { IProviderSetting } from '~/types/model';
-import type { LanguageModelV1 } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 
 export default class CerebrasProvider extends BaseProvider {
   name = 'Cerebras';
@@ -108,6 +108,7 @@ export default class CerebrasProvider extends BaseProvider {
 
       // Filter out models that are already in staticModels
       const staticModelNames = this.staticModels.map((m) => m.name);
+
       const dynamicModels = data
         .filter((model: any) => !staticModelNames.includes(model.id))
         .map((m: any) => {

@@ -148,6 +148,7 @@ export function detectPackageManager(hasFile: (name: string) => boolean): {
 
 export function createFallbackInstallCommand(packageManager: PackageManager): string {
   const platformInfo = detectPlatform();
+
   const installCmd = createInstallCommand(
     packageManager,
     {},

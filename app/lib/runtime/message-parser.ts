@@ -45,6 +45,8 @@ type ElementFactory = (props: ElementFactoryProps) => string;
 export interface StreamingMessageParserOptions {
   callbacks?: ParserCallbacks;
   artifactElement?: ElementFactory;
+  maxCacheSize?: number;
+  cacheTtlMs?: number;
 }
 
 interface MessageState {
@@ -55,6 +57,161 @@ interface MessageState {
   currentArtifact?: BoltArtifactData;
   currentAction: BoltActionData;
   actionId: number;
+  lastAccessed: number;
+  createdAt: number;
+}
+
+interface LRUCacheOptions {
+  maxSize: number;
+  ttlMs: number;
+}
+
+/**
+ * LRU Cache with TTL for message states to prevent memory leaks
+ */
+class MessageStateCache {
+  private _cache = new Map<string, MessageState>();
+  private _accessOrder: string[] = [];
+  private _maxSize: number;
+  private _ttlMs: number;
+  private _lastCleanup = Date.now();
+  private _cleanupInterval = 60000; // Cleanup every minute
+
+  constructor(options: LRUCacheOptions) {
+    this._maxSize = options.maxSize;
+    this._ttlMs = options.ttlMs;
+  }
+
+  get(key: string): MessageState | undefined {
+    const now = Date.now();
+    const state = this._cache.get(key);
+
+    if (!state) {
+      return undefined;
+    }
+
+    // Check TTL
+    if (now - state.createdAt > this._ttlMs) {
+      this._cache.delete(key);
+      this._removeFromAccessOrder(key);
+
+      return undefined;
+    }
+
+    // Update access time and order
+    state.lastAccessed = now;
+    this._updateAccessOrder(key);
+
+    // Periodic cleanup
+    this._periodicCleanup(now);
+
+    return state;
+  }
+
+  set(key: string, value: MessageState): void {
+    const now = Date.now();
+    value.lastAccessed = now;
+    value.createdAt = now;
+
+    // If key already exists, update and move to end
+    if (this._cache.has(key)) {
+      this._cache.set(key, value);
+      this._updateAccessOrder(key);
+
+      return;
+    }
+
+    // Check size limit and evict LRU if needed
+    if (this._cache.size >= this._maxSize) {
+      this._evictLRU();
+    }
+
+    this._cache.set(key, value);
+    this._accessOrder.push(key);
+  }
+
+  delete(key: string): boolean {
+    const deleted = this._cache.delete(key);
+
+    if (deleted) {
+      this._removeFromAccessOrder(key);
+    }
+
+    return deleted;
+  }
+
+  clear(): void {
+    this._cache.clear();
+    this._accessOrder = [];
+  }
+
+  size(): number {
+    return this._cache.size;
+  }
+
+  getStats() {
+    const now = Date.now();
+
+    const expiredCount = Array.from(this._cache.values()).filter((state) => now - state.createdAt > this._ttlMs).length;
+
+    return {
+      size: this._cache.size,
+      maxSize: this._maxSize,
+      expiredCount,
+      oldestEntry: this._cache.size > 0 ? Math.min(...Array.from(this._cache.values()).map((s) => s.createdAt)) : null,
+      newestEntry: this._cache.size > 0 ? Math.max(...Array.from(this._cache.values()).map((s) => s.createdAt)) : null,
+    };
+  }
+
+  private _updateAccessOrder(key: string): void {
+    this._removeFromAccessOrder(key);
+    this._accessOrder.push(key);
+  }
+
+  private _removeFromAccessOrder(key: string): void {
+    const index = this._accessOrder.indexOf(key);
+
+    if (index > -1) {
+      this._accessOrder.splice(index, 1);
+    }
+  }
+
+  private _evictLRU(): void {
+    if (this._accessOrder.length === 0) {
+      return;
+    }
+
+    const lruKey = this._accessOrder[0];
+    this._cache.delete(lruKey);
+    this._accessOrder.shift();
+
+    logger.debug(`Evicted LRU message state: ${lruKey}`);
+  }
+
+  private _periodicCleanup(now: number): void {
+    if (now - this._lastCleanup < this._cleanupInterval) {
+      return;
+    }
+
+    this._lastCleanup = now;
+
+    const expiredKeys: string[] = [];
+
+    for (const [key, state] of this._cache.entries()) {
+      if (now - state.createdAt > this._ttlMs) {
+        expiredKeys.push(key);
+      }
+    }
+
+    for (const key of expiredKeys) {
+      this._cache.delete(key);
+      this._removeFromAccessOrder(key);
+    }
+
+    if (expiredKeys.length > 0) {
+      logger.debug(`Cleaned up ${expiredKeys.length} expired message states`);
+    }
+  }
 }
 
 function cleanoutMarkdownSyntax(content: string) {
@@ -74,15 +231,22 @@ function cleanEscapedTags(content: string) {
   return content.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 }
 export class StreamingMessageParser {
-  #messages = new Map<string, MessageState>();
+  #messages: MessageStateCache;
   #artifactCounter = 0;
 
-  constructor(private _options: StreamingMessageParserOptions = {}) {}
+  constructor(private _options: StreamingMessageParserOptions = {}) {
+    // Configure cache with reasonable defaults
+    this.#messages = new MessageStateCache({
+      maxSize: _options.maxCacheSize || 1000, // Max 1000 concurrent message states
+      ttlMs: _options.cacheTtlMs || 30 * 60 * 1000, // 30 minutes TTL
+    });
+  }
 
   parse(messageId: string, input: string) {
     let state = this.#messages.get(messageId);
 
     if (!state) {
+      const now = Date.now();
       state = {
         position: 0,
         insideAction: false,
@@ -90,6 +254,8 @@ export class StreamingMessageParser {
         artifactCounter: 0,
         currentAction: { content: '' },
         actionId: 0,
+        lastAccessed: now,
+        createdAt: now,
       };
 
       this.#messages.set(messageId, state);
@@ -108,7 +274,9 @@ export class StreamingMessageParser {
 
           // Find all <bolt-quick-action ...>label</bolt-quick-action> inside
           const quickActionRegex = /<bolt-quick-action([^>]*)>([\s\S]*?)<\/bolt-quick-action>/g;
+
           let match;
+
           const buttons = [];
 
           while ((match = quickActionRegex.exec(actionsBlockContent)) !== null) {
@@ -332,6 +500,27 @@ export class StreamingMessageParser {
   }
 
   reset() {
+    this.#messages.clear();
+  }
+
+  /**
+   * Get cache statistics for monitoring
+   */
+  getCacheStats() {
+    return this.#messages.getStats();
+  }
+
+  /**
+   * Force cleanup of expired entries
+   */
+  forceCleanup() {
+    const stats = this.#messages.getStats();
+    logger.debug('Forcing message parser cache cleanup', stats);
+
+    /*
+     * Clear all entries and let them be recreated as needed
+     * This is more aggressive but ensures memory is freed
+     */
     this.#messages.clear();
   }
 

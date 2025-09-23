@@ -284,6 +284,7 @@ export class PredictiveDirectoryCreator {
    */
   private async _createPredictedDirectories(directories: string[]): Promise<void> {
     const webcontainer = await this._webcontainer;
+
     let successCount = 0;
     let redundantCount = 0;
 

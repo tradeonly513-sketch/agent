@@ -1,14 +1,14 @@
+import { createOpenAI } from '@ai-sdk/openai';
+import type { LanguageModelV1 } from 'ai';
 import { BaseProvider } from '~/lib/modules/llm/base-provider';
 import type { ModelInfo } from '~/lib/modules/llm/types';
-import type { IProviderSetting } from '~/types/model';
-import type { LanguageModelV1 } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createScopedLogger } from '~/utils/logger';
 import {
   validatePerplexityModel,
   getAvailableModels,
   formatModelLabel,
 } from '~/lib/modules/llm/utils/perplexity-utils';
+import type { IProviderSetting } from '~/types/model';
+import { createScopedLogger } from '~/utils/logger';
 
 export default class PerplexityProvider extends BaseProvider {
   name = 'Perplexity';

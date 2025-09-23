@@ -1,6 +1,8 @@
-import { createScopedLogger } from '~/utils/logger';
 import type { ActionRunner } from './action-runner';
+import { CircuitBreakerManager } from './circuit-breaker';
 import type { OptimizedMessageParser } from './optimized-message-parser';
+import { WebContainerRateLimiterManager } from './webcontainer-rate-limiter';
+import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('PerformanceMonitor');
 
@@ -59,7 +61,36 @@ export interface PerformanceMetrics {
     memoryPressure: 'low' | 'medium' | 'high';
     responseTime: number;
     throughput: number; // operations per second
+    isHanging: boolean;
+    hangDuration?: number;
+    lastActivityTime: number;
   };
+
+  // Circuit breaker stats
+  circuitBreakerStats: Record<
+    string,
+    {
+      state: string;
+      failureCount: number;
+      successCount: number;
+      totalRequests: number;
+      rejectedRequests: number;
+      isHealthy: boolean;
+    }
+  >;
+
+  // Rate limiter stats
+  rateLimiterStats: Record<
+    string,
+    {
+      activeOperations: number;
+      queuedOperations: number;
+      totalOperations: number;
+      rejectedOperations: number;
+      operationsPerSecond: number;
+      isHealthy: boolean;
+    }
+  >;
 }
 
 export interface PerformanceAlert {
@@ -90,10 +121,15 @@ export class PerformanceMonitor {
   private _parser: OptimizedMessageParser | null = null;
   private _isMonitoring = false;
   private _monitoringInterval: number | null = null;
+  private _hangDetectionInterval: number | null = null;
   private _metricsHistory: PerformanceMetrics[] = [];
   private _alerts: PerformanceAlert[] = [];
   private _maxHistorySize = 100; // Keep last 100 measurements
   private _maxAlertsSize = 50; // Keep last 50 alerts
+  private _lastActivityTime = Date.now();
+  private _hangStartTime: number | null = null;
+  private _circuitBreakerManager = CircuitBreakerManager.getInstance();
+  private _rateLimiterManager = WebContainerRateLimiterManager.getInstance();
 
   // Performance thresholds
   private _thresholds = {
@@ -103,6 +139,9 @@ export class PerformanceMonitor {
     cacheHitRate: 70, // 70% cache hit rate
     averageParseTime: 100, // 100ms average parse time
     responseTime: 2000, // 2 second response time
+    hangDetectionTimeout: 30000, // 30 seconds of inactivity
+    maxQueuedOperations: 50, // Maximum queued operations
+    circuitBreakerFailureThreshold: 5, // Circuit breaker failures
   };
 
   constructor() {
@@ -123,6 +162,30 @@ export class PerformanceMonitor {
   }
 
   /**
+   * Record activity to prevent false hang detection
+   */
+  recordActivity(): void {
+    this._lastActivityTime = Date.now();
+
+    // Reset hang detection if we were in hanging state
+    if (this._hangStartTime) {
+      const hangDuration = Date.now() - this._hangStartTime;
+      this._hangStartTime = null;
+
+      this._alerts.push({
+        type: 'info',
+        title: 'System Hang Resolved',
+        description: `System resumed after ${Math.round(hangDuration / 1000)} seconds`,
+        metric: 'hangDetection',
+        value: hangDuration,
+        threshold: this._thresholds.hangDetectionTimeout,
+        timestamp: Date.now(),
+        suggestions: ['System is now responding normally'],
+      });
+    }
+  }
+
+  /**
    * Start real-time monitoring
    */
   startMonitoring(intervalMs: number = 5000): void {
@@ -132,9 +195,20 @@ export class PerformanceMonitor {
     }
 
     this._isMonitoring = true;
+    this._lastActivityTime = Date.now();
+
+    // Main metrics collection
     this._monitoringInterval = setInterval(() => {
       this._collectMetrics();
     }, intervalMs) as unknown as number;
+
+    // Hang detection runs more frequently
+    this._hangDetectionInterval = setInterval(
+      () => {
+        this._detectHangs();
+      },
+      Math.min(intervalMs / 2, 2500),
+    ) as unknown as number;
 
     logger.info(`Performance monitoring started with ${intervalMs}ms interval`);
   }
@@ -152,6 +226,11 @@ export class PerformanceMonitor {
     if (this._monitoringInterval) {
       clearInterval(this._monitoringInterval);
       this._monitoringInterval = null;
+    }
+
+    if (this._hangDetectionInterval) {
+      clearInterval(this._hangDetectionInterval);
+      this._hangDetectionInterval = null;
     }
 
     logger.info('Performance monitoring stopped');
@@ -172,6 +251,8 @@ export class PerformanceMonitor {
         fileOperations: this._collectFileOperationMetrics(),
         parserPerformance: this._collectParserMetrics(),
         systemPerformance: await this._collectSystemMetrics(responseTimeStart),
+        circuitBreakerStats: this._collectCircuitBreakerStats(),
+        rateLimiterStats: this._collectRateLimiterStats(),
       };
 
       // Store metrics
@@ -289,11 +370,92 @@ export class PerformanceMonitor {
     // Calculate throughput based on recent operations
     const throughput = this._calculateThroughput();
 
+    // Check for hanging
+    const timeSinceLastActivity = Date.now() - this._lastActivityTime;
+    const isHanging = timeSinceLastActivity > this._thresholds.hangDetectionTimeout;
+    const hangDuration = isHanging ? timeSinceLastActivity : undefined;
+
     return {
       memoryPressure,
       responseTime,
       throughput,
+      isHanging,
+      hangDuration,
+      lastActivityTime: this._lastActivityTime,
     };
+  }
+
+  /**
+   * Collect circuit breaker statistics
+   */
+  private _collectCircuitBreakerStats() {
+    const allStats = this._circuitBreakerManager.getAllStats();
+    const formattedStats: Record<string, any> = {};
+
+    for (const [name, stats] of Object.entries(allStats)) {
+      formattedStats[name] = {
+        state: stats.state,
+        failureCount: stats.failureCount,
+        successCount: stats.successCount,
+        totalRequests: stats.totalRequests,
+        rejectedRequests: stats.rejectedRequests,
+        isHealthy: stats.state === 'closed',
+      };
+    }
+
+    return formattedStats;
+  }
+
+  /**
+   * Collect rate limiter statistics
+   */
+  private _collectRateLimiterStats() {
+    const allStats = this._rateLimiterManager.getAllStats();
+    const formattedStats: Record<string, any> = {};
+
+    for (const [name, stats] of Object.entries(allStats)) {
+      formattedStats[name] = {
+        activeOperations: stats.activeOperations,
+        queuedOperations: stats.queuedOperations,
+        totalOperations: stats.totalOperations,
+        rejectedOperations: stats.rejectedOperations,
+        operationsPerSecond: stats.operationsPerSecond,
+        isHealthy: stats.queuedOperations < this._thresholds.maxQueuedOperations,
+      };
+    }
+
+    return formattedStats;
+  }
+
+  /**
+   * Detect system hangs
+   */
+  private _detectHangs(): void {
+    const timeSinceLastActivity = Date.now() - this._lastActivityTime;
+    const isCurrentlyHanging = timeSinceLastActivity > this._thresholds.hangDetectionTimeout;
+
+    if (isCurrentlyHanging && !this._hangStartTime) {
+      // Hang just started
+      this._hangStartTime = Date.now() - timeSinceLastActivity;
+
+      this._alerts.push({
+        type: 'error',
+        title: 'System Hang Detected',
+        description: `No activity detected for ${Math.round(timeSinceLastActivity / 1000)} seconds`,
+        metric: 'hangDetection',
+        value: timeSinceLastActivity,
+        threshold: this._thresholds.hangDetectionTimeout,
+        timestamp: Date.now(),
+        suggestions: [
+          'Check for blocking operations in the message parser',
+          'Verify WebContainer operations are completing',
+          'Look for infinite loops or deadlocks',
+          'Consider restarting the session if hang persists',
+        ],
+      });
+
+      logger.error(`System hang detected - no activity for ${Math.round(timeSinceLastActivity / 1000)} seconds`);
+    }
   }
 
   /**
@@ -345,6 +507,7 @@ export class PerformanceMonitor {
     const previous = this._metricsHistory[this._metricsHistory.length - 2];
 
     const timeDiff = (recent.timestamp - previous.timestamp) / 1000; // seconds
+
     const opsDiff =
       recent.fileOperations.batchStats.pendingFileWrites -
       previous.fileOperations.batchStats.pendingFileWrites +
@@ -426,6 +589,107 @@ export class PerformanceMonitor {
           'Check system load and resource usage',
           'Optimize batch sizes and intervals',
           'Review file operation complexity',
+        ],
+      });
+    }
+
+    // Check circuit breaker alerts
+    for (const [name, stats] of Object.entries(metrics.circuitBreakerStats)) {
+      if (stats.state !== 'closed') {
+        alerts.push({
+          type: 'warning',
+          title: 'Circuit Breaker Open',
+          description: `Circuit breaker '${name}' is in ${stats.state} state`,
+          metric: 'circuitBreakerState',
+          value: stats.failureCount,
+          threshold: this._thresholds.circuitBreakerFailureThreshold,
+          timestamp: metrics.timestamp,
+          suggestions: [
+            'Check for underlying issues causing failures',
+            'Review error logs for specific failure patterns',
+            'Wait for automatic recovery or manually reset if needed',
+          ],
+        });
+      }
+
+      if (stats.rejectedRequests > 0 && stats.totalRequests > 0) {
+        const rejectionRate = (stats.rejectedRequests / stats.totalRequests) * 100;
+
+        if (rejectionRate > 10) {
+          alerts.push({
+            type: 'warning',
+            title: 'High Request Rejection Rate',
+            description: `Circuit breaker '${name}' has ${rejectionRate.toFixed(1)}% rejection rate`,
+            metric: 'requestRejectionRate',
+            value: rejectionRate,
+            threshold: 10,
+            timestamp: metrics.timestamp,
+            suggestions: [
+              'Reduce request rate or increase capacity',
+              'Check for system overload conditions',
+              'Consider adjusting circuit breaker thresholds',
+            ],
+          });
+        }
+      }
+    }
+
+    // Check rate limiter alerts
+    for (const [name, stats] of Object.entries(metrics.rateLimiterStats)) {
+      if (stats.queuedOperations > this._thresholds.maxQueuedOperations) {
+        alerts.push({
+          type: 'warning',
+          title: 'Rate Limiter Queue Backup',
+          description: `Rate limiter '${name}' has ${stats.queuedOperations} queued operations`,
+          metric: 'queuedOperations',
+          value: stats.queuedOperations,
+          threshold: this._thresholds.maxQueuedOperations,
+          timestamp: metrics.timestamp,
+          suggestions: [
+            'Wait for operations to process',
+            'Reduce operation frequency',
+            'Consider increasing rate limits if appropriate',
+          ],
+        });
+      }
+
+      if (stats.rejectedOperations > 0 && stats.totalOperations > 0) {
+        const rejectionRate = (stats.rejectedOperations / stats.totalOperations) * 100;
+
+        if (rejectionRate > 5) {
+          alerts.push({
+            type: 'info',
+            title: 'Operations Being Rate Limited',
+            description: `Rate limiter '${name}' has rejected ${rejectionRate.toFixed(1)}% of operations`,
+            metric: 'operationRejectionRate',
+            value: rejectionRate,
+            threshold: 5,
+            timestamp: metrics.timestamp,
+            suggestions: [
+              'This is normal behavior to prevent overload',
+              'Consider adjusting operation timing if needed',
+              'Monitor for sustained high rejection rates',
+            ],
+          });
+        }
+      }
+    }
+
+    // Hang detection alert
+    if (metrics.systemPerformance.isHanging) {
+      alerts.push({
+        type: 'error',
+        title: 'System Hang Detected',
+        description: `System has been unresponsive for ${Math.round((metrics.systemPerformance.hangDuration || 0) / 1000)} seconds`,
+        metric: 'hangDuration',
+        value: metrics.systemPerformance.hangDuration || 0,
+        threshold: this._thresholds.hangDetectionTimeout,
+        timestamp: metrics.timestamp,
+        suggestions: [
+          'Check for blocking operations',
+          'Review recent actions for infinite loops',
+          'Consider restarting if hang persists',
+          'Check WebContainer operations',
         ],
       });
     }

@@ -1,8 +1,3 @@
-import type { DesignScheme } from '~/types/design-scheme';
-import type { ModelInfo } from '~/lib/modules/llm/types';
-import { WORK_DIR } from '~/utils/constants';
-import { allowedHTMLElements } from '~/utils/markdown';
-import { createScopedLogger } from '~/utils/logger';
 import { getProviderCategory, getCategoryConfig, type ProviderCategory } from './provider-categories';
 import {
   getTokenOptimizationConfig,
@@ -12,6 +7,11 @@ import {
   estimateTokenCount,
   type TokenOptimizationConfig,
 } from './token-optimizer';
+import type { ModelInfo } from '~/lib/modules/llm/types';
+import type { DesignScheme } from '~/types/design-scheme';
+import { WORK_DIR } from '~/utils/constants';
+import { createScopedLogger } from '~/utils/logger';
+import { allowedHTMLElements } from '~/utils/markdown';
 
 const logger = createScopedLogger('ProviderOptimizedPrompt');
 

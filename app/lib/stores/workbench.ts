@@ -1,25 +1,144 @@
+import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
+import fileSaver from 'file-saver';
+import Cookies from 'js-cookie';
+import JSZip from 'jszip';
 import { atom, map, type MapStore, type ReadableAtom, type WritableAtom } from 'nanostores';
-import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
-import { ActionRunner } from '~/lib/runtime/action-runner';
-import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
-import { webcontainer } from '~/lib/webcontainer';
-import type { ITerminal } from '~/types/terminal';
-import { unreachable } from '~/utils/unreachable';
 import { EditorStore } from './editor';
 import { FilesStore, type FileMap } from './files';
+import { ParallelExecutionManager } from './parallel-execution-manager';
 import { PreviewsStore } from './previews';
 import { TerminalStore } from './terminal';
-import { ParallelExecutionManager } from './parallel-execution-manager';
-import JSZip from 'jszip';
-import fileSaver from 'file-saver';
-import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
-import { path } from '~/utils/path';
-import { extractRelativePath } from '~/utils/diff';
+import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { description } from '~/lib/persistence';
-import Cookies from 'js-cookie';
-import { ContentAwareSampler } from '~/utils/content-aware-sampler';
+import { ActionRunner } from '~/lib/runtime/action-runner';
+import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
 import { PerformanceMonitor } from '~/lib/runtime/performance-monitor';
+import { webcontainer } from '~/lib/webcontainer';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
+import type { ITerminal } from '~/types/terminal';
+import { ContentAwareSampler } from '~/utils/content-aware-sampler';
+import { extractRelativePath } from '~/utils/diff';
+import { path } from '~/utils/path';
+import { unreachable } from '~/utils/unreachable';
+
+interface WorkbenchCleanupOptions {
+  maxArtifacts: number;
+  maxFileHistory: number;
+  maxAlertHistory: number;
+  artifactTtlMs: number;
+  cleanupIntervalMs: number;
+}
+
+class WorkbenchStateManager {
+  private _cleanupOptions: WorkbenchCleanupOptions;
+  private _cleanupTimer: NodeJS.Timeout | null = null;
+  private _lastCleanup = Date.now();
+  private _artifactCreationTimes = new Map<string, number>();
+  private _fileModificationTimes = new Map<string, number>();
+  private _alertHistory: Array<{ alert: any; timestamp: number }> = [];
+
+  constructor(options: Partial<WorkbenchCleanupOptions> = {}) {
+    this._cleanupOptions = {
+      maxArtifacts: 50, // Keep max 50 artifacts in memory
+      maxFileHistory: 200, // Keep max 200 file modifications
+      maxAlertHistory: 20, // Keep max 20 alerts
+      artifactTtlMs: 30 * 60 * 1000, // 30 minutes TTL for inactive artifacts
+      cleanupIntervalMs: 5 * 60 * 1000, // Cleanup every 5 minutes
+      ...options,
+    };
+
+    this._scheduleCleanup();
+  }
+
+  private _scheduleCleanup(): void {
+    if (this._cleanupTimer) {
+      clearTimeout(this._cleanupTimer);
+    }
+
+    this._cleanupTimer = setTimeout(() => {
+      this._performCleanup();
+      this._scheduleCleanup();
+    }, this._cleanupOptions.cleanupIntervalMs);
+  }
+
+  private _performCleanup(): void {
+    const now = Date.now();
+    this._lastCleanup = now;
+
+    // Clean up old artifact timestamps
+    for (const [artifactId, creationTime] of this._artifactCreationTimes.entries()) {
+      if (now - creationTime > this._cleanupOptions.artifactTtlMs) {
+        this._artifactCreationTimes.delete(artifactId);
+      }
+    }
+
+    // Clean up old file modification times
+    if (this._fileModificationTimes.size > this._cleanupOptions.maxFileHistory) {
+      const sorted = Array.from(this._fileModificationTimes.entries()).sort(([, a], [, b]) => a - b);
+
+      const toDelete = sorted.slice(0, sorted.length - this._cleanupOptions.maxFileHistory);
+
+      for (const [filePath] of toDelete) {
+        this._fileModificationTimes.delete(filePath);
+      }
+    }
+
+    // Clean up old alerts
+    if (this._alertHistory.length > this._cleanupOptions.maxAlertHistory) {
+      this._alertHistory = this._alertHistory.slice(-this._cleanupOptions.maxAlertHistory);
+    }
+  }
+
+  trackArtifact(artifactId: string): void {
+    this._artifactCreationTimes.set(artifactId, Date.now());
+  }
+
+  trackFileModification(filePath: string): void {
+    this._fileModificationTimes.set(filePath, Date.now());
+  }
+
+  trackAlert(alert: any): void {
+    this._alertHistory.push({ alert, timestamp: Date.now() });
+  }
+
+  shouldCleanupArtifact(artifactId: string): boolean {
+    const creationTime = this._artifactCreationTimes.get(artifactId);
+
+    if (!creationTime) {
+      return false;
+    }
+
+    return Date.now() - creationTime > this._cleanupOptions.artifactTtlMs;
+  }
+
+  getOldestArtifacts(count: number): string[] {
+    return Array.from(this._artifactCreationTimes.entries())
+      .sort(([, a], [, b]) => a - b)
+      .slice(0, count)
+      .map(([artifactId]) => artifactId);
+  }
+
+  getStats() {
+    return {
+      trackedArtifacts: this._artifactCreationTimes.size,
+      trackedFileModifications: this._fileModificationTimes.size,
+      alertHistory: this._alertHistory.length,
+      lastCleanup: this._lastCleanup,
+      cleanupOptions: this._cleanupOptions,
+    };
+  }
+
+  forceCleanup(): void {
+    this._performCleanup();
+  }
+
+  destroy(): void {
+    if (this._cleanupTimer) {
+      clearTimeout(this._cleanupTimer);
+      this._cleanupTimer = null;
+    }
+  }
+}
 
 const { saveAs } = fileSaver;
 
@@ -44,6 +163,7 @@ export class WorkbenchStore {
   #terminalStore = new TerminalStore(webcontainer);
   #executionManager = new ParallelExecutionManager();
   #performanceMonitor = new PerformanceMonitor();
+  #stateManager = new WorkbenchStateManager();
 
   #reloadedMessages = new Set<string>();
 
@@ -60,6 +180,7 @@ export class WorkbenchStore {
     import.meta.hot?.data.deployAlert ?? atom<DeployAlert | undefined>(undefined);
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
+  #maxArtifactIdListSize = 100; // Limit artifact list size
   constructor() {
     if (import.meta.hot) {
       import.meta.hot.data.artifacts = this.artifacts;
@@ -79,6 +200,14 @@ export class WorkbenchStore {
           this.files.setKey(path, { ...dirent });
         }
       }
+
+      // Schedule periodic cleanup for development mode
+      setInterval(
+        () => {
+          this.forceStateCleanup();
+        },
+        10 * 60 * 1000,
+      ); // Every 10 minutes in dev mode
     }
   }
 
@@ -159,6 +288,106 @@ export class WorkbenchStore {
     this.#contentAwareSampler.flush();
   }
 
+  /**
+   * Get state management statistics
+   */
+  getStateManagementStats() {
+    return this.#stateManager.getStats();
+  }
+
+  /**
+   * Force cleanup of old state data
+   */
+  forceStateCleanup() {
+    this.#stateManager.forceCleanup();
+
+    // Also clean up modified files set if it gets too large
+    if (this.modifiedFiles.size > 500) {
+      const files = Array.from(this.modifiedFiles);
+
+      // Keep only the most recent 300 files (arbitrary reasonable limit)
+      this.modifiedFiles = new Set(files.slice(-300));
+    }
+
+    // Clean up reloaded messages set
+    if (this.#reloadedMessages.size > 1000) {
+      this.#reloadedMessages.clear();
+    }
+
+    // Force garbage collection on sub-stores
+    if (typeof (this.#filesStore as any).forceCleanup === 'function') {
+      (this.#filesStore as any).forceCleanup();
+    }
+
+    if (typeof (this.#editorStore as any).forceCleanup === 'function') {
+      (this.#editorStore as any).forceCleanup();
+    }
+
+    // Force performance monitor cleanup
+    this.#performanceMonitor.clearHistory();
+  }
+
+  /**
+   * Clean up inactive artifacts based on TTL
+   */
+  cleanupInactiveArtifacts() {
+    const artifacts = this.artifacts.get();
+    const artifactIds = Object.keys(artifacts);
+
+    let cleanedCount = 0;
+
+    for (const artifactId of artifactIds) {
+      if (this.#stateManager.shouldCleanupArtifact(artifactId)) {
+        const artifact = artifacts[artifactId];
+
+        if (artifact) {
+          // Cancel any running actions
+          artifact.runner.cancelAllActions();
+          delete artifacts[artifactId];
+          cleanedCount++;
+
+          // Remove from artifact list
+          const index = this.artifactIdList.indexOf(artifactId);
+
+          if (index > -1) {
+            this.artifactIdList.splice(index, 1);
+          }
+        }
+      }
+    }
+
+    if (cleanedCount > 0) {
+      this.artifacts.set(artifacts);
+    }
+
+    return cleanedCount;
+  }
+
+  /**
+   * Get comprehensive memory usage statistics
+   */
+  getMemoryUsageStats() {
+    const artifacts = this.artifacts.get();
+    const documents = this.#editorStore.documents.get();
+    const files = this.files.get();
+
+    return {
+      artifacts: {
+        count: Object.keys(artifacts).length,
+        listSize: this.artifactIdList.length,
+      },
+      documents: {
+        count: Object.keys(documents).length,
+      },
+      files: {
+        count: Object.keys(files).length,
+      },
+      modifiedFiles: this.modifiedFiles.size,
+      reloadedMessages: this.#reloadedMessages.size,
+      stateManagement: this.#stateManager.getStats(),
+    };
+  }
+
   get previews() {
     return this.#previewsStore.previews;
   }
@@ -194,6 +423,10 @@ export class WorkbenchStore {
   }
   clearAlert() {
     this.actionAlert.set(undefined);
+  }
+
+  private _trackAlert(alert: any) {
+    this.#stateManager.trackAlert(alert);
   }
 
   get SupabaseAlert() {
@@ -305,6 +538,9 @@ export class WorkbenchStore {
     if (document === undefined) {
       return;
     }
+
+    // Track file modification
+    this.#stateManager.trackFileModification(filePath);
 
     /*
      * For scoped locks, we would need to implement diff checking here
@@ -470,6 +706,7 @@ export class WorkbenchStore {
 
         if (isCurrentFile) {
           const files = this.files.get();
+
           let nextFile: string | undefined = undefined;
 
           for (const [path, dirent] of Object.entries(files)) {
@@ -513,6 +750,7 @@ export class WorkbenchStore {
 
         if (isInCurrentFolder) {
           const files = this.files.get();
+
           let nextFile: string | undefined = undefined;
 
           for (const [path, dirent] of Object.entries(files)) {
@@ -534,7 +772,15 @@ export class WorkbenchStore {
   }
 
   abortAllActions() {
-    // TODO: what do we wanna do and how do we wanna recover from this?
+    // Cancel all running actions in all artifacts
+    const artifacts = this.artifacts.get();
+
+    for (const artifact of Object.values(artifacts)) {
+      artifact.runner.cancelAllActions();
+    }
+
+    // Force cleanup of state
+    this.forceStateCleanup();
   }
 
   setReloadedMessages(messages: string[]) {
@@ -548,8 +794,29 @@ export class WorkbenchStore {
       return;
     }
 
+    // Track artifact creation
+    this.#stateManager.trackArtifact(id);
+
     if (!this.artifactIdList.includes(id)) {
       this.artifactIdList.push(id);
+
+      // Enforce artifact list size limit
+      if (this.artifactIdList.length > this.#maxArtifactIdListSize) {
+        const toRemove = this.artifactIdList.shift();
+
+        if (toRemove) {
+          // Clean up old artifact
+          const artifacts = this.artifacts.get();
+          const oldArtifact = artifacts[toRemove];
+
+          if (oldArtifact) {
+            // Cancel any running actions in the old artifact
+            oldArtifact.runner.cancelAllActions();
+            delete artifacts[toRemove];
+            this.artifacts.set(artifacts);
+          }
+        }
+      }
     }
 
     const runner = new ActionRunner(
@@ -561,6 +828,7 @@ export class WorkbenchStore {
         }
 
         this.actionAlert.set(alert);
+        this._trackAlert(alert);
       },
       (alert) => {
         if (this.#reloadedMessages.has(messageId)) {
@@ -568,6 +836,7 @@ export class WorkbenchStore {
         }
 
         this.supabaseAlert.set(alert);
+        this._trackAlert(alert);
       },
       (alert) => {
         if (this.#reloadedMessages.has(messageId)) {
@@ -575,6 +844,7 @@ export class WorkbenchStore {
         }
 
         this.deployAlert.set(alert);
+        this._trackAlert(alert);
       },
     );
 
@@ -743,6 +1013,7 @@ export class WorkbenchStore {
       if (dirent?.type === 'file' && !dirent.isBinary) {
         const relativePath = extractRelativePath(filePath);
         const pathSegments = relativePath.split('/');
+
         let currentHandle = targetHandle;
 
         for (let i = 0; i < pathSegments.length - 1; i++) {
@@ -907,6 +1178,7 @@ export class WorkbenchStore {
               repo: repo.name,
               ref: `heads/${repo.default_branch || 'main'}`, // Handle dynamic branch
             });
+
             const latestCommitSha = ref.object.sha;
 
             // Create a new tree

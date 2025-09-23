@@ -1,19 +1,21 @@
 import { type ActionFunctionArgs } from '@remix-run/cloudflare';
 import { createDataStream, generateId } from 'ai';
 import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS, type FileMap } from '~/lib/.server/llm/constants';
-import { CONTINUE_PROMPT } from '~/lib/common/prompts/constants';
+import { createSummary } from '~/lib/.server/llm/create-summary';
+import { ProgressiveContextLoader } from '~/lib/.server/llm/progressive-context-loader';
+import { getFilePaths } from '~/lib/.server/llm/select-context';
+import { StreamRecoveryManager } from '~/lib/.server/llm/stream-recovery';
 import { streamText, type Messages, type StreamingOptions } from '~/lib/.server/llm/stream-text';
 import SwitchableStream from '~/lib/.server/llm/switchable-stream';
-import type { IProviderSetting } from '~/types/model';
-import { createScopedLogger } from '~/utils/logger';
-import { getFilePaths, selectContext } from '~/lib/.server/llm/select-context';
-import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
-import { WORK_DIR } from '~/utils/constants';
-import { createSummary } from '~/lib/.server/llm/create-summary';
 import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
-import type { DesignScheme } from '~/types/design-scheme';
+import { CONTINUE_PROMPT } from '~/lib/common/prompts/constants';
+import { CircuitBreakerManager } from '~/lib/runtime/circuit-breaker';
 import { MCPService } from '~/lib/services/mcpService';
-import { StreamRecoveryManager } from '~/lib/.server/llm/stream-recovery';
+import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
+import type { DesignScheme } from '~/types/design-scheme';
+import type { IProviderSetting } from '~/types/model';
+import { WORK_DIR } from '~/utils/constants';
+import { createScopedLogger } from '~/utils/logger';
 import { withTimeout, TimeoutError } from '~/utils/promises';
 
 export async function action(args: ActionFunctionArgs) {
@@ -85,6 +87,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
   const cookieHeader = request.headers.get('Cookie');
   const apiKeys = JSON.parse(parseCookies(cookieHeader || '').apiKeys || '{}');
+
   const providerSettings: Record<string, IProviderSetting> = JSON.parse(
     parseCookies(cookieHeader || '').providers || '{}',
   );
@@ -96,6 +99,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     promptTokens: 0,
     totalTokens: 0,
   };
+
   const encoder: TextEncoder = new TextEncoder();
 
   try {
@@ -112,6 +116,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         streamRecovery.startMonitoring();
 
         const filePaths = getFilePaths(files || {});
+
         let filteredFiles: FileMap | undefined = undefined;
         let summary: string | undefined = undefined;
         let messageSliceId = 0;
@@ -119,10 +124,22 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         let processedMessages: typeof messages;
 
         try {
-          processedMessages = await withTimeout(
-            mcpService.processToolInvocations(messages, dataStream),
-            30000, // 30 second timeout for MCP processing
-            'MCP tool processing timed out',
+          const mcpCircuitBreaker = CircuitBreakerManager.getInstance().getCircuitBreaker('mcp-processing', {
+            failureThreshold: 3,
+            recoveryTimeout: 60000,
+            monitoringPeriod: 120000,
+            successThreshold: 2,
+            maxConcurrentRequests: 5,
+          });
+
+          processedMessages = await mcpCircuitBreaker.execute(
+            () =>
+              withTimeout(
+                mcpService.processToolInvocations(messages, dataStream),
+                30000, // 30 second timeout for MCP processing
+                'MCP tool processing timed out',
+              ),
+            'mcp-tool-processing',
           );
         } catch (error) {
           if (error instanceof TimeoutError) {
@@ -156,147 +173,119 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (filePaths.length > 0 && contextOptimization) {
-          logger.debug('Generating Chat Summary');
-          dataStream.writeData({
-            type: 'progress',
-            label: 'summary',
-            status: 'in-progress',
-            order: progressCounter++,
-            message: `Analysing Request (${processedMessages.length} messages, ~60s timeout)`,
-          } satisfies ProgressAnnotation);
+          logger.debug('Loading context progressively');
 
-          // Create a summary of the chat
-          console.log(`Messages count: ${processedMessages.length}`);
+          // Use progressive context loader for better performance with large datasets
+          const progressiveLoader = new ProgressiveContextLoader({
+            maxConcurrentOperations: 3,
+            baseTimeoutMs: 30000,
+            maxTimeoutMs: 180000,
+            fallbackThresholdMs: 120000,
+            chunkSize: 50,
+          });
 
           try {
-            summary = await withTimeout(
-              createSummary({
-                messages: [...processedMessages],
-                env: context.cloudflare?.env,
-                apiKeys,
-                providerSettings,
-                promptId,
-                contextOptimization,
-                onFinish(resp) {
-                  if (resp.usage) {
-                    logger.debug('createSummary token usage', JSON.stringify(resp.usage));
-                    cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                    cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                    cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-                  }
-                },
-              }),
-              60000, // 60 second timeout
-              'Chat summary generation timed out',
-            );
-          } catch (error) {
-            if (error instanceof TimeoutError) {
-              logger.warn('Chat summary generation timed out, proceeding without summary');
-              summary = undefined;
-              dataStream.writeData({
-                type: 'progress',
-                label: 'summary',
-                status: 'complete',
-                order: progressCounter++,
-                message: 'Analysis Timeout - Proceeding Without Summary',
-              } satisfies ProgressAnnotation);
-            } else {
-              // Re-throw non-timeout errors
-              dataStream.writeData({
-                type: 'progress',
-                label: 'summary',
-                status: 'complete',
-                order: progressCounter++,
-                message: 'Analysis Failed - Proceeding Without Summary',
-              } satisfies ProgressAnnotation);
-              throw error;
-            }
-          }
+            const progressiveResults = await progressiveLoader.loadContextProgressive({
+              messages: processedMessages,
+              env: context.cloudflare?.env,
+              apiKeys,
+              files,
+              providerSettings,
+              promptId,
+              contextOptimization,
+              onProgress: (progress) => {
+                // Update progress in real-time
+                if (progress.stage === 'summary') {
+                  dataStream.writeData({
+                    type: 'progress',
+                    label: 'summary',
+                    status: progress.progress < 100 ? 'in-progress' : 'complete',
+                    order: progressCounter++,
+                    message:
+                      progress.progress < 50
+                        ? `Analyzing conversation (${processedMessages.length} messages, ${Math.round(progress.timeElapsed / 1000)}s)`
+                        : progress.error
+                          ? `Analysis completed with fallback (${Math.round(progress.timeElapsed / 1000)}s)`
+                          : `Analysis complete (${Math.round(progress.timeElapsed / 1000)}s)`,
+                  } satisfies ProgressAnnotation);
+                } else if (progress.stage === 'context') {
+                  dataStream.writeData({
+                    type: 'progress',
+                    label: 'context',
+                    status: progress.progress < 100 ? 'in-progress' : 'complete',
+                    order: progressCounter++,
+                    message:
+                      progress.progress < 90
+                        ? `Selecting files (${filePaths.length} available, ${Math.round(progress.timeElapsed / 1000)}s)`
+                        : progress.error
+                          ? `File selection completed with fallback (${Math.round(progress.timeElapsed / 1000)}s)`
+                          : `File selection complete (${Math.round(progress.timeElapsed / 1000)}s)`,
+                  } satisfies ProgressAnnotation);
+                }
+              },
+              onFinish: (_resp) => {
+                // Handle token usage tracking
+                logger.debug('Progressive context loading completed');
+              },
+            });
 
-          if (!summary) {
-            // Only write success message if we actually got a summary
-          } else {
+            summary = progressiveResults.summary;
+            filteredFiles = progressiveResults.contextFiles;
+
+            // Write annotations for successful completion
+            if (summary) {
+              dataStream.writeMessageAnnotation({
+                type: 'chatSummary',
+                summary,
+                chatId: processedMessages.slice(-1)?.[0]?.id,
+              } as ContextAnnotation);
+            }
+          } catch (error) {
+            logger.warn('Progressive context loading failed, using fallback strategy', error);
+
+            // Final fallback: use traditional approach with very short timeouts
             dataStream.writeData({
               type: 'progress',
-              label: 'summary',
+              label: 'context',
+              status: 'in-progress',
+              order: progressCounter++,
+              message: 'Using fallback context strategy',
+            } satisfies ProgressAnnotation);
+
+            // Quick summary fallback
+            try {
+              summary = await withTimeout(
+                createSummary({
+                  messages: processedMessages.slice(-10), // Only last 10 messages
+                  env: context.cloudflare?.env,
+                  apiKeys,
+                  providerSettings,
+                  promptId,
+                  contextOptimization,
+                }),
+                15000, // Very short timeout
+                'Emergency summary timeout',
+              );
+            } catch {
+              summary = `Emergency summary: ${processedMessages.length} messages in conversation`;
+            }
+
+            // Use first 5 files as emergency context
+            const emergencyFiles = Object.fromEntries(Object.entries(files).slice(0, 5)) as FileMap;
+            filteredFiles = emergencyFiles;
+
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
               status: 'complete',
               order: progressCounter++,
-              message: 'Analysis Complete',
+              message: 'Emergency fallback context loaded',
             } satisfies ProgressAnnotation);
-          }
-
-          dataStream.writeMessageAnnotation({
-            type: 'chatSummary',
-            summary,
-            chatId: processedMessages.slice(-1)?.[0]?.id,
-          } as ContextAnnotation);
-
-          // Update context buffer
-          logger.debug('Updating Context Buffer');
-          dataStream.writeData({
-            type: 'progress',
-            label: 'context',
-            status: 'in-progress',
-            order: progressCounter++,
-            message: `Determining Files to Read (${filePaths.length} files, ~90s timeout)`,
-          } satisfies ProgressAnnotation);
-
-          // Select context files
-          console.log(`Messages count: ${processedMessages.length}`);
-
-          try {
-            filteredFiles = await withTimeout(
-              selectContext({
-                messages: [...processedMessages],
-                env: context.cloudflare?.env,
-                apiKeys,
-                files,
-                providerSettings,
-                promptId,
-                contextOptimization,
-                summary: summary || '',
-                onFinish(resp) {
-                  if (resp.usage) {
-                    logger.debug('selectContext token usage', JSON.stringify(resp.usage));
-                    cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                    cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                    cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-                  }
-                },
-              }),
-              90000, // 90 second timeout (longer for file selection)
-              'Context file selection timed out',
-            );
-          } catch (error) {
-            if (error instanceof TimeoutError) {
-              logger.warn('Context file selection timed out, using all files');
-              filteredFiles = files; // Fallback to using all files
-              dataStream.writeData({
-                type: 'progress',
-                label: 'context',
-                status: 'complete',
-                order: progressCounter++,
-                message: 'File Selection Timeout - Using All Files',
-              } satisfies ProgressAnnotation);
-            } else {
-              // Re-throw non-timeout errors
-              dataStream.writeData({
-                type: 'progress',
-                label: 'context',
-                status: 'complete',
-                order: progressCounter++,
-                message: 'File Selection Failed - Using All Files',
-              } satisfies ProgressAnnotation);
-              filteredFiles = files; // Fallback to using all files
-              // Don't re-throw, continue with fallback
-            }
           }
 
           if (filteredFiles) {
             logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
-          }
 
-          if (filteredFiles) {
             dataStream.writeMessageAnnotation({
               type: 'codeContext',
               files: Object.keys(filteredFiles).map((key) => {
@@ -309,9 +298,26 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
                 return path;
               }),
             } as ContextAnnotation);
+
+            // Write final success message
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'complete',
+              order: progressCounter++,
+              message: `Context loaded: ${Object.keys(filteredFiles).length} files`,
+            } satisfies ProgressAnnotation);
+          } else {
+            // No files in context
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'No context files selected',
+            } satisfies ProgressAnnotation);
           }
 
-          // Only write success message if we successfully completed file selection
           if (filteredFiles) {
             dataStream.writeData({
               type: 'progress',
@@ -425,21 +431,33 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           message: 'Generating Response',
         } satisfies ProgressAnnotation);
 
-        const result = await streamText({
-          messages: [...processedMessages],
-          env: context.cloudflare?.env,
-          options,
-          apiKeys,
-          files,
-          providerSettings,
-          promptId,
-          contextOptimization,
-          contextFiles: filteredFiles,
-          chatMode,
-          designScheme,
-          summary,
-          messageSliceId,
+        const streamingCircuitBreaker = CircuitBreakerManager.getInstance().getCircuitBreaker('llm-streaming', {
+          failureThreshold: 5,
+          recoveryTimeout: 30000,
+          monitoringPeriod: 60000,
+          successThreshold: 3,
+          maxConcurrentRequests: 10,
         });
+
+        const result = await streamingCircuitBreaker.execute(
+          () =>
+            streamText({
+              messages: [...processedMessages],
+              env: context.cloudflare?.env,
+              options,
+              apiKeys,
+              files,
+              providerSettings,
+              promptId,
+              contextOptimization,
+              contextFiles: filteredFiles,
+              chatMode,
+              designScheme,
+              summary,
+              messageSliceId,
+            }),
+          'llm-text-streaming',
+        );
 
         (async () => {
           for await (const part of result.fullStream) {

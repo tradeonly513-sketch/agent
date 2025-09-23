@@ -1,6 +1,6 @@
-import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { ProviderCategory } from './provider-categories';
 import { getCategoryConfig } from './provider-categories';
+import type { ModelInfo } from '~/lib/modules/llm/types';
 
 /**
  * Token optimization utilities for provider-specific prompts
@@ -29,6 +29,7 @@ export function getTokenOptimizationConfig(
   // Reserve tokens for response and context
   const reservedTokensForResponse = Math.min(completionTokens, 8192); // Cap at 8K for prompt optimization
   const reservedTokensForContext = Math.max(contextWindow * 0.1, 2000); // Reserve 10% or 2K minimum for context
+
   const availableForPrompt = Math.max(
     contextWindow - reservedTokensForResponse - reservedTokensForContext,
     1000, // Minimum 1K tokens for prompt
@@ -133,6 +134,7 @@ export function optimizeContentForTokens(
   }
 
   const target = OPTIMIZATION_TARGETS[optimizationLevel];
+
   let optimized = content;
 
   // Apply progressive optimizations based on level

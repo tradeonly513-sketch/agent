@@ -1,8 +1,8 @@
+import type { StreamingMessageParserOptions } from './message-parser';
 import type { ActionType, BoltAction, BoltActionData, FileAction } from '~/types/actions';
 import type { BoltArtifactData } from '~/types/artifact';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
-import type { StreamingMessageParserOptions } from './message-parser';
 
 const logger = createScopedLogger('OptimizedMessageParser');
 
@@ -276,6 +276,7 @@ export class OptimizedMessageParser {
     TAG_PATTERNS.quickAction.lastIndex = 0; // Reset regex state
 
     const buttons: string[] = [];
+
     let match;
 
     while ((match = TAG_PATTERNS.quickAction.exec(actionsBlockContent)) !== null) {
@@ -549,6 +550,7 @@ export class OptimizedMessageParser {
     const attributes = this.#extractAttributes(actionTag);
 
     const actionType = attributes.type as ActionType;
+
     const actionAttributes: any = {
       type: actionType,
       content: '',

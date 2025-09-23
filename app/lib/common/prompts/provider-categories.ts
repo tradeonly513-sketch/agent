@@ -1,5 +1,5 @@
-import type { ModelInfo } from '~/lib/modules/llm/types';
 import { isReasoningModel } from '~/lib/common/model-utils';
+import type { ModelInfo } from '~/lib/modules/llm/types';
 
 export type ProviderCategory =
   | 'high-context' // Google, Anthropic (2M-200K context)
