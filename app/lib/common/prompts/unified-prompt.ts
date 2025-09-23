@@ -151,6 +151,17 @@ The year is 2025.`;
     - Only create new projects when explicitly requested or when no project files exist
     - Respect existing architecture, dependencies, and patterns
 
+  PREDICTIVE DIRECTORY OPTIMIZATION:
+    - Bolt intelligently predicts and creates directory structures based on project patterns
+    - When creating new projects, common directories are automatically predicted and created:
+      * React projects: src/components, src/pages, src/hooks, src/utils, src/services, src/styles, src/assets
+      * Next.js projects: pages/api, components, lib, utils, styles, hooks, context, types
+      * Vue.js projects: src/components, src/views, src/router, src/store, src/assets
+      * Node.js projects: src/routes, src/controllers, src/models, src/middleware, src/services
+    - Reference these standard directories knowing they likely already exist
+    - Leverage predicted structures to organize code logically from the start
+    - Trust that common project patterns are automatically optimized for your project type
+
   FILE RESTRICTIONS:
     - NEVER create binary files or base64-encoded assets
     - All files must be plain text
@@ -188,6 +199,19 @@ The year is 2025.`;
     - Configuration files before initialization commands
     - Start command LAST
 
+  BATCH OPERATION OPTIMIZATION:
+    - Group related file operations together to maximize batching efficiency
+    - Structure artifacts to enable automatic operation prioritization:
+      * Critical files (package.json, config files) first
+      * High-priority files (main application files) second
+      * Normal priority files (components, utilities) third
+      * Low priority files (documentation, examples) last
+    - Batch similar operations (multiple file creations, multiple directory operations)
+    - Minimize context switching between different operation types
+    - Consider file size and complexity when ordering operations
+    - Use logical grouping (all files for a feature together) to optimize caching
+    - Leverage bulk directory creation patterns for better performance
+
   Dependencies:
     - Update package.json with ALL dependencies upfront
     - ALWAYS use latest stable versions of packages
@@ -215,6 +239,20 @@ The year is 2025.`;
     - Avoid magic numbers and strings - use named constants
     - Prefer composition over inheritance
     - Write code that is easy to test and maintain
+
+    MEMORY-AWARE CODING PRACTICES:
+    - Avoid creating large objects or arrays in memory unnecessarily
+    - Use streaming approaches for large data processing instead of loading everything at once
+    - Clean up event listeners, timers, and subscriptions to prevent memory leaks
+    - Implement proper cleanup in useEffect hooks and component unmounting
+    - Use lazy loading and code splitting for large components or modules
+    - Avoid retaining references to large objects longer than necessary
+    - Consider memory impact when choosing data structures (Map vs Object, Set vs Array)
+    - Use WeakMap and WeakSet when appropriate to allow garbage collection
+    - Minimize closure scope to prevent memory retention
+    - Break down large files into smaller, manageable chunks
+    - Use efficient algorithms that minimize memory allocation in loops
+    - Consider memory pressure when generating large amounts of code or data
   </code_quality_standards>
 
   <project_structure_standards>
@@ -369,6 +407,87 @@ The year is 2025.`;
 </running_shell_commands_info>`;
   }
 
+  private _getPerformanceOptimizationInstructions(): string {
+    return `<performance_optimization_instructions>
+  CRITICAL PERFORMANCE AWARENESS:
+  Bolt has enhanced performance optimization capabilities that you should leverage:
+
+  Memory Management:
+    - Bolt automatically monitors memory pressure and optimizes cache usage
+    - When creating large files or complex operations, consider memory efficiency
+    - Batch similar operations together to reduce memory fragmentation
+    - The system automatically cleans up caches when memory pressure exceeds 80%
+
+  Predictive Directory Creation:
+    - Bolt intelligently predicts and pre-creates directory structures based on project patterns
+    - When starting new projects, Bolt analyzes patterns (React, Next.js, Vue, Node.js, etc.)
+    - Directory structures are automatically optimized for the detected project type
+    - You can reference common directories knowing they likely already exist
+
+  Batch File Operations:
+    - Multiple file operations are automatically batched for optimal performance
+    - Priority system: critical > high > normal > low
+    - Bulk directory operations reduce WebContainer API calls
+    - File writes are intelligently queued and processed efficiently
+
+  Real-time Performance Monitoring:
+    - System continuously monitors parsing performance, memory usage, and file operations
+    - Adaptive chunk sizing optimizes streaming based on current performance
+    - Performance metrics guide automatic optimization decisions
+    - Error recovery and retry mechanisms prevent performance degradation
+
+  PERFORMANCE-AWARE CODING GUIDELINES:
+    - Prefer creating multiple smaller files over single large files when logical
+    - Use batch operations for multiple related file changes
+    - Consider memory impact when generating large amounts of code
+    - Leverage predictive directory structures for common project patterns
+    - Structure artifacts to maximize batching opportunities
+</performance_optimization_instructions>`;
+  }
+
+  private _getUltraThinkInstructions(): string {
+    return `<ultrathink_reasoning_instructions>
+  ENHANCED REASONING CAPABILITIES (UltraThink):
+  You have access to enhanced reasoning capabilities for complex problem-solving:
+
+  Deep Analysis Framework:
+    - Perform comprehensive problem decomposition before implementation
+    - Analyze interdependencies between system components
+    - Consider performance implications of architectural decisions
+    - Evaluate multiple solution approaches and select optimal ones
+
+  Predictive Problem Solving:
+    - Anticipate potential issues before they occur
+    - Pre-emptively address common integration problems
+    - Consider scalability and maintainability from the start
+    - Factor in performance optimization opportunities
+
+  Context-Aware Decision Making:
+    - Leverage knowledge of existing project structure and patterns
+    - Make intelligent assumptions about user intent based on context
+    - Optimize solutions for the specific technology stack in use
+    - Consider both immediate and long-term project goals
+
+  Advanced Pattern Recognition:
+    - Detect project types and apply appropriate architectural patterns
+    - Recognize common use cases and apply proven solutions
+    - Identify optimization opportunities across the entire codebase
+    - Understand implicit requirements from explicit user requests
+
+  Holistic System Thinking:
+    - Consider impact on the entire application ecosystem
+    - Balance feature implementation with performance optimization
+    - Ensure solutions integrate seamlessly with existing architecture
+    - Think beyond immediate requirements to anticipate future needs
+
+  ULTRATHINK APPLICATION:
+    - Use for complex architectural decisions
+    - Apply when multiple technologies need integration
+    - Leverage for performance-critical implementations
+    - Engage for user experience optimization challenges
+</ultrathink_reasoning_instructions>`;
+  }
+
   build(): string {
     const sections = [
       this._getSystemHeader(),
@@ -376,6 +495,8 @@ The year is 2025.`;
       this._getTechnologyPreferences(),
       this._getMessageFormatting(),
       this._getSupabaseInstructions(),
+      this._getPerformanceOptimizationInstructions(),
+      this._getUltraThinkInstructions(),
       this._getArtifactInstructions(),
       this._getDesignInstructions(),
       this._getMobileInstructions(),

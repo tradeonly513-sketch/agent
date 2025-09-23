@@ -51,8 +51,7 @@ body {
   }
 
   &::-webkit-scrollbar-thumb {
-    // Use CSS variables for colors
-    background-color: var(--modern-scrollbar-thumb-background);
+    background-color: var(--bolt-elements-textTertiary);
     border-radius: 9999px; // pill shape
     border: 2px solid transparent; // for padding-like effect
     background-clip: content-box;
@@ -60,14 +59,12 @@ body {
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    // Use CSS variable for hover color
-    background-color: var(--modern-scrollbar-thumb-backgroundHover);
+    background-color: var(--bolt-elements-textSecondary);
   }
 
   // Firefox support
   scrollbar-width: thin;
-  // Use CSS variables for Firefox colors
-  scrollbar-color: var(--modern-scrollbar-thumb-backgroundHover) transparent; // Use hover color for thumb for consistency
+  scrollbar-color: var(--bolt-elements-textSecondary) transparent;
 }
 
 .modern-scrollbar-invert {

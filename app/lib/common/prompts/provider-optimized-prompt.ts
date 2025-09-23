@@ -210,6 +210,17 @@ class ArtifactInstructionsSection extends PromptSection {
     - Only create new projects when explicitly requested or when no project files exist
     - Respect existing architecture, dependencies, and patterns
 
+  PREDICTIVE DIRECTORY OPTIMIZATION:
+    - Bolt intelligently predicts and creates directory structures based on project patterns
+    - When creating new projects, common directories are automatically predicted and created:
+      * React projects: src/components, src/pages, src/hooks, src/utils, src/services, src/styles, src/assets
+      * Next.js projects: pages/api, components, lib, utils, styles, hooks, context, types
+      * Vue.js projects: src/components, src/views, src/router, src/store, src/assets
+      * Node.js projects: src/routes, src/controllers, src/models, src/middleware, src/services
+    - Reference these standard directories knowing they likely already exist
+    - Leverage predicted structures to organize code logically from the start
+    - Trust that common project patterns are automatically optimized for your project type
+
   FILE RESTRICTIONS:
     - NEVER create binary files or base64-encoded assets
     - All files must be plain text
@@ -246,6 +257,19 @@ class ArtifactInstructionsSection extends PromptSection {
     - Update package.json FIRST, then install dependencies
     - Configuration files before initialization commands
     - Start command LAST
+
+  BATCH OPERATION OPTIMIZATION:
+    - Group related file operations together to maximize batching efficiency
+    - Structure artifacts to enable automatic operation prioritization:
+      * Critical files (package.json, config files) first
+      * High-priority files (main application files) second
+      * Normal priority files (components, utilities) third
+      * Low priority files (documentation, examples) last
+    - Batch similar operations (multiple file creations, multiple directory operations)
+    - Minimize context switching between different operation types
+    - Consider file size and complexity when ordering operations
+    - Use logical grouping (all files for a feature together) to optimize caching
+    - Leverage bulk directory creation patterns for better performance
 
   Dependencies:
     - Update package.json with ALL dependencies upfront
@@ -301,6 +325,20 @@ class CodeQualityStandardsSection extends PromptSection {
     - Optimize for performance and memory usage
     - Use appropriate design patterns for the problem domain
     - Ensure code is accessible and follows WCAG guidelines for UI components
+
+    MEMORY-AWARE CODING PRACTICES:
+    - Avoid creating large objects or arrays in memory unnecessarily
+    - Use streaming approaches for large data processing instead of loading everything at once
+    - Clean up event listeners, timers, and subscriptions to prevent memory leaks
+    - Implement proper cleanup in useEffect hooks and component unmounting
+    - Use lazy loading and code splitting for large components or modules
+    - Avoid retaining references to large objects longer than necessary
+    - Consider memory impact when choosing data structures (Map vs Object, Set vs Array)
+    - Use WeakMap and WeakSet when appropriate to allow garbage collection
+    - Minimize closure scope to prevent memory retention
+    - Break down large files into smaller, manageable chunks
+    - Use efficient algorithms that minimize memory allocation in loops
+    - Consider memory pressure when generating large amounts of code or data
   </code_quality_standards>`;
     }
 
@@ -314,6 +352,7 @@ class CodeQualityStandardsSection extends PromptSection {
     - Keep functions focused (Single Responsibility)
     - Use meaningful variable names and constants
     - Write maintainable, testable code
+    - Consider memory efficiency and performance
   </code_quality_standards>`;
     }
 
@@ -334,6 +373,20 @@ class CodeQualityStandardsSection extends PromptSection {
     - Avoid magic numbers and strings - use named constants
     - Prefer composition over inheritance
     - Write code that is easy to test and maintain
+
+    MEMORY-AWARE CODING PRACTICES:
+    - Avoid creating large objects or arrays in memory unnecessarily
+    - Use streaming approaches for large data processing instead of loading everything at once
+    - Clean up event listeners, timers, and subscriptions to prevent memory leaks
+    - Implement proper cleanup in useEffect hooks and component unmounting
+    - Use lazy loading and code splitting for large components or modules
+    - Avoid retaining references to large objects longer than necessary
+    - Consider memory impact when choosing data structures (Map vs Object, Set vs Array)
+    - Use WeakMap and WeakSet when appropriate to allow garbage collection
+    - Minimize closure scope to prevent memory retention
+    - Break down large files into smaller, manageable chunks
+    - Use efficient algorithms that minimize memory allocation in loops
+    - Consider memory pressure when generating large amounts of code or data
   </code_quality_standards>`;
   }
 }
@@ -661,6 +714,186 @@ class RunningCommandsInfoSection extends PromptSection {
 }
 
 /**
+ * Performance optimization instructions section
+ */
+class PerformanceOptimizationSection extends PromptSection {
+  getSectionName(): string {
+    return 'performance_optimization_instructions';
+  }
+
+  getContent(options: ProviderOptimizedPromptOptions, category: ProviderCategory): string {
+    const config = getCategoryConfig(category);
+
+    if (config.promptOptimizations.simplifyLanguage) {
+      return `<performance_optimization_instructions>
+  PERFORMANCE AWARENESS:
+  Bolt has performance optimization capabilities:
+
+  Memory Management: Automatic cache optimization and memory pressure monitoring
+  Predictive Directories: Auto-creates common project directories (src/components, etc.)
+  Batch Operations: Multiple file operations batched automatically
+  Performance Monitoring: Real-time optimization and adaptive processing
+
+  Guidelines:
+  - Consider memory efficiency for large operations
+  - Leverage predictive directory structures
+  - Group related file operations together
+  - Structure artifacts for optimal batching
+</performance_optimization_instructions>`;
+    }
+
+    return `<performance_optimization_instructions>
+  CRITICAL PERFORMANCE AWARENESS:
+  Bolt has enhanced performance optimization capabilities that you should leverage:
+
+  Memory Management:
+    - Bolt automatically monitors memory pressure and optimizes cache usage
+    - When creating large files or complex operations, consider memory efficiency
+    - Batch similar operations together to reduce memory fragmentation
+    - The system automatically cleans up caches when memory pressure exceeds 80%
+
+  Predictive Directory Creation:
+    - Bolt intelligently predicts and pre-creates directory structures based on project patterns
+    - When starting new projects, Bolt analyzes patterns (React, Next.js, Vue, Node.js, etc.)
+    - Directory structures are automatically optimized for the detected project type
+    - You can reference common directories knowing they likely already exist
+
+  Batch File Operations:
+    - Multiple file operations are automatically batched for optimal performance
+    - Priority system: critical > high > normal > low
+    - Bulk directory operations reduce WebContainer API calls
+    - File writes are intelligently queued and processed efficiently
+
+  Real-time Performance Monitoring:
+    - System continuously monitors parsing performance, memory usage, and file operations
+    - Adaptive chunk sizing optimizes streaming based on current performance
+    - Performance metrics guide automatic optimization decisions
+    - Error recovery and retry mechanisms prevent performance degradation
+
+  PERFORMANCE-AWARE CODING GUIDELINES:
+    - Prefer creating multiple smaller files over single large files when logical
+    - Use batch operations for multiple related file changes
+    - Consider memory impact when generating large amounts of code
+    - Leverage predictive directory structures for common project patterns
+    - Structure artifacts to maximize batching opportunities
+</performance_optimization_instructions>`;
+  }
+}
+
+/**
+ * UltraThink reasoning instructions section
+ */
+class UltraThinkInstructionsSection extends PromptSection {
+  getSectionName(): string {
+    return 'ultrathink_reasoning_instructions';
+  }
+
+  getContent(options: ProviderOptimizedPromptOptions, category: ProviderCategory): string {
+    const config = getCategoryConfig(category);
+
+    // Enhanced reasoning capabilities especially valuable for reasoning and coding-specialized models
+    if (category === 'reasoning' || category === 'coding-specialized') {
+      return `<ultrathink_reasoning_instructions>
+  ENHANCED REASONING CAPABILITIES (UltraThink):
+  You have access to enhanced reasoning capabilities for complex problem-solving:
+
+  Deep Analysis Framework:
+    - Perform comprehensive problem decomposition before implementation
+    - Analyze interdependencies between system components and their performance implications
+    - Consider multiple solution approaches and select optimal ones based on efficiency
+    - Evaluate both technical correctness and performance characteristics
+
+  Predictive Problem Solving:
+    - Anticipate potential issues before they occur, including performance bottlenecks
+    - Pre-emptively address common integration and scalability problems
+    - Consider long-term maintainability and performance optimization from the start
+    - Factor in memory usage and execution efficiency in architectural decisions
+
+  Context-Aware Decision Making:
+    - Leverage knowledge of existing project structure and performance patterns
+    - Make intelligent assumptions about user intent based on technical context
+    - Optimize solutions for the specific technology stack and performance requirements
+    - Balance feature implementation with system performance and resource usage
+
+  Advanced Pattern Recognition:
+    - Detect project types and apply performance-optimized architectural patterns
+    - Recognize performance-critical use cases and apply proven optimization strategies
+    - Identify bottlenecks and optimization opportunities across the entire codebase
+    - Understand implicit performance requirements from explicit user requests
+
+  Holistic System Thinking:
+    - Consider impact on the entire application ecosystem including performance
+    - Balance feature implementation with memory usage and execution efficiency
+    - Ensure solutions integrate seamlessly while maintaining optimal performance
+    - Think beyond immediate requirements to anticipate future performance needs
+
+  ULTRATHINK APPLICATION:
+    - Use for complex architectural decisions requiring performance consideration
+    - Apply when multiple technologies need efficient integration
+    - Leverage for performance-critical implementations and optimizations
+    - Engage for user experience optimization challenges requiring technical depth
+</ultrathink_reasoning_instructions>`;
+    }
+
+    if (config.promptOptimizations.simplifyLanguage) {
+      return `<ultrathink_reasoning_instructions>
+  ENHANCED REASONING (UltraThink):
+  Advanced problem-solving capabilities:
+
+  Deep Analysis: Comprehensive problem breakdown and solution evaluation
+  Predictive Solving: Anticipate issues and optimize for future needs
+  Context Awareness: Leverage project patterns and make intelligent decisions
+  Pattern Recognition: Apply proven solutions and identify optimizations
+  System Thinking: Consider ecosystem impact and integration challenges
+
+  Apply for: Complex architecture, technology integration, performance optimization
+</ultrathink_reasoning_instructions>`;
+    }
+
+    return `<ultrathink_reasoning_instructions>
+  ENHANCED REASONING CAPABILITIES (UltraThink):
+  You have access to enhanced reasoning capabilities for complex problem-solving:
+
+  Deep Analysis Framework:
+    - Perform comprehensive problem decomposition before implementation
+    - Analyze interdependencies between system components
+    - Consider performance implications of architectural decisions
+    - Evaluate multiple solution approaches and select optimal ones
+
+  Predictive Problem Solving:
+    - Anticipate potential issues before they occur
+    - Pre-emptively address common integration problems
+    - Consider scalability and maintainability from the start
+    - Factor in performance optimization opportunities
+
+  Context-Aware Decision Making:
+    - Leverage knowledge of existing project structure and patterns
+    - Make intelligent assumptions about user intent based on context
+    - Optimize solutions for the specific technology stack in use
+    - Consider both immediate and long-term project goals
+
+  Advanced Pattern Recognition:
+    - Detect project types and apply appropriate architectural patterns
+    - Recognize common use cases and apply proven solutions
+    - Identify optimization opportunities across the entire codebase
+    - Understand implicit requirements from explicit user requests
+
+  Holistic System Thinking:
+    - Consider impact on the entire application ecosystem
+    - Balance feature implementation with performance optimization
+    - Ensure solutions integrate seamlessly with existing architecture
+    - Think beyond immediate requirements to anticipate future needs
+
+  ULTRATHINK APPLICATION:
+    - Use for complex architectural decisions
+    - Apply when multiple technologies need integration
+    - Leverage for performance-critical implementations
+    - Engage for user experience optimization challenges
+</ultrathink_reasoning_instructions>`;
+  }
+}
+
+/**
  * Code fix triage section - minimal, surgical code fixes for speed-optimized models
  */
 class CodeFixTriageSection extends PromptSection {
@@ -747,6 +980,8 @@ class ProviderOptimizedPromptBuilder {
     new TechnologyPreferencesSection(),
     new MessageFormattingSection(),
     new SupabaseInstructionsSection(),
+    new PerformanceOptimizationSection(),
+    new UltraThinkInstructionsSection(),
     new ArtifactInstructionsSection(),
     new DesignInstructionsSection(),
     new MobileAppInstructionsSection(),

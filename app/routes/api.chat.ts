@@ -14,6 +14,7 @@ import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
 import type { DesignScheme } from '~/types/design-scheme';
 import { MCPService } from '~/lib/services/mcpService';
 import { StreamRecoveryManager } from '~/lib/.server/llm/stream-recovery';
+import { withTimeout, TimeoutError } from '~/utils/promises';
 
 export async function action(args: ActionFunctionArgs) {
   return chatAction(args);
@@ -40,11 +41,26 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
+  let progressCounter: number = 1;
+  let dataStreamForRecovery: any = null;
+
   const streamRecovery = new StreamRecoveryManager({
     timeout: 45000,
     maxRetries: 2,
     onTimeout: () => {
       logger.warn('Stream timeout - attempting recovery');
+    },
+    onProgress: (message: string) => {
+      // Write progress update to the stream so user sees recovery attempts
+      if (dataStreamForRecovery) {
+        dataStreamForRecovery.writeData({
+          type: 'progress',
+          label: 'stream-recovery',
+          status: 'in-progress',
+          order: progressCounter++,
+          message,
+        });
+      }
     },
   });
 
@@ -81,7 +97,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     totalTokens: 0,
   };
   const encoder: TextEncoder = new TextEncoder();
-  let progressCounter: number = 1;
 
   try {
     const mcpService = MCPService.getInstance();
@@ -92,6 +107,8 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
     const dataStream = createDataStream({
       async execute(dataStream) {
+        // Make dataStream available for recovery progress updates
+        dataStreamForRecovery = dataStream;
         streamRecovery.startMonitoring();
 
         const filePaths = getFilePaths(files || {});
@@ -99,7 +116,40 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         let summary: string | undefined = undefined;
         let messageSliceId = 0;
 
-        const processedMessages = await mcpService.processToolInvocations(messages, dataStream);
+        let processedMessages: typeof messages;
+
+        try {
+          processedMessages = await withTimeout(
+            mcpService.processToolInvocations(messages, dataStream),
+            30000, // 30 second timeout for MCP processing
+            'MCP tool processing timed out',
+          );
+        } catch (error) {
+          if (error instanceof TimeoutError) {
+            logger.warn('MCP tool processing timed out, proceeding with original messages');
+            processedMessages = messages; // Fallback to original messages
+
+            // Add timeout notification to user
+            dataStream.writeData({
+              type: 'progress',
+              label: 'mcp',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'Tool Processing Timeout - Proceeding Without Tools',
+            } satisfies ProgressAnnotation);
+          } else {
+            // Re-throw non-timeout errors
+            dataStream.writeData({
+              type: 'progress',
+              label: 'mcp',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'Tool Processing Failed - Proceeding Without Tools',
+            } satisfies ProgressAnnotation);
+            processedMessages = messages; // Fallback to original messages
+            // Don't re-throw, continue with fallback
+          }
+        }
 
         if (processedMessages.length > 3) {
           messageSliceId = processedMessages.length - 3;
@@ -112,35 +162,68 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             label: 'summary',
             status: 'in-progress',
             order: progressCounter++,
-            message: 'Analysing Request',
+            message: `Analysing Request (${processedMessages.length} messages, ~60s timeout)`,
           } satisfies ProgressAnnotation);
 
           // Create a summary of the chat
           console.log(`Messages count: ${processedMessages.length}`);
 
-          summary = await createSummary({
-            messages: [...processedMessages],
-            env: context.cloudflare?.env,
-            apiKeys,
-            providerSettings,
-            promptId,
-            contextOptimization,
-            onFinish(resp) {
-              if (resp.usage) {
-                logger.debug('createSummary token usage', JSON.stringify(resp.usage));
-                cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-              }
-            },
-          });
-          dataStream.writeData({
-            type: 'progress',
-            label: 'summary',
-            status: 'complete',
-            order: progressCounter++,
-            message: 'Analysis Complete',
-          } satisfies ProgressAnnotation);
+          try {
+            summary = await withTimeout(
+              createSummary({
+                messages: [...processedMessages],
+                env: context.cloudflare?.env,
+                apiKeys,
+                providerSettings,
+                promptId,
+                contextOptimization,
+                onFinish(resp) {
+                  if (resp.usage) {
+                    logger.debug('createSummary token usage', JSON.stringify(resp.usage));
+                    cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                    cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                    cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+                  }
+                },
+              }),
+              60000, // 60 second timeout
+              'Chat summary generation timed out',
+            );
+          } catch (error) {
+            if (error instanceof TimeoutError) {
+              logger.warn('Chat summary generation timed out, proceeding without summary');
+              summary = undefined;
+              dataStream.writeData({
+                type: 'progress',
+                label: 'summary',
+                status: 'complete',
+                order: progressCounter++,
+                message: 'Analysis Timeout - Proceeding Without Summary',
+              } satisfies ProgressAnnotation);
+            } else {
+              // Re-throw non-timeout errors
+              dataStream.writeData({
+                type: 'progress',
+                label: 'summary',
+                status: 'complete',
+                order: progressCounter++,
+                message: 'Analysis Failed - Proceeding Without Summary',
+              } satisfies ProgressAnnotation);
+              throw error;
+            }
+          }
+
+          if (!summary) {
+            // Only write success message if we actually got a summary
+          } else {
+            dataStream.writeData({
+              type: 'progress',
+              label: 'summary',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'Analysis Complete',
+            } satisfies ProgressAnnotation);
+          }
 
           dataStream.writeMessageAnnotation({
             type: 'chatSummary',
@@ -155,54 +238,89 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             label: 'context',
             status: 'in-progress',
             order: progressCounter++,
-            message: 'Determining Files to Read',
+            message: `Determining Files to Read (${filePaths.length} files, ~90s timeout)`,
           } satisfies ProgressAnnotation);
 
           // Select context files
           console.log(`Messages count: ${processedMessages.length}`);
-          filteredFiles = await selectContext({
-            messages: [...processedMessages],
-            env: context.cloudflare?.env,
-            apiKeys,
-            files,
-            providerSettings,
-            promptId,
-            contextOptimization,
-            summary,
-            onFinish(resp) {
-              if (resp.usage) {
-                logger.debug('selectContext token usage', JSON.stringify(resp.usage));
-                cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-              }
-            },
-          });
+
+          try {
+            filteredFiles = await withTimeout(
+              selectContext({
+                messages: [...processedMessages],
+                env: context.cloudflare?.env,
+                apiKeys,
+                files,
+                providerSettings,
+                promptId,
+                contextOptimization,
+                summary: summary || '',
+                onFinish(resp) {
+                  if (resp.usage) {
+                    logger.debug('selectContext token usage', JSON.stringify(resp.usage));
+                    cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                    cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                    cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+                  }
+                },
+              }),
+              90000, // 90 second timeout (longer for file selection)
+              'Context file selection timed out',
+            );
+          } catch (error) {
+            if (error instanceof TimeoutError) {
+              logger.warn('Context file selection timed out, using all files');
+              filteredFiles = files; // Fallback to using all files
+              dataStream.writeData({
+                type: 'progress',
+                label: 'context',
+                status: 'complete',
+                order: progressCounter++,
+                message: 'File Selection Timeout - Using All Files',
+              } satisfies ProgressAnnotation);
+            } else {
+              // Re-throw non-timeout errors
+              dataStream.writeData({
+                type: 'progress',
+                label: 'context',
+                status: 'complete',
+                order: progressCounter++,
+                message: 'File Selection Failed - Using All Files',
+              } satisfies ProgressAnnotation);
+              filteredFiles = files; // Fallback to using all files
+              // Don't re-throw, continue with fallback
+            }
+          }
 
           if (filteredFiles) {
             logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
           }
 
-          dataStream.writeMessageAnnotation({
-            type: 'codeContext',
-            files: Object.keys(filteredFiles).map((key) => {
-              let path = key;
+          if (filteredFiles) {
+            dataStream.writeMessageAnnotation({
+              type: 'codeContext',
+              files: Object.keys(filteredFiles).map((key) => {
+                let path = key;
 
-              if (path.startsWith(WORK_DIR)) {
-                path = path.replace(WORK_DIR, '');
-              }
+                if (path.startsWith(WORK_DIR)) {
+                  path = path.replace(WORK_DIR, '');
+                }
 
-              return path;
-            }),
-          } as ContextAnnotation);
+                return path;
+              }),
+            } as ContextAnnotation);
+          }
 
-          dataStream.writeData({
-            type: 'progress',
-            label: 'context',
-            status: 'complete',
-            order: progressCounter++,
-            message: 'Code Files Selected',
-          } satisfies ProgressAnnotation);
+          // Only write success message if we successfully completed file selection
+          if (filteredFiles) {
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'complete',
+              order: progressCounter++,
+              message: `Code Files Selected (${Object.keys(filteredFiles).length} files)`,
+            } satisfies ProgressAnnotation);
+          }
 
           // logger.debug('Code Files Selected');
         }
@@ -383,37 +501,55 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     }).pipeThrough(
       new TransformStream({
         transform: (chunk, controller) => {
-          if (!lastChunk) {
-            lastChunk = ' ';
-          }
-
-          if (typeof chunk === 'string') {
-            if (chunk.startsWith('g') && !lastChunk.startsWith('g')) {
-              controller.enqueue(encoder.encode(`0: "<div class=\\"__boltThought__\\">"\n`));
+          try {
+            if (!lastChunk) {
+              lastChunk = ' ';
             }
 
-            if (lastChunk.startsWith('g') && !chunk.startsWith('g')) {
+            const isCurrentChunkThought = typeof chunk === 'string' && chunk.startsWith('g');
+            const wasLastChunkThought = lastChunk.startsWith('g');
+
+            // Only process thought wrapping if chunk types changed to reduce operations
+            if (isCurrentChunkThought && !wasLastChunkThought) {
+              controller.enqueue(encoder.encode(`0: "<div class=\\"__boltThought__\\">"\n`));
+            } else if (!isCurrentChunkThought && wasLastChunkThought) {
               controller.enqueue(encoder.encode(`0: "</div>\\n"\n`));
             }
-          }
 
-          lastChunk = chunk;
+            lastChunk = chunk;
 
-          let transformedChunk = chunk;
+            // Optimize string processing for thought chunks
+            let processedChunk: string;
 
-          if (typeof chunk === 'string' && chunk.startsWith('g')) {
-            let content = chunk.split(':').slice(1).join(':');
+            if (isCurrentChunkThought) {
+              // More efficient processing for 'g' chunks
+              const colonIndex = chunk.indexOf(':');
 
-            if (content.endsWith('\n')) {
-              content = content.slice(0, content.length - 1);
+              if (colonIndex !== -1) {
+                let content = chunk.slice(colonIndex + 1);
+
+                // Remove trailing newline more efficiently
+                if (content.endsWith('\n')) {
+                  content = content.slice(0, -1);
+                }
+
+                processedChunk = `0:${content}\n`;
+              } else {
+                processedChunk = chunk;
+              }
+            } else {
+              processedChunk = typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
             }
 
-            transformedChunk = `0:${content}\n`;
-          }
+            // Single encode operation per chunk
+            controller.enqueue(encoder.encode(processedChunk));
+          } catch (error) {
+            // Prevent transform stream from hanging on processing errors
+            logger.error('Transform stream error:', error);
 
-          // Convert the string stream to a byte stream
-          const str = typeof transformedChunk === 'string' ? transformedChunk : JSON.stringify(transformedChunk);
-          controller.enqueue(encoder.encode(str));
+            const fallbackChunk = typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
+            controller.enqueue(encoder.encode(fallbackChunk));
+          }
         },
       }),
     );

@@ -6,6 +6,8 @@ import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
+import { BatchFileOperationsManager } from './batch-file-operations';
+import { PredictiveDirectoryCreator } from './predictive-directory-creator';
 
 import { fileChangeOptimizer } from './file-change-optimizer';
 import type { FileMap } from '~/lib/stores/files';
@@ -70,9 +72,15 @@ export class ActionRunner {
   #webcontainer: Promise<WebContainer>;
   #currentExecutionPromise: Promise<void> = Promise.resolve();
   #shellTerminal: () => BoltShell;
+  #batchFileOps: BatchFileOperationsManager;
+  #predictiveDirectoryCreator: PredictiveDirectoryCreator;
   runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
   onAlert?: (alert: ActionAlert) => void;
+
+  // Global cancellation support
+  #globalAbortController = new AbortController();
+  #activeActions = new Set<string>();
 
   // File optimization tracking
   #fileOptimizationEnabled = true;
@@ -104,9 +112,37 @@ export class ActionRunner {
   ) {
     this.#webcontainer = webcontainerPromise;
     this.#shellTerminal = getShellTerminal;
+    this.#batchFileOps = new BatchFileOperationsManager(webcontainerPromise);
+    this.#predictiveDirectoryCreator = new PredictiveDirectoryCreator(webcontainerPromise);
     this.onAlert = onAlert;
     this.onSupabaseAlert = onSupabaseAlert;
     this.onDeployAlert = onDeployAlert;
+  }
+
+  // Global cancellation methods
+  cancelAllActions() {
+    logger.info('Cancelling all actions in ActionRunner');
+
+    // Abort the global controller
+    this.#globalAbortController.abort();
+
+    // Mark all active actions as aborted
+    for (const actionId of this.#activeActions) {
+      this.#updateAction(actionId, { status: 'aborted' });
+    }
+
+    // Clear active actions
+    this.#activeActions.clear();
+
+    // Create new abort controller for future actions
+    this.#globalAbortController = new AbortController();
+
+    // Reset execution queue
+    this.#currentExecutionPromise = Promise.resolve();
+  }
+
+  isGloballyCancelled(): boolean {
+    return this.#globalAbortController.signal.aborted;
   }
 
   addAction(data: ActionCallbackData) {
@@ -142,6 +178,14 @@ export class ActionRunner {
     const { actionId } = data;
     const action = this.actions.get()[actionId];
 
+    // Check for global cancellation
+    if (this.isGloballyCancelled()) {
+      logger.debug(`Skipping action ${actionId} due to global cancellation`);
+      this.#updateAction(actionId, { status: 'aborted' });
+
+      return;
+    }
+
     if (!action) {
       unreachable(`Action ${actionId} not found`);
     }
@@ -154,14 +198,29 @@ export class ActionRunner {
       return; // No return value here
     }
 
+    // Track active action
+    this.#activeActions.add(actionId);
+
     this.#updateAction(actionId, { ...action, ...data.action, executed: !isStreaming });
 
     this.#currentExecutionPromise = this.#currentExecutionPromise
       .then(() => {
+        // Check cancellation again before execution
+        if (this.isGloballyCancelled()) {
+          this.#activeActions.delete(actionId);
+          this.#updateAction(actionId, { status: 'aborted' });
+
+          return Promise.resolve();
+        }
+
         return this.#executeAction(actionId, isStreaming);
       })
       .catch((error) => {
         logger.error('Action execution promise failed:', error);
+        this.#activeActions.delete(actionId);
+      })
+      .finally(() => {
+        this.#activeActions.delete(actionId);
       });
 
     await this.#currentExecutionPromise;
@@ -171,6 +230,12 @@ export class ActionRunner {
 
   async #executeAction(actionId: string, isStreaming: boolean = false) {
     const action = this.actions.get()[actionId];
+
+    // Final cancellation check before execution
+    if (this.isGloballyCancelled() || action.abortSignal.aborted) {
+      this.#updateAction(actionId, { status: 'aborted' });
+      return;
+    }
 
     this.#updateAction(actionId, { status: 'running' });
 
@@ -345,50 +410,122 @@ export class ActionRunner {
     const webcontainer = await this.#webcontainer;
     const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
 
+    // Trigger predictive directory analysis
+    try {
+      await this.#predictiveDirectoryCreator.analyzeAndPredict(relativePath);
+    } catch (error) {
+      logger.warn('Predictive directory analysis failed:', error);
+    }
+
     // In streaming mode, write through immediately to avoid UI stalls and timer starvation
     if (this.#isStreamingMode) {
-      // Track pending change for end-of-stream optimization/statistics
-      try {
-        if (!this.#existingFiles.has(relativePath)) {
-          const existing = await webcontainer.fs.readFile(relativePath, 'utf-8');
-          this.#existingFiles.set(relativePath, existing);
-        }
-      } catch {
-        // file doesn't exist -> creation
-      }
-      this.#pendingFileChanges.set(relativePath, action.content);
+      // Track pending change for end-of-stream optimization/statistics only if optimization is enabled
+      if (this.#fileOptimizationEnabled) {
+        this.#pendingFileChanges.set(relativePath, action.content);
 
-      await this.#writeFileWithLogging(webcontainer, relativePath, action.content);
+        // Defer file reading to avoid blocking streaming performance
+        this.#deferredExistingFileReads.add(relativePath);
+      }
+
+      await this.#writeFileWithLogging(webcontainer, relativePath, action.content, true);
 
       return;
     }
 
-    if (this.#fileOptimizationEnabled) {
-      // Track proposed change
-      this.#pendingFileChanges.set(relativePath, action.content);
-
-      // Capture existing content if any
-      try {
-        const existing = await webcontainer.fs.readFile(relativePath, 'utf-8');
-        this.#existingFiles.set(relativePath, existing);
-      } catch {
-        // file doesn't exist -> creation
-      }
-
-      logger.debug(`📝 Queued file change: ${relativePath} (len=${action.content.length})`);
-
-      // Optimize immediately for certain cases; otherwise debounce
-      if (this.#shouldOptimizeNow(relativePath, action.content)) {
-        await this.#performFileOptimization();
-      } else {
-        this.#scheduleOptimizationDebounce(120);
-      }
+    // Fast-path decision: Should we bypass optimization entirely?
+    if (!this.#fileOptimizationEnabled || this.#shouldBypassOptimization(relativePath, action.content)) {
+      logger.debug(`📝 Fast-path write: ${relativePath} (bypassing optimization)`);
+      await this.#writeFileWithLogging(webcontainer, relativePath, action.content, false);
 
       return;
     }
 
-    // Fallback: optimization disabled => write directly
-    await this.#writeFileWithLogging(webcontainer, relativePath, action.content);
+    // Full optimization path
+    await this.#runFileActionWithOptimization(webcontainer, relativePath, action.content);
+  }
+
+  // Add a set to track deferred file reads
+  #deferredExistingFileReads = new Set<string>();
+
+  /**
+   * Determine if optimization should be bypassed entirely for performance
+   */
+  #shouldBypassOptimization(relativePath: string, content: string): boolean {
+    // Bypass for very small files (< 500 chars) - not worth optimizing
+    if (content.length < 500) {
+      return true;
+    }
+
+    // Bypass for binary files - optimization doesn't help
+    if (this.#isBinaryFile(relativePath)) {
+      return true;
+    }
+
+    // Bypass for files that are clearly complete and standalone
+    if (this.#isStandaloneFile(relativePath, content)) {
+      return true;
+    }
+
+    // Bypass if we have very few pending changes (< 3 files)
+    if (this.#pendingFileChanges.size < 3) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if a file is likely binary based on extension
+   */
+  #isBinaryFile(relativePath: string): boolean {
+    return /\.(png|jpg|jpeg|gif|webp|svg|ico|woff2?|pdf|zip|tar|gz|mp4|mp3|wav)$/i.test(relativePath);
+  }
+
+  /**
+   * Check if a file appears to be standalone and complete
+   */
+  #isStandaloneFile(relativePath: string, _content: string): boolean {
+    // JSON files are usually standalone
+    if (relativePath.endsWith('.json')) {
+      return true;
+    }
+
+    // README and documentation files
+    if (/readme|license|changelog/i.test(relativePath)) {
+      return true;
+    }
+
+    // Config files that are typically standalone
+    if (/(\.config\.|\.rc$|\.env)/i.test(relativePath)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Run file action with full optimization pipeline
+   */
+  async #runFileActionWithOptimization(webcontainer: WebContainer, relativePath: string, content: string) {
+    // Track proposed change
+    this.#pendingFileChanges.set(relativePath, content);
+
+    // Capture existing content if any (only when needed for optimization)
+    try {
+      const existing = await webcontainer.fs.readFile(relativePath, 'utf-8');
+      this.#existingFiles.set(relativePath, existing);
+    } catch {
+      // file doesn't exist -> creation
+    }
+
+    logger.debug(`📝 Queued file change for optimization: ${relativePath} (len=${content.length})`);
+
+    // Optimize immediately for certain cases; otherwise debounce
+    if (this.#shouldOptimizeNow(relativePath, content)) {
+      await this.#performFileOptimization();
+    } else {
+      this.#scheduleOptimizationDebounce(60); // Reduced from 120ms to 60ms
+    }
   }
 
   #updateAction(id: string, newState: ActionStateUpdate) {
@@ -421,13 +558,71 @@ export class ActionRunner {
       this.#optDebounceTimer = undefined;
     }
 
+    // Handle deferred file reads from streaming mode
+    await this.#processDeferredFileReads();
+
     if (this.#pendingFileChanges.size > 0) {
       logger.info(`Flushing ${this.#pendingFileChanges.size} pending file changes...`);
       await this.#performFileOptimization();
     }
+
+    // Also flush any pending batch file operations
+    await this.#batchFileOps.flush();
   }
 
-  #scheduleOptimizationDebounce(delayMs: number = 120) {
+  /**
+   * Process deferred file reads that were skipped during streaming for performance
+   */
+  async #processDeferredFileReads() {
+    if (this.#deferredExistingFileReads.size === 0) {
+      return;
+    }
+
+    const webcontainer = await this.#webcontainer;
+    const readPromises: Promise<void>[] = [];
+
+    for (const relativePath of this.#deferredExistingFileReads) {
+      if (!this.#existingFiles.has(relativePath)) {
+        readPromises.push(
+          webcontainer.fs
+            .readFile(relativePath, 'utf-8')
+            .then((content) => {
+              this.#existingFiles.set(relativePath, content);
+            })
+            .catch(() => {
+              // File doesn't exist, which is fine
+            }),
+        );
+      }
+    }
+
+    await Promise.all(readPromises);
+    this.#deferredExistingFileReads.clear();
+
+    logger.debug(`Processed ${readPromises.length} deferred file reads`);
+  }
+
+  /** Get batch file operations statistics */
+  getBatchFileStats() {
+    return this.#batchFileOps.getStats();
+  }
+
+  /** Get predictive directory creation statistics */
+  getPredictiveDirectoryStats() {
+    return this.#predictiveDirectoryCreator.getStats();
+  }
+
+  /** Perform comprehensive directory structure analysis */
+  async performComprehensiveDirectoryAnalysis() {
+    try {
+      await this.#predictiveDirectoryCreator.performComprehensiveAnalysis();
+      logger.info('Comprehensive directory analysis completed');
+    } catch (error) {
+      logger.error('Comprehensive directory analysis failed:', error);
+    }
+  }
+
+  #scheduleOptimizationDebounce(delayMs: number = 60) {
     if (this.#optDebounceTimer) {
       clearTimeout(this.#optDebounceTimer);
     }
@@ -463,23 +658,18 @@ export class ActionRunner {
     } as any);
   }
 
-  async #writeFileWithLogging(webcontainer: WebContainer, relativePath: string, content: string) {
-    const folder = nodePath.dirname(relativePath).replace(/\/+$/g, '');
-
-    if (folder !== '.') {
-      try {
-        await webcontainer.fs.mkdir(folder, { recursive: true });
-        logger.debug('Created folder', folder);
-      } catch (error) {
-        logger.error('Failed to create folder', folder, error);
-      }
-    }
-
-    try {
-      await webcontainer.fs.writeFile(relativePath, content);
-      logger.debug(`File written ${relativePath}`);
-    } catch (error) {
-      logger.error('Failed to write file', relativePath, error);
+  async #writeFileWithLogging(
+    webcontainer: WebContainer,
+    relativePath: string,
+    content: string,
+    immediate: boolean = false,
+  ) {
+    if (immediate) {
+      // For critical operations that need immediate execution
+      await this.#batchFileOps.writeFileImmediate(relativePath, content);
+    } else {
+      // Use batching for better performance
+      await this.#batchFileOps.scheduleFileWrite(relativePath, content);
     }
   }
 
@@ -506,8 +696,13 @@ export class ActionRunner {
       return true;
     }
 
-    // Configuration files that might affect builds
+    // Configuration files that might affect builds should be written immediately
     if (/(tsconfig\.json|webpack\.config\.|vite\.config\.|rollup\.config\.)/.test(path)) {
+      return true;
+    }
+
+    // Entry point files (index.html, main.js, etc.) should be optimized immediately
+    if (/(^|\/)index\.(html?|[jt]sx?)$|main\.[jt]sx?$/.test(path)) {
       return true;
     }
 
@@ -532,10 +727,10 @@ export class ActionRunner {
     const { optimizedFiles, analysis, skippedFiles, modifiedFiles, createdFiles, optimizationRate } =
       await fileChangeOptimizer.optimizeFileChanges(proposed, existing, this.#userRequest);
 
-    // Write the optimized set
+    // Write the optimized set using batching for maximum efficiency
     for (const [p, dirent] of Object.entries(optimizedFiles)) {
       const content = (dirent as any).content ?? '';
-      await this.#writeFileWithLogging(webcontainer, p, content);
+      await this.#writeFileWithLogging(webcontainer, p, content, false);
     }
 
     // Stats

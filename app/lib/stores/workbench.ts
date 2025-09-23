@@ -9,6 +9,7 @@ import { EditorStore } from './editor';
 import { FilesStore, type FileMap } from './files';
 import { PreviewsStore } from './previews';
 import { TerminalStore } from './terminal';
+import { ParallelExecutionManager } from './parallel-execution-manager';
 import JSZip from 'jszip';
 import fileSaver from 'file-saver';
 import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
@@ -16,7 +17,8 @@ import { path } from '~/utils/path';
 import { extractRelativePath } from '~/utils/diff';
 import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
-import { createSampler } from '~/utils/sampler';
+import { ContentAwareSampler } from '~/utils/content-aware-sampler';
+import { PerformanceMonitor } from '~/lib/runtime/performance-monitor';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
 
 const { saveAs } = fileSaver;
@@ -40,6 +42,8 @@ export class WorkbenchStore {
   #filesStore = new FilesStore(webcontainer);
   #editorStore = new EditorStore(this.#filesStore);
   #terminalStore = new TerminalStore(webcontainer);
+  #executionManager = new ParallelExecutionManager();
+  #performanceMonitor = new PerformanceMonitor();
 
   #reloadedMessages = new Set<string>();
 
@@ -56,7 +60,6 @@ export class WorkbenchStore {
     import.meta.hot?.data.deployAlert ?? atom<DeployAlert | undefined>(undefined);
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
-  #globalExecutionQueue = Promise.resolve();
   constructor() {
     if (import.meta.hot) {
       import.meta.hot.data.artifacts = this.artifacts;
@@ -79,8 +82,81 @@ export class WorkbenchStore {
     }
   }
 
-  addToExecutionQueue(callback: () => Promise<void>) {
-    this.#globalExecutionQueue = this.#globalExecutionQueue.then(() => callback());
+  /**
+   * Get execution manager statistics for performance monitoring
+   */
+  getExecutionStats() {
+    return this.#executionManager.getStats();
+  }
+
+  /**
+   * Get execution manager debug information
+   */
+  getExecutionDebugInfo() {
+    return this.#executionManager.getDebugInfo();
+  }
+
+  /**
+   * Get performance monitor instance
+   */
+  getPerformanceMonitor() {
+    return this.#performanceMonitor;
+  }
+
+  /**
+   * Get real-time performance summary
+   */
+  getPerformanceSummary() {
+    return this.#performanceMonitor.getPerformanceSummary();
+  }
+
+  /**
+   * Get current performance metrics
+   */
+  getCurrentPerformanceMetrics() {
+    return this.#performanceMonitor.getCurrentMetrics();
+  }
+
+  /**
+   * Get performance alerts
+   */
+  getPerformanceAlerts(limit?: number) {
+    return this.#performanceMonitor.getAlerts(limit);
+  }
+
+  /**
+   * Start performance monitoring
+   */
+  startPerformanceMonitoring(intervalMs: number = 5000) {
+    this.#performanceMonitor.startMonitoring(intervalMs);
+  }
+
+  /**
+   * Stop performance monitoring
+   */
+  stopPerformanceMonitoring() {
+    this.#performanceMonitor.stopMonitoring();
+  }
+
+  /**
+   * Get content-aware sampler statistics
+   */
+  getSamplerStats() {
+    return this.#contentAwareSampler.getStats();
+  }
+
+  /**
+   * Adjust content-aware sampler base interval for performance tuning
+   */
+  adjustSamplerInterval(intervalMs: number) {
+    this.#contentAwareSampler.adjustBaseInterval(intervalMs);
+  }
+
+  /**
+   * Flush any pending sampler operations immediately
+   */
+  flushSampler() {
+    this.#contentAwareSampler.flush();
   }
 
   get previews() {
@@ -476,36 +552,41 @@ export class WorkbenchStore {
       this.artifactIdList.push(id);
     }
 
+    const runner = new ActionRunner(
+      webcontainer,
+      () => this.boltTerminal,
+      (alert) => {
+        if (this.#reloadedMessages.has(messageId)) {
+          return;
+        }
+
+        this.actionAlert.set(alert);
+      },
+      (alert) => {
+        if (this.#reloadedMessages.has(messageId)) {
+          return;
+        }
+
+        this.supabaseAlert.set(alert);
+      },
+      (alert) => {
+        if (this.#reloadedMessages.has(messageId)) {
+          return;
+        }
+
+        this.deployAlert.set(alert);
+      },
+    );
+
+    // Register the action runner with performance monitor
+    this.#performanceMonitor.registerActionRunner(runner);
+
     this.artifacts.setKey(id, {
       id,
       title,
       closed: false,
       type,
-      runner: new ActionRunner(
-        webcontainer,
-        () => this.boltTerminal,
-        (alert) => {
-          if (this.#reloadedMessages.has(messageId)) {
-            return;
-          }
-
-          this.actionAlert.set(alert);
-        },
-        (alert) => {
-          if (this.#reloadedMessages.has(messageId)) {
-            return;
-          }
-
-          this.supabaseAlert.set(alert);
-        },
-        (alert) => {
-          if (this.#reloadedMessages.has(messageId)) {
-            return;
-          }
-
-          this.deployAlert.set(alert);
-        },
-      ),
+      runner,
     });
   }
 
@@ -523,9 +604,8 @@ export class WorkbenchStore {
     this.artifacts.setKey(artifactId, { ...artifact, ...state });
   }
   addAction(data: ActionCallbackData) {
-    // this._addAction(data);
-
-    this.addToExecutionQueue(() => this._addAction(data));
+    // Use parallel execution manager for better performance
+    this.#executionManager.executeOperation(data, () => this._addAction(data));
   }
   async _addAction(data: ActionCallbackData) {
     const { artifactId } = data;
@@ -543,7 +623,8 @@ export class WorkbenchStore {
     if (isStreaming) {
       this.actionStreamSampler(data, isStreaming);
     } else {
-      this.addToExecutionQueue(() => this._runAction(data, isStreaming));
+      // Use parallel execution manager for non-streaming actions
+      this.#executionManager.executeOperation(data, () => this._runAction(data, isStreaming));
     }
   }
   async _runAction(data: ActionCallbackData, isStreaming: boolean = false) {
@@ -600,9 +681,16 @@ export class WorkbenchStore {
     }
   }
 
-  actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming: boolean = false) => {
-    return await this._runAction(data, isStreaming);
-  }, 100); // TODO: remove this magic number to have it configurable
+  // Content-aware sampler that adapts based on file type, priority, and system performance
+  #contentAwareSampler = new ContentAwareSampler(
+    async (data: ActionCallbackData, isStreaming: boolean = false) => {
+      // For streaming actions, use parallel execution manager with smart sampling
+      await this.#executionManager.executeOperation(data, () => this._runAction(data, isStreaming));
+    },
+    30, // Base interval reduced to 30ms for better responsiveness
+  );
+
+  actionStreamSampler = this.#contentAwareSampler.sample;
 
   #getArtifact(id: string) {
     const artifacts = this.artifacts.get();

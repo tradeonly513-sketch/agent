@@ -121,8 +121,11 @@ export async function selectContext(props: {
   }
 
   // select files from the list of code file from the project that might be useful for the current request from the user
-  const resp = await generateText({
-    system: `
+  let resp;
+
+  try {
+    resp = await generateText({
+      system: `
         You are a software engineer. You are working on a project. You have access to the following files:
 
         AVAILABLE FILES PATHS
@@ -154,7 +157,7 @@ export async function selectContext(props: {
         * You should not include any file that is already in the context buffer.
         * If no changes are needed, you can leave the response empty updateContextBuffer tag.
         `,
-    prompt: `
+      prompt: `
         ${summaryText}
 
         Users Question: ${extractTextContent(lastUserMessage)}
@@ -170,19 +173,30 @@ export async function selectContext(props: {
         * if the buffer is full, you need to exclude files that is not needed and include files that is relevent.
 
         `,
-    model: provider.getModelInstance({
-      model: currentModel,
-      serverEnv,
-      apiKeys,
-      providerSettings,
-    }),
-  });
+      model: provider.getModelInstance({
+        model: currentModel,
+        serverEnv,
+        apiKeys,
+        providerSettings,
+      }),
+    });
+  } catch (error) {
+    logger.error('Failed to generate context selection response:', error);
+
+    // Fallback: return current context if LLM call fails
+    return contextFiles;
+  }
 
   const response = resp.text;
+  logger.debug('Context selection response:', response);
+
   const updateContextBuffer = response.match(/<updateContextBuffer>([\s\S]*?)<\/updateContextBuffer>/);
 
   if (!updateContextBuffer) {
-    throw new Error('Invalid response. Please follow the response format');
+    logger.warn('Invalid response format, falling back to current context:', response);
+
+    // Fallback: return current context files instead of throwing
+    return contextFiles;
   }
 
   const includeFiles =
@@ -194,43 +208,74 @@ export async function selectContext(props: {
       .match(/<excludeFile path="(.*?)"/gm)
       ?.map((x) => x.replace('<excludeFile path="', '').replace('"', '')) || [];
 
+  logger.debug('Include files:', includeFiles);
+  logger.debug('Exclude files:', excludeFiles);
+
   const filteredFiles: FileMap = {};
   excludeFiles.forEach((path) => {
     delete contextFiles[path];
   });
   includeFiles.forEach((path) => {
     let fullPath = path;
+    let relativePath = path;
 
+    // Normalize paths
     if (!path.startsWith('/home/project/')) {
       fullPath = `/home/project/${path}`;
+    } else {
+      relativePath = path.replace('/home/project/', '');
     }
 
+    // Try to find the file with different path formats
     if (!filePaths.includes(fullPath)) {
-      logger.error(`File ${path} is not in the list of files above.`);
-      return;
+      // Try to find by relative path
+      const alternativeFullPath = filePaths.find((fp) => fp.endsWith(relativePath) || fp === relativePath);
 
-      // throw new Error(`File ${path} is not in the list of files above.`);
+      if (alternativeFullPath) {
+        fullPath = alternativeFullPath;
+        relativePath = alternativeFullPath.replace('/home/project/', '');
+      } else {
+        logger.warn(
+          `File ${path} not found. Tried ${fullPath} and relative matches. Available files:`,
+          filePaths.slice(0, 5),
+        );
+        return;
+      }
     }
 
-    if (currrentFiles.includes(path)) {
+    if (currrentFiles.includes(relativePath)) {
+      logger.debug(`File ${relativePath} already in current context, skipping`);
       return;
     }
 
-    filteredFiles[path] = files[fullPath];
+    if (files[fullPath]) {
+      filteredFiles[relativePath] = files[fullPath];
+      logger.debug(`Added file to context: ${relativePath}`);
+    } else {
+      logger.warn(`File content not found for ${fullPath}`);
+    }
   });
 
   if (onFinish) {
     onFinish(resp);
   }
 
-  const totalFiles = Object.keys(filteredFiles).length;
-  logger.info(`Total files: ${totalFiles}`);
+  // Merge current context with new filtered files
+  const finalContextFiles = { ...contextFiles, ...filteredFiles };
+  const totalFiles = Object.keys(finalContextFiles).length;
 
-  if (totalFiles == 0) {
-    throw new Error(`Bolt failed to select files`);
+  logger.info(
+    `Context selection completed: ${Object.keys(filteredFiles).length} new files, ${Object.keys(contextFiles).length} existing files, ${totalFiles} total files`,
+  );
+
+  if (totalFiles === 0) {
+    logger.warn("No files selected for context. This might be a follow-up question that doesn't require file context.");
+
+    // For follow-up questions that don't need file context, return empty context instead of throwing
+    return {};
   }
 
-  return filteredFiles;
+  return finalContextFiles;
 
   // generateText({
 }

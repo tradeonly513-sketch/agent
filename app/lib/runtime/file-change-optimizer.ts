@@ -29,10 +29,18 @@ export class FileChangeOptimizer {
   // Performance optimization settings
   private _maxFileSizeForDiff = 1024 * 1024; // 1MB - skip diff for larger files
   private _maxLinesForDiff = 10000; // Skip diff for files with more lines
-  private _similarityCache = new Map<string, { sim: number; changePct: number; timestamp: number }>();
+  private _similarityCache = new Map<string, { sim: number; changePct: number; timestamp: number; size: number }>();
   private _cacheExpiry = 5 * 60 * 1000; // 5 minutes cache expiry
   private _lastCleanupTime = 0;
   private _cleanupInterval = 60 * 1000; // Clean cache every minute
+
+  // Memory management
+  private _maxCacheSize = 1000; // Maximum cache entries
+  private _maxCacheMemory = 50 * 1024 * 1024; // 50MB max cache memory
+  private _currentCacheMemory = 0;
+  private _memoryPressureThreshold = 0.8; // 80% of max memory triggers cleanup
+  private _lastMemoryCheck = 0;
+  private _memoryCheckInterval = 30 * 1000; // Check memory every 30 seconds
 
   async optimizeFileChanges(
     proposedChanges: FileMap,
@@ -117,15 +125,21 @@ export class FileChangeOptimizer {
             }
           }
 
-          // Cache the result
+          // Calculate memory footprint for this cache entry
+          const entrySize = this._estimateCacheEntrySize(cacheKey, sim, changePct);
+
+          // Cache the result with memory tracking
           this._similarityCache.set(cacheKey, {
             sim,
             changePct,
             timestamp: Date.now(),
+            size: entrySize,
           });
 
-          // Clean up old cache entries periodically
-          if (this._similarityCache.size > 1000) {
+          this._currentCacheMemory += entrySize;
+
+          // Clean up cache if memory pressure or size limits exceeded
+          if (this._shouldCleanupCache()) {
             this._cleanupCache();
           }
         }
@@ -451,19 +465,53 @@ export class FileChangeOptimizer {
 
     this._lastCleanupTime = now;
 
-    const expiredKeys: string[] = [];
+    const initialSize = this._similarityCache.size;
+    const initialMemory = this._currentCacheMemory;
 
-    for (const [key, entry] of this._similarityCache.entries()) {
-      if (now - entry.timestamp > this._cacheExpiry) {
-        expiredKeys.push(key);
+    // Collect entries for cleanup based on age and memory pressure
+    const entriesToRemove: string[] = [];
+    const entries = Array.from(this._similarityCache.entries());
+
+    // Sort by timestamp (oldest first) for memory pressure cleanup
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    for (const [key, entry] of entries) {
+      /* eslint-disable @blitz/lines-around-comment */
+      const shouldRemove =
+        // Remove expired entries
+        now - entry.timestamp > this._cacheExpiry ||
+        // Remove oldest entries if over memory limit
+        this._currentCacheMemory > this._maxCacheMemory * this._memoryPressureThreshold ||
+        // Remove oldest entries if over size limit
+        this._similarityCache.size > this._maxCacheSize;
+      /* eslint-enable @blitz/lines-around-comment */
+
+      if (shouldRemove) {
+        entriesToRemove.push(key);
+        this._currentCacheMemory -= entry.size || 0;
+
+        // Stop if we're back under memory pressure
+        if (
+          this._currentCacheMemory <= this._maxCacheMemory * 0.6 &&
+          this._similarityCache.size - entriesToRemove.length <= this._maxCacheSize * 0.8
+        ) {
+          break;
+        }
       }
     }
 
-    expiredKeys.forEach((key) => this._similarityCache.delete(key));
+    // Remove collected entries
+    entriesToRemove.forEach((key) => this._similarityCache.delete(key));
 
-    if (expiredKeys.length > 0) {
-      logger.debug(`Cleaned up ${expiredKeys.length} expired cache entries`);
+    if (entriesToRemove.length > 0) {
+      const memoryFreed = initialMemory - this._currentCacheMemory;
+      logger.debug(
+        `Cache cleanup: removed ${entriesToRemove.length}/${initialSize} entries, freed ${(memoryFreed / 1024 / 1024).toFixed(2)}MB`,
+      );
     }
+
+    // Update memory check timestamp
+    this._lastMemoryCheck = now;
   }
 
   private _getCacheKey(existing: string, proposed: string): string {
@@ -473,6 +521,59 @@ export class FileChangeOptimizer {
     const contentSample = (existing.slice(0, 100) + proposed.slice(0, 100)).replace(/\s/g, '').slice(0, 50);
 
     return `${existingHash}-${proposedHash}-${contentSample}`;
+  }
+
+  /**
+   * Estimate memory footprint of a cache entry
+   */
+  private _estimateCacheEntrySize(key: string, _sim: number, _changePct: number): number {
+    // Estimate size in bytes: key string + numbers + object overhead
+    const keySize = key.length * 2; // UTF-16 encoding
+    const valueSize = 8 + 8 + 8 + 8; // sim + changePct + timestamp + size numbers
+    const objectOverhead = 64; // Estimated object overhead
+
+    return keySize + valueSize + objectOverhead;
+  }
+
+  /**
+   * Check if cache cleanup should be triggered
+   */
+  private _shouldCleanupCache(): boolean {
+    const now = Date.now();
+
+    // Always cleanup if over hard limits
+    if (this._similarityCache.size >= this._maxCacheSize || this._currentCacheMemory >= this._maxCacheMemory) {
+      return true;
+    }
+
+    // Check for memory pressure periodically
+    if (now - this._lastMemoryCheck > this._memoryCheckInterval) {
+      return this._currentCacheMemory > this._maxCacheMemory * this._memoryPressureThreshold;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get memory usage statistics
+   */
+  getMemoryStats() {
+    return {
+      cacheEntries: this._similarityCache.size,
+      currentMemoryMB: (this._currentCacheMemory / 1024 / 1024).toFixed(2),
+      maxMemoryMB: (this._maxCacheMemory / 1024 / 1024).toFixed(2),
+      memoryUtilization: ((this._currentCacheMemory / this._maxCacheMemory) * 100).toFixed(1) + '%',
+      lastCleanup: new Date(this._lastCleanupTime).toISOString(),
+      nextMemoryCheck: new Date(this._lastMemoryCheck + this._memoryCheckInterval).toISOString(),
+    };
+  }
+
+  /**
+   * Force immediate memory cleanup
+   */
+  forceMemoryCleanup(): void {
+    this._lastCleanupTime = 0; // Force immediate cleanup
+    this._cleanupCache();
   }
 }
 
