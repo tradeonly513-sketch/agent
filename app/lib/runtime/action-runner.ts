@@ -9,6 +9,7 @@ import type { BoltShell } from '~/utils/shell';
 
 import { fileChangeOptimizer } from './file-change-optimizer';
 import type { FileMap } from '~/lib/stores/files';
+import { supabaseConnection } from '~/lib/stores/supabase';
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -688,17 +689,158 @@ export class ActionRunner {
         return { success: true };
 
       case 'query': {
-        // Always show the alert and let the SupabaseAlert component handle connection state
+        // Get Supabase connection details
+        const connection = supabaseConnection.get();
+
+        // Check Supabase setup state and provide appropriate guidance
+        if (!connection.token) {
+          // No Supabase account connected
+          this.onSupabaseAlert?.({
+            type: 'info',
+            title: 'Supabase Setup Required',
+            description: 'Connect your Supabase account to get started',
+            content:
+              'To execute database queries, you need to connect your Supabase account. This will allow Bolt to create projects, set up databases, and run queries automatically.',
+            source: 'supabase',
+            operation: 'query',
+          });
+
+          return { pending: true };
+        }
+
+        if (!connection.stats?.projects || connection.stats.projects.length === 0) {
+          // Has account but no projects
+          this.onSupabaseAlert?.({
+            type: 'info',
+            title: 'Create Supabase Project',
+            description: 'No projects found - create your first project',
+            content:
+              'You have a Supabase account connected, but no projects exist yet. Create a new project to set up your database and start building with Supabase features.',
+            source: 'supabase',
+            operation: 'query',
+          });
+
+          return { pending: true };
+        }
+
+        if (!connection.selectedProjectId) {
+          // Has projects but none selected
+          const projectCount = connection.stats.projects.length;
+          this.onSupabaseAlert?.({
+            type: 'info',
+            title: 'Select Supabase Project',
+            description: `${projectCount} project${projectCount > 1 ? 's' : ''} available - select one to continue`,
+            content: `You have ${projectCount} Supabase project${projectCount > 1 ? 's' : ''} available. Select a project to set up the database connection and execute queries.`,
+            source: 'supabase',
+            operation: 'query',
+          });
+
+          return { pending: true };
+        }
+
+        if (!connection.credentials?.anonKey) {
+          // Project selected but no credentials set up
+          this.onSupabaseAlert?.({
+            type: 'info',
+            title: 'Setup Database Connection',
+            description: 'Configure API keys for your selected project',
+            content:
+              "Your Supabase project is selected, but the database connection isn't configured yet. Set up the API keys to enable query execution.",
+            source: 'supabase',
+            operation: 'query',
+          });
+
+          return { pending: true };
+        }
+
+        // Show executing alert
         this.onSupabaseAlert?.({
           type: 'info',
-          title: 'Supabase Query',
-          description: 'Execute database query',
+          title: 'Executing Supabase Query',
+          description: 'Running database query...',
           content,
           source: 'supabase',
+          stage: 'executing',
+          queryStatus: 'running',
+          operation: 'query',
         });
 
-        // The actual execution will be triggered from SupabaseChatAlert
-        return { pending: true };
+        // Execute query directly
+        try {
+          const response = await fetch('/api/supabase/query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${connection.token}`,
+            },
+            body: JSON.stringify({
+              projectId: connection.selectedProjectId,
+              query: content,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = (await response.json()) as any;
+            const errorMessage = errorData.error?.message || errorData.message || response.statusText;
+            throw new Error(errorMessage);
+          }
+
+          const result = (await response.json()) as any[];
+          logger.debug('Supabase query executed successfully:', result);
+
+          // Show success alert
+          this.onSupabaseAlert?.({
+            type: 'success',
+            title: 'Supabase Query Completed',
+            description: 'Database query executed successfully',
+            content: result.length > 0 ? `Returned ${result.length} row(s)` : 'Query executed successfully',
+            source: 'supabase',
+            stage: 'complete',
+            queryStatus: 'complete',
+            operation: 'query',
+          });
+
+          return { success: true, result };
+        } catch (error: any) {
+          logger.error('Failed to execute Supabase query:', error);
+
+          // Determine error type and provide helpful suggestions
+          let errorDescription = 'Failed to execute database query';
+          let suggestions = '';
+
+          const errorMessage = error instanceof Error ? error.message : String(error);
+
+          if (errorMessage.includes('permission denied') || errorMessage.includes('insufficient_privilege')) {
+            errorDescription = 'Permission denied - check your database permissions';
+            suggestions = 'Ensure your Supabase service role has the necessary permissions for this operation.';
+          } else if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
+            errorDescription = 'Table or relation does not exist';
+            suggestions = 'Check that the table name is correct and exists in your database.';
+          } else if (errorMessage.includes('syntax error')) {
+            errorDescription = 'SQL syntax error';
+            suggestions = 'Review your SQL query for syntax errors.';
+          } else if (errorMessage.includes('connection') || errorMessage.includes('timeout')) {
+            errorDescription = 'Database connection issue';
+            suggestions = 'Check your internet connection and Supabase service status.';
+          } else if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
+            errorDescription = 'Authentication failed';
+            suggestions = 'Verify your Supabase credentials and try reconnecting.';
+          }
+
+          // Show error alert with helpful information
+          this.onSupabaseAlert?.({
+            type: 'error',
+            title: 'Supabase Query Failed',
+            description: errorDescription,
+            content: `${errorMessage}${suggestions ? `\n\n**Suggestions:** ${suggestions}` : ''}`,
+            source: 'supabase',
+            stage: 'complete',
+            queryStatus: 'failed',
+            operation: 'query',
+          });
+
+          throw error;
+        }
       }
 
       default:

@@ -43,11 +43,14 @@ export interface ActionAlert {
 }
 
 export interface SupabaseAlert {
-  type: string;
+  type: 'success' | 'error' | 'info';
   title: string;
   description: string;
-  content: string;
+  content?: string;
   source?: 'supabase';
+  stage?: 'connecting' | 'executing' | 'complete';
+  queryStatus?: 'pending' | 'running' | 'complete' | 'failed';
+  operation?: 'migration' | 'query';
 }
 
 export interface DeployAlert {

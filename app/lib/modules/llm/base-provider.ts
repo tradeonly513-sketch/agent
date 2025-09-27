@@ -3,6 +3,7 @@ import type { ProviderInfo, ProviderConfig, ModelInfo } from './types';
 import type { IProviderSetting } from '~/types/model';
 import { createOpenAI } from '@ai-sdk/openai';
 import { LLMManager } from './manager';
+import { filterCodeModelInfos } from './utils/code-model-filter';
 
 export abstract class BaseProvider implements ProviderInfo {
   abstract name: string;
@@ -98,7 +99,7 @@ export abstract class BaseProvider implements ProviderInfo {
     // console.log('caching dynamic models',this.name,cacheId);
     this.cachedDynamicModels = {
       cacheId,
-      models,
+      models: filterCodeModelInfos(this.name, models),
     };
   }
 

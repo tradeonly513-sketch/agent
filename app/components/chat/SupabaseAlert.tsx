@@ -12,28 +12,78 @@ interface Props {
 }
 
 export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
-  const { content } = alert;
+  const { content, type, title, description, stage, queryStatus, operation } = alert;
   const connection = useStore(supabaseConnection);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   // Determine connection state
-  const isConnected = !!(connection.token && connection.selectedProjectId);
+  const isConnected = !!(connection.token && connection.selectedProjectId && connection.credentials?.anonKey);
+  const hasToken = !!connection.token;
+  const hasProjects = !!(connection.stats?.projects && connection.stats.projects.length > 0);
+  const hasSelectedProject = !!connection.selectedProjectId;
+  const hasCredentials = !!connection.credentials?.anonKey;
 
-  // Set title and description based on connection state
-  const title = isConnected ? 'Supabase Query' : 'Supabase Connection Required';
-  const description = isConnected ? 'Execute database query' : 'Supabase connection required';
-  const message = isConnected
-    ? 'Please review the proposed changes and apply them to your database.'
-    : 'Please connect to Supabase to continue with this operation.';
+  // Use alert data if available, otherwise fall back to connection-based logic
+  const displayTitle = title || (isConnected ? 'Supabase Query' : 'Supabase Setup Required');
+  const displayDescription = description || getDescriptionForState();
+  const message = getMessageForState();
+
+  function getDescriptionForState() {
+    if (isConnected) {
+      return 'Execute database query';
+    }
+
+    if (!hasToken) {
+      return 'Connect your Supabase account';
+    }
+
+    if (!hasProjects) {
+      return 'Create your first Supabase project';
+    }
+
+    if (!hasSelectedProject) {
+      return 'Select a Supabase project';
+    }
+
+    if (!hasCredentials) {
+      return 'Configure API keys';
+    }
+
+    return 'Supabase connection required';
+  }
+
+  function getMessageForState() {
+    if (isConnected) {
+      return 'Please review the proposed changes and apply them to your database.';
+    }
+
+    if (!hasToken) {
+      return 'To execute database queries, you need to connect your Supabase account. This will allow Bolt to create projects, set up databases, and run queries automatically.';
+    }
+
+    if (!hasProjects) {
+      return 'You have a Supabase account connected, but no projects exist yet. Create a new project to set up your database and start building with Supabase features.';
+    }
+
+    if (!hasSelectedProject) {
+      const projectCount = connection.stats?.projects?.length || 0;
+      return `You have ${projectCount} Supabase project${projectCount > 1 ? 's' : ''} available. Select a project to set up the database connection and execute queries.`;
+    }
+
+    if (!hasCredentials) {
+      return "Your Supabase project is selected, but the database connection isn't configured yet. Set up the API keys to enable query execution.";
+    }
+
+    return 'Please connect to Supabase to continue with this operation.';
+  }
 
   const handleConnectClick = () => {
     // Dispatch an event to open the Supabase connection dialog
     document.dispatchEvent(new CustomEvent('open-supabase-connection'));
   };
 
-  // Determine if we should show the Connect button or Apply Changes button
-  const showConnectButton = !isConnected;
+  // State-based button logic is handled inline below
 
   const executeSupabaseAction = async (sql: string) => {
     if (!connection.token || !connection.selectedProjectId) {
@@ -104,14 +154,34 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
         {/* Header */}
         <div className="p-4 pb-2">
           <div className="flex items-center gap-2">
-            <img height="10" width="18" crossOrigin="anonymous" src="https://cdn.simpleicons.org/supabase" />
-            <h3 className="text-sm font-medium text-[#3DCB8F]">{title}</h3>
+            <motion.div
+              className="flex-shrink-0"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <img height="16" width="16" crossOrigin="anonymous" src="https://cdn.simpleicons.org/supabase" />
+            </motion.div>
+            <motion.h3
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className={`text-sm font-medium ${
+                type === 'success'
+                  ? 'text-bolt-elements-icon-success'
+                  : type === 'error'
+                    ? 'text-bolt-elements-button-danger-text'
+                    : 'text-[#3DCB8F]'
+              }`}
+            >
+              {displayTitle}
+            </motion.h3>
           </div>
         </div>
 
         {/* SQL Content */}
         <div className="px-4">
-          {!isConnected ? (
+          {!isConnected && operation === 'query' ? (
             <div className="p-3 rounded-md bg-bolt-elements-background-depth-3">
               <span className="text-sm text-bolt-elements-textPrimary">
                 You must first connect to Supabase and select a project.
@@ -124,9 +194,7 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
                 onClick={() => setIsCollapsed(!isCollapsed)}
               >
                 <div className="i-ph:database text-bolt-elements-textPrimary mr-2"></div>
-                <span className="text-sm text-bolt-elements-textPrimary flex-grow">
-                  {description || 'Create table and setup auth'}
-                </span>
+                <span className="text-sm text-bolt-elements-textPrimary flex-grow">{displayDescription}</span>
                 <div
                   className={`i-ph:caret-up text-bolt-elements-textPrimary transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
                 ></div>
@@ -141,12 +209,66 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
           )}
         </div>
 
+        {/* Query Progress Visualization */}
+        {stage && queryStatus && operation === 'query' && (
+          <div className="px-4">
+            <div className="mt-4 mb-2">
+              <div className="flex items-center space-x-2 mb-3">
+                {/* Execute Step */}
+                <div className="flex items-center">
+                  <div
+                    className={classNames(
+                      'w-6 h-6 rounded-full flex items-center justify-center',
+                      queryStatus === 'running'
+                        ? 'bg-bolt-elements-loader-progress'
+                        : queryStatus === 'complete'
+                          ? 'bg-bolt-elements-icon-success'
+                          : queryStatus === 'failed'
+                            ? 'bg-bolt-elements-button-danger-background'
+                            : 'bg-bolt-elements-textTertiary',
+                    )}
+                  >
+                    {queryStatus === 'running' ? (
+                      <div className="i-svg-spinners:90-ring-with-bg text-white text-xs"></div>
+                    ) : queryStatus === 'complete' ? (
+                      <div className="i-ph:check text-white text-xs"></div>
+                    ) : queryStatus === 'failed' ? (
+                      <div className="i-ph:x text-white text-xs"></div>
+                    ) : (
+                      <span className="text-white text-xs">1</span>
+                    )}
+                  </div>
+                  <span className="ml-2">Execute Query</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Message and Actions */}
         <div className="p-4">
-          <p className="text-sm text-bolt-elements-textSecondary mb-4">{message}</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className={`text-sm text-bolt-elements-textSecondary mb-4`}
+          >
+            <p>{message}</p>
 
-          <div className="flex gap-2">
-            {showConnectButton ? (
+            {content && type === 'error' && (
+              <div className="text-xs text-bolt-elements-textSecondary p-2 bg-bolt-elements-background-depth-3 rounded mt-4 mb-4">
+                {content}
+              </div>
+            )}
+          </motion.div>
+
+          <motion.div
+            className="flex gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            {!hasToken ? (
               <button
                 onClick={handleConnectClick}
                 className={classNames(
@@ -160,10 +282,11 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
               >
                 Connect to Supabase
               </button>
-            ) : (
+            ) : !hasProjects ? (
               <button
-                onClick={() => executeSupabaseAction(content)}
-                disabled={isExecuting}
+                onClick={() => {
+                  document.dispatchEvent(new CustomEvent('open-supabase-connection'));
+                }}
                 className={classNames(
                   `px-3 py-2 rounded-md text-sm font-medium`,
                   'bg-[#098F5F]',
@@ -171,12 +294,76 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
                   'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500',
                   'text-white',
                   'flex items-center gap-1.5',
-                  isExecuting ? 'opacity-70 cursor-not-allowed' : '',
+                )}
+              >
+                Create Project
+              </button>
+            ) : !hasSelectedProject ? (
+              <button
+                onClick={() => {
+                  document.dispatchEvent(new CustomEvent('open-supabase-connection'));
+                }}
+                className={classNames(
+                  `px-3 py-2 rounded-md text-sm font-medium`,
+                  'bg-[#098F5F]',
+                  'hover:bg-[#0aa06c]',
+                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500',
+                  'text-white',
+                  'flex items-center gap-1.5',
+                )}
+              >
+                Select Project
+              </button>
+            ) : !hasCredentials ? (
+              <button
+                onClick={() => {
+                  document.dispatchEvent(new CustomEvent('open-supabase-connection'));
+                }}
+                className={classNames(
+                  `px-3 py-2 rounded-md text-sm font-medium`,
+                  'bg-[#098F5F]',
+                  'hover:bg-[#0aa06c]',
+                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500',
+                  'text-white',
+                  'flex items-center gap-1.5',
+                )}
+              >
+                Setup Connection
+              </button>
+            ) : operation === 'query' && type === 'error' ? (
+              <button
+                onClick={() =>
+                  postMessage(`*Fix this Supabase query error*\n\`\`\`\n${content || description}\n\`\`\`\n`)
+                }
+                className={classNames(
+                  `px-3 py-2 rounded-md text-sm font-medium`,
+                  'bg-bolt-elements-button-primary-background',
+                  'hover:bg-bolt-elements-button-primary-backgroundHover',
+                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bolt-elements-button-danger-background',
+                  'text-bolt-elements-button-primary-text',
+                  'flex items-center gap-1.5',
+                )}
+              >
+                <div className="i-ph:chat-circle-duotone"></div>
+                Ask Bolt
+              </button>
+            ) : operation === 'migration' || (operation === 'query' && !stage) ? (
+              <button
+                onClick={() => content && executeSupabaseAction(content)}
+                disabled={isExecuting || !content}
+                className={classNames(
+                  `px-3 py-2 rounded-md text-sm font-medium`,
+                  'bg-[#098F5F]',
+                  'hover:bg-[#0aa06c]',
+                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500',
+                  'text-white',
+                  'flex items-center gap-1.5',
+                  isExecuting || !content ? 'opacity-70 cursor-not-allowed' : '',
                 )}
               >
                 {isExecuting ? 'Applying...' : 'Apply Changes'}
               </button>
-            )}
+            ) : null}
             <button
               onClick={clearAlert}
               disabled={isExecuting}
@@ -191,7 +378,7 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
             >
               Dismiss
             </button>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
     </AnimatePresence>

@@ -12,13 +12,24 @@ dotenv.config({ path: '.env' });
 dotenv.config();
 
 export default defineConfig((config) => {
+  const isDevCommand = config.command === 'serve';
+
   return {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
     build: {
       target: 'esnext',
+      sourcemap: isDevCommand,
     },
+    esbuild: {
+      sourcemap: isDevCommand,
+    },
+    server: isDevCommand
+      ? {
+          sourcemapIgnoreList: () => false,
+        }
+      : undefined,
     plugins: [
       nodePolyfills({
         include: ['buffer', 'process', 'util', 'stream'],
