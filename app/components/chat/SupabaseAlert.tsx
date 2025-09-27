@@ -142,6 +142,9 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
     return statements;
   };
 
+  // Determine if we should show the query progress
+  const showProgress = stage && queryStatus && operation === 'query';
+
   return (
     <AnimatePresence>
       <motion.div
@@ -149,7 +152,7 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
-        className="max-w-chat rounded-lg border-l-2 border-l-[#098F5F] border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2"
+        className={`max-w-chat rounded-lg border-l-2 border-l-[#098F5F] border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2`}
       >
         {/* Header */}
         <div className="p-4 pb-2">
@@ -210,7 +213,7 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
         </div>
 
         {/* Query Progress Visualization */}
-        {stage && queryStatus && operation === 'query' && (
+        {showProgress && (
           <div className="px-4">
             <div className="mt-4 mb-2">
               <div className="flex items-center space-x-2 mb-3">
