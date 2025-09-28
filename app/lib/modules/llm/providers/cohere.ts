@@ -13,63 +13,82 @@ export default class CohereProvider extends BaseProvider {
   };
 
   staticModels: ModelInfo[] = [
+    // Command R series - 2025 models with updated context
+    {
+      name: 'command-r-plus-01-2025',
+      label: 'Command R+ 01-2025 (Latest)',
+      provider: 'Cohere',
+      maxTokenAllowed: 256000, // 2025 models have 256K context
+      maxCompletionTokens: 8192,
+    },
+    {
+      name: 'command-r-01-2025',
+      label: 'Command R 01-2025 (Latest)',
+      provider: 'Cohere',
+      maxTokenAllowed: 128000, // 2025 standard model
+      maxCompletionTokens: 8192,
+    },
+
+    // Command A series - new 2025 flagship
+    {
+      name: 'command-a',
+      label: 'Command A (Latest)',
+      provider: 'Cohere',
+      maxTokenAllowed: 256000, // Large context model
+      maxCompletionTokens: 8192,
+    },
+
+    // Legacy 2024 models (for compatibility)
     {
       name: 'command-r-plus-08-2024',
-      label: 'Command R plus Latest',
+      label: 'Command R+ 08-2024',
       provider: 'Cohere',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 128000, // Updated context for 2024 models
       maxCompletionTokens: 4000,
     },
     {
       name: 'command-r-08-2024',
-      label: 'Command R Latest',
+      label: 'Command R 08-2024',
       provider: 'Cohere',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 128000,
       maxCompletionTokens: 4000,
     },
     {
       name: 'command-r-plus',
-      label: 'Command R plus',
+      label: 'Command R+ (Legacy)',
       provider: 'Cohere',
-      maxTokenAllowed: 4096,
-      maxCompletionTokens: 4000,
-    },
-    { name: 'command-r', label: 'Command R', provider: 'Cohere', maxTokenAllowed: 4096, maxCompletionTokens: 4000 },
-    { name: 'command', label: 'Command', provider: 'Cohere', maxTokenAllowed: 4096, maxCompletionTokens: 4000 },
-    {
-      name: 'command-nightly',
-      label: 'Command Nightly',
-      provider: 'Cohere',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 128000,
       maxCompletionTokens: 4000,
     },
     {
-      name: 'command-light',
-      label: 'Command Light',
+      name: 'command-r',
+      label: 'Command R (Legacy)',
       provider: 'Cohere',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 128000,
       maxCompletionTokens: 4000,
     },
     {
-      name: 'command-light-nightly',
-      label: 'Command Light Nightly',
+      name: 'command',
+      label: 'Command (Legacy)',
       provider: 'Cohere',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 128000,
       maxCompletionTokens: 4000,
+    },
+
+    // c4AI Aya models - 2025 updates
+    {
+      name: 'c4ai-aya-expanse-32b',
+      label: 'c4AI Aya Expanse 32b',
+      provider: 'Cohere',
+      maxTokenAllowed: 128000, // Updated context
+      maxCompletionTokens: 8192,
     },
     {
       name: 'c4ai-aya-expanse-8b',
       label: 'c4AI Aya Expanse 8b',
       provider: 'Cohere',
-      maxTokenAllowed: 4096,
-      maxCompletionTokens: 4000,
-    },
-    {
-      name: 'c4ai-aya-expanse-32b',
-      label: 'c4AI Aya Expanse 32b',
-      provider: 'Cohere',
-      maxTokenAllowed: 4096,
-      maxCompletionTokens: 4000,
+      maxTokenAllowed: 128000,
+      maxCompletionTokens: 8192,
     },
   ];
 

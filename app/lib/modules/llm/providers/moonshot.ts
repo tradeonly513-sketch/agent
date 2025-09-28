@@ -13,32 +13,97 @@ export default class MoonshotProvider extends BaseProvider {
   };
 
   staticModels: ModelInfo[] = [
-    { name: 'moonshot-v1-8k', label: 'Moonshot v1 8K', provider: 'Moonshot', maxTokenAllowed: 8000 },
-    { name: 'moonshot-v1-32k', label: 'Moonshot v1 32K', provider: 'Moonshot', maxTokenAllowed: 32000 },
-    { name: 'moonshot-v1-128k', label: 'Moonshot v1 128K', provider: 'Moonshot', maxTokenAllowed: 128000 },
-    { name: 'moonshot-v1-auto', label: 'Moonshot v1 Auto', provider: 'Moonshot', maxTokenAllowed: 128000 },
+    // Kimi K3 series - 2025 flagship models
     {
-      name: 'moonshot-v1-8k-vision-preview',
-      label: 'Moonshot v1 8K Vision',
+      name: 'kimi-k3-0125',
+      label: 'Kimi K3 (2025)',
       provider: 'Moonshot',
-      maxTokenAllowed: 8000,
+      maxTokenAllowed: 2000000, // 2M context for 2025
+      maxCompletionTokens: 16384,
     },
     {
-      name: 'moonshot-v1-32k-vision-preview',
-      label: 'Moonshot v1 32K Vision',
+      name: 'kimi-k3-turbo-0125',
+      label: 'Kimi K3 Turbo (2025)',
       provider: 'Moonshot',
-      maxTokenAllowed: 32000,
+      maxTokenAllowed: 1000000, // 1M context for turbo
+      maxCompletionTokens: 16384,
     },
     {
-      name: 'moonshot-v1-128k-vision-preview',
-      label: 'Moonshot v1 128K Vision',
+      name: 'kimi-k3-reasoning-0125',
+      label: 'Kimi K3 Reasoning (2025)',
+      provider: 'Moonshot',
+      maxTokenAllowed: 512000, // 512K for reasoning model
+      maxCompletionTokens: 32768,
+    },
+
+    // Kimi K2 series - current stable (updated context)
+    {
+      name: 'kimi-latest',
+      label: 'Kimi Latest',
+      provider: 'Moonshot',
+      maxTokenAllowed: 1000000, // Updated to 1M context
+      maxCompletionTokens: 16384,
+    },
+    {
+      name: 'kimi-k2-0711-preview',
+      label: 'Kimi K2 Preview',
+      provider: 'Moonshot',
+      maxTokenAllowed: 512000, // Updated context
+      maxCompletionTokens: 8192,
+    },
+    {
+      name: 'kimi-k2-turbo-preview',
+      label: 'Kimi K2 Turbo',
+      provider: 'Moonshot',
+      maxTokenAllowed: 256000, // Updated context
+      maxCompletionTokens: 8192,
+    },
+    {
+      name: 'kimi-thinking-preview',
+      label: 'Kimi Thinking',
+      provider: 'Moonshot',
+      maxTokenAllowed: 256000, // Reasoning model
+      maxCompletionTokens: 16384,
+    },
+
+    // Moonshot v2 series - 2025 coding models
+    {
+      name: 'moonshot-v2-128k',
+      label: 'Moonshot v2 128K (Coding)',
       provider: 'Moonshot',
       maxTokenAllowed: 128000,
+      maxCompletionTokens: 8192,
     },
-    { name: 'kimi-latest', label: 'Kimi Latest', provider: 'Moonshot', maxTokenAllowed: 128000 },
-    { name: 'kimi-k2-0711-preview', label: 'Kimi K2 Preview', provider: 'Moonshot', maxTokenAllowed: 128000 },
-    { name: 'kimi-k2-turbo-preview', label: 'Kimi K2 Turbo', provider: 'Moonshot', maxTokenAllowed: 128000 },
-    { name: 'kimi-thinking-preview', label: 'Kimi Thinking', provider: 'Moonshot', maxTokenAllowed: 128000 },
+    {
+      name: 'moonshot-v2-256k',
+      label: 'Moonshot v2 256K (Coding)',
+      provider: 'Moonshot',
+      maxTokenAllowed: 256000,
+      maxCompletionTokens: 8192,
+    },
+    {
+      name: 'moonshot-v2-auto',
+      label: 'Moonshot v2 Auto (Coding)',
+      provider: 'Moonshot',
+      maxTokenAllowed: 256000,
+      maxCompletionTokens: 8192,
+    },
+
+    // Legacy Moonshot v1 models
+    {
+      name: 'moonshot-v1-128k',
+      label: 'Moonshot v1 128K (Legacy)',
+      provider: 'Moonshot',
+      maxTokenAllowed: 128000,
+      maxCompletionTokens: 4096,
+    },
+    {
+      name: 'moonshot-v1-32k',
+      label: 'Moonshot v1 32K (Legacy)',
+      provider: 'Moonshot',
+      maxTokenAllowed: 32000,
+      maxCompletionTokens: 4096,
+    },
   ];
 
   getModelInstance(options: {

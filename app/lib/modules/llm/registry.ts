@@ -1,3 +1,4 @@
+import AlibabaProvider from './providers/alibaba';
 import AnthropicProvider from './providers/anthropic';
 import CerebrasProvider from './providers/cerebras';
 import CohereProvider from './providers/cohere';
@@ -22,6 +23,7 @@ import MoonshotProvider from './providers/moonshot';
 import ZAIProvider from './providers/zai';
 
 export {
+  AlibabaProvider,
   AnthropicProvider,
   CerebrasProvider,
   CohereProvider,

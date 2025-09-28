@@ -4,6 +4,7 @@ import type { IProviderSetting } from '~/types/model';
 import type { LanguageModelV1 } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createScopedLogger } from '~/utils/logger';
+import { filterCodeModelInfos } from '~/lib/modules/llm/utils/code-model-filter';
 
 export default class GithubProvider extends BaseProvider {
   name = 'Github';
@@ -20,6 +21,46 @@ export default class GithubProvider extends BaseProvider {
    * Model IDs use the format: publisher/model-name
    */
   staticModels: ModelInfo[] = [
+    // GPT-5 series - latest 2025 models
+    {
+      name: 'openai/gpt-5',
+      label: 'GPT-5',
+      provider: 'Github',
+      maxTokenAllowed: 400000, // GPT-5 has 400K context in API
+      maxCompletionTokens: 128000,
+    },
+    {
+      name: 'openai/gpt-5-mini',
+      label: 'GPT-5 Mini',
+      provider: 'Github',
+      maxTokenAllowed: 400000,
+      maxCompletionTokens: 128000,
+    },
+    {
+      name: 'openai/gpt-5-nano',
+      label: 'GPT-5 Nano',
+      provider: 'Github',
+      maxTokenAllowed: 400000,
+      maxCompletionTokens: 128000,
+    },
+
+    // GPT-4.1 series
+    {
+      name: 'openai/gpt-4.1',
+      label: 'GPT-4.1',
+      provider: 'Github',
+      maxTokenAllowed: 1048576, // 1M context for GitHub
+      maxCompletionTokens: 32768,
+    },
+    {
+      name: 'openai/gpt-4.1-mini',
+      label: 'GPT-4.1-mini',
+      provider: 'Github',
+      maxTokenAllowed: 1048576,
+      maxCompletionTokens: 32768,
+    },
+
+    // GPT-4o series
     { name: 'openai/gpt-4o', label: 'GPT-4o', provider: 'Github', maxTokenAllowed: 131072, maxCompletionTokens: 4096 },
     {
       name: 'openai/gpt-4o-mini',
@@ -28,6 +69,8 @@ export default class GithubProvider extends BaseProvider {
       maxTokenAllowed: 131072,
       maxCompletionTokens: 4096,
     },
+
+    // o-series reasoning models
     {
       name: 'openai/o1-preview',
       label: 'o1-preview',
@@ -43,26 +86,37 @@ export default class GithubProvider extends BaseProvider {
       maxCompletionTokens: 65000,
     },
     { name: 'openai/o1', label: 'o1', provider: 'Github', maxTokenAllowed: 200000, maxCompletionTokens: 100000 },
-    {
-      name: 'openai/gpt-4.1',
-      label: 'GPT-4.1',
-      provider: 'Github',
-      maxTokenAllowed: 1048576,
-      maxCompletionTokens: 32768,
-    },
-    {
-      name: 'openai/gpt-4.1-mini',
-      label: 'GPT-4.1-mini',
-      provider: 'Github',
-      maxTokenAllowed: 1048576,
-      maxCompletionTokens: 32768,
-    },
+
+    // DeepSeek models on GitHub
     {
       name: 'deepseek/deepseek-r1',
       label: 'DeepSeek-R1',
       provider: 'Github',
       maxTokenAllowed: 128000,
-      maxCompletionTokens: 4096,
+      maxCompletionTokens: 8192, // Updated to match DeepSeek specs
+    },
+    {
+      name: 'deepseek/deepseek-v3.1-terminus',
+      label: 'DeepSeek V3.1 Terminus',
+      provider: 'Github',
+      maxTokenAllowed: 128000,
+      maxCompletionTokens: 8192,
+    },
+
+    // Claude 4 series (if available on GitHub)
+    {
+      name: 'anthropic/claude-sonnet-4',
+      label: 'Claude Sonnet 4',
+      provider: 'Github',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 64000,
+    },
+    {
+      name: 'anthropic/claude-opus-4',
+      label: 'Claude Opus 4',
+      provider: 'Github',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 32000,
     },
   ];
 
@@ -101,13 +155,14 @@ export default class GithubProvider extends BaseProvider {
         this._logger.info('Successfully fetched models from API');
 
         if (data.data && Array.isArray(data.data)) {
-          return data.data.map((model: any) => ({
+          const models = data.data.map((model: any) => ({
             name: model.id,
             label: model.name || model.id.split('/').pop() || model.id,
             provider: 'Github',
             maxTokenAllowed: model.limits?.max_input_tokens || 128000,
             maxCompletionTokens: model.limits?.max_output_tokens || 16384,
           }));
+          return filterCodeModelInfos(this.name, models);
         }
       } else {
         this._logger.warn('API request failed with status:', response.status, response.statusText);

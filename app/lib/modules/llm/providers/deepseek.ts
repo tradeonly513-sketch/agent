@@ -13,45 +13,22 @@ export default class DeepseekProvider extends BaseProvider {
   };
 
   staticModels: ModelInfo[] = [
-    // V3 Models (Latest and most powerful) - 128k context, enhanced reasoning
+    // DeepSeek Chat - DeepSeek-V3.1-Terminus (Non-thinking Mode)
     {
       name: 'deepseek-chat',
-      label: 'DeepSeek V3 Chat',
+      label: 'DeepSeek Chat (V3.1-Terminus)',
       provider: 'Deepseek',
-      maxTokenAllowed: 128000, // V3 supports 128k context
-      maxCompletionTokens: 8192,
-    },
-    {
-      name: 'deepseek-coder',
-      label: 'DeepSeek V3 Coder',
-      provider: 'Deepseek',
-      maxTokenAllowed: 128000, // V3 supports 128k context
-      maxCompletionTokens: 8192,
+      maxTokenAllowed: 128000, // 128K context length
+      maxCompletionTokens: 8192, // Maximum 8K output tokens
     },
 
-    // R1 Reasoning Model - advanced reasoning capabilities
+    // DeepSeek Reasoner - DeepSeek-V3.1-Terminus (Thinking Mode)
     {
-      name: 'deepseek-r1',
-      label: 'DeepSeek R1',
+      name: 'deepseek-reasoner',
+      label: 'DeepSeek Reasoner (V3.1-Terminus)',
       provider: 'Deepseek',
-      maxTokenAllowed: 64000, // R1 has 64k context
-      maxCompletionTokens: 8192,
-    },
-
-    // Legacy V2.5 Models (for compatibility) - 32k context
-    {
-      name: 'deepseek-chat-v2.5',
-      label: 'DeepSeek V2.5 Chat (Legacy)',
-      provider: 'Deepseek',
-      maxTokenAllowed: 32000,
-      maxCompletionTokens: 4096,
-    },
-    {
-      name: 'deepseek-coder-v2.5',
-      label: 'DeepSeek V2.5 Coder (Legacy)',
-      provider: 'Deepseek',
-      maxTokenAllowed: 32000,
-      maxCompletionTokens: 4096,
+      maxTokenAllowed: 128000, // 128K context length
+      maxCompletionTokens: 64000, // Maximum 64K output tokens with reasoning
     },
   ];
 
@@ -92,24 +69,18 @@ export default class DeepseekProvider extends BaseProvider {
     );
 
     return data.map((m: any) => {
-      // Determine context window based on model name
-      let contextWindow = 32000; // default fallback
+      // All current DeepSeek models have 128K context
+      let contextWindow = 128000;
+      let maxCompletionTokens = 8192; // default for deepseek-chat
 
-      if (m.id?.includes('deepseek-v3') || m.id?.includes('deepseek-chat') || m.id?.includes('deepseek-coder')) {
-        contextWindow = 128000; // V3 models have 128k context
-      } else if (m.id?.includes('deepseek-r1')) {
-        contextWindow = 64000; // R1 reasoning model has 64k context
-      } else if (m.id?.includes('deepseek-v2.5')) {
-        contextWindow = 32000; // V2.5 models have 32k context
-      }
-
-      // Determine completion token limits
-      let maxCompletionTokens = 4096; // default
-
-      if (m.id?.includes('deepseek-r1')) {
-        maxCompletionTokens = 8192; // R1 reasoning model has higher output limits
-      } else if (m.id?.includes('deepseek-v3') || m.id?.includes('deepseek-chat') || m.id?.includes('deepseek-coder')) {
-        maxCompletionTokens = 8192; // V3 models
+      if (m.id === 'deepseek-chat') {
+        // DeepSeek Chat - V3.1-Terminus (Non-thinking Mode)
+        contextWindow = 128000;
+        maxCompletionTokens = 8192; // Maximum 8K output
+      } else if (m.id === 'deepseek-reasoner') {
+        // DeepSeek Reasoner - V3.1-Terminus (Thinking Mode)
+        contextWindow = 128000;
+        maxCompletionTokens = 64000; // Maximum 64K output with reasoning
       }
 
       return {

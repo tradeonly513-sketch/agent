@@ -20,47 +20,107 @@ export default class AmazonBedrockProvider extends BaseProvider {
   };
 
   staticModels: ModelInfo[] = [
+    // Claude 4 series - 2025 models (if available on Bedrock)
+    {
+      name: 'anthropic.claude-sonnet-4-20250514-v1:0',
+      label: 'Claude Sonnet 4 (Bedrock)',
+      provider: 'AmazonBedrock',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 64000,
+    },
+    {
+      name: 'anthropic.claude-opus-4-20250514-v1:0',
+      label: 'Claude Opus 4 (Bedrock)',
+      provider: 'AmazonBedrock',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 32000,
+    },
+
+    // Claude 3.7 series - 2025 updates
+    {
+      name: 'anthropic.claude-3-7-sonnet-20250219-v1:0',
+      label: 'Claude 3.7 Sonnet (Bedrock)',
+      provider: 'AmazonBedrock',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
+    },
+
+    // Claude 3.5 series - current stable
     {
       name: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
       label: 'Claude 3.5 Sonnet v2 (Bedrock)',
       provider: 'AmazonBedrock',
       maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
     },
     {
       name: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
       label: 'Claude 3.5 Sonnet (Bedrock)',
       provider: 'AmazonBedrock',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
     },
+    {
+      name: 'anthropic.claude-3-5-haiku-20241022-v1:0',
+      label: 'Claude 3.5 Haiku (Bedrock)',
+      provider: 'AmazonBedrock',
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
+    },
+
+    // Legacy Claude 3 series
     {
       name: 'anthropic.claude-3-sonnet-20240229-v1:0',
       label: 'Claude 3 Sonnet (Bedrock)',
       provider: 'AmazonBedrock',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
     },
     {
       name: 'anthropic.claude-3-haiku-20240307-v1:0',
       label: 'Claude 3 Haiku (Bedrock)',
       provider: 'AmazonBedrock',
-      maxTokenAllowed: 4096,
+      maxTokenAllowed: 200000,
+      maxCompletionTokens: 128000,
+    },
+
+    // Amazon Nova series - 2025 models
+    {
+      name: 'amazon.nova-pro-v2:0',
+      label: 'Amazon Nova Pro v2 (Bedrock)',
+      provider: 'AmazonBedrock',
+      maxTokenAllowed: 300000, // Updated context for 2025
+      maxCompletionTokens: 8192,
     },
     {
       name: 'amazon.nova-pro-v1:0',
       label: 'Amazon Nova Pro (Bedrock)',
       provider: 'AmazonBedrock',
-      maxTokenAllowed: 5120,
+      maxTokenAllowed: 300000,
+      maxCompletionTokens: 8192,
     },
     {
       name: 'amazon.nova-lite-v1:0',
       label: 'Amazon Nova Lite (Bedrock)',
       provider: 'AmazonBedrock',
-      maxTokenAllowed: 5120,
+      maxTokenAllowed: 300000,
+      maxCompletionTokens: 8192,
+    },
+
+    // Mistral latest models
+    {
+      name: 'mistral.mistral-large-2501-v1:0',
+      label: 'Mistral Large 25.01 (Bedrock)',
+      provider: 'AmazonBedrock',
+      maxTokenAllowed: 128000, // Updated for 2025
+      maxCompletionTokens: 8192,
     },
     {
       name: 'mistral.mistral-large-2402-v1:0',
       label: 'Mistral Large 24.02 (Bedrock)',
       provider: 'AmazonBedrock',
-      maxTokenAllowed: 8192,
+      maxTokenAllowed: 128000,
+      maxCompletionTokens: 8192,
     },
   ];
 
