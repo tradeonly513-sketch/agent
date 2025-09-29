@@ -348,12 +348,18 @@ export class StreamingMessageParser {
     if (actionType === 'supabase') {
       const operation = this.#extractAttribute(actionTag, 'operation');
 
-      if (!operation || !['migration', 'query'].includes(operation)) {
+      if (!operation || !['migration', 'query', 'project-create', 'setup', 'validate', 'seed'].includes(operation)) {
         logger.warn(`Invalid or missing operation for Supabase action: ${operation}`);
         throw new Error(`Invalid Supabase operation: ${operation}`);
       }
 
-      (actionAttributes as SupabaseAction).operation = operation as 'migration' | 'query';
+      (actionAttributes as SupabaseAction).operation = operation as
+        | 'migration'
+        | 'query'
+        | 'project-create'
+        | 'setup'
+        | 'validate'
+        | 'seed';
 
       if (operation === 'migration') {
         const filePath = this.#extractAttribute(actionTag, 'filePath');
@@ -364,6 +370,45 @@ export class StreamingMessageParser {
         }
 
         (actionAttributes as SupabaseAction).filePath = filePath;
+      } else if (operation === 'project-create') {
+        // Parse project creation attributes
+        const name = this.#extractAttribute(actionTag, 'name');
+        const organizationId = this.#extractAttribute(actionTag, 'organizationId');
+        const dbPassword = this.#extractAttribute(actionTag, 'dbPassword');
+        const region = this.#extractAttribute(actionTag, 'region');
+        const plan = this.#extractAttribute(actionTag, 'plan');
+
+        if (name) {
+          (actionAttributes as SupabaseAction).name = name;
+        }
+
+        if (organizationId) {
+          (actionAttributes as SupabaseAction).organizationId = organizationId;
+        }
+
+        if (dbPassword) {
+          (actionAttributes as SupabaseAction).dbPassword = dbPassword;
+        }
+
+        if (region) {
+          (actionAttributes as SupabaseAction).region = region;
+        }
+
+        if (plan) {
+          (actionAttributes as SupabaseAction).plan = plan;
+        }
+      } else if (['setup', 'validate', 'seed'].includes(operation)) {
+        // Parse common attributes for setup, validate, and seed operations
+        const projectId = this.#extractAttribute(actionTag, 'projectId');
+        const filePath = this.#extractAttribute(actionTag, 'filePath');
+
+        if (projectId) {
+          (actionAttributes as SupabaseAction).projectId = projectId;
+        }
+
+        if (filePath) {
+          (actionAttributes as SupabaseAction).filePath = filePath;
+        }
       }
     } else if (actionType === 'file') {
       const filePath = this.#extractAttribute(actionTag, 'filePath') as string;

@@ -1,6 +1,13 @@
 import type { DesignScheme } from '~/types/design-scheme';
 import { WORK_DIR } from '~/utils/constants';
 import { allowedHTMLElements } from '~/utils/markdown';
+import {
+  getSupabaseWorkflowInstructions,
+  analyzeSupabaseContext,
+  normalizeSupabaseConnectionState,
+  type LegacySupabaseConnectionState,
+} from './supabase-workflow-rules';
+import type { SupabaseConnectionState } from '~/lib/stores/supabase';
 
 export interface UnifiedPromptOptions {
   cwd?: string;
@@ -15,6 +22,7 @@ export interface UnifiedPromptOptions {
     credentials?: { anonKey?: string; supabaseUrl?: string };
   };
   projectType?: 'web' | 'mobile' | 'node' | 'auto';
+  supabaseConnection?: SupabaseConnectionState;
 }
 
 class UnifiedPromptBuilder {
@@ -66,72 +74,20 @@ The year is 2025.`;
   }
 
   private _getSupabaseInstructions(): string {
-    if (!this._options.supabase?.isConnected) {
-      return `<database_instructions>
-  CRITICAL: Use Supabase for databases by default, unless specified otherwise.
-  You are not connected to Supabase. Remind user to "connect to Supabase in chat box before proceeding with database operations".
-</database_instructions>`;
-    }
+    const connectionInput: SupabaseConnectionState | LegacySupabaseConnectionState | undefined =
+      this._options.supabaseConnection ||
+      (this._options.supabase
+        ? {
+            isConnected: this._options.supabase.isConnected,
+            hasSelectedProject: this._options.supabase.hasSelectedProject,
+            credentials: this._options.supabase.credentials,
+          }
+        : undefined);
 
-    if (!this._options.supabase.hasSelectedProject) {
-      return `<database_instructions>
-  CRITICAL: Use Supabase for databases by default, unless specified otherwise.
-  Connected to Supabase but no project selected. Remind user to select project in chat box before proceeding.
-</database_instructions>`;
-    }
+    const normalized = normalizeSupabaseConnectionState(connectionInput);
+    const workflowContext = analyzeSupabaseContext(normalized);
 
-    const { supabaseUrl, anonKey } = this._options.supabase.credentials || {};
-
-    return `<database_instructions>
-  CRITICAL: Use Supabase for databases by default, unless specified otherwise.
-
-  ${
-    supabaseUrl && anonKey
-      ? `Create .env file if it doesn't exist with:
-  VITE_SUPABASE_URL=${supabaseUrl}
-  VITE_SUPABASE_ANON_KEY=${anonKey}`
-      : ''
-  }
-
-  DATA PRESERVATION REQUIREMENTS:
-    - DATA INTEGRITY IS HIGHEST PRIORITY - users must NEVER lose data
-    - FORBIDDEN: Destructive operations (DROP, DELETE) that could cause data loss
-    - FORBIDDEN: Transaction control (BEGIN, COMMIT, ROLLBACK, END)
-      Note: DO $$ BEGIN ... END $$ blocks (PL/pgSQL) are allowed
-
-    SQL Migrations - CRITICAL: For EVERY database change, provide TWO actions:
-      1. Migration File: <boltAction type="supabase" operation="migration" filePath="/supabase/migrations/name.sql">
-      2. Query Execution: <boltAction type="supabase" operation="query" projectId="\${projectId}">
-
-    Migration Rules:
-      - NEVER use diffs, ALWAYS provide COMPLETE file content
-      - Create new migration file for each change in /home/project/supabase/migrations
-      - NEVER update existing migration files
-      - Descriptive names without number prefix (e.g., create_users.sql)
-      - ALWAYS enable RLS: alter table users enable row level security;
-      - Add appropriate RLS policies for CRUD operations
-      - Use default values: DEFAULT false/true, DEFAULT 0, DEFAULT '', DEFAULT now()
-      - Start with markdown summary in multi-line comment explaining changes
-      - Use IF EXISTS/IF NOT EXISTS for safe operations
-
-  Client Setup:
-    - Use @supabase/supabase-js
-    - Create singleton client instance
-    - Use environment variables from .env
-
-  Authentication:
-    - ALWAYS use email/password signup
-    - FORBIDDEN: magic links, social providers, SSO (unless explicitly stated)
-    - FORBIDDEN: custom auth systems, ALWAYS use Supabase's built-in auth
-    - Email confirmation ALWAYS disabled unless stated
-
-  Security:
-    - ALWAYS enable RLS for every new table
-    - Create policies based on user authentication
-    - One migration per logical change
-    - Use descriptive policy names
-    - Add indexes for frequently queried columns
-</database_instructions>`;
+    return getSupabaseWorkflowInstructions(workflowContext, 'detailed');
   }
 
   private _getArtifactInstructions(): string {
