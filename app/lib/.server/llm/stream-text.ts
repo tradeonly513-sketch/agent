@@ -1,4 +1,4 @@
-import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
+import { convertToCoreMessages, generateId, streamText as _streamText, type Message } from 'ai';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
 import type { IProviderSetting } from '~/types/model';
@@ -99,7 +99,10 @@ export async function streamText(props: {
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
   let processedMessages = messages.map((message) => {
-    const newMessage = { ...message };
+    const newMessage: Message = {
+      id: (message as any).id || generateId(),
+      ...message,
+    };
 
     if (message.role === 'user') {
       const { model, provider, content } = extractPropertiesFromMessage(message);
@@ -165,7 +168,7 @@ export async function streamText(props: {
     `Token limits for model ${modelDetails.name}: maxTokens=${safeMaxTokens}, maxTokenAllowed=${modelDetails.maxTokenAllowed}, maxCompletionTokens=${modelDetails.maxCompletionTokens}`,
   );
 
-  let systemPrompt = PromptLibrary.getPromptFromLibraryWithProvider(
+  let systemPrompt = await PromptLibrary.getPromptFromLibraryWithProvider(
     promptId || 'default',
     {
       cwd: WORK_DIR,
@@ -179,9 +182,12 @@ export async function streamText(props: {
         hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
+      messages: processedMessages,
+      maxTokens: safeMaxTokens,
     },
     currentProvider,
     modelDetails,
+    processedMessages,
   );
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {

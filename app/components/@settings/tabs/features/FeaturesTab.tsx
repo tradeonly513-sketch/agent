@@ -6,6 +6,7 @@ import { useSettings } from '~/lib/hooks/useSettings';
 import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { PromptLibrary } from '~/lib/common/prompt-library';
+import PromptOptimizationTest from './PromptOptimizationTest';
 
 interface FeatureToggle {
   id: string;
@@ -119,6 +120,8 @@ export default function FeaturesTab() {
     promptId,
   } = useSettings();
 
+  const [showOptimizationTest, setShowOptimizationTest] = React.useState(false);
+
   // Enable features by default on first load
   React.useEffect(() => {
     // Only set defaults if values are undefined
@@ -170,6 +173,12 @@ export default function FeaturesTab() {
           break;
         }
 
+        case 'optimizationTest': {
+          setShowOptimizationTest(enabled);
+          toast.success(`Optimization test ${enabled ? 'enabled' : 'disabled'}`);
+          break;
+        }
+
         default:
           break;
       }
@@ -212,7 +221,17 @@ export default function FeaturesTab() {
         tooltip: 'Enabled by default to record detailed logs of system events and user actions',
       },
     ],
-    beta: [],
+    beta: [
+      {
+        id: 'optimizationTest',
+        title: 'Prompt Optimization Test Suite',
+        description: 'Test the new AI-optimized prompt system with intent detection and dynamic rule injection',
+        icon: 'i-ph:test-tube',
+        enabled: showOptimizationTest,
+        experimental: true,
+        tooltip: 'Test and analyze the new optimized prompt system with 60-80% token reduction',
+      },
+    ],
   };
 
   return (
@@ -290,6 +309,13 @@ export default function FeaturesTab() {
           </select>
         </div>
       </motion.div>
+
+      {/* Optimization Test Suite */}
+      {showOptimizationTest && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <PromptOptimizationTest />
+        </motion.div>
+      )}
     </div>
   );
 }
