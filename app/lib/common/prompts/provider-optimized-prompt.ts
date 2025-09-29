@@ -12,6 +12,14 @@ import {
   estimateTokenCount,
   type TokenOptimizationConfig,
 } from './token-optimizer';
+import {
+  getSupabaseWorkflowInstructions,
+  analyzeSupabaseContext,
+  normalizeSupabaseConnectionState,
+  type LegacySupabaseConnectionState,
+} from './supabase-workflow-rules';
+import type { VerbosityLevel } from './mode-specific-builders';
+import type { SupabaseConnectionState } from '~/lib/stores/supabase';
 
 const logger = createScopedLogger('ProviderOptimizedPrompt');
 
@@ -28,6 +36,7 @@ export interface ProviderOptimizedPromptOptions {
     credentials?: { anonKey?: string; supabaseUrl?: string };
   };
   projectType?: 'web' | 'mobile' | 'node' | 'auto';
+  supabaseConnection?: SupabaseConnectionState;
 
   // Provider-specific options
   providerName: string;
@@ -407,95 +416,26 @@ class SupabaseInstructionsSection extends PromptSection {
 
   getContent(options: ProviderOptimizedPromptOptions, category: ProviderCategory): string {
     const config = getCategoryConfig(category);
+    const connectionInput: SupabaseConnectionState | LegacySupabaseConnectionState | undefined =
+      (options as any).supabaseConnection ||
+      (options.supabase
+        ? {
+            isConnected: options.supabase.isConnected,
+            hasSelectedProject: options.supabase.hasSelectedProject,
+            credentials: options.supabase.credentials,
+          }
+        : undefined);
 
-    if (!options.supabase?.isConnected) {
-      if (config.promptOptimizations.simplifyLanguage) {
-        return `<database_instructions>
-  Use Supabase for databases. You are not connected. Remind user to connect to Supabase.
-</database_instructions>`;
-      }
+    const normalized = normalizeSupabaseConnectionState(connectionInput);
+    const workflowContext = analyzeSupabaseContext(normalized);
 
-      return `<database_instructions>
-  CRITICAL: Use Supabase for databases by default, unless specified otherwise.
-  You are not connected to Supabase. Remind user to "connect to Supabase in chat box before proceeding with database operations".
-</database_instructions>`;
-    }
+    const verbosity: VerbosityLevel = config.promptOptimizations.simplifyLanguage
+      ? 'minimal'
+      : category === 'high-context' || category === 'coding-specialized'
+        ? 'detailed'
+        : 'standard';
 
-    if (!options.supabase.hasSelectedProject) {
-      return `<database_instructions>
-  CRITICAL: Use Supabase for databases by default, unless specified otherwise.
-  Connected to Supabase but no project selected. Remind user to select project in chat box before proceeding.
-</database_instructions>`;
-    }
-
-    const { supabaseUrl, anonKey } = options.supabase.credentials || {};
-
-    if (config.promptOptimizations.simplifyLanguage) {
-      return `<database_instructions>
-  Use Supabase for databases. ${
-    supabaseUrl && anonKey
-      ? `Create .env with:\n  VITE_SUPABASE_URL=${supabaseUrl}\n  VITE_SUPABASE_ANON_KEY=${anonKey}`
-      : ''
-  }
-
-  Rules:
-  - NEVER use destructive operations (DROP, DELETE)
-  - Create migration files for changes
-  - Enable RLS for new tables
-  - Use @supabase/supabase-js client
-</database_instructions>`;
-    }
-
-    return `<database_instructions>
-  CRITICAL: Use Supabase for databases by default, unless specified otherwise.
-
-  ${
-    supabaseUrl && anonKey
-      ? `Create .env file if it doesn't exist with:
-  VITE_SUPABASE_URL=${supabaseUrl}
-  VITE_SUPABASE_ANON_KEY=${anonKey}`
-      : ''
-  }
-
-  DATA PRESERVATION REQUIREMENTS:
-    - DATA INTEGRITY IS HIGHEST PRIORITY - users must NEVER lose data
-    - FORBIDDEN: Destructive operations (DROP, DELETE) that could cause data loss
-    - FORBIDDEN: Transaction control (BEGIN, COMMIT, ROLLBACK, END)
-      Note: DO $$ BEGIN ... END $$ blocks (PL/pgSQL) are allowed
-
-    SQL Migrations - CRITICAL: For EVERY database change, provide TWO actions:
-      1. Migration File: <boltAction type="supabase" operation="migration" filePath="/supabase/migrations/name.sql">
-      2. Query Execution: <boltAction type="supabase" operation="query" projectId="\${projectId}">
-
-    Migration Rules:
-      - NEVER use diffs, ALWAYS provide COMPLETE file content
-      - Create new migration file for each change in /home/project/supabase/migrations
-      - NEVER update existing migration files
-      - Descriptive names without number prefix (e.g., create_users.sql)
-      - ALWAYS enable RLS: alter table users enable row level security;
-      - Add appropriate RLS policies for CRUD operations
-      - Use default values: DEFAULT false/true, DEFAULT 0, DEFAULT '', DEFAULT now()
-      - Start with markdown summary in multi-line comment explaining changes
-      - Use IF EXISTS/IF NOT EXISTS for safe operations
-
-  Client Setup:
-    - Use @supabase/supabase-js
-    - Create singleton client instance
-    - Use environment variables from .env
-
-  Authentication:
-    - ALWAYS use email/password signup
-    - FORBIDDEN: magic links, social providers, SSO (unless explicitly stated)
-    - FORBIDDEN: custom auth systems, ALWAYS use Supabase's built-in auth
-    - Email confirmation ALWAYS disabled unless stated
-
-  Security:
-    - ALWAYS enable RLS for every new table
-    - Create policies based on user authentication
-    - One migration per logical change
-    - Use descriptive policy names
-    - Add indexes for frequently queried columns
-</database_instructions>`;
+    return getSupabaseWorkflowInstructions(workflowContext, verbosity);
   }
 }
 

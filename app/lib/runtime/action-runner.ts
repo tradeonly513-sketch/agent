@@ -9,9 +9,48 @@ import type { BoltShell } from '~/utils/shell';
 
 import { fileChangeOptimizer } from './file-change-optimizer';
 import type { FileMap } from '~/lib/stores/files';
-import { supabaseConnection } from '~/lib/stores/supabase';
+import { supabaseConnection, updateSupabaseConnection } from '~/lib/stores/supabase';
 
 const logger = createScopedLogger('ActionRunner');
+
+type SupabaseApiErrorResponse = {
+  error?: string | { message?: string };
+  message?: string;
+};
+
+type SupabaseQueryResponse = {
+  data: unknown;
+  metadata?: {
+    analysis?: unknown;
+    executionTime?: number;
+    rowsAffected?: number;
+    queryType?: string;
+  };
+};
+
+type SupabaseProjectSummary = {
+  id: string;
+  name?: string;
+  region?: string;
+  organization_id?: string;
+  status?: string;
+  supabaseUrl?: string;
+  anonKey?: string;
+  serviceRoleKey?: string;
+};
+
+type SupabaseProjectCreateResponse = {
+  success?: boolean;
+  project?: SupabaseProjectSummary;
+  estimatedTime?: number;
+};
+
+type SupabaseProjectInitializeResponse = {
+  success?: boolean;
+  project?: SupabaseProjectSummary;
+  envContent?: string;
+  setupActions?: string[];
+};
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
 
@@ -780,20 +819,25 @@ export class ActionRunner {
           });
 
           if (!response.ok) {
-            const errorData = (await response.json()) as any;
-            const errorMessage = errorData.error?.message || errorData.message || response.statusText;
+            const errorData = (await response.json()) as SupabaseApiErrorResponse | null;
+            const errorMessage =
+              (typeof errorData?.error === 'string' ? errorData.error : errorData?.error?.message) ||
+              errorData?.message ||
+              response.statusText;
             throw new Error(errorMessage);
           }
 
-          const result = (await response.json()) as any[];
+          const result = (await response.json()) as SupabaseQueryResponse;
           logger.debug('Supabase query executed successfully:', result);
+
+          const rowCount = Array.isArray(result.data) ? result.data.length : 0;
 
           // Show success alert
           this.onSupabaseAlert?.({
             type: 'success',
             title: 'Supabase Query Completed',
             description: 'Database query executed successfully',
-            content: result.length > 0 ? `Returned ${result.length} row(s)` : 'Query executed successfully',
+            content: rowCount > 0 ? `Returned ${rowCount} row(s)` : 'Query executed successfully',
             source: 'supabase',
             stage: 'complete',
             queryStatus: 'complete',
@@ -843,8 +887,419 @@ export class ActionRunner {
         }
       }
 
+      case 'project-create': {
+        return await this.#handleProjectCreate(action);
+      }
+
+      case 'setup': {
+        return await this.#handleProjectSetup(action);
+      }
+
+      case 'validate': {
+        return await this.#handleProjectValidate(action);
+      }
+
+      case 'seed': {
+        return await this.#handleProjectSeed(action);
+      }
+
       default:
         throw new Error(`Unknown operation: ${operation}`);
+    }
+  }
+
+  async #handleProjectCreate(action: SupabaseAction) {
+    const { name, organizationId, region, plan, dbPassword, content } = action;
+    const connection = supabaseConnection.get();
+
+    if (!connection.token) {
+      this.onSupabaseAlert?.({
+        type: 'error',
+        title: 'Authentication Required',
+        description: 'Connect your Supabase account to create projects',
+        content: 'You need to be connected to Supabase to create new projects. Please connect your account first.',
+        source: 'supabase',
+        operation: 'project-create',
+      });
+      throw new Error('Supabase authentication required');
+    }
+
+    if (!name || !organizationId || !dbPassword) {
+      this.onSupabaseAlert?.({
+        type: 'error',
+        title: 'Missing Project Details',
+        description: 'Project name, organization, and database password are required',
+        content: 'Please provide all required project details to create a new Supabase project.',
+        source: 'supabase',
+        operation: 'project-create',
+      });
+      throw new Error('Missing required project details');
+    }
+
+    // Show project creation started alert
+    this.onSupabaseAlert?.({
+      type: 'info',
+      title: 'Creating Supabase Project',
+      description: `Creating project: ${name}`,
+      content: 'Initializing your new Supabase project. This may take a few minutes...',
+      source: 'supabase',
+      stage: 'creating',
+      projectStatus: 'creating',
+      operation: 'project-create',
+      estimatedTime: 120,
+      progress: 10,
+    });
+
+    try {
+      const response = await fetch('/api/supabase/projects/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: connection.token,
+          name,
+          organizationId,
+          region: region || 'us-east-1',
+          plan: plan || 'free',
+          dbPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as SupabaseApiErrorResponse | null;
+        const message =
+          (typeof errorData?.error === 'string' ? errorData.error : errorData?.error?.message) ||
+          errorData?.message ||
+          'Failed to create project';
+        throw new Error(message);
+      }
+
+      const result = (await response.json()) as SupabaseProjectCreateResponse;
+      logger.debug('Project creation initiated:', result);
+
+      // Show project creation in progress
+      this.onSupabaseAlert?.({
+        type: 'success',
+        title: 'Project Creation Started',
+        description: `Project ${name} is being created`,
+        content: `Your Supabase project is initializing. You can monitor progress in your Supabase dashboard.`,
+        source: 'supabase',
+        stage: 'creating',
+        projectStatus: 'creating',
+        operation: 'project-create',
+        projectId: result.project?.id,
+        projectUrl: result.project?.id ? `https://supabase.com/dashboard/project/${result.project.id}` : undefined,
+        estimatedTime: result.estimatedTime || 120,
+        progress: 25,
+        nextSteps: [
+          'Wait for project to finish initializing',
+          'Set up API keys once project is ready',
+          'Configure your application environment',
+        ],
+      });
+
+      return { success: true, project: result.project };
+    } catch (error: any) {
+      logger.error('Project creation failed:', error);
+
+      this.onSupabaseAlert?.({
+        type: 'error',
+        title: 'Project Creation Failed',
+        description: 'Failed to create Supabase project',
+        content: error.message || 'An unexpected error occurred while creating the project.',
+        source: 'supabase',
+        stage: 'complete',
+        projectStatus: 'failed',
+        operation: 'project-create',
+      });
+
+      throw error;
+    }
+  }
+
+  async #handleProjectSetup(action: SupabaseAction) {
+    const { projectId, content } = action;
+    const connection = supabaseConnection.get();
+
+    if (!connection.token) {
+      throw new Error('Supabase authentication required');
+    }
+
+    if (!projectId) {
+      const selectedProjectId = connection.selectedProjectId;
+
+      if (!selectedProjectId) {
+        this.onSupabaseAlert?.({
+          type: 'error',
+          title: 'No Project Selected',
+          description: 'Select a project to set up',
+          content: 'You need to select a Supabase project before setting it up.',
+          source: 'supabase',
+          operation: 'setup',
+        });
+        throw new Error('No project selected for setup');
+      }
+
+      action.projectId = selectedProjectId;
+    }
+
+    // Show setup starting alert
+    this.onSupabaseAlert?.({
+      type: 'info',
+      title: 'Setting Up Project',
+      description: 'Configuring project environment',
+      content: 'Fetching API keys and generating configuration...',
+      source: 'supabase',
+      stage: 'initializing',
+      operation: 'setup',
+      progress: 20,
+    });
+
+    try {
+      const response = await fetch('/api/supabase/projects/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: connection.token,
+          projectId: action.projectId,
+          setupOptions: {
+            generateEnvFile: true,
+            enableRLS: true,
+            createExampleTable: false,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as SupabaseApiErrorResponse | null;
+        const message =
+          (typeof errorData?.error === 'string' ? errorData.error : errorData?.error?.message) ||
+          errorData?.message ||
+          'Failed to set up project';
+        throw new Error(message);
+      }
+
+      const result = (await response.json()) as SupabaseProjectInitializeResponse;
+      logger.debug('Project setup completed:', result);
+
+      // Create .env file if content was generated
+      if (result.envContent) {
+        await this.#runFileAction({
+          type: 'file',
+          filePath: '.env',
+          content: result.envContent,
+          changeSource: 'supabase',
+        } as any);
+      }
+
+      // Update connection state with new credentials
+      updateSupabaseConnection({
+        selectedProjectId: action.projectId,
+        credentials: {
+          anonKey: result.project?.anonKey,
+          supabaseUrl: result.project?.supabaseUrl,
+        },
+      });
+
+      // Show setup success
+      this.onSupabaseAlert?.({
+        type: 'success',
+        title: 'Project Setup Complete',
+        description: 'Environment configured successfully',
+        content: 'Your Supabase project is now configured and ready to use!',
+        source: 'supabase',
+        stage: 'complete',
+        operation: 'setup',
+        progress: 100,
+        nextSteps: result.setupActions || [
+          'Start building your application',
+          'Create database tables as needed',
+          'Set up authentication flows',
+        ],
+      });
+
+      return { success: true, project: result.project };
+    } catch (error: any) {
+      logger.error('Project setup failed:', error);
+
+      this.onSupabaseAlert?.({
+        type: 'error',
+        title: 'Setup Failed',
+        description: 'Failed to set up project environment',
+        content: error.message || 'An unexpected error occurred during setup.',
+        source: 'supabase',
+        stage: 'complete',
+        operation: 'setup',
+      });
+
+      throw error;
+    }
+  }
+
+  async #handleProjectValidate(action: SupabaseAction) {
+    const { projectId, content } = action;
+    const connection = supabaseConnection.get();
+
+    if (!connection.token || !connection.credentials?.anonKey) {
+      this.onSupabaseAlert?.({
+        type: 'warning',
+        title: 'Validation Skipped',
+        description: 'Project not fully configured',
+        content: 'Complete project setup before running validation.',
+        source: 'supabase',
+        operation: 'validate',
+      });
+      return { success: false, message: 'Project not configured' };
+    }
+
+    // Show validation starting
+    this.onSupabaseAlert?.({
+      type: 'info',
+      title: 'Validating Project',
+      description: 'Checking database connection and schema',
+      content: 'Verifying your Supabase configuration...',
+      source: 'supabase',
+      stage: 'validating',
+      operation: 'validate',
+      progress: 30,
+    });
+
+    try {
+      // Test basic connectivity with a simple query
+      const testQuery = 'SELECT 1 as test_connection';
+      const response = await fetch('/api/supabase/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${connection.token}`,
+        },
+        body: JSON.stringify({
+          projectId: connection.selectedProjectId,
+          query: testQuery,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Database connection test failed');
+      }
+
+      // Show validation success
+      this.onSupabaseAlert?.({
+        type: 'success',
+        title: 'Validation Complete',
+        description: 'Project configuration is valid',
+        content: 'Database connection established successfully. Your project is ready for development!',
+        source: 'supabase',
+        stage: 'complete',
+        operation: 'validate',
+        progress: 100,
+      });
+
+      return { success: true, message: 'Project validation successful' };
+    } catch (error: any) {
+      logger.error('Project validation failed:', error);
+
+      this.onSupabaseAlert?.({
+        type: 'error',
+        title: 'Validation Failed',
+        description: 'Project configuration issues detected',
+        content: `${error.message}\n\nPlease check your project setup and try again.`,
+        source: 'supabase',
+        stage: 'complete',
+        operation: 'validate',
+      });
+
+      throw error;
+    }
+  }
+
+  async #handleProjectSeed(action: SupabaseAction) {
+    const { content, filePath } = action;
+    const connection = supabaseConnection.get();
+
+    if (!connection.token || !connection.selectedProjectId) {
+      throw new Error('Supabase project not configured for seeding');
+    }
+
+    // Show seeding started
+    this.onSupabaseAlert?.({
+      type: 'info',
+      title: 'Seeding Database',
+      description: 'Executing seed data scripts',
+      content: 'Populating your database with initial data...',
+      source: 'supabase',
+      stage: 'executing',
+      operation: 'seed',
+      progress: 25,
+    });
+
+    try {
+      // If a file path is provided, create the seed file first
+      if (filePath) {
+        await this.#runFileAction({
+          type: 'file',
+          filePath,
+          content,
+          changeSource: 'supabase',
+        } as any);
+      }
+
+      // Execute the seed SQL
+      const response = await fetch('/api/supabase/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${connection.token}`,
+        },
+        body: JSON.stringify({
+          projectId: connection.selectedProjectId,
+          query: content,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as SupabaseApiErrorResponse | null;
+        const message =
+          (typeof errorData?.error === 'string' ? errorData.error : errorData?.error?.message) ||
+          errorData?.message ||
+          'Seed execution failed';
+        throw new Error(message);
+      }
+
+      const result = (await response.json()) as SupabaseQueryResponse;
+      logger.debug('Seed data executed successfully:', result);
+
+      // Show seeding success
+      this.onSupabaseAlert?.({
+        type: 'success',
+        title: 'Database Seeded',
+        description: 'Initial data loaded successfully',
+        content: 'Your database has been populated with seed data and is ready for use!',
+        source: 'supabase',
+        stage: 'complete',
+        operation: 'seed',
+        progress: 100,
+      });
+
+      return { success: true, result };
+    } catch (error: any) {
+      logger.error('Database seeding failed:', error);
+
+      this.onSupabaseAlert?.({
+        type: 'error',
+        title: 'Seeding Failed',
+        description: 'Failed to execute seed data',
+        content: `${error.message}\n\nPlease check your seed SQL and try again.`,
+        source: 'supabase',
+        stage: 'complete',
+        operation: 'seed',
+        rollbackAvailable: true,
+      });
+
+      throw error;
     }
   }
 
